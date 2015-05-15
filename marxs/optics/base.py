@@ -1,5 +1,6 @@
 # import abc  - do I need this?
 from collections import OrderedDict
+from functools import wraps
 from copy import copy
 
 import numpy as np
@@ -111,3 +112,37 @@ class FlatOpticalElement(OpticalElement):
     def intersect(self, dir, pos):
         plucker = dir_point2line(h2e(dir), h2e(pos))
         return intersect_line_plane(plucker, self.geometry['plane'])
+
+
+def photonlocalcoords(f, colnames=['pos', 'dir']):
+    '''Decorartor for calculation that require a local coordinate system
+
+    This is specifically meant to wrap the :meth:`process_photons` methods of
+    any :class:`OpticalElement`; the current implementation expects the call
+    signature of :meth:`process_photons`.
+
+    This decorator transforms coordinates from the global system to the local
+    system before a function call and back to the global system again after
+    the function call.
+
+    Parameters
+    ----------
+    f : callable with signature ``f(self, photons, *args, **kwargs)``
+        The function to be decorated. In the signature, ``photons`` is an
+        `~astropy.table.Table`.
+    colnames : list of strings
+        List of all column names in the photon table to be transformed into a
+        different coordinate system.
+    '''
+    @wraps(f)
+    def wrapper(self, photons, *args, **kwargs):
+        # transform to coordsys if single instrument
+        invpos4d = np.linalg.inv(self.pos4d)
+        for n in colnames:
+            photons[n] = np.einsum('...ij,...j', invpos4d, photons[n])
+        f(self, photons, *args, **kwargs)
+        # transform back into coordsys of satellite
+        for n in colnames:
+            photons[n] = np.einsum('...ij,...j', self.pos4d, photons[n])
+
+    return wrapper

@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.stats import kstest
+from astropy.table import Table, Column
 
 from transforms3d.axangles import axangle2aff
 
 import marxs
 import marxs.optics
+import marxs.optics.base
 import marxs.optics.aperture
 import marxs.source
 import marxs.source.source
@@ -82,7 +84,26 @@ def test_pos4d_transforms_slit_rotated():
     assert np.allclose(p['pos'][:, 2], 0)
     assert kstest(p['pos'][:, 0] + 0.5, "uniform")[1] > 0.01
     assert kstest(p['pos'][:, 1] + 0.5, "uniform")[1] > 0.01
-
-    # Fails, because rays exactly parallel to aperture.
+    # Sometimes fails, because rays exactly parallel to aperture.
     # Find other example, e.g. 45 deg.
     # Check in aperture if that's the case and raise warning.
+
+
+def test_photonlocalcoords_decorartor():
+
+    pos = np.array([[1, 0, 0, 1], [0, 1, 0, 1]])
+    dir = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
+    photontab = Table([Column(data=pos, name='pos'),
+                       Column(data=dir, name='dir')
+                       ])
+
+    class OEforTest(marxs.optics.base.OpticalElement):
+        @marxs.optics.base.photonlocalcoords
+        def functiontodecorate(self, photons):
+            assert np.allclose(photons['dir'], dir)
+            assert np.allclose(photons['pos'], np.array([[2., 2, 3, 1], [1, 3, 3, 1]]))
+
+    oetest = OEforTest(position=np.array([-1., -2, -3]))
+    oetest.functiontodecorate(photontab)
+    assert np.allclose(photontab['dir'], dir)
+    assert np.allclose(photontab['pos'], pos)
