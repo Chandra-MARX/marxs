@@ -1,14 +1,20 @@
 import numpy as np
-from astropy.table import Column
+from astropy.table import Column, Table, Row
 
 from .base import FlatOpticalElement
 
 
-class Aperture(FlatOpticalElement):
-    def add_colpos(self, photons):
+class BaseAperture(object):
+    @staticmethod
+    def add_colpos(photons):
         photoncoords = Column(name='pos', length=len(photons), shape=(4,))
         photons.add_column(photoncoords)
         photons['pos'][:, 3] = 1
+
+
+class Aperture(FlatOpticalElement, BaseAperture):
+    def process_photons(self, photons):
+        self.add_colpos(photons)
 
 
 class SquareEntranceAperture(Aperture):
@@ -17,7 +23,7 @@ class SquareEntranceAperture(Aperture):
         super(SquareEntranceAperture, self).__init__(**kwargs)
 
     def process_photons(self, photons):
-        self.add_colpos(photons)
+        super(SquareEntranceAperture, self).process_photons(photons)
         # random positions in system of aperture
         n = len(photons)
         r1 = self.size * np.random.random(n) - 0.5 * self.size

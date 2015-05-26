@@ -1,0 +1,93 @@
+from collections import OrderedDict
+
+import numpy as np
+import pytest
+
+from ..aperture import Aperture, SquareEntranceAperture
+from ...source.source import ConstantPointSource, FixedPointing
+from ..mirror import ThinLens
+from ..detector import InfiniteFlatDetector
+
+# Initialize all optical elements to be tested
+all_oe = [ThinLens(focallength=100),
+          SquareEntranceAperture(size=1.23),
+          InfiniteFlatDetector()
+          ]
+
+# Each elements will be used multiple times.
+# Can I add a test to check that using them does not leave any
+# extra attributes etc., but that they come out in a clean state?
+# How would I do that?
+
+
+# Make a test photon list
+mysource = ConstantPointSource((30., 30.), 1., 300.)
+masterphotons = mysource.generate_photons(11)
+mypointing = FixedPointing(coords=(30., 30.))
+mypointing.process_photons(masterphotons)
+myslit = Aperture()
+myslit.process_photons(masterphotons)
+
+
+@pytest.fixture(autouse=True)
+def photons():
+    '''make a photons table - fresh for every test'''
+    photons = masterphotons.copy()
+    assert id(photons['dir']) != id(masterphotons['dir'])
+    assert np.all(photons['dir'] == photons['dir'])
+    return photons
+
+
+
+mark = pytest.mark.parametrize
+
+
+@mark('elem', all_oe)
+class TestOpticalElementInterface:
+    '''Test that all optical elements follow the interface convention.
+
+    At the same time, these tests guarantee that the modules work at all
+    (e.g. the can be initialized etc.). Not as good as checking for correctness
+    (that has to happen in individual tests, but it's a start.
+    '''
+    def test_inplace(self, elem, photons):
+        '''In process_photons photons should be manipulated in place'''
+        if isinstance(elem, Aperture):
+            photons.remove_column('pos')
+        id_in = id(photons)
+        elem.process_photons(photons)
+        id_out = id(photons)
+        assert id_in == id_out
+
+    def test_one_vs_many_in_call_signature(self, photons, elem):
+        '''processing a single photon should give same result as photon list'''
+        assert np.all(photons['dir'] == photons['dir'])
+        p = photons[[0]]
+        # Process individually
+        single = photons[0]
+        try:
+            # For apertures input pos is ignored, but still needs to be there
+            # to keep the function signature consistent.
+            dir, pos, energy, pol, prob = elem.process_photon(single['dir'], single['pos'], single['energy'], single['polarization'])
+        except NotImplementedError:
+            # It's OK if only the a vectorized process_photons is implemented
+            # but if both exist, they need to return the same answer.
+            return
+        # Process as table
+        if isinstance(elem, Aperture):
+            photons.remove_column('pos')
+        elem.process_photons(p)
+
+        assert np.all(dir == p['dir'][0])
+        assert np.all(pos == p['pos'][0])
+        assert energy == p['energy'][0]
+        # pol can be nan for modules that cannot deal with polarization
+        assert ((np.isnan(pol) and np.isnan(p['polarization'][0])) 
+                or (pol == p['polarization'][0]))
+        assert prob == p['probability'][0]
+
+    def test_desc(self, elem):
+        '''every elements should return a Ordered Dict for description'''
+        des = elem.describe()
+        assert isinstance(des, OrderedDict)
+        assert len(des) > 0

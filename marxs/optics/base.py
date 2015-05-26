@@ -5,6 +5,7 @@ from copy import copy
 
 import numpy as np
 from transforms3d import affines
+from astropy.table import Table, Row
 
 from ..math.pluecker import *
 
@@ -66,24 +67,26 @@ class OpticalElement(SimulationSequenceElement):
         for col in self.output_columns:
             photons.add_empty_column
 
-    def process_photon(self, p_photon, energy, polerization):
+    def process_photon(self, dir, pos, energy, polerization):
         raise NotImplementedError
 
     def process_photons(self, photons):
         '''
         Parameters
         ----------
-        photons: astropy.table.Table
+        photons: `~astropy.table.Table` or `~astropy.table.Row`
             Table with photon properties
 
-        No return value - ``photons`` is manipulated in place.
+        No return value - photons is manipulated in place
 
         This is the simple and naive and probably slow implementation. For
         performance, I might want to pull out the relevant numpy arrays ahead
         of time and then iterate over those, because that can be optimized by
-        e.g numba (I don't think that numba can enhance the entire
+        e.g. numba (I don't think that numba can enhance the entire
         astropy.table package) - but that is for a later time.
         '''
+        if isinstance(photons, Row):
+            photons = Table(photons)
         self.add_output_columns(photons)
         outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
         for i, photon in enumerate(photons):
@@ -95,6 +98,7 @@ class OpticalElement(SimulationSequenceElement):
                     photons['probability'][i] *= b
                 else:
                     photons[a][i] = b
+
 
 
 class FlatOpticalElement(OpticalElement):

@@ -8,6 +8,8 @@ from .base import FlatOpticalElement
 class InfiniteFlatDetector(FlatOpticalElement):
     '''Infinitely extended flat detector with square pixels
 
+    Pixel Size is 1, use a scaling on pos4d to change that.
+
     Output columns are names det_y, det_z not x,y.
     Should I change that?
     '''
