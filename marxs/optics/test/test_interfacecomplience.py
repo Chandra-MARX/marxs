@@ -24,9 +24,9 @@ all_oe = [ThinLens(focallength=100),
 mysource = ConstantPointSource((30., 30.), 1., 300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
-mypointing.process_photons(masterphotons)
+masterphotons = mypointing.process_photons(masterphotons)
 myslit = Aperture()
-myslit.process_photons(masterphotons)
+masterphotons = myslit.process_photons(masterphotons)
 
 
 @pytest.fixture(autouse=True)
@@ -50,15 +50,6 @@ class TestOpticalElementInterface:
     (e.g. the can be initialized etc.). Not as good as checking for correctness
     (that has to happen in individual tests, but it's a start.
     '''
-    def test_inplace(self, elem, photons):
-        '''In process_photons photons should be manipulated in place'''
-        if isinstance(elem, Aperture):
-            photons.remove_column('pos')
-        id_in = id(photons)
-        elem.process_photons(photons)
-        id_out = id(photons)
-        assert id_in == id_out
-
     def test_one_vs_many_in_call_signature(self, photons, elem):
         '''processing a single photon should give same result as photon list'''
         assert np.all(photons['dir'] == photons['dir'])
@@ -76,7 +67,7 @@ class TestOpticalElementInterface:
         # Process as table
         if isinstance(elem, Aperture):
             photons.remove_column('pos')
-        elem.process_photons(p)
+        p = elem.process_photons(p)
 
         assert np.all(dir == p['dir'][0])
         assert np.all(pos == p['pos'][0])

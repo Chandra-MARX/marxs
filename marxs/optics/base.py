@@ -77,7 +77,14 @@ class OpticalElement(SimulationSequenceElement):
         photons: `~astropy.table.Table` or `~astropy.table.Row`
             Table with photon properties
 
-        No return value - photons is manipulated in place
+        Returns
+        -------
+        photons: `~astropy.table.Table` or `~astropy.table.Row`
+            Table with photon properties.
+            If possible, the input table is modified in place, but in some
+            cases this might not be possible and the returned Table may be
+            a copy. Do not rely on either - use ``photons.copy()`` if you want
+            to ensure you are working with an independent copy.
 
         This is the simple and naive and probably slow implementation. For
         performance, I might want to pull out the relevant numpy arrays ahead
@@ -98,6 +105,7 @@ class OpticalElement(SimulationSequenceElement):
                     photons['probability'][i] *= b
                 else:
                     photons[a][i] = b
+        return photons
 
 
 

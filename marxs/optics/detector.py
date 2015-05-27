@@ -19,3 +19,4 @@ class InfiniteFlatDetector(FlatOpticalElement):
         det_pos = h2e(h_intersect) - h2e(self.geometry['center'])
         photons.add_column(Column(np.dot(det_pos, h2e(self.geometry['e_y'])), name='det_y'))
         photons.add_column(Column(np.dot(det_pos, h2e(self.geometry['e_z'])), name='det_z'))
+        return photons

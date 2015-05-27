@@ -15,6 +15,7 @@ class BaseAperture(object):
 class Aperture(FlatOpticalElement, BaseAperture):
     def process_photons(self, photons):
         self.add_colpos(photons)
+        return photons
 
 
 class SquareEntranceAperture(Aperture):
@@ -29,3 +30,4 @@ class SquareEntranceAperture(Aperture):
         r1 = self.size * np.random.random(n) - 0.5 * self.size
         r2 = self.size * np.random.random(n) - 0.5 * self.size
         photons['pos'] = self.geometry['center'] + r1.reshape((-1, 1)) * self.geometry['e_y'] + r2.reshape((-1, 1)) * self.geometry['e_z']
+        return photons

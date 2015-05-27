@@ -119,3 +119,4 @@ class FixedPointing(PointingModel):
         photons['dir'][:, 2] = np.sin(dec)
         photons['dir'][:, 3] = 0
         photons['dir'][:, :3] = np.dot(np.linalg.inv(self.mat3d), photons['dir'][:, :3].T).T
+        return photons

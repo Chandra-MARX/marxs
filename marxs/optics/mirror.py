@@ -15,10 +15,11 @@ class ThinLens(FlatOpticalElement):
 
     def process_photon(self, dir, pos, energy, polerization):
         h_intersect = self.intersect(dir, pos)
-        distance = distance_point_point(h_intersect, self.geometry['center'][np.newaxis, :])
+        distance = distance_point_point(h_intersect,
+                                        self.geometry['center'][np.newaxis, :])
         if distance == 0.:
             # No change of direction for rays through the origin.
-            # Need to special case this, because ration axis is not defined
+            # Need to special case this, because rotation axis is not defined
             # in this case.
             new_ray_dir = h2e(dir)
         else:

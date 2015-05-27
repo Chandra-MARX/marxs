@@ -59,10 +59,10 @@ def test_pos4d_transforms_slit():
     np.random.seed(0)
     p = mysource.generate_photons(1000)
     mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
-    mypointing.process_photons(p)
+    p = mypointing.process_photons(p)
 
     myslit = marxs.optics.aperture.SquareEntranceAperture(size=2)
-    myslit.process_photons(p)
+    p = myslit.process_photons(p)
     assert np.allclose(p['pos'][:, 0], 0)
     assert kstest((p['pos'][:, 1] + 1) / 2, "uniform")[1] > 0.01
     assert kstest((p['pos'][:, 2] + 1) / 2, "uniform")[1] > 0.01
@@ -76,11 +76,11 @@ def test_pos4d_transforms_slit_rotated():
     mysource = marxs.source.source.ConstantPointSource((30., 30.), 1., 300.)
     p = mysource.generate_photons(1000)
     mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
-    mypointing.process_photons(p)
+    p = mypointing.process_photons(p)
 
     rotation = axangle2aff(np.array([0, 1, 0]), np.deg2rad(90))
     myslit = marxs.optics.aperture.SquareEntranceAperture(size=1, orientation=rotation[:3, :3])
-    myslit.process_photons(p)
+    p = myslit.process_photons(p)
     assert np.allclose(p['pos'][:, 2], 0)
     assert kstest(p['pos'][:, 0] + 0.5, "uniform")[1] > 0.01
     assert kstest(p['pos'][:, 1] + 0.5, "uniform")[1] > 0.01
