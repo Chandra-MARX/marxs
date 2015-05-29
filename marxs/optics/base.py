@@ -127,7 +127,7 @@ class FlatOpticalElement(OpticalElement):
 
 
 def photonlocalcoords(f, colnames=['pos', 'dir']):
-    '''Decorartor for calculation that require a local coordinate system
+    '''Decorator for calculation that require a local coordinate system
 
     This is specifically meant to wrap the :meth:`process_photons` methods of
     any :class:`OpticalElement`; the current implementation expects the call
@@ -152,9 +152,10 @@ def photonlocalcoords(f, colnames=['pos', 'dir']):
         invpos4d = np.linalg.inv(self.pos4d)
         for n in colnames:
             photons[n] = np.einsum('...ij,...j', invpos4d, photons[n])
-        f(self, photons, *args, **kwargs)
+        photons = f(self, photons, *args, **kwargs)
         # transform back into coordsys of satellite
         for n in colnames:
             photons[n] = np.einsum('...ij,...j', self.pos4d, photons[n])
+        return photons
 
     return wrapper

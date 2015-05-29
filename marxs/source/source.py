@@ -47,8 +47,8 @@ class PointingModel(SimulationSequenceElement):
     Conventions:
 
     - All angles (``ra``, ``dec``, and ``roll`` are given in decimal degrees.
-    - x axis points to sky aimpoint.
-    -  ``roll = 0`` means: z axis points North (measured N -> E).
+    - x-axis points to sky aimpoint.
+    - ``roll = 0`` means: z axis points North (measured N -> E).
 
     For :math:`\delta \pm 90^{\circ}` the :math:`\alpha` value is
     irrelevant for the pointing direction - any right ascension will
@@ -114,9 +114,10 @@ class FixedPointing(PointingModel):
         self.add_dir(photons)
         ra = np.deg2rad(photons['ra'])
         dec = np.deg2rad(photons['dec'])
-        photons['dir'][:, 0] = np.cos(dec) * np.cos(ra)
-        photons['dir'][:, 1] = np.cos(dec) * np.sin(ra)
-        photons['dir'][:, 2] = np.sin(dec)
+        # Minus sign here because photons start at +inf and move towards origin
+        photons['dir'][:, 0] = - np.cos(dec) * np.cos(ra)
+        photons['dir'][:, 1] = - np.cos(dec) * np.sin(ra)
+        photons['dir'][:, 2] = - np.sin(dec)
         photons['dir'][:, 3] = 0
         photons['dir'][:, :3] = np.dot(np.linalg.inv(self.mat3d), photons['dir'][:, :3].T).T
         return photons

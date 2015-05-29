@@ -1,0 +1,2 @@
+include versioneer.py
+include marxs/_version.py
