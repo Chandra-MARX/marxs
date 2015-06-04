@@ -4,12 +4,23 @@ from astropy.table import Table, Column
 
 from transforms3d.axangles import axangle2aff
 
+import pytest
+
 import marxs
 import marxs.optics
 import marxs.optics.base
 import marxs.optics.aperture
 import marxs.source
 import marxs.source.source
+
+@pytest.fixture(autouse=True)
+def photons1000():
+    '''Make a list of photons parallel to optical axis'''
+    mysource = marxs.source.source.ConstantPointSource((30., 30.), 1., 300.)
+    np.random.seed(0)
+    p = mysource.generate_photons(1000)
+    mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
+    return mypointing.process_photons(p)
 
 
 def test_pos4d_no_transformation():
@@ -45,7 +56,16 @@ def test_pos4d_translation():
     assert np.all(oe.geometry['e_z'] == np.array([0, 0, 1, 0]))
 
 
-def test_pos4d_transforms_slit():
+
+mark = pytest.mark.parametrize
+
+all_slits = [marxs.optics.aperture.SquareEntranceAperture(size=2),
+             marxs.optics.aperture.SquareEntranceAperture(size=1, zoom=2),
+             marxs.optics.aperture.SquareEntranceAperture(size=1, zoom=[2,2,2]),
+            ]
+
+@mark('myslit', all_slits)
+def test_pos4d_transforms_slit(photons1000, myslit):
     '''Test coordinate transforms on initialization of optical elements.
 
     The initial 4D transforms should be done to any optical element.
@@ -53,30 +73,16 @@ def test_pos4d_transforms_slit():
     positional vector of the plucker coordinates in a plane, independent
     of the initial values.
     '''
-    # Make this into a fixture if used by more than once.
-    # Make a list of photons parallel to optical axis
-    mysource = marxs.source.source.ConstantPointSource((30., 30.), 1., 300.)
-    np.random.seed(0)
-    p = mysource.generate_photons(1000)
-    mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
-    p = mypointing.process_photons(p)
 
-    myslit = marxs.optics.aperture.SquareEntranceAperture(size=2)
-    p = myslit.process_photons(p)
+    p = myslit.process_photons(photons1000)
     assert np.allclose(p['pos'][:, 0], 0)
     assert kstest((p['pos'][:, 1] + 1) / 2, "uniform")[1] > 0.01
     assert kstest((p['pos'][:, 2] + 1) / 2, "uniform")[1] > 0.01
 
 
-def test_pos4d_transforms_slit_rotated():
+def test_pos4d_transforms_slit_rotated(photons1000):
     '''Test coordinate transforms on rotated entrance aperture.'''
-    # Make this into a fixture if used by more than once.
-    # Make a list of photons parallel to optical axis
-    np.random.seed(0)
-    mysource = marxs.source.source.ConstantPointSource((30., 30.), 1., 300.)
-    p = mysource.generate_photons(1000)
-    mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
-    p = mypointing.process_photons(p)
+    p = photons1000
 
     rotation = axangle2aff(np.array([0, 1, 0]), np.deg2rad(90))
     myslit = marxs.optics.aperture.SquareEntranceAperture(size=1, orientation=rotation[:3, :3])
@@ -89,7 +95,7 @@ def test_pos4d_transforms_slit_rotated():
     # Check in aperture if that's the case and raise warning.
 
 
-def test_photonlocalcoords_decorartor():
+def test_photonlocalcoords_decorator():
 
     pos = np.array([[1, 0, 0, 1], [0, 1, 0, 1]])
     dir = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])

@@ -123,7 +123,7 @@ def intersect_line_plane(p_line, h_plane):
     -------
     h_point : np.array
         Homogeneous coordinates of the intersection points of line and plane.
-        Has the same shape as ``p_line``, but the last dimension has only 2
+        Has the same shape as ``p_line``, but the last dimension has only 4
         elements.
     '''
     h_point = np.empty(p_line.shape[:-1] + (4,)  )

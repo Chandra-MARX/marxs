@@ -53,7 +53,10 @@ class OpticalElement(SimulationSequenceElement):
         if self.pos4d is None:
             self.position = kwargs.pop('position', np.zeros(3))
             self.orientation = kwargs.pop('orientation', np.eye(3))
-            self.pos4d = affines.compose(self.position, self.orientation, np.ones(3))
+            self.zoom = kwargs.pop('zoom', 1.)
+            if np.isscalar(self.zoom):
+                self.zoom = np.ones(3) * self.zoom
+            self.pos4d = affines.compose(self.position, self.orientation, self.zoom)
 
         # Before we change any numbers, we need to copy geometry from the class
         # attribute to an instance attribute
@@ -67,7 +70,7 @@ class OpticalElement(SimulationSequenceElement):
         for col in self.output_columns:
             photons.add_empty_column
 
-    def process_photon(self, dir, pos, energy, polerization):
+    def process_photon(self, dir, pos, energy, polarization):
         raise NotImplementedError
 
     def process_photons(self, photons):
