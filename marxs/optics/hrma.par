@@ -1,0 +1,513 @@
+#-*-sh-*--------------------------------------------------------------------
+# MIT MARX Simulator Parameter file       Flight / Version 5.0 (Jan 2012)
+#----------------------------------------------------------------------------
+#
+# Simulation setup and control
+#
+#----------------------------------------------------------------------------
+NumRays,i,a,1000000,,,"TOTAL number of rays to generate (if negative, to num to detect)"
+dNumRays,i,a,100000,1,100000,"number of rays per iteration"
+TStart,r,a,2009.5,1999.56,,"year of observation"
+ExposureTime,r,a,10000,,,"exposure time (0.0 for none)"
+OutputDir,f,a,"point",,,"output directory name"
+DataDirectory,s,h,"/home/moritz/dev/marx/share/marx/data",,,"directory for input data"
+OutputVectors,s,h,"ETXYZ123DxyMPOabcdSrB",,,"output data columns (one or more of ETXYZ123DxyMPOabcd)"
+RandomSeed,i,h,-1,,,"random number seed (-1 means use current time)"
+DumpToRayFile,b,h,no,,,"Output in MARX rayfile format?"
+Verbose,b,a,yes,,,"Verbose mode"
+#---------------------------------------------------------------------------
+#
+# Science Instrument set up and control
+#
+#---------------------------------------------------------------------------
+MirrorType,s,a,"HRMA","HRMA|EA-MIRROR|FLATFIELD",,"mirror type"
+GratingType,s,a,"HETG","HETG|LETG|NONE",,"grating type"
+DetectorType,s,a,"ACIS-S","HRC-S|ACIS-S|HRC-I|ACIS-I|NONE",,"detector type"
+DetIdeal,b,a,no,,,"Is Detector perfect (QE=1)?"
+#
+# Focal plane SIM position
+#
+DetOffsetX,r,a,0,,,"Detector X offset from nominal (mm)"
+DetOffsetY,r,a,0,,,"Detector Y offset from nominal (mm)"
+DetOffsetZ,r,a,0,,,"Detector Z offset from nominal (mm)"
+#
+#  For HRC-S simulations:
+#
+#       To use the HESF, set  DetOffsetZ=7.25
+#       To use the LESF, set  DetoffsetZ=-6.5
+#
+#
+#---------------------------------------------------------------------------
+#
+# Source spectral parameters
+#
+#---------------------------------------------------------------------------
+SourceFlux,r,a,0.003,,,"incoming ray flux (photons/sec/cm^2)"
+SpectrumType,s,a,"FLAT","FLAT|FILE",,"spectrum type"
+SpectrumFile,f,a,"flux.dat",,,"input spectrum filename"
+#
+#  Energy limits  (for flat spectrum model)
+#
+MinEnergy,r,a,1.775,0.03,12.0,"MIN ray energy (keV)"
+MaxEnergy,r,a,1.775,0.03,12.0,"MAX ray energy (keV)"
+#---------------------------------------------------------------------------
+#
+# Source position (center of source)
+#
+SourceDistance,r,a,0,,,"Source distance (meters) (0 if infinite)"
+SourceRA,r,a,2.502316589E+02,0,360,"Source RA (degrees)"
+SourceDEC,r,a,-5.375129700E+01,-90,90,"source DEC (degrees)"
+#---------------------------------------------------------------------------
+#
+# Source spatial parameters
+#
+#---------------------------------------------------------------------------
+# Source model to use
+#
+SourceType,s,a,"POINT","POINT|GAUSS|IMAGE|LINE|BETA|RAYFILE|DISK|USER|SAOSAC",,"source"
+#
+# Gaussian source parameters
+#
+S-GaussSigma,r,a,60,0.0,14000.0,"gauss source sigma (arcsec)"
+#
+# LINE source parameters
+#
+S-LinePhi,r,a,0,,,"line source orientation angle (degrees)"
+S-LineTheta,r,a,1800,,,"line source length (arcsec)"
+#
+# BETA source parameters
+#
+S-BetaCoreRadius,r,a,10,,,"core radius (arcsec)"
+S-BetaBeta,r,a,0.7,0.5001,,"BETA value"
+#
+# RAYFILE source parameters
+#
+#      This option allows a MARX internal format rayfile to be used.
+#
+RayFile,s,a,"marx.output",,,"marx input source/output ray filename"
+#
+# DISK source parameters
+#
+S-DiskTheta0,r,a,0,,,"min disk theta (arcsec)"
+S-DiskTheta1,r,a,60,,,"max disk theta (arcsec)"
+#
+# Image Source parameters
+#
+S-ImageFile,f,a,"image.fits",,,"fits filename for IMAGE source"
+#
+# USER Source parameters
+#
+#      This type is for use by a dynamically linked user-defined source.
+#      On most systems, this should be an absolute path.
+#
+UserSourceFile,f,a,"../doc/examples/user-source/pnts.so",,,"dynamically linked source filename"
+UserSourceArgs,s,a,"pnts.dat",,,"user source parameter"
+#
+# SAOSAC Source parameters
+# 
+#      This option allows SAOSAC FITS raytrace files to be used.
+#
+SAOSACFile,s,a,"saosac.fits",,,"marx input source/output ray filename"
+SAOSAC_Color_Rays,b,a,no,,,"This option is no longer supported"
+#---------------------------------------------------------------------------
+#
+# Dither/Aspect Parameters
+#
+#---------------------------------------------------------------------------
+DitherModel,s,a,"INTERNAL","NONE|INTERNAL|FILE",,"Dither Model"
+DitherFile,f,a,"obsid_105/data/asol1.fits",,,"ASPSOL File"
+AspectBlur,r,a,0.07,,,"aspect blur (sigma -- arcsec)"
+#
+# Internal Dither Model Parameters: 
+#
+#         Value = Amp * sin (2*PI*t/Period + Phase)
+#
+#    For roll, the equation is:
+#
+#         Value = DitherRoll + Amp * sin (2*PI*t/Period + Phase)
+#
+RA_Nom,r,a,250.2134679741175,,,"RA_NOM for dither (degrees)"
+Dec_Nom,r,a,-53.75743813458669,,,"DEC_NOM for dither (degrees)"
+Roll_Nom,r,a,237.36968458476,,,"ROLL_NOM for dither (degrees)"
+#
+DitherAmp_RA,r,a,8,0,,"Amplitude for RA dither (arcsec)"
+DitherAmp_Dec,r,a,8,0,,"Amplitude for Dec dither (arcsec)"
+DitherAmp_Roll,r,a,0,0,,"Amplitude for Roll dither (arcsec)"
+DitherPeriod_RA,r,a,1000,1,,"Period for RA dither (sec)"
+DitherPeriod_Dec,r,a,707,1,,"Period for Dec dither (sec)"
+DitherPeriod_Roll,r,a,1e5,1,,"Period for Roll dither (sec)"
+DitherPhase_RA,r,a,0,,,"Phase for RA dither (radians)"
+DitherPhase_Dec,r,a,0,,,"Phase for Dec dither (radians)"
+DitherPhase_Roll,r,a,0,,,"Phase for Roll dither (radians)"
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#
+#        PARAMETERS BEYOND THIS POINT SHOULD NOT BE MODIFIED
+#               UNLESS YOU KNOW WHAT YOU ARE DOING.
+#
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#
+# XRCF Shutter Control
+#
+#    Note: These parameters are only relevant for XRCF simulations
+#
+#    Shutters: "ABCD" where:
+#    A = Top shutter (+y), Right (+z), Bottom (-y), Left (-z)
+#
+#---------------------------------------------------------------------------
+Shutters1,s,a,"0000",,,"mirror 1 shutter bitmap (0 == open, 1 == closed)"
+Shutters3,s,a,"0000",,,"mirror 3 shutter bitmap (0 == open, 1 == closed)"
+Shutters4,s,a,"0000",,,"mirror 4 shutter bitmap (0 == open, 1 == closed)"
+Shutters6,s,a,"0000",,,"mirror 6 shutter bitmap (0 == open, 1 == closed)"
+#----------------------------------------------------------------------------
+#
+# HRMA setup
+#
+#----------------------------------------------------------------------------
+#FocalLength,r,a,10061.62,1,,"Mirror Focal Length"
+FocalLength,r,a,10070,1,,"Mirror Focal Length"
+HRMA_Use_WFold,b,a,yes,,,"Use WFold scattering tables?"
+HRMA_Use_Blur,b,a,yes,,,"Use HRMA Blur factors"
+HRMA_Ideal,b,a,no,,,"Assume perfect reflection from HRMA"
+HRMA_Use_Scale_Factors,b,h,yes,,,"Use Effarea scale factors?"
+HRMA_Use_Struts,b,a,yes,,,"Use HRMA struts?"
+WFold_P1_File,f,h,"hrma/scat_p1_M.bin",,,"wfold filename for HRMA"
+WFold_H1_File,f,h,"hrma/scat_h1_M.bin",,,"wfold filename for HRMA"
+WFold_P3_File,f,h,"hrma/scat_p3_M.bin",,,"wfold filename for HRMA"
+WFold_H3_File,f,h,"hrma/scat_h3_M.bin",,,"wfold filename for HRMA"
+WFold_P4_File,f,h,"hrma/scat_p4_M.bin",,,"wfold filename for HRMA"
+WFold_H4_File,f,h,"hrma/scat_h4_M.bin",,,"wfold filename for HRMA"
+WFold_P6_File,f,h,"hrma/scat_p6_M.bin",,,"wfold filename for HRMA"
+WFold_H6_File,f,h,"hrma/scat_h6_M.bin",,,"wfold filename for HRMA"
+HRMAOptConst,f,h,"hrma/iridium.dat",,,"optical const filename for HRMA"
+HRMAOptConstScale,r,h,1.0,0.01,,"Scale factor for HRMA opt constants"
+HRMAVig,r,h,1.0,0.0,1.0,"HRMA Vignetting factor"
+HRMA_Yaw,r,h,0.0,,,"HRMA Yaw (arcmin)"
+HRMA_Pitch,r,h,0.0,,,"HRMA Pitch (arcmin)"
+HRMA_Geometry_File,f,a,"hrma/EKCHDOS06.rdb",,,"HRMA rdb geometry file"
+P1Blur,r,a,0.303427,0.0,,"HRMA P1 Blur angle (arcsec)"
+H1Blur,r,a,0.0051428,0.0,,"HRMA H1 Blur angle (arcsec)"
+P3Blur,r,a,0.0951899,0.0,,"HRMA P3 Blur angle (arcsec)"
+H3Blur,r,a,0.0713614,0.0,,"HRMA H3 Blur angle (arcsec)"
+P4Blur,r,a,0.178899,0.0,,"HRMA P4 Blur angle (arcsec)"
+H4Blur,r,a,0.0101367,0.0,,"HRMA H4 Blur angle (arcsec)"
+P6Blur,r,a,0.151085,0.0,,"HRMA P6 Blur angle (arcsec)"
+H6Blur,r,a,0.0239287,0.0,,"HRMA H6 Blur angle (arcsec)"
+H1ScatFactor,r,a,3.2451338,0,,"Scattering Fudge Factor for H1"
+P1ScatFactor,r,a,2.8420331,0,,"Scattering Fudge Factor for P1"
+H3ScatFactor,r,a,2.4618956,0,,"Scattering Fudge Factor for H3"
+P3ScatFactor,r,a,1.7305226,0,,"Scattering Fudge Factor for P3"
+H4ScatFactor,r,a,2.9027099,0,,"Scattering Fudge Factor for H4"
+P4ScatFactor,r,a,1.0077613,0,,"Scattering Fudge Factor for P4"
+H6ScatFactor,r,a,2.0209803,0,,"Scattering Fudge Factor for H6"
+P6ScatFactor,r,a,2.1199425,0,,"Scattering Fudge Factor for P6"
+#
+# Do not mess with these parameters.  They were derived from table 10.4
+# of the XRCF Phase1 document and simulations.
+#
+HRMA_Cap_X,r,h,10079.771554,,,"HRMA Cap X position (mm)"
+HRMA_P1H1_XOffset,r,h,-3.277664,,,"HRMA P1H1 X offset (mm)"
+HRMA_P3H3_XOffset,r,h,-0.257891,,,"HRMA P3H3 X offset (mm)"
+HRMA_P4H4_XOffset,r,h,0.733315,,,"HRMA P4H4 X offset (mm)"
+HRMA_P6H6_XOffset,r,h,-0.541755,,,"HRMA P6H6 X offset (mm)"
+#
+# Correction for misalignment of Optical Axis and Pointing Axis
+#
+#    adjusted to agree with flight data
+#
+PointingOffsetY,r,h,-21,,,"Optical-Axis/Pointing Y Misalignment (arcsec)"
+PointingOffsetZ,r,h,12,,,"Optical-Axis/Pointing Z Misalignment (arcsec)"
+#----------------------------------------------------------------------------
+#
+# EA Mirror Setup
+#
+#----------------------------------------------------------------------------
+MirrorRadius1,r,h,600,0.0,,"Mirror 1 radius (mm)"
+MirrorRadius3,r,h,480,0.0,,"Mirror 3 radius (mm)"
+MirrorRadius4,r,h,425,0.0,,"Mirror 4 radius (mm)"
+MirrorRadius6,r,h,310,0.0,,"Mirror 6 radius (mm)"
+MirrorVig,r,h,0.9,0.0,1.0,"HRMA Vignetting factor"
+MirrorUseEA,b,a,yes,,,"Use effective area for HRMA?"
+MirrorEAFile,f,h,"ea-mirror/Ae_s1346.dat",,,"mirror effective filename"
+MirrorBlur,b,a,yes,,,"Perform mirror blur?"
+MirrorBlurFile,f,h,"ea-mirror/mirr-ee.bin",,,"mirror blur filename"
+#---------------------------------------------------------------------------
+#
+# Grating setup
+#
+#---------------------------------------------------------------------------
+MEGRowlandDiameter,r,h,8632.48,1000,,"MEG Rowland Torus Diameter (mm)"
+HEGRowlandDiameter,r,h,8632.48,1000,,"HEG Rowland Torus Diameter (mm)"
+LEGRowlandDiameter,r,h,8637.0,1000,,"LEG Rowland Torus Diameter (mm)"
+GratingOptConsts,f,h,"grating/optical-constants.dat",,,"optical constants filename"
+UseGratingEffFiles,b,a,yes,,,"Use grating efficiency tables?"
+Use_HETG_Sector_Files,b,a,yes,,,"Use HETG Sector Files?"
+Use_LETG_Sector_Files,b,a,no,,,"Use LETG Sector Files?"
+Use_Unit_Efficiencies,b,a,no,,,"Use Unit Efficiencies?"
+Use_This_Order,i,a,0,0,,"If non-zero, diffract into this plus/minus order"
+#--------------------------------------------------------------------------
+# HETG Paramters if UseGratingEffFiles = "yes"
+#--------------------------------------------------------------------------
+# HETG MARX Parameters supplied by Dan Dewey 9/11/97
+# These values are for FLIGHT configuration.
+#
+# The vignetting is 1.0 because the efficiency tables include
+# the inter-grating vignetting.
+HETG_Sector1_File,f,h,"grating/hetgmp1D1996-11-01marxsectorN0002.tbl",,,"HETG sector file for shell 1"
+HETG_Sector3_File,f,h,"grating/hetgmp3D1996-11-01marxsectorN0002.tbl",,,"HETG sector file for shell 3"
+HETG_Sector4_File,f,h,"grating/hetgmp4D1996-11-01marxsectorN0003.tbl",,,"HETG sector file for shell 4"
+HETG_Sector6_File,f,h,"grating/hetgmp6D1996-11-01marxsectorN0003.tbl",,,"HETG sector file for shell 6"
+#
+HETG_Shell1_File,f,h,"grating/hetgmp1D1996-11-01greffN0004.dat",,,"grating efficiency table for shell 1"
+HETG_Shell3_File,f,h,"grating/hetgmp3D1996-11-01greffN0004.dat",,,"grating efficiency table for shell 3"
+HETG_Shell4_File,f,h,"grating/hetgmp4D1996-11-01greffN0004.dat",,,"grating efficiency table for shell 4"
+HETG_Shell6_File,f,h,"grating/hetgmp6D1996-11-01greffN0004.dat",,,"grating efficiency table for shell 6"
+HETG_Shell1_Vig,r,h,1.0,,,"grating vignetting for shell 1"
+HETG_Shell3_Vig,r,h,1.0,,,"grating vignetting for shell 3"
+HETG_Shell4_Vig,r,h,1.0,,,"grating vignetting for shell 4"
+HETG_Shell6_Vig,r,h,1.0,,,"grating vignetting for shell 6"
+HETG_Shell1_Theta,r,a,4.755,,,"dispersion angle for shell 1 (degrees)"
+HETG_Shell3_Theta,r,a,4.755,,,"dispersion angle for shell 3 (degrees)"
+HETG_Shell4_Theta,r,a,-5.205,,,"dispersion angle for shell 4 (degrees)"
+HETG_Shell6_Theta,r,a,-5.205,,,"dispersion angle for shell 6 (degrees)"
+HETG_Shell1_dTheta,r,a,1.5,,,"shell 1 grating alignment error (sigma in arcmin)"
+HETG_Shell3_dTheta,r,a,1.5,,,"shell 3 grating alignment error (sigma in arcmin)"
+HETG_Shell4_dTheta,r,a,1.5,,,"shell 4 grating alignment error (sigma in arcmin)"
+HETG_Shell6_dTheta,r,a,1.5,,,"shell 6 grating alignment error (sigma in arcmin)"
+#
+# Subassembly periods used until XRCF data analysis (and mechanical details) are further along.
+#
+HETG_Shell1_Period,r,a,0.400195,,,"shell 1 grating period (um)"
+HETG_Shell3_Period,r,a,0.400195,,,"shell 3 grating period (um)"
+HETG_Shell4_Period,r,a,0.200081,,,"shell 4 grating period (um)"
+HETG_Shell6_Period,r,a,0.200081,,,"shell 6 grating period (um)"
+HETG_Shell1_dPoverP,r,a,162e-6,0,1,"shell 1 grating dP/P (rms)"
+HETG_Shell3_dPoverP,r,a,162e-6,0,1,"shell 3 grating dP/P (rms)"
+HETG_Shell4_dPoverP,r,a,146e-6,0,1,"shell 4 grating dP/P (rms)"
+HETG_Shell6_dPoverP,r,a,146e-6,0,1,"shell 6 grating dP/P (rms)"
+#---------------------------------------------------------------------------
+# LETG Parameters if UseGratingEffFiles = "yes"
+#---------------------------------------------------------------------------
+LETG_Sector1_File,f,h,"grating/LETG-1-facet.tbl",,,"LETG sector file for shell 1"
+LETG_Sector3_File,f,h,"grating/LETG-3-facet.tbl",,,"LETG sector file for shell 3"
+LETG_Sector4_File,f,h,"grating/LETG-4-facet.tbl",,,"LETG sector file for shell 4"
+LETG_Sector6_File,f,h,"grating/LETG-6-facet.tbl",,,"LETG sector file for shell 6"
+#
+LETG_Shell1_File,f,h,"grating/letgD1996-11-01greffMARXpr001N0004.dat",,,"grating efficiency table for shell 1"
+LETG_Shell3_File,f,h,"grating/letgD1996-11-01greffMARXpr001N0004.dat",,,"grating efficiency table for shell 3"
+LETG_Shell4_File,f,h,"grating/letgD1996-11-01greffMARXpr001N0004.dat",,,"grating efficiency table for shell 4"
+LETG_Shell6_File,f,h,"grating/letgD1996-11-01greffMARXpr001N0004.dat",,,"grating efficiency table for shell 6"
+LETG_Shell1_Vig,r,h,1.0,,,"grating vignetting for shell 1"
+LETG_Shell3_Vig,r,h,1.0,,,"grating vignetting for shell 3"
+LETG_Shell4_Vig,r,h,1.0,,,"grating vignetting for shell 4"
+LETG_Shell6_Vig,r,h,1.0,,,"grating vignetting for shell 6"
+LETG_Shell1_Theta,r,a,0.07,,,"dispersion angle for shell 1 (degrees)"
+LETG_Shell3_Theta,r,a,0.07,,,"dispersion angle for shell 3 (degrees)"
+LETG_Shell4_Theta,r,a,0.07,,,"dispersion angle for shell 4 (degrees)"
+LETG_Shell6_Theta,r,a,0.07,,,"dispersion angle for shell 6 (degrees)"
+LETG_ACIS_dTheta,r,a,-0.0867,,,"aspect/focalplane misaligment induced dtheta for LETG/ACIS (degrees)"
+LETG_Shell1_dTheta,r,a,0.617,,,"shell 1 grating alignment error (sigma in arcmin)"
+LETG_Shell3_dTheta,r,a,0.617,,,"shell 3 grating alignment error (sigma in arcmin)"
+LETG_Shell4_dTheta,r,a,0.617,,,"shell 4 grating alignment error (sigma in arcmin)"
+LETG_Shell6_dTheta,r,a,0.617,,,"shell 6 grating alignment error (sigma arc min)"
+LETG_Shell1_Period,r,a,0.991216,,,"shell 1 grating period (um)"
+LETG_Shell3_Period,r,a,0.991216,,,"shell 3 grating period (um)"
+LETG_Shell4_Period,r,a,0.991216,,,"shell 4 grating period (um)"
+LETG_Shell6_Period,r,a,0.991216,,,"shell 6 grating period (um)"
+LETG_Shell1_dPoverP,r,a,78e-6,0,1,"shell 1 grating dP/P (rms)"
+LETG_Shell3_dPoverP,r,a,78e-6,0,1,"shell 3 grating dP/P (rms)"
+LETG_Shell4_dPoverP,r,a,78e-6,0,1,"shell 4 grating dP/P (rms)"
+LETG_Shell6_dPoverP,r,a,78e-6,0,1,"shell 6 grating dP/P (rms)"
+LETG_Eff_Scale_Factor,r,h,1.23456790,1,,"LETG Eff scaling factor"
+#---------------------------------------------------------------------------
+#
+# HEG grating setup  (UseGratingEffFiles = "no")
+#
+#---------------------------------------------------------------------------
+HEGVig,r,h,0.93,0.0,,"HEG Grating Vignetting Factor"
+hegGold,r,h,0.0444,0.0,,"HEG gold thickness (um)"
+hegChromium,r,h,0.0111,0.0,,"HEG chromium thickness (um)"
+hegNickel,r,h,0,0.0,,"HEG nickel thickness (um)"
+hegPolyimide,r,h,0.978,0.0,,"HEG polyimide thickness (um)"
+hegPeriod,r,h,0.200081,0.01,,"HEG period (um)"
+hegdPoverP,r,h,146e-6,0,1.0,"HEG dP/P"
+hegBarHeight,r,h,0.4896,0.0,,"HEG bar height (um)"
+hegBarWidth,r,h,0.1177,0.0,,"HEG bar width (um)"
+hegNumOrders,i,h,23,0,100,"HEG num orders (2n+1)"
+hegTheta,r,h,-5.205,-90,90,"HEG dispersion angle (degrees)"
+hegdTheta,r,h,1.5,,,"HEG alignment error (sigma in arcmin)"
+#---------------------------------------------------------------------------
+#
+# MEG grating setup  (UseGratingEffFiles = "no")
+#
+#---------------------------------------------------------------------------
+MEGVig,r,h,0.93,0.0,,"MEG Grating Vignetting Factor"
+megGold,r,h,0.0228,0.0,,"MEG gold thickness (um)"
+megChromium,r,h,0.0057,0.0,,"MEG chromium thickness (um)"
+megNickel,r,h,0.0,0.0,,"MEG nickel thickness (um)"
+megPolyimide,r,h,0.543,0.0,,"MEG polyimide thickness (um)"
+megPeriod,r,h,0.400141,0.1,,"MEG period (um)"
+megdPoverP,r,h,162e-6,0,1.0,"MEG dP/P"
+megBarHeight,r,h,0.3780,0.0,,"MEG bar height (um)"
+megBarWidth,r,h,0.2161,0.0,,"MEG bar width (um)"
+megNumOrders,i,h,23,0,100,"MEG num orders (2n+1)"
+megTheta,r,h,4.755,,,"MEG dispersion angle (degrees)"
+megdTheta,r,h,1.5,-90,90,"MEG alignment error (sigma in arcmin)"
+#---------------------------------------------------------------------------
+#
+# LEG grating setup  (UseGratingEffFiles = "no")
+#
+#---------------------------------------------------------------------------
+LEGVig,r,h,0.8346,0.0,,"LEG Grating Vignetting Factor"
+legGold,r,h,0.0,0.0,,"LEG gold thickness (um)"
+legChromium,r,h,0,0.0,,"LEG chromium thickness (um)"
+legNickel,r,h,0,0.0,,"LEG nickel thickness (um)"
+legPolyimide,r,h,0.0,0.0,,"LEG polyimide thickness (um)"
+legPeriod,r,h,0.991216,0.1,,"LEG period (um)"
+legdPoverP,r,h,8.67592e-5,0,1.0,"LEG dP/P"
+legBarHeight,r,h,0.4615,0.0,,"LEG bar height (um)"
+legBarWidth,r,h,0.5566,0.0,,"LEG bar width (um)"
+legTheta,r,h,0.07,-90,90,"LEG dispersion angle (degrees)"
+legdTheta,r,h,1.4,,,"LEG alignment error (sigma in arcmin)"
+legNumOrders,i,h,41,0,100,"LEG num orders (2n+1)"
+legFineNumOrders,i,h,19,0,100,"LETG Fine Grating num orders (2n+1)"
+legCoarseNumOrders,i,h,121,0,127,"LETG Coarse Grating num orders (2n+1)"
+legFineBarHeight,r,h,2.5,0.0,,"LEG fine bar height (um)"
+legFineBarWidth,r,h,2.5,0.0,,"LEG fine bar width (um)"
+legFinePeriod,r,h,25.4,0.1,,"LEG fine period (um)"
+legCoarseBarHeight,r,h,26.0,0.0,,"LEG Coarse bar height (um)"
+legCoarseBarWidth,r,h,68.0,0.0,,"LEG Coarse bar width (um)"
+legCoarsePeriod,r,h,2000,0.1,,"LEG Coarse period (um)"
+#legFineNumOrders,i,h,0,0,100,"LETG Fine Grating num orders (2n+1)"
+#legCoarseNumOrders,i,h,0,0,100,"LETG Coarse Grating num orders (2n+1)"
+DetExtendFlag,b,h,no,,,"Should off-detector coordinates be computed?"
+#---------------------------------------------------------------------------
+#
+# ACIS setup
+#
+#---------------------------------------------------------------------------
+ACIS_Exposure_Time,r,h,3.2,0,,"ACIS exposure time (sec)"
+ACIS_Frame_Transfer_Time,r,h,0.041,0,,"ACIS frame transfer time (sec)"
+#ACIS_Frame_Transfer_Time,r,h,0.0,0,,"ACIS frame transfer time (sec)"
+ACIS_Gain_Map_File,f,h,"acis/acisD1999-12-10gain_marxN0001_110.fits",,,"ACIS gain map file"
+ACIS_eV_Per_PI,r,h,14.6,,,"eV per PI bin"
+#
+# ACIS-S CCD QE files
+#
+ACIS-S0-QEFile,f,h,"acis/s0_w168c4r_eff_898_release.dat",,,"ACIS Chip 4 QE filename"
+ACIS-S1-QEFile,f,h,"acis/s1_w140c4r_eff_898_release.dat",,,"ACIS Chip 5 QE filename"
+ACIS-S2-QEFile,f,h,"acis/s2_w182c4r_eff_898_release.dat",,,"ACIS Chip 6 QE filename"
+ACIS-S3-QEFile,f,h,"acis/s3_w134c4r_eff_898_release.dat",,,"ACIS Chip 7 QE filename"
+ACIS-S4-QEFile,f,h,"acis/s4_w457c4_eff_898_release.dat",,,"ACIS Chip 8 QE filename"
+ACIS-S5-QEFile,f,h,"acis/s5_w201c3r_eff_898_release.dat",,,"ACIS Chip 9 QE filename"
+#
+# ACIS-S OBF transmission files
+#
+ACIS-S0-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 4 OBF filename"
+ACIS-S1-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 5 OBF filename"
+ACIS-S2-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 6 OBF filename"
+ACIS-S3-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 7 OBF filename"
+ACIS-S4-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 8 OBF filename"
+ACIS-S5-FilterFile,f,h,"acis/acis_s_xray_trans_1198.dat",,,"ACIS Chip 9 OBF filename"
+#
+# ACIS-I CCD QE files
+#
+ACIS-I0-QEFile,f,h,"acis/i0_w203c4r_eff_898_release.dat",,,"ACIS Chip 0 QE filename"
+ACIS-I1-QEFile,f,h,"acis/i1_w193c2_eff_898_release.dat",,,"ACIS Chip 1 QE filename"
+ACIS-I2-QEFile,f,h,"acis/i2_w158c4r_eff_898_release.dat",,,"ACIS Chip 2 QE filename"
+ACIS-I3-QEFile,f,h,"acis/i3_w215c2r_eff_898_release.dat",,,"ACIS Chip 3 QE filename"
+#
+# ACIS-I OBF transmission files
+#
+ACIS-I0-FilterFile,f,h,"acis/acis_i_xray_trans_1198.dat",,,"ACIS Chip 0 OBF filename"
+ACIS-I1-FilterFile,f,h,"acis/acis_i_xray_trans_1198.dat",,,"ACIS Chip 1 OBF filename"
+ACIS-I2-FilterFile,f,h,"acis/acis_i_xray_trans_1198.dat",,,"ACIS Chip 2 OBF filename"
+ACIS-I3-FilterFile,f,h,"acis/acis_i_xray_trans_1198.dat",,,"ACIS Chip 3 OBF filename"
+#---------------------------------------------------------------------------
+#
+# HRC-I setup
+#
+#---------------------------------------------------------------------------
+# The blur parameters were extracted from
+#   <http://cxc.harvard.edu/twiki/bin/view/HrcCal/DetectorPSF>.
+# The (Xctr,Yctr) are offset at runtime such that (G1Xctr,G1Yctr)=(0,0).
+#
+HRC-I-BlurG1FWHM,r,h,13.8994,0,,"HRC-I Gauss1 FWHM (1/4 pixels)"
+HRC-I-BlurG1Xctr,r,h,64.1124,0,,"HRC-I Gauss1 Xctr (1/4 pixels)"
+HRC-I-BlurG1Yctr,r,h,64.5285,0,,"HRC-I Gauss1 Yctr (1/4 pixels)"
+HRC-I-BlurG1Amp,r,h,15.7528,0,,"HRC-I Gauss1 Amp"
+HRC-I-BlurG2FWHM,r,h,4.25636,0,,"HRC-I Gauss2 FWHM (1/4 pixels)"
+HRC-I-BlurG2Xctr,r,h,61.35,0,,"HRC-I Gauss2 Xctr (1/4 pixels)"
+HRC-I-BlurG2Yctr,r,h,64.178,0,,"HRC-I Gauss2 Yctr (1/4 pixels)"
+HRC-I-BlurG2Amp,r,h,5.19162,0,,"HRC-I Gauss2 Amp"
+HRC-I-BlurL1FWHM,r,h,10.8269,0,,"HRC-I Lorentz1 FWHM (1/4 pixels)"
+HRC-I-BlurL1Xctr,r,h,73.3361,0,,"HRC-I Lorentz1 Xctr (1/4 pixels)"
+HRC-I-BlurL1Yctr,r,h,63.9927,0,,"HRC-I Lorentz1 Yctr (1/4 pixels)"
+HRC-I-BlurL1Amp,r,h,0.978579,0,,"HRC-I Lorentz1 Amp"
+HRC-I-BlurL1Rmax,r,h,256,0,,"HRC-I Lorentz1 Rmax (1/4 pixels)"
+#
+HRC-I-QEFile,f,h,"hrc/mcp_qe_i.v2.2.dat",,,"HRC-I QE File"
+HRC-I-UVISFile,f,h,"hrc/uvis_i.v4.dat",,,"HRC-I UV/IS file for region 0"
+#---------------------------------------------------------------------------
+#
+# HRC-S setup
+#
+#---------------------------------------------------------------------------
+HRC-S-BlurG1FWHM,r,h,13.900,0,,"HRC-S Gauss1 FWHM (1/4 pixels)"
+HRC-S-BlurG1Xctr,r,h,64.110,0,,"HRC-S Gauss1 Xctr (1/4 pixels)"
+HRC-S-BlurG1Yctr,r,h,64.530,0,,"HRC-S Gauss1 Yctr (1/4 pixels)"
+HRC-S-BlurG1Amp,r,h,15.750,0,,"HRC-S Gauss1 Amp"
+HRC-S-BlurG2FWHM,r,h,4.2560,0,,"HRC-S Gauss2 FWHM (1/4 pixels)"
+HRC-S-BlurG2Xctr,r,h,67.420,0,,"HRC-S Gauss2 Xctr (1/4 pixels)"
+HRC-S-BlurG2Yctr,r,h,64.110,0,,"HRC-S Gauss2 Yctr (1/4 pixels)"
+HRC-S-BlurG2Amp,r,h,5.1920,0,,"HRC-S Gauss2 Amp"
+HRC-S-BlurL1FWHM,r,h,10.820,0,,"HRC-S Lorentz1 FWHM (1/4 pixels)"
+HRC-S-BlurL1Xctr,r,h,53.030,0,,"HRC-S Lorentz1 Xctr (1/4 pixels)"
+HRC-S-BlurL1Yctr,r,h,63.880,0,,"HRC-S Lorentz1 Yctr (1/4 pixels)"
+HRC-S-BlurL1Amp,r,h,0.9790,0,,"HRC-S Lorentz1 Amp"
+HRC-S-BlurL1Rmax,r,h,256.000,0,,"HRC-S Lorentz1 Rmax (1/4 pixels)"
+#
+HRC-S-QEFile0,f,h,"hrc/mcp_qe_s.v3.dat",,,"HRC QE File for MCP 0"
+HRC-S-QEFile1,f,h,"hrc/mcp_qe_s.v3.dat",,,"HRC QE File for MCP 1"
+HRC-S-QEFile2,f,h,"hrc/mcp_qe_s.v3.dat",,,"HRC QE File for MCP 2"
+HRC-S-UVISFile0,f,h,"hrc/uvis_s1.v4.dat",,,"HRC UV/IS file for region 0"
+HRC-S-UVISFile1,f,h,"hrc/uvis_s2.v4.dat",,,"HRC UV/IS file for region 1"
+HRC-S-UVISFile2,f,h,"hrc/uvis_s56.v4.dat",,,"HRC UV/IS file for region 2"
+HRC-S-UVISFile3,f,h,"hrc/uvis_s34.v4.dat",,,"HRC UV/IS file for region 3"
+#---------------------------------------------------------------------------
+#
+# The HESF (AKA Drake Flat)
+#
+#---------------------------------------------------------------------------
+HRC-HESF,b,a,yes,,,"Use HESF (AKA Drake Flat) (yes/no)"
+HESFOffsetX,r,a,26.3,0,,"the HESF X offset of lower plate (mm)"
+HESFOffsetZ,r,a,-5.359,,,"the HESF Z offset of lower plate (mm)"
+HESFGapY1,r,a,28.7,,,"the HESF Gap Offset Y1"
+HESFGapY2,r,a,36.7,,,"the HESF Gap Offset Y2"
+HESFN,i,a,2,0,4,"the number of HESF facets"
+HESFLength,r,a,294.0,0.0,,"length of HESF plate"
+HESFCrWidth,r,a,15.7,0,,"HESF Chromium strip width"
+HESFOptConstCr,f,a,"hrc/chromium.dat",,,"the Chromium Optical constant filename for the HESF"
+HESFOptConstC,f,a,"hrc/carbon.dat",,,"the Carbon Optical constant filename for the HESF"
+HESFHeight1,r,a,22.3,0,,"the height of HESF 1 (mm)"
+HESFTheta1,r,a,4.5,0.0,,"the  angle of HESF 1 (degrees)"
+HESFHeight2,r,a,50.0,0,,"the height of HESF 2 (mm)"
+HESFTheta2,r,a,7,0.0,,"the  angle of HESF 2 (degrees)"
+HESFHeight3,r,a,0,0,,"the height of HESF 3 (mm)"
+HESFTheta3,r,a,0,0.0,,"the  angle of HESF 3 (degrees)"
+HESFHeight4,r,a,0,0,,"the height of HESF 4 (mm)"
+HESFTheta4,r,a,0,0.0,,"the  angle of HESF 4 (degrees)"
+#---------------------------------------------------------------------------
+#
+# Flat Field Setup
+#
+#---------------------------------------------------------------------------
+FF_MinY,r,a,-25,,,"FlatField Aperture min Y value (mm)"
+FF_MaxY,r,a,25,,,"FlatField Aperture max Y value (mm)"
+FF_MinZ,r,a,-25,,,"FlatField Aperture min Z value (mm)"
+FF_MaxZ,r,a,25,,,"FlatField Aperture max Z value (mm)"
+FF_XPos,r,a,10000,,,"FlatField Aperture X location (mm)"
+mode,s,hl,"hl","ql|hl|q|h",,"mode for parameter file."

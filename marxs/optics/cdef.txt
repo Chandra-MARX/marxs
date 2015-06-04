@@ -1,0 +1,111 @@
+
+typedef ... Param_File_Type;
+typedef ... Param_Type;
+
+extern Param_File_Type *pf_open_parameter_file (char *, char *);
+extern int pf_close_parameter_file (Param_File_Type *);
+
+typedef struct
+{
+   double x, y, z;
+}
+JDMVector_Type;
+
+typedef struct
+{
+   float ra, dec, roll;
+   float dy, dz, dtheta;
+}
+Marx_Dither_Type;
+
+
+typedef struct
+{
+   double energy;
+   JDMVector_Type x;
+   JDMVector_Type p;
+   double arrival_time;
+   unsigned int flags;
+#define PHOTON_UNDETECTED        0x01
+#define PHOTON_UNREFLECTED        0x02
+#define PHOTON_UNDIFFRACTED        0x04
+#define PHOTON_MISSED_DETECTOR        0x08
+#define PHOTON_MIRROR_VBLOCKED        0x10
+#define PHOTON_DRAKE_BLOCKED        0x20
+#define PHOTON_GRATING_VBLOCKED        0x40
+#define BAD_PHOTON_MASK                0xFF
+
+#define PHOTON_DRAKE_REFLECTED        0x100
+#define PHOTON_ACIS_STREAKED        0x200
+   float y_pixel;
+   float z_pixel;
+   float u_pixel;
+   float v_pixel;
+
+   Marx_Dither_Type dither_state;
+
+   float pi;
+   short pulse_height;
+   unsigned int mirror_shell;
+   signed char ccd_num;
+   signed char detector_region;
+   signed char order;
+   signed char support_orders[4];
+   unsigned int tag;
+}
+Marx_Photon_Attr_Type;
+
+
+typedef struct
+{
+   double source_distance;               /* (mm) if 0, source is at infinity */
+   Marx_Photon_Attr_Type *attributes;
+   unsigned int n_photons;
+   unsigned int max_n_photons;               /* number of photons attribute list can
+                                        * accomodate
+                                        */
+   double total_time;                       /* total time to accumulate THESE photons.
+                                        * It is really the maximum value of the
+                                        * time element of the attribute structure.
+                                        */
+   double start_time;                       /* start time for this group */
+   unsigned int *sorted_index;               /* indices of sorted energies */
+   double *sorted_energies;               /* sorted energies */
+   unsigned int num_sorted;
+
+   /* This is a bitmapped value that indicates which entries in the attributes
+    * structure are meaningful.  In some sense, it serves as a history of the
+    * ray.
+    */
+   unsigned long history;
+/* These are always valid but for completeness... */
+#define MARX_ENERGY_OK                0x00000001
+#define MARX_TIME_OK                0x00000002
+#define MARX_X_VECTOR_OK        0x00000004
+#define MARX_P_VECTOR_OK        0x00000008
+#define MARX_TAG_OK                0x00000010
+/* These vary */
+#define MARX_PULSEHEIGHT_OK        0x00000020
+#define MARX_PI_OK                0x00000040
+#define MARX_DET_PIXEL_OK        0x00000080
+#define MARX_DET_NUM_OK                0x00000100
+#define MARX_DET_REGION_OK        0x00000200
+#define MARX_DET_UV_PIXEL_OK        0x00000400
+#define MARX_MIRROR_SHELL_OK        0x00000800
+#define MARX_SKY_DITHER_OK        0x00001000
+#define MARX_DET_DITHER_OK        0x00002000
+#define MARX_ORDER_OK                0x00100000
+#define MARX_ORDER1_OK                0x00200000
+#define MARX_ORDER2_OK                0x00400000
+#define MARX_ORDER3_OK                0x00800000
+#define MARX_ORDER4_OK                0x01000000
+
+   unsigned int tag_start;               /* start tag for this group */
+}
+Marx_Photon_Type;
+
+double Marx_Mirror_Geometric_Area = 1;
+
+int marx_mirror_init (Param_File_Type *pf);
+int marx_mirror_reflect (Marx_Photon_Type *p, int verbose);
+

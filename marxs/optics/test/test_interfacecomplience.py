@@ -3,15 +3,17 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 
-from ..aperture import Aperture, SquareEntranceAperture
+from ..aperture import BaseAperture, Aperture, SquareEntranceAperture
 from ...source.source import ConstantPointSource, FixedPointing
 from ..mirror import ThinLens
 from ..detector import InfiniteFlatDetector
+from ..marx import MarxMirror
 
 # Initialize all optical elements to be tested
 all_oe = [ThinLens(focallength=100),
           SquareEntranceAperture(size=1.23),
-          InfiniteFlatDetector()
+          InfiniteFlatDetector(),
+          MarxMirror(parfile='marxs/optics/hrma.par'),
           ]
 
 # Each elements will be used multiple times.
@@ -65,7 +67,7 @@ class TestOpticalElementInterface:
             # but if both exist, they need to return the same answer.
             return
         # Process as table
-        if isinstance(elem, Aperture):
+        if isinstance(elem, BaseAperture):
             photons.remove_column('pos')
         p = elem.process_photons(p)
 
@@ -73,7 +75,7 @@ class TestOpticalElementInterface:
         assert np.all(pos == p['pos'][0])
         assert energy == p['energy'][0]
         # pol can be nan for modules that cannot deal with polarization
-        assert ((np.isnan(pol) and np.isnan(p['polarization'][0])) 
+        assert ((np.isnan(pol) and np.isnan(p['polarization'][0]))
                 or (pol == p['polarization'][0]))
         assert prob == p['probability'][0]
 
