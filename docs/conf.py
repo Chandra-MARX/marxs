@@ -39,6 +39,7 @@ extensions = [
     'numpydoc']
 
 numpydoc_show_class_members = False
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -83,6 +84,9 @@ exclude_patterns = ['_build']
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 default_role = 'obj'
+
+# Add this to the top of every file
+rst_prolog = '.. include:: /aliases.txt'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True

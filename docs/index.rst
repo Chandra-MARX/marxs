@@ -6,10 +6,15 @@
 Welcome to Marxs's documentation!
 =================================
 
+.. include:: ../DESCRIPTION.rst
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+   install
+   todo
 
 
 
