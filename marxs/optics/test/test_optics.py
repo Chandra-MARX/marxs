@@ -102,8 +102,9 @@ def test_photonlocalcoords_decorartor():
         def functiontodecorate(self, photons):
             assert np.allclose(photons['dir'], dir)
             assert np.allclose(photons['pos'], np.array([[2., 2, 3, 1], [1, 3, 3, 1]]))
+            return photons
 
     oetest = OEforTest(position=np.array([-1., -2, -3]))
-    oetest.functiontodecorate(photontab)
+    photontab = oetest.functiontodecorate(photontab)
     assert np.allclose(photontab['dir'], dir)
     assert np.allclose(photontab['pos'], pos)
