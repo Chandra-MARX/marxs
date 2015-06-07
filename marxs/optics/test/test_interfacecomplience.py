@@ -7,12 +7,14 @@ from ..aperture import BaseAperture, Aperture, SquareEntranceAperture
 from ...source.source import ConstantPointSource, FixedPointing
 from ..mirror import ThinLens
 from ..detector import InfiniteFlatDetector
+from ..grating import InfiniteFlatGrating, uniform_efficiency_factory
 from ..marx import MarxMirror
 
 # Initialize all optical elements to be tested
 all_oe = [ThinLens(focallength=100),
           SquareEntranceAperture(size=1.23),
           InfiniteFlatDetector(),
+          InfiniteFlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           ]
 
@@ -23,6 +25,8 @@ all_oe = [ThinLens(focallength=100),
 
 
 # Make a test photon list
+# Some of this should be separate tests, e.g. source position vs. pointing.
+# Can I vary energy for e.g. grating?
 mysource = ConstantPointSource((30., 30.), 1., 300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
@@ -84,3 +88,4 @@ class TestOpticalElementInterface:
         des = elem.describe()
         assert isinstance(des, OrderedDict)
         assert len(des) > 0
+
