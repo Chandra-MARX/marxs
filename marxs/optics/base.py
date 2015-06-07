@@ -66,10 +66,6 @@ class OpticalElement(SimulationSequenceElement):
             self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)
 
-    def add_output_columns(self, photons):
-        for col in self.output_columns:
-            photons.add_empty_column
-
     def process_photon(self, dir, pos, energy, polarization):
         raise NotImplementedError
 
@@ -97,7 +93,6 @@ class OpticalElement(SimulationSequenceElement):
         '''
         if isinstance(photons, Row):
             photons = Table(photons)
-        self.add_output_columns(photons)
         outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
         for i, photon in enumerate(photons):
             outs = self.process_photon(photon['dir'], photon['pos'],
