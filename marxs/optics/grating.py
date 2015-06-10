@@ -58,23 +58,28 @@ def constant_order_factory(order = 1):
     return select_constant_order
 
 
-class InfiniteFlatGrating(FlatOpticalElement):
-    '''Infinitely extended flat detector with square pixels
+class FlatGrating(FlatOpticalElement):
+    '''Flat grating with grooves parallel to the y axis.
 
-    Grooves run parallel to the y axis.
+    The grating is assumed to be geometrically thin, i.e. all photons enter on
+    the face of the grating, not through the sides.
 
     Parameters
     ----------
     d : float
         grating constant
     order_selector : callable
-        A function of callable object that accepts photon energy and
-        polarization ans input and returns an grating order (integer).
+        A function or callable object that accepts photon energy and
+        polarization as input and returns a grating order (integer).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. *(Default: ``True``)*
+
         .. warning::
            Reflection gratings are untested so far!
+
+        .. todo::
+           Check reflection gratings.
     '''
     output_columns = ['order']
 
@@ -85,13 +90,9 @@ class InfiniteFlatGrating(FlatOpticalElement):
         self.d = kwargs.pop('d', None)
         if self.d is None:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
-        super(InfiniteFlatGrating, self).__init__(**kwargs)
-        # Check that zoom, pos4d input or other methods did not result in a zoom.
-        trans, rot, zoom, shear = affines.decompose(self.pos4d)
-        if not np.all(zoom == 1.):
-            raise ValueError('Gratings do not support zoom. Change d to change grating constant.')
+        super(FlatGrating, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
+    def diffract_photons(self, photons):
         '''Vectorized implementation'''
         p = h2e(photons['dir'])
         # Check if p is normalized
@@ -104,18 +105,34 @@ class InfiniteFlatGrating(FlatOpticalElement):
 
         wave = energy2wave / photons['energy']
         m = self.order_selector(photons['energy'], photons['polarization'])
-        photons['order'] = m
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
-        p_d = np.dot(p, h2e(self.geometry['e_z'])) + m*wave/self.d
+        p_d = np.dot(p, h2e(self.geometry['e_z'])) + m * wave / self.d
         p_l = np.dot(p, h2e(self.geometry['e_y']))
-        # The for p_n can be derived, but the direction need to be chosen.
+        # The norm for p_n can be derived, but the direction need to be chosen.
         p_n = 1. - np.sqrt(p_d**2 + p_l**2)
-        # Check if the photons are some direction as normal before
+        # Check if the photons have same direction compared to normal before
         direction = np.sign(np.dot(p, n), dtype=np.float)
         if not self.transmission:
             direction *= -1
-        photons['dir'] = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
-        photons['pos'] = self.intersect(photons['dir'], photons['pos'])
+        dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
+        return dir, m
 
+    def process_photons(self, photons, intersect=None, interpos=None):
+        '''
+        Additional Parameters
+        ---------------------
+        These parameters are here for performance reasons. In many cases, the
+        intersection point between the grating and the rays has been calculated
+        by the calling routine to decide which photon is processed by which
+        grating. If ``intersect`` and ``interpos`` are not passed in, they are
+        calculated here. No checks are done on passed-in values.
+        '''
+        if (interpos is None) or (intersect is None):
+            intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
+        self.add_output_cols(photons)
+        dir, m = self.diffract_photons(photons[intersect])
+        photons['pos'][intersect] = interpos
+        photons['dir'][intersect] = dir
+        photons['order'][intersect] = m
         return photons

@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import random
 from astropy.table import Table
 
-from ..grating import InfiniteFlatGrating, constant_order_factory
+from ..grating import FlatGrating, constant_order_factory
 from ...math.pluecker import h2e
 from ... import energy2wave
 
@@ -20,7 +20,9 @@ def test_zeros_order():
     photons['dir'][:, 1:] = 0
 
     p = photons.copy()
-    g0 = InfiniteFlatGrating(d=1./500., order_selector=lambda x, y: np.zeros_like(x, dtype=np.int))
+    g0 = FlatGrating(d=1./500.,
+                     order_selector=lambda x, y: np.zeros_like(x, dtype=np.int),
+                     zoom=np.array([1., 5., 5.]))
     p = g0.process_photons(p)
     # Direction unchanged
     d_in = h2e(photons['dir'])
@@ -42,7 +44,7 @@ def test_order_dependence():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    g = InfiniteFlatGrating(d=1./500, order_selector=lambda x,y: [-2, -1, 0, 1, 2])
+    g = FlatGrating(d=1./500, order_selector=lambda x,y: [-2, -1, 0, 1, 2])
     p = g.process_photons(photons)
     # grooves run in y direction
     assert np.allclose(p['dir'][:, 1], 0.)
@@ -58,7 +60,7 @@ def test_energy_dependence():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    g = InfiniteFlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
     p = g.process_photons(photons)
     # grooves run in y direction
     assert np.allclose(p['dir'][:, 1], 0.)

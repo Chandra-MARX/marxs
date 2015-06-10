@@ -14,7 +14,7 @@ class ThinLens(FlatOpticalElement):
         super(ThinLens, self).__init__(**kwargs)
 
     def process_photon(self, dir, pos, energy, polerization):
-        h_intersect = self.intersect(dir, pos)
+        intersect, h_intersect, loc_inter = self.intersect(dir, pos)
         distance = distance_point_point(h_intersect,
                                         self.geometry['center'][np.newaxis, :])
         if distance == 0.:

@@ -5,7 +5,7 @@ from copy import copy
 
 import numpy as np
 from transforms3d import affines
-from astropy.table import Table, Row
+from astropy.table import Table, Row, Column
 
 from ..math.pluecker import *
 
@@ -63,8 +63,16 @@ class OpticalElement(SimulationSequenceElement):
         self.geometry = copy(self.geometry)
 
         for elem, val in self.geometry.iteritems():
-            self.geometry[elem] = np.dot(self.pos4d, val)
+            if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
+                self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)
+
+    def add_output_cols(self, photons):
+        temp = np.empty(len(photons))
+        temp[:] = np.nan
+        for n in self.output_columns:
+            if n not in photons.colnames:
+                photons.add_column(Column(name=n, data=temp))
 
     def process_photon(self, dir, pos, energy, polarization):
         raise NotImplementedError
@@ -108,20 +116,88 @@ class OpticalElement(SimulationSequenceElement):
 
 
 class FlatOpticalElement(OpticalElement):
-    geometry = {'center': np.array([0, 0, 0, 1]),
-                'e_y': np.array([0, 1, 0, 0]),
-                'e_z': np.array([0, 0, 1, 0]),
+    '''Base class for geometrically flat optical elements.
+
+    Each flat optical element contains a dictionary called ``geometry`` that
+    describes its geometrical properties. This dictionary has the following
+    entries:
+
+    - ``shape``: The default geometry has the ``shape`` of a box.
+    - ``center``: The ``center`` is the origin of the local coordiante system
+      of the optical elemement. Typically, if will be the center of the
+      active plane, e.g. the center of the mirror surface. Initially, the
+      ``center`` of the element is at the origin of the global coordiante
+      system.
+    - :math:`\hat v_{y,z}`: The box stretches in the y and z direction for
+      :math:`\pm \hat v_y` and :math:`\pm \hat v_z`. In optics, the relevant
+      interaction often happens on a surface, e.g. the surface of a mirror or
+      of a reflection grating. In the defaul configuration, this surface is in
+      the yz-plane.
+    - :math:`\hat v_x`: The thickness of the box is not as important in many
+      cases,
+      but is useful to e.g. render the geometry or to test if elements collide.
+      The box reaches from the yz-plane down to :math:`- \hat v_x`. Note, that
+      this definition means the size parallel to the y and z axis is
+      :math:`2 |\hat v_{y,z}|`, but only :math:`1 |\hat v_{x}|`.
+    - :math:`\hat e_{x,y,z}`: When an object is initialized, it automatically
+      adds unit vectors in the
+      direction of :math:`\hat v_{x,y,z}` called :math:`\hat e_{x,y,z}`.
+    - ``plane``: It also adds the homogeneous coordinates of the active plane
+      as ``plane``.
+
+    When an object is initialized, all the above entries are transformed with
+    its 4-dim transformation matrix, that can either be passed directly as
+    ``pos4d`` or in separate transformations (``position``, ``rotation``,
+    ``zoom``).
+    '''
+    geometry = {'center': np.array([0, 0, 0, 1.]),
+                'v_y': np.array([0, 1., 0, 0]),
+                'v_z': np.array([0, 0, 1., 0]),
+                'v_x': np.array([1., 0, 0, 0]),
+                'shape': 'box',
                 }
 
-    def __init__(self, **kargs):
-        super(FlatOpticalElement, self).__init__(**kargs)
+    def __init__(self, **kwargs):
+        super(FlatOpticalElement, self).__init__(**kwargs)
+        for c in 'xyz':
+            self.geometry['e_' + c] = self.geometry['v_' + c] / np.linalg.norm(self.geometry['v_' + c])
         normal = e2h(np.cross(h2e(self.geometry['e_y']), h2e(self.geometry['e_z'])), 0)
         self.geometry['plane'] = point_dir2plane(self.geometry['center'],
                                                  normal)
 
     def intersect(self, dir, pos):
+        '''Calculate the intersection point between a ray and the element
+
+        Parameters
+        ----------
+        dir : np.array of shape (N, 4)
+            homogeneous coordinates of the direction of the ray
+        pos : np.array of shape (N, 4)
+            homogeneous coordinates of a point on the ray
+
+        Returns
+        -------
+        intersect :  boolean array of length N
+            ``True`` if an intersection point is found.
+        interpos : np.array of shape (N, 4)
+            homogeneous coordinates of the intersection point. Values are set
+            to ``np.nan`` is no intersecton point is found.
+        interpos_local : np.array of shape (N, 2)
+            y and z coordinates in the coordiante system of the active plane.
+        '''
         plucker = dir_point2line(h2e(dir), h2e(pos))
-        return intersect_line_plane(plucker, self.geometry['plane'])
+        interpos =  intersect_line_plane(plucker, self.geometry['plane'])
+        vec_center_inter = - h2e(self.geometry['center']) + h2e(interpos)
+        ey = np.dot(vec_center_inter, h2e(self.geometry['e_y']))
+        ez = np.dot(vec_center_inter, h2e(self.geometry['e_z']))
+        intersect = ((np.abs(ey) <= np.linalg.norm(self.geometry['v_y'])) &
+                     (np.abs(ez) <= np.linalg.norm(self.geometry['v_z'])))
+        if dir.ndim == 2:
+            interpos[~intersect, :3] = np.nan
+        # input of single photon.
+        elif (dir.ndim == 1) and not intersect:
+            interpos[:3] = np.nan
+        return intersect, interpos, np.vstack([ey, ez]).T
 
 
 def photonlocalcoords(f, colnames=['pos', 'dir']):
@@ -138,7 +214,7 @@ def photonlocalcoords(f, colnames=['pos', 'dir']):
     Parameters
     ----------
     f : callable with signature ``f(self, photons, *args, **kwargs)``
-        The function to be decorated. In the signature, ``photons`` is an
+        The function to be decorated. In the signature, ``photons`` is a
         `~astropy.table.Table`.
     colnames : list of strings
         List of all column names in the photon table to be transformed into a

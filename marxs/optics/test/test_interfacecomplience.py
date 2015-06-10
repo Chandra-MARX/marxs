@@ -3,18 +3,18 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 
-from ..aperture import BaseAperture, Aperture, SquareEntranceAperture
+from ..aperture import BaseAperture, RectangleAperture
 from ...source.source import ConstantPointSource, FixedPointing
 from ..mirror import ThinLens
 from ..detector import InfiniteFlatDetector
-from ..grating import InfiniteFlatGrating, uniform_efficiency_factory
+from ..grating import FlatGrating, uniform_efficiency_factory
 from ..marx import MarxMirror
 
 # Initialize all optical elements to be tested
 all_oe = [ThinLens(focallength=100),
-          SquareEntranceAperture(size=1.23),
+          RectangleAperture(),
           InfiniteFlatDetector(),
-          InfiniteFlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
+          FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           ]
 
@@ -31,7 +31,7 @@ mysource = ConstantPointSource((30., 30.), 1., 300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
 masterphotons = mypointing.process_photons(masterphotons)
-myslit = Aperture()
+myslit = RectangleAperture()
 masterphotons = myslit.process_photons(masterphotons)
 
 
@@ -88,4 +88,3 @@ class TestOpticalElementInterface:
         des = elem.describe()
         assert isinstance(des, OrderedDict)
         assert len(des) > 0
-

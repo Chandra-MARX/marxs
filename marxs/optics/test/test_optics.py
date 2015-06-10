@@ -30,7 +30,7 @@ def test_pos4d_no_transformation():
     It should be extended, once derived properties (e.g. a plane constructed
     from transformed points are implemented.
     '''
-    oe = marxs.optics.aperture.SquareEntranceAperture(size=1)
+    oe = marxs.optics.aperture.RectangleAperture()
     assert np.all(oe.pos4d == np.eye(4))
     assert np.all(oe.geometry['center'] == np.array([0, 0, 0, 1]))
     assert np.all(oe.geometry['e_y'] == np.array([0, 1, 0, 0]))
@@ -39,7 +39,7 @@ def test_pos4d_no_transformation():
 
 def test_pos4d_rotation():
     rotation = axangle2aff(np.array([1, 1, 0]), np.deg2rad(90))
-    oe = marxs.optics.aperture.SquareEntranceAperture(size=1, orientation=rotation[:3,:3])
+    oe = marxs.optics.aperture.RectangleAperture(orientation=rotation[:3,:3])
     assert np.all(oe.pos4d == rotation)
     assert np.all(oe.geometry['center'] == np.array([0, 0, 0, 1]))
     assert np.allclose(oe.geometry['e_y'], np.array([.5, .5, 1. / np.sqrt(2), 0]))
@@ -47,7 +47,7 @@ def test_pos4d_rotation():
 
 
 def test_pos4d_translation():
-    oe = marxs.optics.aperture.SquareEntranceAperture(size=1,position = np.array([-2, 3, 4.3]))
+    oe = marxs.optics.aperture.RectangleAperture(position = np.array([-2, 3, 4.3]))
     expectedpos4d = np.eye(4)
     expectedpos4d[:3, 3] = np.array([-2, 3, 4.3])
     assert np.all(oe.pos4d == expectedpos4d)
@@ -59,9 +59,8 @@ def test_pos4d_translation():
 
 mark = pytest.mark.parametrize
 
-all_slits = [marxs.optics.aperture.SquareEntranceAperture(size=2),
-             marxs.optics.aperture.SquareEntranceAperture(size=1, zoom=2),
-             marxs.optics.aperture.SquareEntranceAperture(size=1, zoom=[2,2,2]),
+all_slits = [marxs.optics.aperture.RectangleAperture(zoom=2),
+             marxs.optics.aperture.RectangleAperture(zoom=[2,2,2]),
             ]
 
 @mark('myslit', all_slits)
@@ -76,8 +75,8 @@ def test_pos4d_transforms_slit(photons1000, myslit):
 
     p = myslit.process_photons(photons1000)
     assert np.allclose(p['pos'][:, 0], 0)
-    assert kstest((p['pos'][:, 1] + 1) / 2, "uniform")[1] > 0.01
-    assert kstest((p['pos'][:, 2] + 1) / 2, "uniform")[1] > 0.01
+    assert kstest((p['pos'][:, 1] + 2) / 4, "uniform")[1] > 0.01
+    assert kstest((p['pos'][:, 2] + 2) / 4, "uniform")[1] > 0.01
 
 
 def test_pos4d_transforms_slit_rotated(photons1000):
@@ -85,7 +84,7 @@ def test_pos4d_transforms_slit_rotated(photons1000):
     p = photons1000
 
     rotation = axangle2aff(np.array([0, 1, 0]), np.deg2rad(90))
-    myslit = marxs.optics.aperture.SquareEntranceAperture(size=1, orientation=rotation[:3, :3])
+    myslit = marxs.optics.aperture.RectangleAperture(orientation=rotation[:3, :3], zoom=0.5)
     p = myslit.process_photons(p)
     assert np.allclose(p['pos'][:, 2], 0)
     assert kstest(p['pos'][:, 0] + 0.5, "uniform")[1] > 0.01
