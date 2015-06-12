@@ -3,9 +3,10 @@ from __future__ import division
 import numpy as np
 from numpy.linalg import norm
 from scipy import optimize
-
+from astropy import table
 import transforms3d
 
+from ..optics.base import OpticalElement
 
 class RowlandTorus(object):
     '''Torus with z axis as symmetry axis'''
@@ -31,7 +32,7 @@ class RowlandTorus(object):
         dFdz = factor * z
         return [dFdx, dFdy, dFdz]
 
-class GratingArrayStructure(object):
+class GratingArrayStructure(OpticalElement):
     '''
     Parameters
     ----------
@@ -69,7 +70,14 @@ class GratingArrayStructure(object):
 
         self.x_range = x_range
 
-        self.facets = self.place_facets()
+        self.facet_pos = self.place_facets()
+
+    def calc_ideal_center(self):
+        '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
+        anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
+        a = (self.phi[0] + anglediff / 2 ) % (2. * np.pi)
+        r = sum(self.radius) / 2
+        return self.xyz_from_ra(r, a)
 
     def max_facets_on_arc(self, radius):
         '''Calculate maximal; number of facets that can be placed at a certain radius.'''
@@ -110,6 +118,21 @@ class GratingArrayStructure(object):
         d_between = (self.radius[1] - self.radius[0] - n * self.d_facet) / (n + 1)
         return self.radius[0] + d_between + 0.5 * self.d_facet + np.arange(n) * (d_between + self.d_facet)
 
+    def xyz_from_ra(self, radius, angle):
+        '''Get Cartesian coordiantes for radius, angle and the rowland circle.
+
+        y,z are calculated from the radius and angle of polar coordiantes in a plane;
+        then x is determined from the condition that the point lies on the Rowland circle.
+        '''
+        y = radius * np.sin(angle)
+        z = radius * np.cos(angle)
+        def f(x):
+            return self.rowland.quartic(x, y, z)
+        x, brent_out = optimize.brentq(f, self.x_range[0], self.x_range[1], full_output=True)
+        if not brent_out.converged:
+            raise Exception('Intersection with torus not found.')
+        return x, y, z
+
     def place_facets(self):
         '''
         Returns
@@ -124,13 +147,7 @@ class GratingArrayStructure(object):
         for r in radii:
             angles = self.distribute_facets_on_arc(r)
             for a in angles:
-                y = r * np.sin(a)
-                z = r * np.cos(a)
-                def f(x):
-                    return self.rowland.quartic(x, y, z)
-                x, brent_out = optimize.brentq(f, self.x_range[0], self.x_range[1], full_output=True)
-                if not brent_out.converged:
-                    raise Exception('Intersection with torus not found.')
+                x, y, z = self.xyz_from_ra(r, a)
                 facet_pos = np.array([x, y, z])
                 facet_normal = np.array(self.rowland.normal(x, y, z))
                 # Find the rotation between [1, 0, 0] and the new normal
@@ -143,3 +160,30 @@ class GratingArrayStructure(object):
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat[:3, :3], np.ones(3)))
         return pos4d
 
+    def process_photons(self, photons):
+        '''
+
+        This is a simple brute-force implementation. It does assume that every
+        photon will interact with one grating at most, but is not any more clever
+        than that. This means that a lot of relatively expansive intersection
+        calculations are done.
+
+        In those designs that we study, the GAS is almost flat (because the Rowland
+        circle is large), so I could implement e.g.:
+
+        - a much faster "approximate" intersection test by projection on a x = const plane
+          (possibly as a kdtree from scipy.spatial).
+        '''
+        photons_out = []
+        for f in self.facets:
+            intersect, interpos, temp = f.intersect(photons)
+            p_out = f.process_photons(photons[intersect], interpos[intersect])
+            p_out['facet'] = [f.describe['name']] * len(p_out)
+            photons_out.append(p_out)
+            photons = photons[~intersect]
+        # append photons that did not intersect a facet
+        photons_out.append(photons)
+        return table.vstack(photons_out)
+
+    def intersect(self, photons):
+        raise NotImplementedError

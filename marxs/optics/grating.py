@@ -118,18 +118,22 @@ class FlatGrating(FlatOpticalElement):
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
         return dir, m
 
-    def process_photons(self, photons, intersect=None, interpos=None):
+    def process_photons(self, photons, interpos=None):
         '''
         Additional Parameters
         ---------------------
-        These parameters are here for performance reasons. In many cases, the
-        intersection point between the grating and the rays has been calculated
-        by the calling routine to decide which photon is processed by which
-        grating. If ``intersect`` and ``interpos`` are not passed in, they are
-        calculated here. No checks are done on passed-in values.
+        interpos : array (N, 4)
+            This parameter is here for performance reasons. In many cases, the
+            intersection point between the grating and the rays has been calculated
+            by the calling routine to decide which photon is processed by which
+            grating and only photons intersecting this grating are passed in.
+            If ``interpos`` is  not passed in, they are
+            calculated here. No checks are done on passed-in values.
         '''
-        if (interpos is None) or (intersect is None):
+        if (interpos is None):
             intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
+        else:
+            intersect = np.ones(len(phtons), dtype=bool)
         self.add_output_cols(photons)
         dir, m = self.diffract_photons(photons[intersect])
         photons['pos'][intersect] = interpos
