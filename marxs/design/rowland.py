@@ -18,9 +18,7 @@ class RowlandTorus(object):
 
         Roots of this equation are points on the torus.
         '''
-        if len(x) != 3:
-            raise ValueError
-        return (x**2. + y**2. + z**2. + self.R**2. - self.r**2.)**2. - 4. * self.R**2. + (x**2. + y**2.)
+        return (x**2. + y**2. + z**2. + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (x**2. + y**2.)
     def normal(self, x, y, z):
         '''Return the gradient vector field'''
         if not np.allclose(self.quartic(x, y, z), 0.):
