@@ -28,6 +28,25 @@ class SimulationSequenceElement(object):
         return OrderedDict(element=self.name)
 
 
+def _parse_position_keywords(kwargs):
+    '''Parse keywords to define position.
+
+    If pos4d is given, use that, otherwise look for ``position``, ``zoom``
+    and ``orientation``.
+    '''
+    pos4d = kwargs.pop('pos4d', None)
+    if pos4d is None:
+        position = kwargs.pop('position', np.zeros(3))
+        orientation = kwargs.pop('orientation', np.eye(3))
+        zoom = kwargs.pop('zoom', 1.)
+        if np.isscalar(zoom):
+            zoom = np.ones(3) * zoom
+        pos4d = affines.compose(position, orientation, zoom)
+    else:
+        if ('position' in kwargs) or ('orientation' in kwargs) or ('zoom' in kwargs):
+            raise ValueError('If pos4d is specificed, the following keywords cannot be given at the same time: position, orientation, zoom.')
+    return pos4d
+
 class OpticalElement(SimulationSequenceElement):
     '''
     Parameters
@@ -38,7 +57,7 @@ class OpticalElement(SimulationSequenceElement):
         Measured from the origin of the spacecraft coordinate system
     orientation : Rotation matrix on ``None``
         Relative orientation of the base vectors of this optical
-        element relative to the orientation of the coordinate system
+        element relative to the orientation of the cooxsrdinate system
         of the spacecraft. The default is no rotation (i.e. the axes of the
         coordinate systems are parallel).
     '''
@@ -49,14 +68,7 @@ class OpticalElement(SimulationSequenceElement):
     output_columns = []
 
     def __init__(self, **kwargs):
-        self.pos4d = kwargs.pop('pos4d', None)
-        if self.pos4d is None:
-            self.position = kwargs.pop('position', np.zeros(3))
-            self.orientation = kwargs.pop('orientation', np.eye(3))
-            self.zoom = kwargs.pop('zoom', 1.)
-            if np.isscalar(self.zoom):
-                self.zoom = np.ones(3) * self.zoom
-            self.pos4d = affines.compose(self.position, self.orientation, self.zoom)
+        self.pos4d = _parse_position_keywords(kwargs)
 
         # Before we change any numbers, we need to copy geometry from the class
         # attribute to an instance attribute
