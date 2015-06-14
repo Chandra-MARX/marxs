@@ -41,3 +41,20 @@ def zoom2aff(zoom):
     else:
         raise ValueError('Zoom must be either scalar or 3 element vector.')
     return z
+
+def mat2aff(mat):
+    '''Transform 3*3 matrix (e.g. rotation) to affine 4*4 matrix.
+
+    Parameters
+    ----------
+    mat : (3, 3) array
+        input matrix
+
+    Returns
+    -------
+    m : (4, 4) array
+        affine transformation matrix
+    '''
+    m = np.eye(4)
+    m[:3, :3] = mat
+    return m
