@@ -5,8 +5,10 @@ from numpy.linalg import norm
 from scipy import optimize
 from astropy import table
 import transforms3d
+from transforms3d.affines import decompose44
 
-from ..optics.base import OpticalElement
+from ..optics.base import OpticalElement, _parse_position_keywords
+from ..math.utils import translation2aff, zoom2aff
 
 class RowlandTorus(object):
     '''Torus with z axis as symmetry axis'''
@@ -32,8 +34,49 @@ class RowlandTorus(object):
         dFdz = factor * z
         return [dFdx, dFdy, dFdz]
 
+
+class FacetPlacementError(Exception):
+    pass
+
+
 class GratingArrayStructure(OpticalElement):
     '''
+
+    When a ``GratingArrayStructure`` (GAS) is initialized, it places as many
+    facets as possible in the space available. Those facets are positioned
+    on the Rowland circle.
+
+    After generation, individual facet positions can be adjusted by hand by
+    editing the :attribute:`facet_pos`.
+    Also, additional misalingments for each facet can be introduced by
+    editing :attribute:`facet_uncertainty`, e.g. to represent uncertainties
+    in the manufacturing process. This attribute holds a list of affine
+    transformation matrices.
+    The global position and rotation of the total GAS can be changed with
+    :attribute:`uncertainty`, e.g. the represent the reproducibility of
+    inserting the gratings into the beam for separate observations. The
+    uncertainty is expressed as an affine transformation matrix.
+
+    All uncertianty metrices should only consist of translation and rotations
+    and all uncertainties should be relatively small.
+
+    After any of the :attribute:`facet_pos`, :attribute:`facet_uncertainty` or
+    :attribute:`uncertainty` is changed, :method:`generate_facets` needs to be
+    called to renerate the facets on the GAS.
+    This mechanism can be used to estimate the influence of manufacturing
+    uncertainties. First, run a simulation with an ideal GAS, then change
+    the values, regenrate the facets and rerun te simulation. Comparing the
+    results will allow you to estiamte the effect of the manufacturing
+    misalignments.
+
+    The order in which all the transformations are applied to the facet is
+    chosen, such that all rotations are done around the actual center of the
+    facet or GAS respoectively. "Uncertainty" roations are always done *after*
+    all other rotations are accounted for.
+
+    Use ``pos4d`` in ``facetargs`` to set a fixed rotation for all facets, e.g.
+    for a CAT grating.
+
     Parameters
     ----------
     rowland : RowlandTorus
@@ -54,7 +97,7 @@ class GratingArrayStructure(OpticalElement):
         Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
         the segment crosses the y axis.
     '''
-    def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi]):
+    def __init__(self, rowland, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
         if not (radius[1] > radius[0]):
             raise ValueError('Outer radius must be larger than inner radius.')
@@ -65,12 +108,16 @@ class GratingArrayStructure(OpticalElement):
         if np.max(np.abs(phi)) > 10:
             raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
         self.phi = phi
-
-        self.d_facet = d_facet
-
         self.x_range = x_range
+        self.facet_class = kwargs.pop('facetclass')
+        self.facet_args = kwargs.pop('facetargs')
 
-        self.facet_pos = self.place_facets()
+        super(GratingArrayStructure, self).__init__(kwargs)
+
+        self.uncertainty = np.eye(4)
+        self.facet_pos = self.facet_position()
+        self.facet_uncertainty = [np.eye(4)] * len(self.facet_pos)
+        self.generate_facets(self.facet_class, self.facetargs)
 
     def calc_ideal_center(self):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
@@ -133,7 +180,7 @@ class GratingArrayStructure(OpticalElement):
             raise Exception('Intersection with torus not found.')
         return x, y, z
 
-    def place_facets(self):
+    def facet_position(self):
         '''
         Returns
         -------
@@ -159,6 +206,52 @@ class GratingArrayStructure(OpticalElement):
                     rot_mat = transforms3d.axangles.axangle2aff(rot_ax, rot_ang)
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat[:3, :3], np.ones(3)))
         return pos4d
+
+    def generate_facets(self, facet_class, facet_args={}):
+        '''
+        Example
+        -------
+        from marxs.optics.grating import FlatGrating
+        gsa = GSA( ... args ...)
+        gsa.generate_facets(FlatGrating, {'d': 0.002})
+        '''
+        self.facets = []
+
+        facet_pos4d = _parse_position_keywords(facet_args)
+        tfacet, rfacet, zfacet, Sfacet = decompose44(facet_pos4d)
+        if not np.allclose(Sfacet, 0.):
+            raise ValueError('pos4 for facet includes shear, which is not supported for gratings.')
+        name = kwargs.pop('name', '')
+
+        gas_center = self.calc_ideal_center()
+        Tgas = translation2aff(gas_center)
+
+        for i in range(len(self.facet_pos)):
+            f_center, rrown, ztemp, stemp = decompose44(self.facet_pos[i])
+            Tfacetgas = translation2aff(gas_center - f_center)
+            tsigfacet, rsigfacet, ztemp, stemp = decompose44(self.facet_uncertainty[i])
+            if not np.allclose(ztemp, 1.):
+                raise FacetPlacementError('Zoom is not supported in the facet uncertainty.')
+            if not np.allclose(stemp, 0.):
+                raise FacetPlacementError('Shear is not supported in the facet uncertainty.')
+            # Will be able to write this so much better in python 3.5,
+            # but for now I don't want to nest np.dot too much so here it goes
+            f_pos4d = np.eye(4)
+            for m in [self.pos4d,  # any change between GAS system and global
+                      # coordiantes, e.g. if x is not optical axis
+                      Tgas,  # move to center of GAS
+                      self.uncertainty4d,  # uncertainty in GAS positioning
+                      Tfacetgas,  # translate facet center to GAS center
+                      transpose2aff(sigfacet),  # uncertaintig in translation for facet
+                      transpose2aff(facet),  # any additional offset of facet. Probably 0
+                      mat2aff(rsigfacet),  # uncertainty in rotation for facet
+                      mat2aff(rfacet),  # Any rotation of facet, e.g. for CAT gratings
+                      mat2aff(rrown),   # rotate grating normal to be normal to Rowland torus
+                      zoom2aff(zfacet),  # sets size of grating
+                     ]:
+                assert m.shape == (4, 4)
+                f_pos4d = np.dot(m, f_pos4d)
+            self.facets.append(facet_class(pos4d = f_pos4d, name='{0}  Facet {1} in GAS {2}'.format(name, i, self.name), **facet_args))
 
     def process_photons(self, photons):
         '''

@@ -68,13 +68,12 @@ def test_GratingArrayStructure():
     assert np.alltrue((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
     assert gas.max_facets_on_radius() == 10
     assert np.all(gas.distribute_facets_on_radius() == np.arange(315., 600., 30.))
-    assert len(gas.facets) == 177
+    assert len(gas.facet_pos) == 177
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
-    #     for f in gas.facets:
+    #     for f in gas.facet_pos:
     #         elem[0].plot(f[elem[1],3], f[elem[2],3], 's')
     # plt.show()  # or move mouse in window or something.
 
     # There is a test missing here that the rotational part works correctly.
     # I just cannot think of a good way to check that right now.
-
