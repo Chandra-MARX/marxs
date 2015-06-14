@@ -11,7 +11,7 @@ def test_random_mat():
     rot = np.eye(4)
     trans = np.random.rand(3)
     zoom = np.random.rand(3)
-    assert np.allclose(np.dot(utils.translation_mat(trans), np.dot(rot, utils.zoom_mat(zoom))),
+    assert np.allclose(np.dot(utils.translation2aff(trans), np.dot(rot, utils.zoom2aff(zoom))),
                        compose(trans, rot[:3, :3], zoom))
 
 def test_random_mat_scalar_zoom():
@@ -23,5 +23,5 @@ def test_random_mat_scalar_zoom():
     trans = np.random.rand(3)
     zoom = np.random.rand()
     zoommat = np.ones(3) * zoom
-    assert np.allclose(np.dot(utils.translation_mat(trans), np.dot(rot, utils.zoom_mat(zoom))),
+    assert np.allclose(np.dot(utils.translation2aff(trans), np.dot(rot, utils.zoom2aff(zoom))),
                        compose(trans, rot[:3, :3], zoommat))
