@@ -8,7 +8,7 @@ import transforms3d
 from transforms3d.affines import decompose44
 
 from ..optics.base import OpticalElement, _parse_position_keywords
-from ..math.utils import translation2aff, zoom2aff
+from ..math.utils import translation2aff, zoom2aff, mat2aff
 
 class RowlandTorus(object):
     '''Torus with z axis as symmetry axis'''
@@ -97,7 +97,7 @@ class GratingArrayStructure(OpticalElement):
         Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
         the segment crosses the y axis.
     '''
-    def __init__(self, rowland, x_range, radius, phi=[0., 2*np.pi], **kwargs):
+    def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
         if not (radius[1] > radius[0]):
             raise ValueError('Outer radius must be larger than inner radius.')
@@ -109,15 +109,16 @@ class GratingArrayStructure(OpticalElement):
             raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
         self.phi = phi
         self.x_range = x_range
+        self.d_facet = d_facet
         self.facet_class = kwargs.pop('facetclass')
-        self.facet_args = kwargs.pop('facetargs')
+        self.facet_args = kwargs.pop('facetargs', {})
 
-        super(GratingArrayStructure, self).__init__(kwargs)
+        super(GratingArrayStructure, self).__init__(**kwargs)
 
         self.uncertainty = np.eye(4)
         self.facet_pos = self.facet_position()
         self.facet_uncertainty = [np.eye(4)] * len(self.facet_pos)
-        self.generate_facets(self.facet_class, self.facetargs)
+        self.generate_facets(self.facet_class, self.facet_args)
 
     def calc_ideal_center(self):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
@@ -221,14 +222,14 @@ class GratingArrayStructure(OpticalElement):
         tfacet, rfacet, zfacet, Sfacet = decompose44(facet_pos4d)
         if not np.allclose(Sfacet, 0.):
             raise ValueError('pos4 for facet includes shear, which is not supported for gratings.')
-        name = kwargs.pop('name', '')
+        name = facet_args.pop('name', '')
 
         gas_center = self.calc_ideal_center()
         Tgas = translation2aff(gas_center)
 
         for i in range(len(self.facet_pos)):
             f_center, rrown, ztemp, stemp = decompose44(self.facet_pos[i])
-            Tfacetgas = translation2aff(gas_center - f_center)
+            Tfacetgas = translation2aff(-np.array(gas_center) + f_center)
             tsigfacet, rsigfacet, ztemp, stemp = decompose44(self.facet_uncertainty[i])
             if not np.allclose(ztemp, 1.):
                 raise FacetPlacementError('Zoom is not supported in the facet uncertainty.')
@@ -237,18 +238,18 @@ class GratingArrayStructure(OpticalElement):
             # Will be able to write this so much better in python 3.5,
             # but for now I don't want to nest np.dot too much so here it goes
             f_pos4d = np.eye(4)
-            for m in [self.pos4d,  # any change between GAS system and global
+            for m in reversed([self.pos4d,  # any change between GAS system and global
                       # coordiantes, e.g. if x is not optical axis
                       Tgas,  # move to center of GAS
-                      self.uncertainty4d,  # uncertainty in GAS positioning
+                      self.uncertainty,  # uncertainty in GAS positioning
                       Tfacetgas,  # translate facet center to GAS center
-                      transpose2aff(sigfacet),  # uncertaintig in translation for facet
-                      transpose2aff(facet),  # any additional offset of facet. Probably 0
+                      translation2aff(tsigfacet),  # uncertaintig in translation for facet
+                      translation2aff(tfacet),  # any additional offset of facet. Probably 0
                       mat2aff(rsigfacet),  # uncertainty in rotation for facet
                       mat2aff(rfacet),  # Any rotation of facet, e.g. for CAT gratings
                       mat2aff(rrown),   # rotate grating normal to be normal to Rowland torus
                       zoom2aff(zfacet),  # sets size of grating
-                     ]:
+                     ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
             self.facets.append(facet_class(pos4d = f_pos4d, name='{0}  Facet {1} in GAS {2}'.format(name, i, self.name), **facet_args))

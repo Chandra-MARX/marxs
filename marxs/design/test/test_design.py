@@ -1,6 +1,7 @@
 import numpy as np
 
 from ..rowland import RowlandTorus, GratingArrayStructure
+from ...optics.base import OpticalElement
 
 def parametrictorus(R, r, theta, phi):
     x = (R + r * np.cos(theta)) * np.cos(phi)
@@ -61,7 +62,9 @@ def test_GratingArrayStructure():
     can be taken as known-good to prevent regressions later.
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi = [-0.2*np.pi, 0.2*np.pi])
+    class mock_facet(OpticalElement):
+        pass
+    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], facetclass=mock_facet)
     assert gas.max_facets_on_arc(300.) == 12
     angles = gas.distribute_facets_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
@@ -69,6 +72,10 @@ def test_GratingArrayStructure():
     assert gas.max_facets_on_radius() == 10
     assert np.all(gas.distribute_facets_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.facet_pos) == 177
+    center = gas.calc_ideal_center()
+    assert center[1] == 0
+    assert center[2] == (300. + 600.) / 2.
+    assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
     #     for f in gas.facet_pos:
@@ -77,3 +84,7 @@ def test_GratingArrayStructure():
 
     # There is a test missing here that the rotational part works correctly.
     # I just cannot think of a good way to check that right now.
+
+    # Check that initially all uncertainties are 0
+    for i in range(len(gas.facet_pos)):
+        assert np.allclose(gas.facet_pos[i], gas.facets[i].pos4d)
