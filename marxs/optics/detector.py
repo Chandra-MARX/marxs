@@ -14,8 +14,8 @@ class InfiniteFlatDetector(FlatOpticalElement):
     Should I change that?
     '''
     def process_photons(self, photons):
-        h_intersect = self.intersect(photons['dir'], photons['pos'])
-        photons['pos'] = h_intersect
+        intersect, h_intersect, temp = self.intersect(photons['dir'], photons['pos'])
+        photons['pos'][intersect] = h_intersect[intersect]
         det_pos = h2e(h_intersect) - h2e(self.geometry['center'])
         photons.add_column(Column(np.dot(det_pos, h2e(self.geometry['e_y'])), name='det_y'))
         photons.add_column(Column(np.dot(det_pos, h2e(self.geometry['e_z'])), name='det_z'))

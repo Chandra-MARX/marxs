@@ -25,10 +25,10 @@ def uniform_efficiency_factory(max_order = 3):
     '''
     def uniform_efficiency(energy, polarization):
         if np.isscalar(energy):
-            return np.random_randint(max_order - 1, max_order + 1)
+            return np.random.randint(max_order - 1, max_order + 1)
         else:
             # scalar input
-            return np.random_randint(max_order - 1, max_order + 1, len(energy))
+            return np.random.randint(max_order - 1, max_order + 1, len(energy))
     return uniform_efficiency
 
 

@@ -66,22 +66,25 @@ class TestOpticalElementInterface:
             # For apertures input pos is ignored, but still needs to be there
             # to keep the function signature consistent.
             dir, pos, energy, pol, prob = elem.process_photon(single['dir'], single['pos'], single['energy'], single['polarization'])
+            compare_results = True
         except NotImplementedError:
             # It's OK if only the a vectorized process_photons is implemented
             # but if both exist, they need to return the same answer.
-            return
+            compare_results = False
         # Process as table
         if isinstance(elem, BaseAperture):
             photons.remove_column('pos')
-        p = elem.process_photons(p)
+        p = elem.process_photons(photons)
 
-        assert np.all(dir == p['dir'][0])
-        assert np.all(pos == p['pos'][0])
-        assert energy == p['energy'][0]
-        # pol can be nan for modules that cannot deal with polarization
-        assert ((np.isnan(pol) and np.isnan(p['polarization'][0]))
-                or (pol == p['polarization'][0]))
-        assert prob == p['probability'][0]
+        if compare_results:
+            # We can only compare, if one and many did run.
+            assert np.all(dir == p['dir'][0])
+            assert np.all(pos == p['pos'][0])
+            assert energy == p['energy'][0]
+            # pol can be nan for modules that cannot deal with polarization
+            assert ((np.isnan(pol) and np.isnan(p['polarization'][0]))
+                    or (pol == p['polarization'][0]))
+            assert prob == p['probability'][0]
 
     def test_desc(self, elem):
         '''every elements should return a Ordered Dict for description'''
