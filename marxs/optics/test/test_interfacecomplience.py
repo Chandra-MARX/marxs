@@ -6,14 +6,15 @@ import pytest
 from ..aperture import BaseAperture, RectangleAperture
 from ...source.source import ConstantPointSource, FixedPointing
 from ..mirror import ThinLens
-from ..detector import InfiniteFlatDetector
+from ..detector import FlatDetector
 from ..grating import FlatGrating, uniform_efficiency_factory
 from ..marx import MarxMirror
+from ..base import _parse_position_keywords
 
 # Initialize all optical elements to be tested
 all_oe = [ThinLens(focallength=100),
           RectangleAperture(),
-          InfiniteFlatDetector(),
+          FlatDetector(pixsize=2., zoom=100.),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           ]
@@ -91,3 +92,10 @@ class TestOpticalElementInterface:
         des = elem.describe()
         assert isinstance(des, OrderedDict)
         assert len(des) > 0
+
+def test_parse_position_keywords_zoom_dimension():
+    '''test proper error messages for zoom keyword'''
+    for zoom in [np.ones(1), np.ones(2), np.ones(4)]:
+        with pytest.raises(ValueError) as e:
+            pos4d = _parse_position_keywords({'zoom': zoom})
+            assert 'must has three elements' in str(e.value)

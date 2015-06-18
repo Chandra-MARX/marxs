@@ -41,6 +41,8 @@ def _parse_position_keywords(kwargs):
         zoom = kwargs.pop('zoom', 1.)
         if np.isscalar(zoom):
             zoom = np.ones(3) * zoom
+        if not len(zoom) == 3:
+            raise ValueError('zoom must have three elements for x,y,z or be a scalar (global zoom).')
         pos4d = affines.compose(position, orientation, zoom)
     else:
         if ('position' in kwargs) or ('orientation' in kwargs) or ('zoom' in kwargs):
