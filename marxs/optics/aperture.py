@@ -1,5 +1,5 @@
 import numpy as np
-from astropy.table import Column, Table, Row
+from astropy.table import Column
 
 from .base import FlatOpticalElement
 
