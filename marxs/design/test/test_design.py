@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import kstest
 
 from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell
 from ...optics.base import OpticalElement
@@ -111,3 +112,10 @@ def test_GratingArrayStructure_2pi():
         pass
     gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], facetclass=mock_facet)
     assert gas.max_facets_on_arc(300.) > 10
+    n = len(gas.facet_pos)
+    yz = np.empty((n, 2))
+    for i, p in enumerate(gas.facet_pos):
+        yz[i, :] = p[1:3, 3]
+    phi = np.tan(yz[:, 1] / yz[:, 0])
+    ks, pvalue = kstest(phi / (2 * np.pi), 'uniform')
+    assert pvalue > 1e-3

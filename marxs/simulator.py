@@ -43,6 +43,8 @@ import marxs.optics
 import marxs.optics.aperture
 import marxs.optics.mirror
 import marxs.optics.detector
+import marxs.design
+import marxs.design.rowland
 
 reload(marxs)
 reload(marxs.math)
@@ -53,6 +55,7 @@ reload(marxs.optics)
 reload(marxs.optics.aperture)
 reload(marxs.optics.mirror)
 reload(marxs.optics.detector)
+reload(marxs.design.rowland)
 
 
 
@@ -116,7 +119,7 @@ mysource = SymbolSource((30., 30.), 1., 300., size=1)
 photons = mysource.generate_photons(500)
 mypointing = marxs.source.source.FixedPointing(coords=(30., 30.))
 photons = mypointing.process_photons(photons)
-myslit = marxs.optics.aperture.SquareEntranceAperture(size=2)
+myslit = marxs.optics.aperture.RectangleAperture(zoom=2)
 photons = myslit.process_photons(photons)
 mm = marxs.optics.mirror.ThinLens(focallength=10)
 photons = mm.process_photons(photons)
@@ -132,21 +135,60 @@ plt.savefig('examples/complexsource10.png')
 
 
 mysource = marxs.source.source.ConstantPointSource((30., 30.), 1., 1.)
-photons = mysource.generate_photons(1000)
+photons = mysource.generate_photons(10000)
 mypointing = marxs.source.source.FixedPointing(coords=(30, 30.))
 photons = mypointing.process_photons(photons)
-photons = myslit.process_photons(photons)
 
-import marxs.optics.c_mirror
-marxm = marxs.optics.c_mirror.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
+import marxs.optics.marx
+marxm = marxs.optics.marx.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
 photons = marxm.process_photons(photons)
 
-for x, c in zip([0], 'bgrcmk'):
+for x, c in zip([1e5, 8e4,4e4,0], 'bgrcmk'):
     p = photons[:]
-    mdet = marxs.optics.detector.InfiniteFlatDetector(position=np.array([x, 0, 0]))
+    mdet = marxs.optics.detector.FlatDetector(position=np.array([x, 0, 0]), zoom=1e5,pixsize=1.)
     p = mdet.process_photons(p)
     ind = p['probability'] > 0
-    plt.plot(p['det_y'][ind], p['det_z'][ind], c+'s', label='{0}'.format(x))
-    plt.plot(p['det_y'][~ind], p['det_z'][~ind], c+'.')
+    plt.plot(p['det_x'][ind], p['det_y'][ind], c+'s', label='{0}'.format(x))
+    plt.plot(p['det_x'][~ind], p['det_y'][~ind], c+'.')
 
 plt.legend()
+
+
+### for Ralf - step 1
+
+import numpy as np
+from marxs.source import ConstantPointSource, FixedPointing
+from marxs.design import RowlandTorus, find_radius_of_photon_shell, GratingArrayStructure
+from marxs.optics import MarxMirror, FlatGrating, uniform_efficiency_factory, FlatDetector
+
+mysource = ConstantPointSource((30., 30.), 1., 1.)
+mypointing = FixedPointing(coords=(30, 30.))
+marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
+
+photons = mysource.generate_photons(10000)
+photons = mypointing.process_photons(photons)
+photons = marxm.process_photons(photons)
+
+# design the gratings
+radius0 = find_radius_of_photon_shell(photons, 0, 9e4)
+
+mytorus = RowlandTorus(9e4/2, 9e4/2)
+gratingeff = uniform_efficiency_factory()
+mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.002, 'order_selector': gratingeff})
+
+pg = photons[photons['mirror_shell'] == 0]
+pg = mygas.process_photons(pg)
+
+for x, c in zip([9e4, 4e4, 1e4, 0], 'bgrcmk'):
+    p = pg[:]
+    mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5,pixsize=1.)
+    p = mdet.process_photons(p)
+    ind = p['probability'] > 0
+    plt.plot(p['det_x'][ind], p['det_y'][ind], c+'s', label='{0}'.format(x))
+    plt.plot(p['det_x'][~ind], p['det_y'][~ind], c+'.')
+
+plt.legend()
+
+
+
+## TBD: add check in code if d_facet >=zoom of grating!

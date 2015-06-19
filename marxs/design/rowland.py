@@ -164,13 +164,17 @@ class GratingArrayStructure(OpticalElement):
         r = sum(self.radius) / 2
         return self.xyz_from_ra(r, a)
 
-    def max_facets_on_arc(self, radius):
-        '''Calculate maximal; number of facets that can be placed at a certain radius.'''
+    def anglediff(self):
+        '''Angles range covered by facets, accounting for 2 pi properly'''
         anglediff = (self.phi[1] - self.phi[0])
         if (anglediff < 0.) or (anglediff > (2. * np.pi)):
             # If anglediff == 2 pi exactly, presumably the user want to cover the full circle.
             anglediff = anglediff % (2. * np.pi)
-        return radius * anglediff // self.d_facet
+        return anglediff
+
+    def max_facets_on_arc(self, radius):
+        '''Calculate maximal; number of facets that can be placed at a certain radius.'''
+        return radius * self.anglediff() // self.d_facet
 
     def distribute_facets_on_arc(self, radius):
         '''Distribute facets on an arc.
@@ -189,11 +193,9 @@ class GratingArrayStructure(OpticalElement):
         '''
         # arc is most crowded on inner radius
         n = self.max_facets_on_arc(radius - self.d_facet / 2)
-        # total angle available
-        anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
         facet_angle = self.d_facet / (2. * np.pi * radius)
         # thickness of space between facets, distributed equally
-        d_between = (anglediff - n * facet_angle) / (n + 1)
+        d_between = (self.anglediff() - n * facet_angle) / (n + 1)
         centerangles = d_between + 0.5 * facet_angle + np.arange(n) * (d_between + facet_angle)
         return (self.phi[0] + centerangles) % (2. * np.pi)
 
