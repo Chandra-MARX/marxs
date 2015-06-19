@@ -8,7 +8,44 @@ import transforms3d
 from transforms3d.affines import decompose44
 
 from ..optics.base import OpticalElement, _parse_position_keywords
+from ..optics import FlatDetector
 from ..math.utils import translation2aff, zoom2aff, mat2aff
+
+
+def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
+    '''Find the radius the photons coming from a single mirror shell have.
+
+    For nested Wolter Type I mirrors the ray of photons reflected from a single mirror
+    shell essentially form a cone in space. The tip of the cone is at the focal point
+    and the base is at the mirror. There is a certain thickness to this cone depending
+    on where exactly on the mirror the individual photon was reflected.
+
+    This function takes a photon list of photons after passing through the mirror and
+    calculates the radius range that this photon cone covers at a specific distance from
+    the focal point. This information can help to design the placement of gratings.
+
+    Parameters
+    ----------
+    photons : `~astropy.table.Table`
+        Photon list with position and direction of photons leaving the mirror
+    mirror_shell : int
+        Select mirror shell to look at (uses column ``mirror_shell`` in ``photons``
+        for filtering).
+    x : float
+        Distance along the optical axis (assumed to coincide with the x axis with focal point
+        at 0).
+    percentile : list of floats
+        The radius is calculated at the given percentiles. ``50`` would give the median radius.
+        The default of ``[1, 99]`` gives a radius range excluding extrem outliers such as
+        stray rays scattered into the extreme wing of the PSF.
+    '''
+    p = photons[:]
+    mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e8, pixsize=1.)
+    p = mdet.process_photons(p)
+    ind = (p['probability'] > 0) & (p['mirror_shell'] == 0)
+    r = np.sqrt(p['det_x'][ind]**2+p['det_y'][ind]**2.)
+    return np.percentile(r, percentile)
+
 
 class RowlandTorus(object):
     '''Torus with z axis as symmetry axis'''

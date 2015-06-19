@@ -1,1 +1,1 @@
-from .Rowland import RowlandTorus, GratingArrayStructure
+from .rowland import RowlandTorus, GratingArrayStructure

@@ -1,13 +1,27 @@
 import numpy as np
 
-from ..rowland import RowlandTorus, GratingArrayStructure
+from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell
 from ...optics.base import OpticalElement
+from ...source import ConstantPointSource, FixedPointing
+from ...optics import MarxMirror
 
 def parametrictorus(R, r, theta, phi):
     x = (R + r * np.cos(theta)) * np.cos(phi)
     y = (R + r * np.cos(theta)) * np.sin(phi)
     z = r * np.sin(theta)
     return x, y, z
+
+def test_radius_of_photon_shell():
+    mysource = ConstantPointSource((30., 30.), 1., 1.)
+    photons = mysource.generate_photons(1000)
+    mypointing = FixedPointing(coords=(30, 30.))
+    photons = mypointing.process_photons(photons)
+    marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
+    photons = marxm.process_photons(photons)
+    r1, r2 = find_radius_of_photon_shell(photons, 3, 9e4)
+    assert abs(r1 - 5380.) < 10.
+    assert abs(r2 - 5495.) < 10.
+
 
 def test_torus():
     '''Test the torus equation for a set of points.
