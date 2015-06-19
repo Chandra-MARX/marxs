@@ -3,13 +3,13 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 
-from ..aperture import BaseAperture, RectangleAperture
-from ...source.source import ConstantPointSource, FixedPointing
-from ..mirror import ThinLens
-from ..detector import FlatDetector
-from ..grating import FlatGrating, uniform_efficiency_factory
-from ..marx import MarxMirror
+from .. import (RectangleAperture, ThinLens, FlatDetector,
+                FlatGrating, uniform_efficiency_factory,
+                MarxMirror)
+from ..aperture import BaseAperture
+from ...source import ConstantPointSource, FixedPointing
 from ..base import _parse_position_keywords
+
 
 # Initialize all optical elements to be tested
 all_oe = [ThinLens(focallength=100),
