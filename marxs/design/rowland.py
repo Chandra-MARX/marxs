@@ -61,7 +61,7 @@ class RowlandTorus(object):
         return (x**2. + y**2. + z**2. + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (x**2. + y**2.)
     def normal(self, x, y, z):
         '''Return the gradient vector field'''
-        # Makes problems fir r,R  >> 1. Even marginal differences lead to large
+        # For r,R  >> 1 even marginal differences lead to large
         # numbers on the quartic because of R**4 -> normalize
         if not np.allclose(self.quartic(x, y, z) / self.R**4., 0.):
             raise ValueError('Gradient vector field is only defined for points on torus surface.')
@@ -166,7 +166,10 @@ class GratingArrayStructure(OpticalElement):
 
     def max_facets_on_arc(self, radius):
         '''Calculate maximal; number of facets that can be placed at a certain radius.'''
-        anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
+        anglediff = (self.phi[1] - self.phi[0])
+        if (anglediff < 0.) or (anglediff > (2. * np.pi)):
+            # If anglediff == 2 pi exactly, presumably the user want to cover the full circle.
+            anglediff = anglediff % (2. * np.pi)
         return radius * anglediff // self.d_facet
 
     def distribute_facets_on_arc(self, radius):

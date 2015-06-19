@@ -102,3 +102,12 @@ def test_GratingArrayStructure():
     # Check that initially all uncertainties are 0
     for i in range(len(gas.facet_pos)):
         assert np.allclose(gas.facet_pos[i], gas.facets[i].pos4d)
+
+def test_GratingArrayStructure_2pi():
+    '''test that delta_phi = 2 pi means "full circle" and not 0
+    '''
+    myrowland = RowlandTorus(10000., 10000.)
+    class mock_facet(OpticalElement):
+        pass
+    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], facetclass=mock_facet)
+    assert gas.max_facets_on_arc(300.) > 10
