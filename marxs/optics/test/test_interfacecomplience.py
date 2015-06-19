@@ -4,19 +4,27 @@ import numpy as np
 import pytest
 
 from .. import (RectangleAperture, ThinLens, FlatDetector,
-                FlatGrating, uniform_efficiency_factory,
+                FlatGrating, uniform_efficiency_factory, constant_order_factory,
                 MarxMirror)
 from ..aperture import BaseAperture
 from ...source import ConstantPointSource, FixedPointing
 from ..base import _parse_position_keywords
+from ...design import RowlandTorus, GratingArrayStructure
 
 
 # Initialize all optical elements to be tested
+mytorus = RowlandTorus(0.5, 0.5)
+
 all_oe = [ThinLens(focallength=100),
           RectangleAperture(),
           FlatDetector(pixsize=2., zoom=100.),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
+          GratingArrayStructure(mytorus, d_facet=0.1, x_range=[0.5, 1.], radius=[0,.5],
+                                facetclass=FlatGrating,
+                                facetargs={'zoom':0.05, 'd':0.002,
+                                           'order_selector': constant_order_factory(1)
+                                           }),
           ]
 
 # Each elements will be used multiple times.

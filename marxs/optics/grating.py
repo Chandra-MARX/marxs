@@ -133,7 +133,7 @@ class FlatGrating(FlatOpticalElement):
         if (interpos is None):
             intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
         else:
-            intersect = np.ones(len(phtons), dtype=bool)
+            intersect = np.ones(len(photons), dtype=bool)
         self.add_output_cols(photons)
         dir, m = self.diffract_photons(photons[intersect])
         photons['pos'][intersect] = interpos

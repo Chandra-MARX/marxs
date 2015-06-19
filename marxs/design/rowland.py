@@ -310,9 +310,9 @@ class GratingArrayStructure(OpticalElement):
         '''
         photons_out = []
         for f in self.facets:
-            intersect, interpos, temp = f.intersect(photons)
+            intersect, interpos, temp = f.intersect(photons['dir'], photons['pos'])
             p_out = f.process_photons(photons[intersect], interpos[intersect])
-            p_out['facet'] = [f.describe['name']] * len(p_out)
+            p_out['facet'] = [f.describe()['element']] * len(p_out)
             photons_out.append(p_out)
             photons = photons[~intersect]
         # append photons that did not intersect a facet
