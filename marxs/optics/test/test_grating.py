@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import random
 from astropy.table import Table
 
-from ..grating import FlatGrating, constant_order_factory
+from ..grating import FlatGrating, constant_order_factory, uniform_efficiency_factory
 from ...math.pluecker import h2e
 from ... import energy2wave
 
@@ -68,3 +68,16 @@ def test_energy_dependence():
     lam = energy2wave / p['energy']
     theta = np.arctan2(p['dir'][:, 2], p['dir'][:, 0])
     assert np.allclose(1. * lam, 1./500. * np.sin(theta))
+
+def test_uniform_efficiency_factory():
+    '''Uniform efficiency factory should give results from -order to +order'''
+    f = uniform_efficiency_factory(2)
+    # Make many numbers, to reduce chance of random failure for this test
+    testout = f(np.ones(10000), np.ones(10000))
+    assert set(testout) == set([-2, -1 , 0, 1, 2])
+
+def test_constant_order_factory():
+    '''Constant order will give always the same order'''
+    f = constant_order_factory(2)
+    assert np.all(f(np.ones(15), np.ones(15)) == 2)
+
