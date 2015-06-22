@@ -8,6 +8,16 @@ to both, the `marx`_ source code and an installed version of `marx`_ on your
 machine in the ``setup.cfg`` file in the root directory of the installation
 package.
 
+If you are a developer, you might want to tell git to ignore the local path
+that you put into ``setup.cfg`` to avoid committing and pushing that to the
+repro accidentially::
+
+  git update-index --assume-unchanged setup.cfg
+
+(However, note that this will make some manual fixing necessary if the upstream
+``setup.cfg`` changes, e.g. because we decide to add a new option. See 
+``git help update-index`` for more explanation.)
+
 .. todo::
    Implement a mechanism where `marx`_ is downloaded and installed in the
    installation process to a known location, possibly to extern in this
