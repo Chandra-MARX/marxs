@@ -80,7 +80,7 @@ setup(name='marxs',
 
       packages = find_packages(),
 
-      setup_requires=["cffi>=1.0.0", "astropy>=1.0"],
+      setup_requires=["cffi>=1.0.0", "astropy>=1.0", "transforms3d"],
       cffi_modules=["marxs/optics/marx_build.py:ffi"],
       install_requires=["cffi>=1.0.0"],
       tests_require=['pytest'],
