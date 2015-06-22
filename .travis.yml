@@ -26,7 +26,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy cffi
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy cffi sphinx
   - source activate test-environment
   - pip install transforms3d
   - python setup.py install
