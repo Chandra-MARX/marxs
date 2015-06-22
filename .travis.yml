@@ -6,7 +6,7 @@ before_install:
   - wget ftp://space.mit.edu/pub/cxc/marx/v5.1/marx-dist-5.1.0.tar.gz
   - tar -xvf marx-dist-5.1.0.tar.gz
   - pwd
-  - cd marx-dist-5.1.0 && ./configure --prefix=/usr/marx CFLAGS="-O2 -g -fPIC" && make && make install
+  - cd marx-5.1.0 && ./configure --prefix=/usr/marx CFLAGS="-O2 -g -fPIC" && make && make install
 
 install:
   - sudo apt-get update
