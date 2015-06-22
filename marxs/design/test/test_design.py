@@ -116,6 +116,6 @@ def test_GratingArrayStructure_2pi():
     yz = np.empty((n, 2))
     for i, p in enumerate(gas.facet_pos):
         yz[i, :] = p[1:3, 3]
-    phi = np.tan(yz[:, 1] / yz[:, 0])
-    ks, pvalue = kstest(phi / (2 * np.pi), 'uniform')
-    assert pvalue > 1e-3
+    phi = np.arctan2(yz[:, 1], yz[:, 0])
+    ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
+    assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.

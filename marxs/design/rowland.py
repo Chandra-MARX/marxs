@@ -311,10 +311,10 @@ class GratingArrayStructure(OpticalElement):
           (possibly as a kdtree from scipy.spatial).
         '''
         photons_out = []
-        for f in self.facets:
+        for i, f in enumerate(self.facets):
             intersect, interpos, temp = f.intersect(photons['dir'], photons['pos'])
             p_out = f.process_photons(photons[intersect], interpos[intersect])
-            p_out['facet'] = [f.describe()['element']] * len(p_out)
+            p_out['facet'] = [i] * intersect.sum()
             photons_out.append(p_out)
             photons = photons[~intersect]
         # append photons that did not intersect a facet
