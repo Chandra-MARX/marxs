@@ -7,6 +7,7 @@ before_install:
   - tar -xvf marx-dist-5.1.0.tar.gz
   - pwd
   - cd marx-5.1.0 && ./configure --prefix=/home/travis/build/Chandra-MARX/marxs/marx/ CFLAGS="-O2 -g -fPIC" && make && make install
+  - cd ..
 
 install:
   - sudo apt-get update
@@ -25,7 +26,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy cffi
   - source activate test-environment
   - pip install transforms3d
   - python setup.py install
