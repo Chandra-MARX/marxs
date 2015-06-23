@@ -10,6 +10,7 @@ from ..aperture import BaseAperture
 from ...source import ConstantPointSource, FixedPointing
 from ..base import _parse_position_keywords
 from ...design import RowlandTorus, GratingArrayStructure
+from ..baffle import Baffle
 
 
 # Initialize all optical elements to be tested
@@ -25,6 +26,7 @@ all_oe = [ThinLens(focallength=100),
                                 facetargs={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
                                            }),
+		  Baffle()
           ]
 
 # Each elements will be used multiple times.
