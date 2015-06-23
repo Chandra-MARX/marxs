@@ -1,7 +1,6 @@
 from __future__ import division
 
 import numpy as np
-from numpy.linalg import norm
 from scipy import optimize
 from astropy import table
 import transforms3d
@@ -10,6 +9,7 @@ from transforms3d.affines import decompose44
 from ..optics.base import OpticalElement, _parse_position_keywords
 from ..optics import FlatDetector
 from ..math.utils import translation2aff, zoom2aff, mat2aff
+from ..math.rotations import ex2vec_fix
 
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
@@ -239,15 +239,12 @@ class GratingArrayStructure(OpticalElement):
             for a in angles:
                 x, y, z = self.xyz_from_ra(r, a)
                 facet_pos = np.array([x, y, z])
-                facet_normal = np.array(self.rowland.normal(x, y, z))
+                #facet_normal = np.array(self.rowland.normal(x, y, z))
                 # Find the rotation between [1, 0, 0] and the new normal
-                rot_ax = np.cross([1., 0., 0.], facet_normal)
-                if np.allclose(rot_ax, 0):
-                    rot_mat = np.eye(4)  # vectors are parallel
-                else:
-                    rot_ang = np.arcsin(norm(rot_ax) / norm(facet_normal))
-                    rot_mat = transforms3d.axangles.axangle2aff(rot_ax, rot_ang)
-                pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat[:3, :3], np.ones(3)))
+                # Keep grooves (along e_y) parallel to e_y
+                rot_mat = ex2vec_fix(facet_pos, np.array([0., 1., 0.]))
+
+                pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
         return pos4d
 
     def generate_facets(self, facet_class, facet_args={}):
