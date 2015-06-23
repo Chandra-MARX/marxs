@@ -25,10 +25,10 @@ def uniform_efficiency_factory(max_order = 3):
     '''
     def uniform_efficiency(energy, polarization):
         if np.isscalar(energy):
-            return np.random.randint(-max_order, max_order + 1)
+            return np.random.randint(-max_order, max_order + 1), np.ones_like(energy)
         else:
             # scalar input
-            return np.random.randint(-max_order, max_order + 1, len(energy))
+            return np.random.randint(-max_order, max_order + 1, len(energy)), 1.
     return uniform_efficiency
 
 
@@ -53,9 +53,30 @@ def constant_order_factory(order = 1):
     '''
     def select_constant_order(energy, polarization):
         '''Always select the same order'''
-        return np.ones_like(energy, dtype=int) * order
+        return np.ones_like(energy, dtype=int) * order, np.ones_like(energy)
 
     return select_constant_order
+
+
+class EfficiencyFile(object):
+    def __init__(self, filename, orders):
+        dat = np.loadtxt(filename)
+        self.energy = dat[:, 0]
+        if len(orders) != (dat.shape[1] - 1):
+            raise ValueError('orders has len={0}, but data files has {1} order columns.'.format(len(orders), dat.shape[1] - 1))
+        self.orders = orders
+        # Probability to end up in any order
+        self.totalprob = np.sum(dat[:, 1:], axis=1)
+        # Cumulative probability for orders, normalized to 1.
+        self.cumprob = np.cumsum(dat[:, 1:], axis=1) / self.totalprob[:, None]
+
+    def __call__(self, energies, polarization):
+        orderind = np.empty(len(energies), dtype=int)
+        for i, e in enumerate(energies):
+            ind = np.argmin(np.abs(self.energy - e))
+            orderind[i] = np.min(np.nonzero(self.cumprob[ind] > np.random.rand()))
+        return self.orders[orderind], self.totalprob[orderind]
+
 
 
 class FlatGrating(FlatOpticalElement):
@@ -70,7 +91,8 @@ class FlatGrating(FlatOpticalElement):
         grating constant
     order_selector : callable
         A function or callable object that accepts photon energy and
-        polarization as input and returns a grating order (integer).
+        polarization as input and returns a grating order (integer)
+        and a probability (float).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. *(Default: ``True``)*
@@ -104,7 +126,7 @@ class FlatGrating(FlatOpticalElement):
         d = h2e(self.geometry['e_z'])
 
         wave = energy2wave / photons['energy']
-        m = self.order_selector(photons['energy'], photons['polarization'])
+        m, prob = self.order_selector(photons['energy'], photons['polarization'])
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         p_d = np.dot(p, h2e(self.geometry['e_z'])) + m * wave / self.d
@@ -116,7 +138,7 @@ class FlatGrating(FlatOpticalElement):
         if not self.transmission:
             direction *= -1
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
-        return dir, m
+        return dir, m, prob
 
     def process_photons(self, photons, interpos=None):
         '''
@@ -135,8 +157,10 @@ class FlatGrating(FlatOpticalElement):
         else:
             intersect = np.ones(len(photons), dtype=bool)
         self.add_output_cols(photons)
-        dir, m = self.diffract_photons(photons[intersect])
-        photons['pos'][intersect] = interpos
-        photons['dir'][intersect] = dir
-        photons['order'][intersect] = m
+        if intersect.sum() > 0:
+            dir, m, p = self.diffract_photons(photons[intersect])
+            photons['pos'][intersect] = interpos
+            photons['dir'][intersect] = dir
+            photons['order'][intersect] = m
+            photons['probability'][intersect] = photons['probability'][intersect] * p
         return photons

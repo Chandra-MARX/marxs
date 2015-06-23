@@ -20,8 +20,10 @@ def test_zeros_order():
     photons['dir'][:, 1:] = 0
 
     p = photons.copy()
+    def mock_order(x, y):
+        return np.zeros_like(x, dtype=np.int), np.ones_like(x)
     g0 = FlatGrating(d=1./500.,
-                     order_selector=lambda x, y: np.zeros_like(x, dtype=np.int),
+                     order_selector=mock_order,
                      zoom=np.array([1., 5., 5.]))
     p = g0.process_photons(p)
     # Direction unchanged
@@ -81,3 +83,9 @@ def test_constant_order_factory():
     f = constant_order_factory(2)
     assert np.all(f(np.ones(15), np.ones(15)) == 2)
 
+def test_EfficiencyFile():
+    '''Interactively, I see that the probability is not chosen right.
+
+    Need to debug. Probably means the probabilities are chosen form the wrong column, too.
+    '''
+    raise NotImplementedError
