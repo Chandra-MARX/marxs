@@ -63,7 +63,7 @@ class EfficiencyFile(object):
         self.energy = dat[:, 0]
         if len(orders) != (dat.shape[1] - 1):
             raise ValueError('orders has len={0}, but data files has {1} order columns.'.format(len(orders), dat.shape[1] - 1))
-        self.orders = orders
+        self.orders = np.array(orders)
         # Probability to end up in any order
         self.totalprob = np.sum(dat[:, 1:], axis=1)
         # Cumulative probability for orders, normalized to 1.
@@ -71,10 +71,11 @@ class EfficiencyFile(object):
 
     def __call__(self, energies, polarization):
         orderind = np.empty(len(energies), dtype=int)
+        ind = np.empty(len(energies), dtype=int)
         for i, e in enumerate(energies):
-            ind = np.argmin(np.abs(self.energy - e))
-            orderind[i] = np.min(np.nonzero(self.cumprob[ind] > np.random.rand()))
-        return self.orders[orderind], self.totalprob[orderind]
+            ind[i] = np.argmin(np.abs(self.energy - e))
+            orderind[i] = np.min(np.nonzero(self.cumprob[ind[i]] > np.random.rand()))
+        return self.orders[orderind], self.totalprob[ind]
 
 
 

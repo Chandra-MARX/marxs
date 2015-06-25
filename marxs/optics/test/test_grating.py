@@ -1,8 +1,10 @@
+from StringIO import StringIO
 import numpy as np
 from numpy.random import random
 from astropy.table import Table
 
-from ..grating import FlatGrating, constant_order_factory, uniform_efficiency_factory
+from ..grating import (FlatGrating,
+                       constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
 from ...math.pluecker import h2e
 from ... import energy2wave
 
@@ -91,6 +93,13 @@ def test_constant_order_factory():
 def test_EfficiencyFile():
     '''Interactively, I see that the probability is not chosen right.
 
-    Need to debug. Probably means the probabilities are chosen form the wrong column, too.
     '''
-    raise NotImplementedError
+    data  = StringIO(".5 .1 .1 .1 .4\n1. .1 .1 .1 .5\n1.5 0. .1 .0 .5")
+    eff = EfficiencyFile(data, [1, 0, -1, -2])
+    testout = eff(np.array([.7, 1.1]), np.zeros(2))
+    assert np.allclose(testout[1], np.array([.7, .8]))
+
+    testout = eff(1.6 * np.ones(1000), np.zeros(1000))
+    assert np.allclose(testout[1], .6)
+    assert set(testout[0]) == set([-2 , 0])
+    assert (testout[0] == 0).sum()  < (testout[0] == -2).sum()
