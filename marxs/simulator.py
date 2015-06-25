@@ -157,6 +157,7 @@ plt.legend()
 ### for Ralf - step 1
 
 import numpy as np
+import transforms3d
 from marxs.source import ConstantPointSource, FixedPointing
 from marxs.design import RowlandTorus, find_radius_of_photon_shell, GratingArrayStructure
 from marxs.optics import MarxMirror, FlatGrating, uniform_efficiency_factory, FlatDetector, EfficiencyFile
@@ -175,10 +176,11 @@ radius0 = find_radius_of_photon_shell(photons, 0, 9e4)
 mytorus = RowlandTorus(9e4/2, 9e4/2)
 
 gratingeff = uniform_efficiency_factory()
-mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.002, 'order_selector': gratingeff})
+mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
 
-catorders = EfficiencyFile('/melkor/d1/guenther/marx/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat', orders=np.arange(2, -13, -1))
-mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': catorders})
+catorders = EfficiencyFile('/Users/hamogu/MITDropbox/projects/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat', orders=np.arange(2, -13, -1))
+blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(1.5))
+mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': catorders})
 
 
 

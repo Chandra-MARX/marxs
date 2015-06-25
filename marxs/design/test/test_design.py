@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.stats import kstest
+import transforms3d
 
 from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell
 from ...optics.base import OpticalElement
 from ...source import ConstantPointSource, FixedPointing
-from ...optics import MarxMirror
+from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
 
 def parametrictorus(R, r, theta, phi):
     x = (R + r * np.cos(theta)) * np.cos(phi)
@@ -119,3 +120,22 @@ def test_GratingArrayStructure_2pi():
     phi = np.arctan2(yz[:, 1], yz[:, 0])
     ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
     assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
+
+def test_facet_rotation_via_facetargs():
+    gratingeff = uniform_efficiency_factory()
+    mytorus = RowlandTorus(9e4/2, 9e4/2)
+    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+    blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
+    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
+    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.facets[0].geometry['e_x'][:3], mygascat.facets[0].geometry['e_x'][:3]))), 15.)
+
+def test_persistent_facetargs():
+    '''Make sure that facet_args is still intact after generating facets.
+
+    This is important to allow tweaks of a single parameter and then to regerante the facets.
+    '''
+    gratingeff = uniform_efficiency_factory()
+    mytorus = RowlandTorus(9e4/2, 9e4/2)
+    facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}
+    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs=facet_args)
+    assert mygas.facet_args == facet_args

@@ -46,7 +46,9 @@ def test_order_dependence():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    g = FlatGrating(d=1./500, order_selector=lambda x,y: [-2, -1, 0, 1, 2])
+    def mock_order(x, y):
+        return [-2, -1, 0, 1, 2], np.ones(5)
+    g = FlatGrating(d=1./500, order_selector=mock_order)
     p = g.process_photons(photons)
     # grooves run in y direction
     assert np.allclose(p['dir'][:, 1], 0.)
@@ -76,12 +78,15 @@ def test_uniform_efficiency_factory():
     f = uniform_efficiency_factory(2)
     # Make many numbers, to reduce chance of random failure for this test
     testout = f(np.ones(10000), np.ones(10000))
-    assert set(testout) == set([-2, -1 , 0, 1, 2])
+    assert set(testout[0]) == set([-2, -1 , 0, 1, 2])
+    assert len(testout[0]) == len(testout[1])
 
 def test_constant_order_factory():
     '''Constant order will give always the same order'''
     f = constant_order_factory(2)
-    assert np.all(f(np.ones(15), np.ones(15)) == 2)
+    testout = f(np.ones(15), np.ones(15))
+    assert np.all(testout[0] == 2)
+    assert len(testout[0]) == len(testout[1])
 
 def test_EfficiencyFile():
     '''Interactively, I see that the probability is not chosen right.
