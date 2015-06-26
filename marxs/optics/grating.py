@@ -3,6 +3,7 @@ from astropy.table import Column
 from transforms3d import affines
 
 from ..math.pluecker import *
+from ..math.utils import norm_vector
 from .. import energy2wave
 from .base import FlatOpticalElement
 
@@ -25,10 +26,9 @@ def uniform_efficiency_factory(max_order = 3):
     '''
     def uniform_efficiency(energy, polarization):
         if np.isscalar(energy):
-            return np.random.randint(-max_order, max_order + 1)
+            return np.random.randint(-max_order, max_order + 1), 1.
         else:
-            # scalar input
-            return np.random.randint(-max_order, max_order + 1, len(energy))
+            return np.random.randint(-max_order, max_order + 1, len(energy)), np.ones_like(energy)
     return uniform_efficiency
 
 
@@ -53,9 +53,31 @@ def constant_order_factory(order = 1):
     '''
     def select_constant_order(energy, polarization):
         '''Always select the same order'''
-        return np.ones_like(energy, dtype=int) * order
+        return np.ones_like(energy, dtype=int) * order, np.ones_like(energy)
 
     return select_constant_order
+
+
+class EfficiencyFile(object):
+    def __init__(self, filename, orders):
+        dat = np.loadtxt(filename)
+        self.energy = dat[:, 0]
+        if len(orders) != (dat.shape[1] - 1):
+            raise ValueError('orders has len={0}, but data files has {1} order columns.'.format(len(orders), dat.shape[1] - 1))
+        self.orders = np.array(orders)
+        # Probability to end up in any order
+        self.totalprob = np.sum(dat[:, 1:], axis=1)
+        # Cumulative probability for orders, normalized to 1.
+        self.cumprob = np.cumsum(dat[:, 1:], axis=1) / self.totalprob[:, None]
+
+    def __call__(self, energies, polarization):
+        orderind = np.empty(len(energies), dtype=int)
+        ind = np.empty(len(energies), dtype=int)
+        for i, e in enumerate(energies):
+            ind[i] = np.argmin(np.abs(self.energy - e))
+            orderind[i] = np.min(np.nonzero(self.cumprob[ind[i]] > np.random.rand()))
+        return self.orders[orderind], self.totalprob[ind]
+
 
 
 class FlatGrating(FlatOpticalElement):
@@ -64,13 +86,27 @@ class FlatGrating(FlatOpticalElement):
     The grating is assumed to be geometrically thin, i.e. all photons enter on
     the face of the grating, not through the sides.
 
+    The sign convention for grating orders is determined by the ``order_sign_convenction``
+    attribute. If this is ``None``, the following, somewhat arbitrary convention is chosen:
+    Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
+    negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
+    the physical situation is the same, but the sign of the grating order will be reversed.
+    In this sence, the convention chosen is arbitrary. However, it has some practical
+    advantages: The implementation is fast and all photons passing through the grating
+    in the same diffraction order are displaced in the same way. (Contrary to the
+    convention in :class:`CATGrating`.)
+    If ``order_sign_convention`` i not ``None`` is has to be a callable that accepts the
+    photons table as input and returns an a float (e.g. ``+1``) or an array filled with -1
+    or +1.
+
     Parameters
     ----------
     d : float
         grating constant
     order_selector : callable
         A function or callable object that accepts photon energy and
-        polarization as input and returns a grating order (integer).
+        polarization as input and returns a grating order (integer)
+        and a probability (float).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. *(Default: ``True``)*
@@ -82,6 +118,7 @@ class FlatGrating(FlatOpticalElement):
            Check reflection gratings.
     '''
     output_columns = ['order']
+    order_sign_convention = None
 
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
@@ -94,29 +131,29 @@ class FlatGrating(FlatOpticalElement):
 
     def diffract_photons(self, photons):
         '''Vectorized implementation'''
-        p = h2e(photons['dir'])
-        # Check if p is normalized
-        length2 = np.sum(p*p, axis=-1)
-        if not np.allclose(length2, 1.):
-            p = p / np.sqrt(length2)[:, None]
+        p = norm_vector(h2e(photons['dir']))
         n = self.geometry['plane'][:3]
         l = h2e(self.geometry['e_y'])
         d = h2e(self.geometry['e_z'])
 
         wave = energy2wave / photons['energy']
-        m = self.order_selector(photons['energy'], photons['polarization'])
+        m, prob = self.order_selector(photons['energy'], photons['polarization'])
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
-        p_d = np.dot(p, h2e(self.geometry['e_z'])) + m * wave / self.d
+        if self.order_sign_convention is None:
+            sign = 1.
+        else:
+            sign = self.order_sign_convention(photons)
+        p_d = np.dot(p, h2e(self.geometry['e_z'])) + sign * m * wave / self.d
         p_l = np.dot(p, h2e(self.geometry['e_y']))
-        # The norm for p_n can be derived, but the direction need to be chosen.
+        # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = 1. - np.sqrt(p_d**2 + p_l**2)
         # Check if the photons have same direction compared to normal before
         direction = np.sign(np.dot(p, n), dtype=np.float)
         if not self.transmission:
             direction *= -1
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
-        return dir, m
+        return dir, m, prob
 
     def process_photons(self, photons, interpos=None):
         '''
@@ -135,8 +172,32 @@ class FlatGrating(FlatOpticalElement):
         else:
             intersect = np.ones(len(photons), dtype=bool)
         self.add_output_cols(photons)
-        dir, m = self.diffract_photons(photons[intersect])
-        photons['pos'][intersect] = interpos
-        photons['dir'][intersect] = dir
-        photons['order'][intersect] = m
+        if intersect.sum() > 0:
+            dir, m, p = self.diffract_photons(photons[intersect])
+            photons['pos'][intersect] = interpos
+            photons['dir'][intersect] = dir
+            photons['order'][intersect] = m
+            photons['probability'][intersect] = photons['probability'][intersect] * p
         return photons
+
+class CATGrating(FlatGrating):
+    '''Critical-Angle-Transmission Grating
+
+    This grating differs from the :class:`FlatGrating` in the sign convention of the
+    grating orders: Blazing happens on the side of the negative orders. Obviously, this
+    convention is only meaningful if the photons do not arrive perpendicular to the grating.
+    '''
+
+
+    def order_sign_convention(self, photons):
+        '''Convention to chose the sign for CAT grating orders
+
+        Blazing happens on the side of the negative orders. Obviously, this
+        convention is only meaningful if the photons do not arrive perpendicular to the grating.
+        '''
+        p = h2e(photons['dir'])
+        d = h2e(self.geometry['e_z'])
+        dotproduct = np.dot(p, d)
+        sign = np.sign(dotproduct)
+        sign[sign == 0] = 1
+        return sign

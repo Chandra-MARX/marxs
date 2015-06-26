@@ -58,3 +58,19 @@ def mat2aff(mat):
     m = np.eye(4)
     m[:3, :3] = mat
     return m
+
+def norm_vector(vec):
+    '''Normalize euklidean vectors.
+
+    Parameters
+    ----------
+    vec : np.array
+        Input vectors of shape (n, 3)
+
+    Returns
+    -------
+    vec : np.array
+        Normalized vectors
+    '''
+    length2 = np.sum(vec * vec, axis=-1)
+    return vec / np.sqrt(length2)[:, None]

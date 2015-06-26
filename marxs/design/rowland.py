@@ -224,7 +224,8 @@ class GratingArrayStructure(OpticalElement):
         return x, y, z
 
     def facet_position(self):
-        '''
+        '''Calculate ideal facet positions based on rowland geometry.
+
         Returns
         -------
         pos4d : list of arrays
@@ -256,7 +257,8 @@ class GratingArrayStructure(OpticalElement):
         gsa.generate_facets(FlatGrating, {'d': 0.002})
         '''
         self.facets = []
-
+        # _parse_position_keywords pops off keywords, thus operate on a copy here
+        facet_args = facet_args.copy()
         facet_pos4d = _parse_position_keywords(facet_args)
         tfacet, rfacet, zfacet, Sfacet = decompose44(facet_pos4d)
         if not np.allclose(Sfacet, 0.):
@@ -285,8 +287,8 @@ class GratingArrayStructure(OpticalElement):
                       translation2aff(tsigfacet),  # uncertaintig in translation for facet
                       translation2aff(tfacet),  # any additional offset of facet. Probably 0
                       mat2aff(rsigfacet),  # uncertainty in rotation for facet
-                      mat2aff(rfacet),  # Any rotation of facet, e.g. for CAT gratings
                       mat2aff(rrown),   # rotate grating normal to be normal to Rowland torus
+                      mat2aff(rfacet),  # Any rotation of facet, e.g. for CAT gratings
                       zoom2aff(zfacet),  # sets size of grating
                      ]):
                 assert m.shape == (4, 4)
