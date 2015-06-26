@@ -3,7 +3,7 @@ import numpy as np
 from numpy.random import random
 from astropy.table import Table
 
-from ..grating import (FlatGrating,
+from ..grating import (FlatGrating, CATGrating,
                        constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
 from ...math.pluecker import h2e
 from ... import energy2wave
@@ -49,7 +49,7 @@ def test_order_dependence():
                      'probability': np.ones(5),
                      })
     def mock_order(x, y):
-        return [-2, -1, 0, 1, 2], np.ones(5)
+        return np.array([-2, -1, 0, 1, 2]), np.ones(5)
     g = FlatGrating(d=1./500, order_selector=mock_order)
     p = g.process_photons(photons)
     # grooves run in y direction
@@ -60,6 +60,7 @@ def test_order_dependence():
     assert np.abs(p['dir'][4, 2] / p['dir'][3, 2] - 2 ) < 0.00001
 
 def test_energy_dependence():
+    '''The grating angle should depend on the photon wavelength <-> energy.'''
     photons = Table({'pos': np.ones((5,4)),
                      'dir': np.tile([1., 0, 0, 0], (5,1)),
                      'energy': np.arange(1., 6),
@@ -74,6 +75,50 @@ def test_energy_dependence():
     lam = energy2wave / p['energy']
     theta = np.arctan2(p['dir'][:, 2], p['dir'][:, 0])
     assert np.allclose(1. * lam, 1./500. * np.sin(theta))
+
+def test_order_convention():
+    dirs = np.zeros((3, 4))
+    dirs[1, 2] = 0.01
+    dirs[2, 2] = -0.01
+    dirs[:, 0] = - 1
+    photons = Table({'pos': np.ones((3, 4)),
+                     'dir': dirs,
+                     'energy': np.ones(3),
+                     'polarization': np.ones(3),
+                     'probability': np.ones(3),
+                     })
+    gp = FlatGrating(d=1./500, order_selector=constant_order_factory(1), zoom=2)
+    p1 = gp.process_photons(photons.copy())
+    gm = FlatGrating(d=1./500, order_selector=constant_order_factory(-1), zoom=2)
+    m1 = gm.process_photons(photons.copy())
+    assert np.all(p1['order'] == 1)
+    assert np.all(m1['order'] == -1)
+    # intersection point with grating cannot depend on order
+    assert np.all(p1['pos'].data == m1['pos'].data)
+
+def test_CAT_order_convention():
+    dirs = np.zeros((3, 4))
+    dirs[:, 0] = -1.
+    dirs[1, 2]= 0.01
+    dirs[2, 2]= -0.01
+    photons = Table({'pos': np.ones((3, 4)),
+                     'dir': dirs,
+                     'energy': np.ones(3),
+                     'polarization': np.ones(3),
+                     'probability': np.ones(3),
+                     })
+    gp = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
+    p5 = gp.process_photons(photons.copy())
+    gm = CATGrating(d=1./5000, order_selector=constant_order_factory(-5), zoom=2)
+    m5 = gm.process_photons(photons.copy())
+    for g in [gm, gp]:
+        assert np.all(g.order_sign_convention(photons) == np.array([1, 1, -1]))
+    assert p5['dir'][1, 2] > 0
+    assert p5['dir'][2, 2] < 0
+    assert m5['dir'][1, 2] < 0
+    assert m5['dir'][2, 2] > 0
+
+
 
 def test_uniform_efficiency_factory():
     '''Uniform efficiency factory should give results from -order to +order'''
@@ -91,8 +136,9 @@ def test_constant_order_factory():
     assert len(testout[0]) == len(testout[1])
 
 def test_EfficiencyFile():
-    '''Interactively, I see that the probability is not chosen right.
+    '''Read in the efficency from a file.
 
+    To simplify testing, simulate an inout file using StringIO.
     '''
     data  = StringIO(".5 .1 .1 .1 .4\n1. .1 .1 .1 .5\n1.5 0. .1 .0 .5")
     eff = EfficiencyFile(data, [1, 0, -1, -2])
