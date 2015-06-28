@@ -7,7 +7,40 @@ from ..math.pluecker import *
 
 
 class ThinLens(FlatOpticalElement):
-    '''
+    '''Thin Lens
+
+    This implements the so called "thin lens" approximation, see
+    https://en.wikipedia.org/wiki/Thin_lens for details.
+
+    This class represents a lens that is (except for the thin lens approximation)
+    perfect: There is no absorption and no wavelength dependence of the refraction.
+    There is no physical material that allows to manufacture an X-ray lens in the same
+    shape as traditional glass lenses, but this class can  be used as an "effective"
+    model. It is computationally cheap and if the details of the mirror are not important
+    to the simulation, then a thin lens might provide an approximation for
+    X-ray focussing.
+
+    Unless the size of the elemet is changed with e.g. the ``zoom`` or ``pos4d`` parameter,
+    this lens will only process photons in a square fomr -1 to +1 in the y,z-plane.
+
+    Example
+    -------
+
+    >>> import matplotlib.pyplot as plt
+    >>> from marxs import source, optics
+    >>> mysource = source.ConstantPointSource((30., 30.), 1., 300.)
+    >>> mypointing = source.FixedPointing(coords=(30., 30.))
+    >>> myslit = optics.RectangleAperture(zoom=2)
+    >>> lens = optics.ThinLens(focallength=10,zoom=40)
+
+    >>> photons = mysource.generate_photons(11)
+    >>> photons = mypointing.process_photons(photons)
+    >>> photons = myslit.process_photons(photons)
+    >>> photons = lens.process_photons(photons)
+
+    >>> mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-9.6, 0, 0]), zoom=1e5)
+    >>> photons = mdet.process_photons(photons)
+    >>> plt.plot(p['det_x'], p['det_y'], 's')
     '''
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')

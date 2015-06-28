@@ -40,6 +40,50 @@ class ConstantPointSource(Source):
         out[5, :] = 1.
         return Table(out.T, names = ('time', 'ra', 'dec', 'energy', 'polarization', 'probability'))
 
+class SymbolFSource(Source):
+    '''Source shaped like the letter F.
+
+    This source provies a non-symmetric source for testing purposes.
+
+    Paramters
+    ---------
+    size : float
+        size scale in degrees
+    '''
+    def __init__(self, coords, flux, energy, polarization=np.nan, effective_area=1, size=1):
+        self.coords = coords
+        self.flux = flux
+        self.effective_area = effective_area
+        self.rate = flux * effective_area
+        self.energy = energy
+        self.polarization = polarization
+        self.size = size
+
+    def generate_photons(self, t):
+        n = t  * self.rate
+        elem = np.random.choice(3, size=n)
+
+        ra = np.empty(n)
+        ra[:] = self.coords[0]
+        dec = np.empty(n)
+        dec[:] = self.coords[1]
+        ra[elem == 0] += self.size * np.random.random(np.sum(elem == 0))
+        ra[elem == 1] += self.size
+        dec[elem == 1] += 0.5 * self.size * np.random.random(np.sum(elem == 1))
+        ra[elem == 2] += 0.8 * self.size
+        dec[elem == 2] += 0.3 * self.size * np.random.random(np.sum(elem == 2))
+
+
+        out = np.empty((6, n))
+        out[0, :] = np.arange(0, t, 1. / self.rate)
+        out[1,:] = ra
+        out[2,:] = dec
+        out[3, :] = self.energy
+        out[4,:] = self.polarization
+        out[5, :] = 1.
+        return Table(out.T, names = ('time', 'ra', 'dec', 'energy', 'polarization', 'probability'))
+
+
 
 class PointingModel(SimulationSequenceElement):
     '''A base model for all pointing models
