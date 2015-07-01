@@ -3,7 +3,8 @@ from ..labSource import FarLabConstantPointSource as LabSource
 
 
 def test_photon_generation():
-	'''test [FILL IN]
+	'''This is a test for the far source used with an aperture. It checks that
+	the starting positions of the photons are within the aperture.
 	'''
 	pos = [1., 0., 0.]
 	polar = [0., 0., 0.]
