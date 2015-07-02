@@ -34,7 +34,7 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
         super(FarLabConstantPointSource, self).__init__(**kwargs)
 
     def generate_photons(self, t):
-        n = (int)(t * self.rate)
+        n = int(t * self.rate)
 
         # randomly choose direction - photons uniformly distributed over baffle plate area
         # coordinate axes: origin at baffle plate, tube center. +x source, +y window, +z up
