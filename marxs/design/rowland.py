@@ -49,9 +49,10 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
 
 class RowlandTorus(object):
     '''Torus with z axis as symmetry axis'''
-    def __init__(self, R, r):
+    def __init__(self, R, r, *kwargs):
         self.R = R
         self.r = r
+        self.pos4d = _parse_position_keywords(keywords)
 
     def quartic(self, x, y, z):
         '''Quartic torus equation.

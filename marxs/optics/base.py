@@ -57,7 +57,7 @@ class OpticalElement(SimulationSequenceElement):
         takes precedence over ``position`` and ``orientation``
     position : 3-d vector in real space
         Measured from the origin of the spacecraft coordinate system
-    orientation : Rotation matrix on ``None``
+    orientation : Rotation matrix or ``None``
         Relative orientation of the base vectors of this optical
         element relative to the orientation of the cooxsrdinate system
         of the spacecraft. The default is no rotation (i.e. the axes of the
