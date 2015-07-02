@@ -10,7 +10,7 @@ def test_photon_generation():
 	polar = [0., 0., 0.]
 	rate = 10
 	center = [0., 0.5, 0.]
-	source = LabSource(pos, polar, rate, 5., center, 1., 2.8)
+	source = LabSource(pos, polar, rate, 5., position = center, zoom = [1., 1., 2.8])
 	
 	photons = source.generate_photons(1.)
 	for i in range (0, 10):
