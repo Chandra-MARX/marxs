@@ -50,7 +50,16 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
 
 
 class RowlandTorus(MarxsElement):
-    '''Torus with z axis as symmetry axis'''
+    '''Torus with z axis as symmetry axis
+
+    Parameters
+    ----------
+    R : float
+        Radius of Rowland torus. ``r`` determines the radius of the Rowland circle,
+        ``R`` is then used to rotate that circle around the axis of symmetry of the torus.
+    r : float
+        Radius of Rowland circle
+    '''
     def __init__(self, R, r, **kwargs):
         self.R = R
         self.r = r
