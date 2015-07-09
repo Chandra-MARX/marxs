@@ -43,6 +43,30 @@ def test_torus():
     mytorus = RowlandTorus(R=R, r=r)
 
     assert np.allclose(mytorus.quartic(xyz), 0.)
+    # This torus has pos4d=eye(4), so the same results should come out with this shortcut
+    assert np.allclose(mytorus.quartic(xyz, transform=False), 0.)
+
+def test_rotated_torus():
+    '''Test the torus equation for a set of points.
+
+    Importantly, we use a parametric description of the torus here, which is
+    different from the actual implementation.
+    '''
+    angle = np.arange(0, 2 * np.pi, 0.1)
+    phi, theta = np.meshgrid(angle, angle)
+    phi = phi.flatten()
+    theta = theta.flatten()
+    xyz = parametrictorus(2., 1., theta, phi)
+    # rotate -90 deg around y axis:
+    #   x -> z
+    #   z -> -x
+    rotatedxyz = np.zeros_like(xyz)
+    rotatedxyz[:, 0] = xyz[:, 2]
+    rotatedxyz[:, 1] = xyz[:, 1]
+    rotatedxyz[:, 2] = -xyz[:, 0]
+    mytorus = RowlandTorus(R=2., r=1., orientation=transforms3d.axangles.axangle2mat([0,1,0], -np.pi/2))
+    assert np.allclose(mytorus.quartic(rotatedxyz), 0.)
+
 
 def test_torus_normal():
     '''Compare the analytic normal with a numeric result.

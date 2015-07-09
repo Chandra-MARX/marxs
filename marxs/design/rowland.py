@@ -11,6 +11,7 @@ from ..base import _parse_position_keywords, MarxsElement
 from ..optics import FlatDetector
 from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..math.rotations import ex2vec_fix
+from ..math.pluecker import e2h, h2e
 
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
@@ -56,7 +57,7 @@ class RowlandTorus(MarxsElement):
         self.pos4d = _parse_position_keywords(kwargs)
         super(RowlandTorus, self).__init__(**kwargs)
 
-    def quartic(self, xyz):
+    def quartic(self, xyz, transform=True):
         '''Quartic torus equation.
 
         Roots of this equation are points on the torus.
@@ -66,6 +67,10 @@ class RowlandTorus(MarxsElement):
         xyz : np.array of shape (N, 3) or (3)
             Coordinates of points in euklidean space. The quartic is calculated for
             those points.
+        transform : bool
+            If ``True`` transform ``xyz`` from the global coordinate system into the
+            local coordinate system of the torus. If this transformation is done in the
+            calling function already, set to ``False``.
 
         Returns
         -------
@@ -74,6 +79,10 @@ class RowlandTorus(MarxsElement):
         '''
         if xyz.shape[-1] != 3:
             raise ValueError('Input coordinates must be defined in Eukledian space.')
+
+        if transform:
+            invpos4d = np.linalg.inv(self.pos4d)
+            xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
         return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., :2]**2).sum(axis=-1)
 
     def normal(self, xyz):
@@ -93,13 +102,17 @@ class RowlandTorus(MarxsElement):
         '''
         # For r,R  >> 1 even marginal differences lead to large
         # numbers on the quartic because of R**4 -> normalize
-        if not np.allclose(self.quartic(xyz) / self.R**4., 0.):
+        invpos4d = np.linalg.inv(self.pos4d)
+        xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
+
+        if not np.allclose(self.quartic(xyz, transform=False) / self.R**4., 0.):
             raise ValueError('Gradient vector field is only defined for points on torus surface.')
         factor = 4. * ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2)
         dFdx = factor * xyz[..., 0] - 8. * self.R**2 * xyz[..., 0]
         dFdy = factor * xyz[..., 1] - 8. * self.R**2 * xyz[..., 1]
         dFdz = factor * xyz[..., 2]
-        return np.vstack([dFdx, dFdy, dFdz]).T
+        gradient = np.vstack([dFdx, dFdy, dFdz]).T
+        return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
 
 class FacetPlacementError(Exception):
