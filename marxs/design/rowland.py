@@ -56,23 +56,50 @@ class RowlandTorus(MarxsElement):
         self.pos4d = _parse_position_keywords(kwargs)
         super(RowlandTorus, self).__init__(**kwargs)
 
-    def quartic(self, x, y, z):
+    def quartic(self, xyz):
         '''Quartic torus equation.
 
         Roots of this equation are points on the torus.
+
+        Parameters
+        ----------
+        xyz : np.array of shape (N, 3) or (3)
+            Coordinates of points in euklidean space. The quartic is calculated for
+            those points.
+
+        Returns
+        -------
+        q : np.array of shape (N) or scalar
+            Quartic at the input location
         '''
-        return (x**2. + y**2. + z**2. + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (x**2. + y**2.)
-    def normal(self, x, y, z):
-        '''Return the gradient vector field'''
+        if xyz.shape[-1] != 3:
+            raise ValueError('Input coordinates must be defined in Eukledian space.')
+        return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., :2]**2).sum(axis=-1)
+
+    def normal(self, xyz):
+        '''Return the gradient vector field.
+
+        Parameters
+        ----------
+        xyz : np.array of shape (N, 3) or (3)
+            Coordinates of points in euklidean space. The quartic is calculated for
+            those points. All points need to be on the surface of the torus.
+
+        Returns
+        -------
+        gradient : np.array
+            Gradient vector field in euklidean coordinates. One vector corresponds to each
+            input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
+        '''
         # For r,R  >> 1 even marginal differences lead to large
         # numbers on the quartic because of R**4 -> normalize
-        if not np.allclose(self.quartic(x, y, z) / self.R**4., 0.):
+        if not np.allclose(self.quartic(xyz) / self.R**4., 0.):
             raise ValueError('Gradient vector field is only defined for points on torus surface.')
-        factor = 4. * (x**2. + y**2. + z**2. + self.R**2. - self.r**2)
-        dFdx = factor * x - 8. * self.R**2 * x
-        dFdy = factor * y - 8. * self.R**2 * y
-        dFdz = factor * z
-        return [dFdx, dFdy, dFdz]
+        factor = 4. * ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2)
+        dFdx = factor * xyz[..., 0] - 8. * self.R**2 * xyz[..., 0]
+        dFdy = factor * xyz[..., 1] - 8. * self.R**2 * xyz[..., 1]
+        dFdz = factor * xyz[..., 2]
+        return np.vstack([dFdx, dFdy, dFdz]).T
 
 
 class FacetPlacementError(Exception):
@@ -165,7 +192,7 @@ class GratingArrayStructure(OpticalElement):
         anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
         a = (self.phi[0] + anglediff / 2 ) % (2. * np.pi)
         r = sum(self.radius) / 2
-        return self.xyz_from_ra(r, a)
+        return self.xyz_from_ra(r, a).flatten()
 
     def anglediff(self):
         '''Angles range covered by facets, accounting for 2 pi properly'''
@@ -219,12 +246,16 @@ class GratingArrayStructure(OpticalElement):
         '''
         y = radius * np.sin(angle)
         z = radius * np.cos(angle)
+        x = np.zeros_like(y)
+        xyz = np.vstack([x,y,z]).T
         def f(x):
-            return self.rowland.quartic(x, y, z)
+            xyz[..., 0] = x
+            return self.rowland.quartic(xyz)
         x, brent_out = optimize.brentq(f, self.x_range[0], self.x_range[1], full_output=True)
         if not brent_out.converged:
             raise Exception('Intersection with torus not found.')
-        return x, y, z
+        xyz[..., 0] = x
+        return xyz
 
     def facet_position(self):
         '''Calculate ideal facet positions based on rowland geometry.
@@ -241,8 +272,7 @@ class GratingArrayStructure(OpticalElement):
         for r in radii:
             angles = self.distribute_facets_on_arc(r)
             for a in angles:
-                x, y, z = self.xyz_from_ra(r, a)
-                facet_pos = np.array([x, y, z])
+                facet_pos = self.xyz_from_ra(r, a).flatten()
                 #facet_normal = np.array(self.rowland.normal(x, y, z))
                 # Find the rotation between [1, 0, 0] and the new normal
                 # Keep grooves (along e_y) parallel to e_y
