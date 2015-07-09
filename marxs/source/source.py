@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table, Column
 from transforms3d.euler import euler2mat
 
-from ..optics.base import SimulationSequenceElement
+from ..base import SimulationSequenceElement
 
 '''TO-DO: make proper object hirachy, always call super on init. Pass args through, e.g. for name.'''
 

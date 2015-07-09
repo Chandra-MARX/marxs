@@ -8,10 +8,11 @@ from ...source import ConstantPointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
 
 def parametrictorus(R, r, theta, phi):
+    '''Just another way to specify a torus with z-axis as symmetry'''
     x = (R + r * np.cos(theta)) * np.cos(phi)
     y = (R + r * np.cos(theta)) * np.sin(phi)
     z = r * np.sin(theta)
-    return x, y, z
+    return np.array([x, y, z]).T
 
 def test_radius_of_photon_shell():
     mysource = ConstantPointSource((30., 30.), 1., 1.)
@@ -38,10 +39,34 @@ def test_torus():
     phi, theta = np.meshgrid(angle, angle)
     phi = phi.flatten()
     theta = theta.flatten()
-    x, y, z = parametrictorus(R, r, theta, phi)
+    xyz = parametrictorus(R, r, theta, phi)
     mytorus = RowlandTorus(R=R, r=r)
 
-    assert np.allclose(mytorus.quartic(x, y, z), 0.)
+    assert np.allclose(mytorus.quartic(xyz), 0.)
+    # This torus has pos4d=eye(4), so the same results should come out with this shortcut
+    assert np.allclose(mytorus.quartic(xyz, transform=False), 0.)
+
+def test_rotated_torus():
+    '''Test the torus equation for a set of points.
+
+    Importantly, we use a parametric description of the torus here, which is
+    different from the actual implementation.
+    '''
+    angle = np.arange(0, 2 * np.pi, 0.1)
+    phi, theta = np.meshgrid(angle, angle)
+    phi = phi.flatten()
+    theta = theta.flatten()
+    xyz = parametrictorus(2., 1., theta, phi)
+    # rotate -90 deg around y axis:
+    #   x -> z
+    #   z -> -x
+    rotatedxyz = np.zeros_like(xyz)
+    rotatedxyz[:, 0] = xyz[:, 2]
+    rotatedxyz[:, 1] = xyz[:, 1]
+    rotatedxyz[:, 2] = -xyz[:, 0]
+    mytorus = RowlandTorus(R=2., r=1., orientation=transforms3d.axangles.axangle2mat([0,1,0], -np.pi/2))
+    assert np.allclose(mytorus.quartic(rotatedxyz), 0.)
+
 
 def test_torus_normal():
     '''Compare the analytic normal with a numeric result.
@@ -56,20 +81,20 @@ def test_torus_normal():
     phi, theta = np.meshgrid(angle, angle)
     phi = phi.flatten()
     theta = theta.flatten()
-    x, y, z = parametrictorus(R, r, theta, phi)
-    xt1, yt1, zt1 = parametrictorus(R, r, theta + 0.001, phi)
-    xp1, yp1, zp1 = parametrictorus(R, r, theta, phi + 0.001)
-    xt0, yt0, zt0 = parametrictorus(R, r, theta - 0.001, phi)
-    xp0, yp0, zp0 = parametrictorus(R, r, theta, phi + 0.001)
+    xyz = parametrictorus(R, r, theta, phi)
+    t1 = parametrictorus(R, r, theta + 0.001, phi)
+    p1 = parametrictorus(R, r, theta, phi + 0.001)
+    t0 = parametrictorus(R, r, theta - 0.001, phi)
+    p0 = parametrictorus(R, r, theta, phi + 0.001)
 
     mytorus = RowlandTorus(R=R, r=r)
-    vec_normal = np.vstack(mytorus.normal(x, y, z))
+    vec_normal = mytorus.normal(xyz)
 
-    vec_delta_theta = np.vstack([xt1 - xt0, yt1 - yt0, zt1 - zt0])
-    vec_delta_phi = np.vstack([xp1 - xp0, yp1 - yp0, zp1 - zp0])
+    vec_delta_theta = t1 - t0
+    vec_delta_phi = p1 - p0
 
-    assert np.allclose(np.einsum('ij,ij->j', vec_normal, vec_delta_theta), 0.)
-    assert np.allclose(np.einsum('ij,ij->j', vec_normal, vec_delta_phi), 0.)
+    assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
+    assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_phi), 0.)
 
 def test_GratingArrayStructure():
     '''Check a GAS for consistency
@@ -122,6 +147,7 @@ def test_GratingArrayStructure_2pi():
     assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
 
 def test_facet_rotation_via_facetargs():
+    '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e4/2, 9e4/2)
     mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
