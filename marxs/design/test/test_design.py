@@ -8,6 +8,7 @@ from ...source import ConstantPointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
 
 def parametrictorus(R, r, theta, phi):
+    '''Just another way to specify a torus'''
     x = (R + r * np.cos(theta)) * np.cos(phi)
     y = (R + r * np.cos(theta)) * np.sin(phi)
     z = r * np.sin(theta)
@@ -122,6 +123,7 @@ def test_GratingArrayStructure_2pi():
     assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
 
 def test_facet_rotation_via_facetargs():
+    '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e4/2, 9e4/2)
     mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})

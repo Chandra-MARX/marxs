@@ -6,7 +6,8 @@ from astropy import table
 import transforms3d
 from transforms3d.affines import decompose44
 
-from ..optics.base import OpticalElement, _parse_position_keywords
+from ..optics.base import OpticalElement
+from ..base import _parse_position_keywords, MarxsElement
 from ..optics import FlatDetector
 from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..math.rotations import ex2vec_fix
@@ -47,12 +48,13 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     return np.percentile(r, percentile)
 
 
-class RowlandTorus(object):
+class RowlandTorus(MarxsElement):
     '''Torus with z axis as symmetry axis'''
-    def __init__(self, R, r, *kwargs):
+    def __init__(self, R, r, **kwargs):
         self.R = R
         self.r = r
-        self.pos4d = _parse_position_keywords(keywords)
+        self.pos4d = _parse_position_keywords(kwargs)
+        super(RowlandTorus, self).__init__(**kwargs)
 
     def quartic(self, x, y, z):
         '''Quartic torus equation.
