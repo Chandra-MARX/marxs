@@ -36,7 +36,7 @@ from marxs.design.rowland import design_tilted_torus
 
 R, r, pos4d = design_tilted_torus(9e4, np.deg2rad(3), np.deg2rad(6))
 mytorustilt = RowlandTorus(R, r, pos4d=pos4d)
-mygascattilt = GratingArrayStructure(mytorustilt, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': catorders})
+mygascattilt = GratingArrayStructure(mytorustilt, d_facet=10., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 5, 'orientation': blaze, 'd':0.0002, 'order_selector': catorders})
 
 
 
@@ -47,7 +47,7 @@ pg = mygascattilt.process_photons(pg)
 p = pg[pg['probability'] > 0]
 mdet = FlatDetector(position=np.array([0e3, 0, 0]), zoom=1e5, pixsize=1.)
 
-p = mdet.process_photons(p)
+P = mdet.process_photons(p)
 
 plt.clf()
 plt.plot(p['det_x'], p['det_y'], 'k.')
@@ -82,11 +82,21 @@ def find_best_detector_position(photons):
 
     return scipy.optimize.minimize(width, 0, args=(photons,), options={'maxiter': 20, 'disp': True})
 
+xbest = find_best_detector_position(pg[pg['order']==-8])
+p = pg[pg['probability'] > 0]
+
+for x in [-500, 0, 500, 1000, 1500,5000,5e4]:
+    mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5, pixsize=1.)
+    p = mdet.process_photons(p)
+    p.rename_column('det_x', 'det_x_{0}'.format(x))
+    p.rename_column('det_y', 'det_y_{0}'.format(x))
+
 # output non-vector columns
 pout = p[:]
 for c in p.colnames:
     if len(p[c].shape) > 1:
         pout.remove_column(c)
+
 # output facet information
 facet = np.arange(len(mygascattilt.facets))
 facet_tab = astropy.table.Table({'facet':facet, 'facet_x': facet, 'facet_y': facet, 'facet_z':facet})
