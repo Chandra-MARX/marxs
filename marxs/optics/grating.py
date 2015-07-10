@@ -117,7 +117,7 @@ class FlatGrating(FlatOpticalElement):
         .. todo::
            Check reflection gratings.
     '''
-    output_columns = ['order']
+    output_columns = ['order', 'grat_y', 'grat_z']
     order_sign_convention = None
 
     def __init__(self, **kwargs):
@@ -155,19 +155,21 @@ class FlatGrating(FlatOpticalElement):
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
         return dir, m, prob
 
-    def process_photons(self, photons, interpos=None):
+    def process_photons(self, photons, interpos=None, intercoos=None):
         '''
         Additional Parameters
         ---------------------
-        interpos : array (N, 4)
+        interpos, intercoos : array (N, 4)
             This parameter is here for performance reasons. In many cases, the
             intersection point between the grating and the rays has been calculated
             by the calling routine to decide which photon is processed by which
             grating and only photons intersecting this grating are passed in.
-            If ``interpos`` is  not passed in, they are
+            The array ``interpos`` contains the intersection points in the global
+            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
+            If ``interpos`` and ``intercoos` are not passed in, they are
             calculated here. No checks are done on passed-in values.
         '''
-        if (interpos is None):
+        if (interpos is None) or (intercoos is None):
             intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
         else:
             intersect = np.ones(len(photons), dtype=bool)
@@ -177,6 +179,8 @@ class FlatGrating(FlatOpticalElement):
             photons['pos'][intersect] = interpos
             photons['dir'][intersect] = dir
             photons['order'][intersect] = m
+            photons['grat_y'][intersect] = intercoos[:, 0]
+            photons['grat_z'][intersect] = intercoos[:, 1]
             photons['probability'][intersect] = photons['probability'][intersect] * p
         return photons
 
