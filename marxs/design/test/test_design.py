@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import kstest
 import transforms3d
+import pytest
 
 from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell, design_tilted_torus
 from ...optics.base import OpticalElement
@@ -56,6 +57,27 @@ def test_torus():
     assert np.allclose(mytorus.quartic(xyz), 0.)
     # This torus has pos4d=eye(4), so the same results should come out with this shortcut
     assert np.allclose(mytorus.quartic(xyz, transform=False), 0.)
+
+def test_torus_solve_quartic():
+    '''solve_quartic helps to find point on the torus if two coordinates are fixed.'''
+    xyz = parametrictorus(2., 1., [.34, 1.23], [.4, 4.5])
+    mytorus = RowlandTorus(2., 1.)
+    for i in [0, 1]:
+        for j in range(3):
+            kwargs = {'x': xyz[i, 0], 'y': xyz[i, 1], 'z': xyz[i, 2],
+                      'interval' : np.array([-0.1, 0.1]) + xyz[i, j]}
+            kwargs['xyz'[j]] = None
+            assert np.allclose(xyz[i, j], mytorus.solve_quartic(**kwargs))
+
+    # Nothing to solve for
+    with pytest.raises(ValueError) as e:
+        out = mytorus.solve_quartic(x=1, y=1, z=1)
+    assert 'Exactly one of the input numbers' in str(e.value)
+
+    # Too many parameters to solve for
+    with pytest.raises(ValueError) as e:
+        out = mytorus.solve_quartic(x=1, y=None, z=None)
+    assert 'Exactly one of the input numbers' in str(e.value)
 
 def test_rotated_torus():
     '''Test the torus equation for a set of points.

@@ -94,6 +94,53 @@ class RowlandTorus(MarxsElement):
             xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
         return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., :2]**2).sum(axis=-1)
 
+    def solve_quartic(self, x=None, y=None, z=None, interval=[0, 1]):
+        '''Solve the quartic for points on the Rowland torus in Cartesian coordinates.
+
+        This method solves the quartic equation for positions on the Rowland Torus for
+        cases where two of the Cartesian coordinates are fixed (e.g. y and z) and the third
+        one (e.g. x) needs to be computed. This function is intended as a convenience for a
+        common use case. In more general cases, evaluate the :meth:`RowlandTorus.quartic` and
+        search for the roots of that function.
+
+        Parameters
+        ----------
+        x, y, z : float or None
+            Set two of these coordinates to fixed numbers. This method will solve for the
+            coordinate set to ``None``.
+            x, y, z are defined in the global coordinate system.
+        interval : np.array
+            [min, max] for the search. The quartic can have up to for solutions because a
+            line can intersect a torus in four points and this interval must bracket one and only
+            one solution.
+
+        Returns
+        -------
+        coo : float
+            Value of the fitted coordinate.
+        '''
+        n_Nones = 0
+        for i, c in enumerate([x, y, z]):
+            if c is None:
+                n_Nones +=1
+                ind = i
+        if n_Nones != 1:
+            raise ValueError('Exactly one of the input numbers for x,y,z must be None.')
+        # Need to give it a number for vstack to work
+        if ind == 0: x = 0.
+        if ind == 1: y = 0.
+        if ind == 2: z = 0.
+
+        xyz = np.vstack([x,y,z]).T
+        def f(val_in):
+            xyz[..., ind] = val_in
+            return self.quartic(xyz)
+        val_out, brent_out = optimize.brentq(f, interval[0], interval[1], full_output=True)
+        if not brent_out.converged:
+            raise Exception('Intersection with torus not found.')
+        return val_out
+
+
     def normal(self, xyz):
         '''Return the gradient vector field.
 
@@ -326,16 +373,8 @@ class GratingArrayStructure(OpticalElement):
         '''
         y = radius * np.sin(angle)
         z = radius * np.cos(angle)
-        x = np.zeros_like(y)
-        xyz = np.vstack([x,y,z]).T
-        def f(x):
-            xyz[..., 0] = x
-            return self.rowland.quartic(xyz)
-        x, brent_out = optimize.brentq(f, self.x_range[0], self.x_range[1], full_output=True)
-        if not brent_out.converged:
-            raise Exception('Intersection with torus not found.')
-        xyz[..., 0] = x
-        return xyz
+        x = self.rowland.solve_quartic(y=y,z=z, interval=self.x_range)
+        return np.vstack([x,y,z]).T
 
     def facet_position(self):
         '''Calculate ideal facet positions based on rowland geometry.
