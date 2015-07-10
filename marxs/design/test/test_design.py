@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import kstest
 import transforms3d
 
-from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell
+from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell, design_tilted_torus
 from ...optics.base import OpticalElement
 from ...source import ConstantPointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
@@ -25,6 +25,17 @@ def test_radius_of_photon_shell():
     assert abs(r1 - 5380.) < 10.
     assert abs(r2 - 5495.) < 10.
 
+def test_design_tilted_torus():
+    '''Test the trivial case with analytic answers and consistency for other angles'''
+    R, r, pos4d = design_tilted_torus(10, 0., 0.)
+    assert R == 5
+    assert r == 5
+    assert np.all(pos4d == np.eye(4))
+    # This is a solution that looks good by hand, but could still be slightly wrong...
+    R, r, pos4d = design_tilted_torus(10, np.deg2rad(3), np.deg2rad(6))
+    assert r == 5.0068617299896054
+    assert R == 4.9794336175561327
+    assert pos4d[0,3] == 0.027390523158633273
 
 def test_torus():
     '''Test the torus equation for a set of points.

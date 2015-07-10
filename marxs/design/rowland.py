@@ -123,6 +123,64 @@ class RowlandTorus(MarxsElement):
         gradient = np.vstack([dFdx, dFdy, dFdz]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
+def design_tilted_torus(f, alpha, beta):
+    '''Design a torus with specifications similar to Heilmann et al. 2010
+
+    A `RowlandTorus` is fully specified with the parameters ``r``, ``R`` and ``pos4d``.
+    However, in practice, these numbers might be derived from other values.
+    This function calculates the parameters of a RowlandTorus, based on a different
+    set of input values.
+
+    Parameters
+    ----------
+    f : float
+        distance between focal point and on-axis grating. Should be as large as
+        possible given the limitations of the spacecraft to increase the resolution.
+    alpha : float (in radian)
+        angle between optical axis and the line (on-axis grating - center of Rowland circle).
+        A typical value could be twice the blaze angle.
+    beta : float (in radian)
+        angle between optical axis and the line (on-axis grating - hinge), where the hinge
+        is a point on the Rowland circle. The Rowland Torus will be constructed by rotating
+        the Rowland Circle around the axis (focal point - hinge).
+        The center of the Rowland Torus will be the point where the line
+        (on-axis grating - center of Rowland circle) intersects the line
+        (focal point - hinge).
+
+    Returns
+    -------
+    R : float
+        Radius of Rowland torus. ``r`` determines the radius of the Rowland circle,
+        ``R`` is then used to rotate that circle around the axis of symmetry of the torus.
+    r : float
+        Radius of Rowland circle
+    pos4d : np.array of shape (4, 4)
+
+    Notes
+    -----
+    The geometry used here really needs o be explained in a figure.
+    However, some notes to explain at least the meaning of the symbols on the code
+    are in order:
+
+    - Cat : position of on-axis CAT grating (where the Rowland circle intersects the on-axis beam)
+    - H : position of hinge
+    - Ct : Center of Rowland Torus
+    - F : Focal point on axis (at the origin of the coordinate system)
+    - CatH, HF, FCt, etc. : distance between Cat and H, F and Ct, etc.
+    - gamma : see sketch.
+    '''
+    r = f / (2. * np.cos(alpha))
+    CatH = r * np.sqrt(2 * (1 + np.cos(2 * (beta - alpha))))
+    HF = np.sqrt(f**2 + CatH**2 - 2 * f * CatH * np.cos(beta))
+    gamma = np.arccos(HF / (2 * r))
+    R = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha + gamma) - r
+    FCt = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha)
+    x_Ct = FCt * np.cos(alpha + gamma)
+    y_Ct = 0
+    z_Ct = FCt * np.sin(alpha + gamma)
+    orientation = transforms3d.axangles.axangle2mat([0,1,0], np.pi/2 - alpha - gamma)
+    pos4d = transforms3d.affines.compose([x_Ct, y_Ct, z_Ct], orientation, np.ones(3))
+    return R, r, pos4d
 
 class FacetPlacementError(Exception):
     pass
