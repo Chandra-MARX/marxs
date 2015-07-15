@@ -38,7 +38,9 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary']
+    'sphinx.ext.autosummary',
+    'matplotlib.sphinxext.plot_directive',
+]
 
 numpydoc_show_class_members = False
 todo_include_todos = True
@@ -161,7 +163,22 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+    ]
+}
+
+html_theme_options = {
+#    'logo': 'logo.png',
+    'github_user': 'Chandra-MARX',
+    'github_repo': 'marxs',
+    'travis_button': True
+}
+
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
