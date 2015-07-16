@@ -19,14 +19,23 @@ class MultiLayerMirror(FlatOpticalElement):
     	'Peak lambda' - wavelength with maximum reflection at a given position
     	'Peak' - maximum reflection at a given position
     	'FWHM(nm)' - full width half max, measure of width of reflection Gaussian peaks
+    Provide polarization data in a file with columns:
+    	'Photon energy' - energy of the photon
+    	'Polarization' - Fraction polarized in the more reflective direction, so that
+    		randomly polarized light would have a value of 0.5
     
     Parameters
     ----------
     fileCode: string
-    	serial number of mirror, used to open reflection data file
+    	path, filename, and .txt for reflection data file
+    testedPolarization: string
+    	path, filename, and .txt to a text file containing a table with photon energy
+    	and fraction polarization for the light used to test the mirrors and create the
+    	reflectivity file
     '''
-    def __init__(self, fileCode, **kwargs):
-        self.fileName = './marxs/optics/data/' + fileCode + '.txt'
+    def __init__(self, reflFile, testedPolarization, **kwargs):
+        self.fileName = reflFile
+        self.polFile = testedPolarization
         if ('zoom' not in kwargs):
         	kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
         super(MultiLayerMirror, self).__init__(**kwargs)
@@ -63,7 +72,7 @@ class MultiLayerMirror(FlatOpticalElement):
         new_beam_dir = (photons['dir'][:,0:3]).copy()
         new_beam_dir /= np.linalg.norm(new_beam_dir, axis=1)[:, np.newaxis]
         new_v_2 = np.cross(new_beam_dir, v_1)
-        photons['polarization'][:,0:3] = np.tile(p_v_1, (3,1)).T * v_1 + np.tile(p_v_2, (3,1)).T * new_v_2
+        photons['polarization'][:,0:3] = p_v_1[:, np.newaxis] * v_1 + p_v_2[:, np.newaxis] * new_v_2
         
         # set position to intersection point
         photons['pos'] = intersection
@@ -72,7 +81,7 @@ class MultiLayerMirror(FlatOpticalElement):
     	reflectFile = ascii.read(self.fileName)
         
         # find reflectivity adjustment due to polarization in testing
-        polarizedFile = ascii.read('./marxs/optics/data/ALSpolarization2.txt')
+        polarizedFile = ascii.read(self.polFile)
         tested_polarized_fraction = np.interp(photons['energy'], polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
         
         # find probability of being reflected due to position
@@ -89,10 +98,8 @@ class MultiLayerMirror(FlatOpticalElement):
         # find probability of being reflected due to polarization
         # v_1 is parallel to plane, good reflection direction
         refl_prob *= np.einsum('ij,ij->i', polarization, v_1)**2
-        
+        refl_prob[np.isnan(refl_prob)] = 0
         # multiply probability by probability of reflection
-        for i in range(0, len(photons['probability'])):
-        	if not (photons['probability'][i] == 0):
-        		photons['probability'][i] *= refl_prob[i] / 100
+        photons['probability'] *= refl_prob / 100
         
         return photons
