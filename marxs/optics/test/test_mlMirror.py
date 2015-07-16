@@ -29,7 +29,7 @@ def test_photon_reflection():
 	assert np.allclose(np.array(photons['dir']), expected_dir)
 	
 	# confirm reflection probability
-	polarizedFile = ascii.read('./marxs/optics/docs/ALSpolarization2.txt')
+	polarizedFile = ascii.read('./marxs/optics/data/ALSpolarization2.txt')
 	correctTestPolar = np.interp(1.23984282 / 3.02, polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
 	expected_prob = np.array([0.0581 * np.exp(-0.5) * 1. / correctTestPolar, 0.0042 * 0., 0.])
 	assert np.allclose(np.array(photons['probability']), expected_prob)
@@ -72,7 +72,7 @@ def test_photon_reflection():
 	This test could be expanded but the numbers in the 'expected' arrays have not been correctly calculated yet.
 	
 	# confirm reflection probability
-	polarizedFile = ascii.read('./marxs/optics/docs/ALSpolarization2.txt')
+	polarizedFile = ascii.read('./marxs/optics/data/ALSpolarization2.txt')
 	correctTestPolar = np.interp(1.23984282 / 3.02, polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
 	expected_prob = np.array([0.0581 * np.exp(-0.5) * 1. / correctTestPolar, 0.0042 * 0., 0.])
 	assert np.allclose(np.array(photons['probability']), expected_prob)

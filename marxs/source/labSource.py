@@ -6,17 +6,7 @@ from ..optics.base import FlatOpticalElement
 from ..optics.polarization import polarization_vectors
 
 
-class PolarizedSource(Source):
-    def __init__(self, **kwargs):
-        super(PolarizedSource, self).__init__(**kwargs)
-    
-    def random_polarization(self, n, dir_array):
-        # randomly choose polarization (temporary)
-        angles = np.random.uniform(0, 2 * np.pi, n)
-        return polarization_vectors(dir_array, angles)
-
-
-class FarLabConstantPointSource(PolarizedSource, FlatOpticalElement):
+class FarLabConstantPointSource(Source, FlatOpticalElement):
     '''Simple in-lab source used with aperture
     
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
@@ -67,7 +57,7 @@ class FarLabConstantPointSource(PolarizedSource, FlatOpticalElement):
         return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
 
 
-class LabConstantPointSource(PolarizedSource):
+class LabConstantPointSource(Source):
     '''Simple in-lab source for testing purposes
 
     - point source

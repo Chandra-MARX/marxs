@@ -12,6 +12,8 @@ class MultiLayerMirror(FlatOpticalElement):
     All reflectivity data is assumed to be for a single, desired angle. There
     is currently no way to enter varying reflection that depends on the angle
     of incidence.
+    There is a default size of 49mm by 24mm, but this can be overridden by
+    entering a different value for zoom.
     Provide reflectivity data in a file with columns:
     	'X(mm)' - position along the "changing" axis
     	'Peak lambda' - wavelength with maximum reflection at a given position
@@ -24,7 +26,7 @@ class MultiLayerMirror(FlatOpticalElement):
     	serial number of mirror, used to open reflection data file
     '''
     def __init__(self, fileCode, **kwargs):
-        self.fileName = './marxs/optics/docs/' + fileCode + '.txt'
+        self.fileName = './marxs/optics/data/' + fileCode + '.txt'
         if ('zoom' not in kwargs):
         	kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
         super(MultiLayerMirror, self).__init__(**kwargs)
@@ -36,20 +38,16 @@ class MultiLayerMirror(FlatOpticalElement):
         
         # split polarization into parallel and other components
         beam_dir = (photons['dir'][:,0:3]).copy()
-        for i in range(0, len(beam_dir)):
-        	beam_dir[i] /= np.linalg.norm(beam_dir[i])
+    	beam_dir /= np.linalg.norm(beam_dir, axis=1)[:, np.newaxis]
         # v_1 is parallel to plane, v_2 is third direction remaining
         v_1 = np.cross(beam_dir, self.geometry['e_x'][0:3])
         v_2 = np.cross(beam_dir, v_1)
         # find polarization in each direction
         polarization = (photons['polarization'][:,0:3]).copy()
-        p_v_1 = np.zeros(len(polarization))
-        p_v_2 = np.zeros(len(polarization))
-        for i in range(0, len(polarization)):
-        	v_1[i] /= np.linalg.norm(v_1[i])
-        	v_2[i] /= np.linalg.norm(v_2[i])
-        	p_v_1[i] = np.dot(polarization[i], v_1[i])   # just the cosine between the vectors
-        	p_v_2[i] = np.dot(polarization[i], v_2[i])
+        v_1 /= np.linalg.norm(v_1, axis=1)[:, np.newaxis]
+        v_2 /= np.linalg.norm(v_2, axis=1)[:, np.newaxis]
+        p_v_1 = np.einsum('ij,ij->i', polarization, v_1)   # just the cosines between the pairs of vectors
+        p_v_2 = np.einsum('ij,ij->i', polarization, v_2)
         
         # reflect (change direction)
         directions = photons['dir']
@@ -58,17 +56,14 @@ class MultiLayerMirror(FlatOpticalElement):
         directions = np.dot(pos4d_inv, directions)
         directions[0,:] *= -1
         directions = np.dot(self.pos4d, directions)
-        directions = directions.T
-        photons['dir'] = directions
+        photons['dir'] = directions.T
         
         # adjust polarization vectors after reflection
         # find new v_2
         new_beam_dir = (photons['dir'][:,0:3]).copy()
-        for i in range(0, len(new_beam_dir)):
-        	new_beam_dir[i] /= np.linalg.norm(new_beam_dir[i])
+        new_beam_dir /= np.linalg.norm(new_beam_dir, axis=1)[:, np.newaxis]
         new_v_2 = np.cross(new_beam_dir, v_1)
-        for i in range(0, len(polarization)):
-        	photons['polarization'][i,0:3] = p_v_1[i] * v_1[i] + p_v_2[i] * new_v_2[i]
+        photons['polarization'][:,0:3] = np.tile(p_v_1, (3,1)).T * v_1 + np.tile(p_v_2, (3,1)).T * new_v_2
         
         # set position to intersection point
         photons['pos'] = intersection
@@ -77,7 +72,7 @@ class MultiLayerMirror(FlatOpticalElement):
     	reflectFile = ascii.read(self.fileName)
         
         # find reflectivity adjustment due to polarization in testing
-        polarizedFile = ascii.read('./marxs/optics/docs/ALSpolarization2.txt')
+        polarizedFile = ascii.read('./marxs/optics/data/ALSpolarization2.txt')
         tested_polarized_fraction = np.interp(photons['energy'], polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
         
         # find probability of being reflected due to position
@@ -93,8 +88,7 @@ class MultiLayerMirror(FlatOpticalElement):
         
         # find probability of being reflected due to polarization
         # v_1 is parallel to plane, good reflection direction
-        for i in range(0, len(polarization)):
-        	refl_prob[i] *= np.dot(polarization[i], v_1[i])**2
+        refl_prob *= np.einsum('ij,ij->i', polarization, v_1)**2
         
         # multiply probability by probability of reflection
         for i in range(0, len(photons['probability'])):
