@@ -3,6 +3,7 @@ from astropy.table import Table, Column
 from transforms3d.euler import euler2mat
 
 from ..base import SimulationSequenceElement
+from ..optics.polarization import polarization_vectors
 
 '''TO-DO: make proper object hirachy, always call super on init. Pass args through, e.g. for name.'''
 
@@ -14,6 +15,11 @@ class Source(SimulationSequenceElement):
     def generate_photons(self):
         # Similar to optics this could be given if generate_photons is given!
         pass
+    
+    def random_polarization(self, n, dir_array):
+        # randomly choose polarization (temporary)
+        angles = np.random.uniform(0, 2 * np.pi, n)
+        return polarization_vectors(dir_array, angles)
 
 
 class ConstantPointSource(Source):
@@ -45,8 +51,8 @@ class SymbolFSource(Source):
 
     This source provies a non-symmetric source for testing purposes.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     size : float
         size scale in degrees
     '''

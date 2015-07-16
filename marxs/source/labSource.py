@@ -3,6 +3,7 @@ from astropy.table import Table, Column
 
 from .source import Source
 from ..optics.base import FlatOpticalElement
+from ..optics.polarization import polarization_vectors
 
 
 class FarLabConstantPointSource(Source, FlatOpticalElement):
@@ -12,6 +13,8 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
     - photon direction determined by location of source, and selected photon starting position
     - aperture is parallel to y-z plane
+    - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
+      in which case polarization is relative to positive x axis, ALL GLOBAL AXES
     - TODO: figure out how to provide energy distribution
 
     Parameters
@@ -48,8 +51,10 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
                         pos[1, :] - self.sourcePos[1],
                         pos[2, :] - self.sourcePos[2],
                         np.zeros(n)])
+                        
+        polarization = self.random_polarization(n, dir.T)
         
-        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': np.random.uniform(0, 2 * np.pi, n).T, 'probability': np.ones(n).T})
+        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
 
 
 class LabConstantPointSource(Source):
@@ -58,6 +63,8 @@ class LabConstantPointSource(Source):
     - point source
     - photons uniformly distributed in all directions
     - photon start position is source position
+    - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
+      in which case polarization is relative to positive x axis, ALL GLOBAL AXES
     - TODO: figure out how to provide energy distribution
     
     Parameters
@@ -92,5 +99,7 @@ class LabConstantPointSource(Source):
                         np.sin(theta) * np.cos(phi),
                         np.sin(phi),
                         np.zeros(n)])
-
-        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': np.random.uniform(0, 2 * np.pi, n).T, 'probability': np.ones(n).T})
+                        
+        polarization = self.random_polarization(n, dir.T)
+		# provided polarization table must contain only UNIT VECTORS
+        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
