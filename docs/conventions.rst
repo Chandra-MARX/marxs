@@ -69,9 +69,15 @@ There are two ways to specify that:
       True
 
 
-   It is an error to specify ``pos4d`` and any of the ``orientation``, ``zoom``, and ``position``
-   keywords at the same time.
+  It is an error to specify ``pos4d`` and any of the ``orientation``, ``zoom``, and ``position``
+  keywords at the same time.
 
+.. note::
+
+   The `transforms3d <https://matthew-brett.github.io/transforms3d/index.html>`_ package provides
+   several functions to calculate 3-d and 4-d matrices from Euler angles, axis and angle,
+   quaternions and several other representations. This package is installed together with marxs.
+  
 Physical units
 --------------
 Most elements of ``marxs`` are scale free, and no specific unit is attached to by the code. However,
