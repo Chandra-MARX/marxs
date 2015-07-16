@@ -18,9 +18,14 @@ class OpticalElement(SimulationSequenceElement):
         Measured from the origin of the spacecraft coordinate system
     orientation : Rotation matrix or ``None``
         Relative orientation of the base vectors of this optical
-        element relative to the orientation of the cooxsrdinate system
-        of the spacecraft. The default is no rotation (i.e. the axes of the
+        element relative to the orientation of the coordinate system
+        of the spacecraft. The default is no rotation (i.e. the axes of both
         coordinate systems are parallel).
+    zoom : float or 3-d vector
+        Scale the size of an optical element in each dimension by ``zoom``. If ``zoom`` is a scalar,
+        the same scale is applied in all dimesions. This only affects the oter dimensions of
+        the optical element, not internal scales like the pixel size or grating constant (if
+        defined for the optical element in question).
     '''
     # __metaclass__ = abc.ABCMeta
 

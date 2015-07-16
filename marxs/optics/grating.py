@@ -157,8 +157,8 @@ class FlatGrating(FlatOpticalElement):
 
     def process_photons(self, photons, interpos=None, intercoos=None):
         '''
-        Additional Parameters
-        ---------------------
+        Other Parameters
+        ----------------
         interpos, intercoos : array (N, 4)
             This parameter is here for performance reasons. In many cases, the
             intersection point between the grating and the rays has been calculated
