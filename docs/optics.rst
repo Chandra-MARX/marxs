@@ -22,13 +22,22 @@ All optical elements have to be derived from :obj:`marxs.optics.base.OpticalElem
 
 Optical elements are generated with the following keywords:
 
-- Optical elements are placed in 3-d space with the ``pos4d`` keyward, or the ``zoom``, ``orientation`` and ``position`` keywords as explained in :ref:`coordsys`.
+- Optical elements are placed in 3-d space with the ``pos4d`` keyward, or the ``zoom``, ``orientation`` and ``position`` keywords as explained in :ref:`coordsys`:
+
+  >>> from marxs.optics import FlatDetector
+  >>> det1 = FlatDetector(position=[5., 1., 0.], zoom=[1, 50.2, 50.2])  
+  
 - Optical elements can have a name:
 
   >>> from marxs.optics import FlatDetector
   >>> det1 = FlatDetector(name='back-illuminated CCD No 1')
 
-- Individual optical elements might add more keywords (e.g. the pixel size for a detector or the filename of a parameter file); those are listed below for the individual optical elements.
+- Individual optical elements might add more keywords (e.g. the pixel size for a detector or the filename of a parameter file); those are listed below for the individual optical elements, e.g.:
+
+  >>> from marxs.optics import FlatDetector
+  >>> det1 = FlatDetector(pixsize=0.04)
+
+
 
 List of optical elements provided by marxs
 ------------------------------------------
