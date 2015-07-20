@@ -7,7 +7,7 @@ from ..math.pluecker import *
 
 
 class ThinLens(FlatOpticalElement):
-    '''Thin Lens
+    '''Focus rays with the thin lens approximation
 
     This implements the so called "thin lens" approximation, see
     https://en.wikipedia.org/wiki/Thin_lens for details.
@@ -17,11 +17,8 @@ class ThinLens(FlatOpticalElement):
     There is no physical material that allows to manufacture an X-ray lens in the same
     shape as traditional glass lenses, but this class can  be used as an "effective"
     model. It is computationally cheap and if the details of the mirror are not important
-    to the simulation, then a thin lens might provide an approximation for
+    to the simulation, a thin lens might provide an approximation for
     X-ray focussing.
-
-    Unless the size of the elemet is changed with e.g. the ``zoom`` or ``pos4d`` parameter,
-    this lens will only process photons in a square fomr -1 to +1 in the y,z-plane.
 
     Example
     -------
