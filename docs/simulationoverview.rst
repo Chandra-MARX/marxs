@@ -1,5 +1,5 @@
 ==========================
-Ray-trace a x-ray mission
+Design an x-ray mission
 ==========================
 
 A ray-trace of a new X-ray mission or laboratory experiment is done in several steps:
@@ -10,17 +10,15 @@ A ray-trace of a new X-ray mission or laboratory experiment is done in several s
 
 In this section, we explain how the ``marxs`` package can be used to set-up a ray-trace for a known
 geometric configuration, which tools this package offers to design new missions, where the details
-of the instrument are still worked out with the help of the ray-trace simulations and how to run
-simulations.
+of the instrument are still worked out with the help of the ray-trace simulations and how to define new optical elements not yet included into marxs.
 
 If you already have a ``marxs`` file that contains your instrument parameters from the instrument
-team or provided in the example directory of this package, you can skip the first two chapters of
-this section and read about running simulations immidiately.
+team or provided in the example directory of this package, you can skip this section.
 
 .. toctree::
    :maxdepth: 2
 
    optics
    design
-   run
+   newopticalelements
 

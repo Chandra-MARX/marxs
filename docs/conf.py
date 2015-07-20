@@ -87,7 +87,7 @@ exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-default_role = 'obj'
+default_role = 'any'
 
 # Add this to the top of every file
 rst_prolog = '.. include:: /aliases.txt'

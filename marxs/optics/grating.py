@@ -1,3 +1,5 @@
+'''Gratings and efficiency files'''
+
 import numpy as np
 from astropy.table import Column
 from transforms3d import affines

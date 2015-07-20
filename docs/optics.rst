@@ -43,31 +43,34 @@ List of optical elements provided by marxs
 ------------------------------------------
 Note that elements which generate photons (astropysical sources or lab sources) are not listed here. See :ref:`sources`.
 
-.. autoclass:: RectangleAperture
+.. autosummary::
+   :toctree: API
 
-.. autoclass:: Baffle
-	       
-.. autoclass:: ThinLens
+   aperture.RectangleAperture
+   baffle.Baffle
+   mirror.ThinLens
+   marx.MarxMirror
+   detector.FlatDetector
 
-.. autoclass:: MarxMirror
-
-.. autoclass:: FlatDetector
 
 Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
-The gratings implmented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photons to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that allows to pass in function (or other callable) that assigngs each diffrated photons to a gratings order. The following ``order_selector`` functions are provided in marxs:
+The gratings implemented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photon to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that expects a function (or other callable) that assigngs each diffrated photon to a gratings order. For example, the following code makes a grating where the photons are distributed with equal probability in all orders from -2 to 2:
 
-.. autofunction:: uniform_efficiency_factory
+   >>> from marx.optics import FlatGrating, uniform_efficiency_factory
+   >>> select_ord = uniform_efficiency_factory(2)
+   >>> mygrating = FlatGrating(d=0.002, order_selector=select_ord)
 
-.. autofunction:: constant_order_factory
+The grating module contains different classes for gratings and also different pre-defined ``order_selector`` function. Use the code in those functions as a template to define your own ``order_selector``.
+   
+.. autosummary::
+   :toctree: API
 
-.. autofunction:: EfficiencyFile
-
-These order selector functions can be used with the following gratings:	      
-	     
-.. autoclass:: FlatGrating
-
-.. autoclass:: CATGrating
+   grating.FlatGrating
+   grating.CATGrating
+   grating.constant_order_factory
+   grating.uniform_efficiency_factory
+   grating.EfficiencyFile
 	       
 
 
