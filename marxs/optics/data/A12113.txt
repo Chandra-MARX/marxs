@@ -1,4 +1,4 @@
-Y(mm)	Peak	CWHM(nm)	Peak lambda	FWHM(nm)	File
+X(mm)	Peak	CWHM(nm)	Peak lambda	FWHM(nm)	File
 13.0	0.01	0.000	2.750	0.000	rxo000429
 14.0	0.33	2.797	2.800	0.035	rxo000430
 15.0	0.45	2.909	2.910	0.037	rxo000431

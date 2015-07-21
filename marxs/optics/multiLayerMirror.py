@@ -14,6 +14,7 @@ class MultiLayerMirror(FlatOpticalElement):
     of incidence.
     There is a default size of 49mm by 24mm, but this can be overridden by
     entering a different value for zoom.
+    Photons with probability=0 are removed from the photon table.
     Provide reflectivity data in a file with columns:
     	'X(mm)' - position along the "changing" axis
     	'Peak lambda' - wavelength with maximum reflection at a given position
@@ -33,9 +34,10 @@ class MultiLayerMirror(FlatOpticalElement):
     	and fraction polarization for the light used to test the mirrors and create the
     	reflectivity file
     '''
-    def __init__(self, reflFile, testedPolarization, **kwargs):
+    def __init__(self, reflFile, testedPolarization, precision = 1e-4, **kwargs):
         self.fileName = reflFile
         self.polFile = testedPolarization
+        self.precision = precision
         if ('zoom' not in kwargs):
         	kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
         super(MultiLayerMirror, self).__init__(**kwargs)
@@ -92,8 +94,11 @@ class MultiLayerMirror(FlatOpticalElement):
         spread_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['FWHM(nm)'])
         
         wavelength = 1.23984282 / photons['energy']   # wavelength is in nm assuming energy is in keV
-        c_squared = (spread_refl ** 2) / (2 * np.log(2))
+        c_squared = (spread_refl ** 2) / (2. * np.log(2))
+        c_is_zero = (c_squared == 0)
+        c_squared += c_is_zero * self.precision
         refl_prob = max_refl * np.exp(-((wavelength - peak_wavelength) ** 2) / (2 * c_squared))
+        photons['probability'][c_is_zero] = 0
         
         # find probability of being reflected due to polarization
         # v_1 is parallel to plane, good reflection direction
@@ -102,4 +107,4 @@ class MultiLayerMirror(FlatOpticalElement):
         # multiply probability by probability of reflection
         photons['probability'] *= refl_prob / 100
         
-        return photons
+        return photons[photons['probability'] != 0]
