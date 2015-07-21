@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 from marxs.source.labSource import LabConstantPointSource
 from marxs.optics.multiLayerMirror import MultiLayerMirror
