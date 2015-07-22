@@ -36,7 +36,11 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.inheritance_diagram',
-    'numpydoc']
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autosummary',
+    'matplotlib.sphinxext.plot_directive',
+]
 
 numpydoc_show_class_members = False
 todo_include_todos = True
@@ -83,7 +87,7 @@ exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-default_role = 'obj'
+default_role = 'any'
 
 # Add this to the top of every file
 rst_prolog = '.. include:: /aliases.txt'
@@ -108,12 +112,13 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+autosummary_generate = True
 
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -158,7 +163,22 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+    ]
+}
+
+html_theme_options = {
+#    'logo': 'logo.png',
+    'github_user': 'Chandra-MARX',
+    'github_repo': 'marxs',
+    'travis_button': True
+}
+
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -275,9 +295,9 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-#                       'http://docs.python.org/': None,
-#                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-#                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-#                       'matplotlib': ('http://matplotlib.org/', None),
+                       'http://docs.python.org/': None,
+                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                       'matplotlib': ('http://matplotlib.org/', None),
                        'astropy': ('http://docs.astropy.org/en/stable/', None)
                        }

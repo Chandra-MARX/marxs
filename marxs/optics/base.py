@@ -1,4 +1,3 @@
-# import abc  - do I need this?
 from functools import wraps
 from copy import copy
 
@@ -9,24 +8,58 @@ from ..math.pluecker import *
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 class OpticalElement(SimulationSequenceElement):
+    '''Base class for all optical elements in marxs.
+
+    This class cannot be used to instanciate an optical element directly, rather it serves as a
+    base class from with other optical elements will be derived.
+
+    At the very minumum, any derived class needs to implement either `process_photon` or
+    `process_photons`. If the interaction with the photons (e.g. scattering of a mirror surface)
+    can be implemented in a vectorized way using numpy array operations, the derived class should
+    overwrite `process_photons` (`process_photon` is not used in ths case).
+    If no vectorized implementation is available, it is sufficient to overwrite `process_photon`.
+    Marxs will call `process_photons`, which (if not overwritten) contains a simple for-loop to
+    loop over all photons in the array and call `process_photon` on each of them.
     '''
-    Parameters
-    ----------
-    pos4d : 4x4 array
-        takes precedence over ``position`` and ``orientation``
-    position : 3-d vector in real space
-        Measured from the origin of the spacecraft coordinate system
-    orientation : Rotation matrix or ``None``
-        Relative orientation of the base vectors of this optical
-        element relative to the orientation of the cooxsrdinate system
-        of the spacecraft. The default is no rotation (i.e. the axes of the
-        coordinate systems are parallel).
-    '''
-    # __metaclass__ = abc.ABCMeta
 
     geometry = {}
-    name = ''
+    '''A dictionary of geometric properties.
+
+    Any entry in this dictionary that contains a 4-d array will be automatically transformed
+    with the `pos4d` matrix when the object is initialized.
+
+    For example, we might set ``geometry['center_of_mirror']=np.array([0, 0, 0, 1])``. When the user
+    initializes an object of this type with the keyword ``position=[2,0,0]`` then the center
+    of the new mirror object will be set to [2, 0, 0, 1].
+    '''
+
     output_columns = []
+    '''This is a list of strings that names the output properties.
+
+    This gives the names of the output properties from this optical element.
+    `process_photon` or `process_photons` are responsible for calculating the values of these
+    properties. For example, for a mirror of nested shells one might set
+    ``output_columns = ['mirror_shell']`` to pass the information on which shell the interaction
+    took place to the user.
+
+    The following properties are always included in the output and do not need to be listed here:
+
+        dir : `numpy.ndarray`
+            4-d direction vector of ray in homogeneous coordinates
+        pos : `numpy.ndarray`
+            4-d position of last interaction pf the photons with any optical element in
+            homogeneous coordinates. Together with ``dir`` this determines the equation
+            of the ray.
+        energy : float
+            Photon energy in keV.
+        polarization : float
+            Polarization angle of the photons.
+        probability : float
+            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
+            passes the optical element and to number between 0 and 1 to express a probability that
+            the photons passes.
+    '''
+
 
     def __init__(self, **kwargs):
         self.pos4d = _parse_position_keywords(kwargs)
@@ -41,6 +74,10 @@ class OpticalElement(SimulationSequenceElement):
         super(OpticalElement, self).__init__(**kwargs)
 
     def add_output_cols(self, photons):
+        '''Add output columns of the correct format (currently: float) to the photon array.
+
+        The objects `output_columns` attribute lists the names of all columns that will be added.
+        '''
         temp = np.empty(len(photons))
         temp[:] = np.nan
         for n in self.output_columns:
@@ -48,29 +85,63 @@ class OpticalElement(SimulationSequenceElement):
                 photons.add_column(Column(name=n, data=temp))
 
     def process_photon(self, dir, pos, energy, polarization):
-        raise NotImplementedError
+        '''Simulate interaction of optical element with a single photon.
 
-    def process_photons(self, photons):
-        '''
+        Derived classes should overwrite this function or `process_photons`.
+
         Parameters
         ----------
-        photons: `~astropy.table.Table` or `~astropy.table.Row`
+        dir : `numpy.ndarray`
+            4-d direction vector of ray in homogeneous coordinates
+        pos : `numpy.ndarray`
+            4-d position of last interaction pf the photons with any optical element in
+            homogeneous coordinates. Together with ``dir`` this determines the equation
+            of the ray.
+        energy : float
+            Photon energy in keV.
+        polarization : float
+            Polarization angle of the photons.
+
+        Returns
+        -------
+        dir : `numpy.ndarray`
+            4-d direction vector of ray in homogeneous coordinates
+        pos : `numpy.ndarray`
+            4-d position of last interaction pf the photons with any optical element in
+            homogeneous coordinates. Together with ``dir`` this determines the equation
+            of the ray.
+        energy : float
+            Photon energy in keV.
+        polarization : float
+            Polarization angle of the photons.
+        probability : float
+            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
+            passes the optical element and to number between 0 and 1 to express a probability that
+            the photons passes.
+        other : floats
+            One number per entry in `output_columns`.
+        '''
+        raise NotImplementedError
+        return dir, pos, energy, polarization, probability, any, other, output, columns
+
+    def process_photons(self, photons):
+        '''Simulate interaction of optical element with photons - vectorized.
+
+        Derived classes should overwrite this function or `process_photon`.
+
+        Parameters
+        ----------
+        photons: `astropy.table.Table` or `astropy.table.Row`
             Table with photon properties
 
         Returns
         -------
-        photons: `~astropy.table.Table` or `~astropy.table.Row`
+        photons: `astropy.table.Table` or `astropy.table.Row`
             Table with photon properties.
             If possible, the input table is modified in place, but in some
             cases this might not be possible and the returned Table may be
             a copy. Do not rely on either - use ``photons.copy()`` if you want
             to ensure you are working with an independent copy.
-
-        This is the simple and naive and probably slow implementation. For
-        performance, I might want to pull out the relevant numpy arrays ahead
-        of time and then iterate over those, because that can be optimized by
-        e.g. numba (I don't think that numba can enhance the entire
-        astropy.table package) - but that is for a later time.
         '''
         if isinstance(photons, Row):
             photons = Table(photons)
@@ -91,6 +162,15 @@ class OpticalElement(SimulationSequenceElement):
 class FlatOpticalElement(OpticalElement):
     '''Base class for geometrically flat optical elements.
 
+    '''
+
+    geometry = {'center': np.array([0, 0, 0, 1.]),
+                'v_y': np.array([0, 1., 0, 0]),
+                'v_z': np.array([0, 0, 1., 0]),
+                'v_x': np.array([1., 0, 0, 0]),
+                'shape': 'box',
+                }
+    '''
     Each flat optical element contains a dictionary called ``geometry`` that
     describes its geometrical properties. This dictionary has the following
     entries:
@@ -120,15 +200,9 @@ class FlatOpticalElement(OpticalElement):
 
     When an object is initialized, all the above entries are transformed with
     its 4-dim transformation matrix, that can either be passed directly as
-    ``pos4d`` or in separate transformations (``position``, ``rotation``,
+    `pos4d` or in separate transformations (``position``, ``rotation``,
     ``zoom``).
     '''
-    geometry = {'center': np.array([0, 0, 0, 1.]),
-                'v_y': np.array([0, 1., 0, 0]),
-                'v_z': np.array([0, 0, 1., 0]),
-                'v_x': np.array([1., 0, 0, 0]),
-                'shape': 'box',
-                }
 
     def __init__(self, **kwargs):
         super(FlatOpticalElement, self).__init__(**kwargs)
@@ -143,19 +217,19 @@ class FlatOpticalElement(OpticalElement):
 
         Parameters
         ----------
-        dir : np.array of shape (N, 4)
+        dir : `numpy.ndarray` of shape (N, 4)
             homogeneous coordinates of the direction of the ray
-        pos : np.array of shape (N, 4)
+        pos : `numpy.ndarray` of shape (N, 4)
             homogeneous coordinates of a point on the ray
 
         Returns
         -------
         intersect :  boolean array of length N
             ``True`` if an intersection point is found.
-        interpos : np.array of shape (N, 4)
+        interpos : `numpy.ndarray` of shape (N, 4)
             homogeneous coordinates of the intersection point. Values are set
             to ``np.nan`` is no intersecton point is found.
-        interpos_local : np.array of shape (N, 2)
+        interpos_local : `numpy.ndarray` of shape (N, 2)
             y and z coordinates in the coordiante system of the active plane.
         '''
         plucker = dir_point2line(h2e(dir), h2e(pos))
@@ -188,7 +262,7 @@ def photonlocalcoords(f, colnames=['pos', 'dir']):
     ----------
     f : callable with signature ``f(self, photons, *args, **kwargs)``
         The function to be decorated. In the signature, ``photons`` is a
-        `~astropy.table.Table`.
+        `astropy.table.Table`.
     colnames : list of strings
         List of all column names in the photon table to be transformed into a
         different coordinate system.

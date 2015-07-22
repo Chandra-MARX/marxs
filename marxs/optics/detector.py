@@ -30,7 +30,7 @@ class FlatDetector(FlatOpticalElement):
     '''
     output_columns = ['det_x', 'det_y', 'detpix_x', 'detpix_y']
 
-    def __init__(self, pixsize, **kwargs):
+    def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
         super(FlatDetector, self).__init__(**kwargs)
         t, r, zoom, s = decompose44(self.pos4d)

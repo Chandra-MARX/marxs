@@ -1,8 +1,9 @@
+============
 Installation
 ============
 
 `marx`_ C code
---------------
+==============
 In order to build the interface to the `marx`_ C code, you need to set the path
 to both, the `marx`_ source code and an installed version of `marx`_ on your
 machine in the ``setup.cfg`` file in the root directory of the installation
