@@ -14,5 +14,5 @@ def test_photons_through():
 	photons = Table({'pos': pos, 'dir': dir, 'energy': [1, 1, 1], 'polarization': [1, 2, 3], 'probability': [0.5, 0.6, 0.7]})
 	baf = Baffle(zoom=np.array([1., 1.5, 0.3]))
 	photons = baf.process_photons(photons)
-	expected = np.array([0.5, 0.7])
+	expected = np.array([0.5, 0., 0.7])
 	assert np.all(photons['probability'] == expected)
