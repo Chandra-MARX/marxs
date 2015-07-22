@@ -7,7 +7,7 @@ import numpy as np
 def optical_element_coords():
    fig = plt.figure()
    ax = fig.add_subplot(111, projection='3d')
-   ax.quiver([2,0,0],[0,2,0],[0,0, 2],[1,0,0],[0,1,0], [0,0,1], length=4, arrow_length_ratio=.05, color='k', lw=2)
+   ax.quiver([2,0,0],[0,2,0],[0,0, 2],[1,0,0],[0,1,0], [0,0,1], length=4, color='k', lw=2)
    ax.bar3d(-1, -1, -1, 1, 2, 2, zsort='average', alpha=0.5, color=['b'] *5 + ['r'], zorder=1)
    ax.set_axis_off()
    ax.text(2.1, 0, 0, 'x', None, fontsize='x-large')
