@@ -3,6 +3,7 @@ Coordinate system, conventions and physical units
 =================================================
 
 .. _coordsys:
+.. _pos4d:
 
 Coordinate system
 -----------------

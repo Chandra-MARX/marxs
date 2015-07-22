@@ -42,6 +42,13 @@ Optical elements are generated with the following keywords:
 List of optical elements provided by marxs
 ------------------------------------------
 Note that elements which generate photons (astropysical sources or lab sources) are not listed here. See :ref:`sources`.
+For convenience all of the commonly elements listed in the following can be imported directly from ``marxs.optics`` such as:
+
+    >>> from marxs.optics import Baffle
+
+This short from is recommended over the long form:
+
+    >>> from marxs.optics.baffle import Baffle
 
 .. autosummary::
    :toctree: API
