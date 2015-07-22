@@ -1,3 +1,5 @@
+'''Gratings and efficiency files'''
+
 import numpy as np
 from astropy.table import Column
 from transforms3d import affines
@@ -91,11 +93,11 @@ class FlatGrating(FlatOpticalElement):
     Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
     negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
     the physical situation is the same, but the sign of the grating order will be reversed.
-    In this sence, the convention chosen is arbitrary. However, it has some practical
+    In this sense, the convention chosen is arbitrarily. However, it has some practical
     advantages: The implementation is fast and all photons passing through the grating
     in the same diffraction order are displaced in the same way. (Contrary to the
     convention in :class:`CATGrating`.)
-    If ``order_sign_convention`` i not ``None`` is has to be a callable that accepts the
+    If ``order_sign_convention`` is not ``None`` is has to be a callable that accepts the
     photons table as input and returns an a float (e.g. ``+1``) or an array filled with -1
     or +1.
 
@@ -109,13 +111,10 @@ class FlatGrating(FlatOpticalElement):
         and a probability (float).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
-        reflection grating. *(Default: ``True``)*
+        reflection grating. *(Default: ``True`` )*
 
         .. warning::
            Reflection gratings are untested so far!
-
-        .. todo::
-           Check reflection gratings.
     '''
     output_columns = ['order', 'grat_y', 'grat_z']
     order_sign_convention = None
@@ -123,7 +122,6 @@ class FlatGrating(FlatOpticalElement):
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
         self.transmission = kwargs.pop('transmission', True)
-
         self.d = kwargs.pop('d', None)
         if self.d is None:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
@@ -157,8 +155,8 @@ class FlatGrating(FlatOpticalElement):
 
     def process_photons(self, photons, interpos=None, intercoos=None):
         '''
-        Additional Parameters
-        ---------------------
+        Other Parameters
+        ----------------
         interpos, intercoos : array (N, 4)
             This parameter is here for performance reasons. In many cases, the
             intersection point between the grating and the rays has been calculated
@@ -187,7 +185,9 @@ class FlatGrating(FlatOpticalElement):
 class CATGrating(FlatGrating):
     '''Critical-Angle-Transmission Grating
 
-    This grating differs from the :class:`FlatGrating` in the sign convention of the
+    CAT gratings are a special case of :class:`FlatGrating` and accept the same arguments.
+
+    They differ from a :class:`FlatGrating` in the sign convention of the
     grating orders: Blazing happens on the side of the negative orders. Obviously, this
     convention is only meaningful if the photons do not arrive perpendicular to the grating.
     '''
