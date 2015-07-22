@@ -60,3 +60,4 @@ target/
 # Common editor backups
 *~
 \#*\#
+*.DS_Store

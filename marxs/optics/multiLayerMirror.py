@@ -14,7 +14,6 @@ class MultiLayerMirror(FlatOpticalElement):
     of incidence.
     There is a default size of 49mm by 24mm, but this can be overridden by
     entering a different value for zoom.
-    Photons with probability=0 are removed from the photon table.
     Provide reflectivity data in a file with columns:
     	'X(mm)' - position along the "changing" axis
     	'Peak lambda' - wavelength with maximum reflection at a given position
@@ -106,4 +105,4 @@ class MultiLayerMirror(FlatOpticalElement):
         # multiply probability by probability of reflection
         photons['probability'] *= refl_prob / 100
         
-        return photons[photons['probability'] != 0]
+        return photons
