@@ -66,6 +66,7 @@ class LabConstantPointSource(Source):
     - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
       in which case polarization is relative to positive x axis, ALL GLOBAL AXES
     - TODO: figure out how to provide energy distribution
+    - TODO: improve direction capability to allow for vetor and angle around that vector
     
     Parameters
     ----------------
@@ -77,11 +78,15 @@ class LabConstantPointSource(Source):
         photons generated per second
     energy: UNKNOWN
         TODO: determine representation of energy distribution
+    direction: string
+    	hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'
     '''
-    def __init__(self, position, polarization, rate, energy):
+    def __init__(self, position, polarization, rate, energy, direction = None):
         self.pos = position
         self.polar = polarization
         self.rate = rate
+        self.energy = energy
+        self.dir = direction
     
     def generate_photons(self, t):
         n = (int)(t * self.rate)
@@ -101,5 +106,17 @@ class LabConstantPointSource(Source):
                         np.zeros(n)])
                         
         polarization = self.random_polarization(n, dir.T)
+        
+        if (self.dir != None):
+        	if (self.dir[1] == 'x'):
+        		col = 0
+        	if (self.dir[1] == 'y'):
+        		col = 1
+        	if (self.dir[1] == 'z'):
+        		col = 2
+        	dir[col] = abs(dir[col])
+        	if (self.dir[0] == '-'):
+        		dir[col] *= -1
+        
 		# provided polarization table must contain only UNIT VECTORS
-        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
+        return Table({'pos': pos.T, 'dir': dir.T, 'energy': self.energy * np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})

@@ -6,10 +6,9 @@ from .base import FlatOpticalElement
 class Baffle(FlatOpticalElement):
 	'''Plate with rectangular hole that allows photons through
 
-	The probability of photons that miss is set to 0.
+	Photons that miss are removed from the photon table.
 	'''
 	def process_photons(self, photons):
 		intersect, h_intersect, det_coords = self.intersect(photons['dir'], photons['pos'])
 		photons['pos'][intersect] = h_intersect[intersect]
-		photons['probability'][~intersect] = 0
-		return photons
+		return photons[intersect]

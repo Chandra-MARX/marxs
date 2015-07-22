@@ -14,6 +14,7 @@ class MultiLayerMirror(FlatOpticalElement):
     of incidence.
     There is a default size of 49mm by 24mm, but this can be overridden by
     entering a different value for zoom.
+    Photons with probability=0 are removed from the photon table.
     Provide reflectivity data in a file with columns:
     	'X(mm)' - position along the "changing" axis
     	'Peak lambda' - wavelength with maximum reflection at a given position
@@ -26,7 +27,7 @@ class MultiLayerMirror(FlatOpticalElement):
     
     Parameters
     ----------
-    fileCode: string
+    reflFile: string
     	path, filename, and .txt for reflection data file
     testedPolarization: string
     	path, filename, and .txt to a text file containing a table with photon energy
@@ -92,14 +93,17 @@ class MultiLayerMirror(FlatOpticalElement):
         spread_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['FWHM(nm)'])
         
         wavelength = 1.23984282 / photons['energy']   # wavelength is in nm assuming energy is in keV
-        c_squared = (spread_refl ** 2) / (2 * np.log(2))
-        refl_prob = max_refl * np.exp(-((wavelength - peak_wavelength) ** 2) / (2 * c_squared))
+        c_squared = (spread_refl ** 2) / (8. * np.log(2))
+        c_is_zero = (c_squared == 0)
+    	
+        refl_prob = np.zeros(len(wavelength))
+        refl_prob[~c_is_zero] = max_refl[~c_is_zero] * np.exp(-((wavelength[~c_is_zero] - peak_wavelength[~c_is_zero]) ** 2) / (2 * c_squared[~c_is_zero]))
         
         # find probability of being reflected due to polarization
         # v_1 is parallel to plane, good reflection direction
-        refl_prob *= np.einsum('ij,ij->i', polarization, v_1)**2
+        refl_prob[~c_is_zero] *= np.einsum('ij,ij->i', polarization[~c_is_zero], v_1[~c_is_zero]) ** 2
         refl_prob[np.isnan(refl_prob)] = 0
         # multiply probability by probability of reflection
         photons['probability'] *= refl_prob / 100
         
-        return photons
+        return photons[photons['probability'] != 0]
