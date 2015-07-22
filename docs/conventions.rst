@@ -25,12 +25,12 @@ translations together can be described by a :math:`[4, 4]` matrix and several of
 be chained simply by multiplying the matrices.
 
 Every optical element in marxs (and some other objects, too) has such a :math:`[4, 4]` matrix
-associated with it in an attribute called `element.pos4d`.
+associated with it in an attribute called ``element.pos4d``.
 
 All optical elements have some default location and position. Typically, their active surface (e.g.
 the surface of a mirror or detector) is in the y-z plane. The center is at the origin of the
 coordiante system and the default size in each dimenstion is 1, measured from the center.
-Thus, e.g. the default definition for a `marxs.optics.FlatDetector`, makes a detector surface with
+Thus, e.g. the default definition for a `marxs.optics.detector.FlatDetector`, makes a detector surface with
 the following corners (in 3-d x,y,z coordinates): [0, -1, -1], [0, -1, 1], [0, 1, 1] and [0, 1, -1].
 This detector has the thickness 1, but that only matters for display purposes, since the ray-trace
 calculates the intersection with the "active surface" in the y-z plane independent of the
