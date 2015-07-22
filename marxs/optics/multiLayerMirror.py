@@ -93,7 +93,7 @@ class MultiLayerMirror(FlatOpticalElement):
         spread_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['FWHM(nm)'])
         
         wavelength = 1.23984282 / photons['energy']   # wavelength is in nm assuming energy is in keV
-        c_squared = (spread_refl ** 2) / (2. * np.log(2))
+        c_squared = (spread_refl ** 2) / (8. * np.log(2))
         c_is_zero = (c_squared == 0)
     	
         refl_prob = np.zeros(len(wavelength))
