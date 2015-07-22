@@ -27,17 +27,16 @@ class MultiLayerMirror(FlatOpticalElement):
     
     Parameters
     ----------
-    fileCode: string
+    reflFile: string
     	path, filename, and .txt for reflection data file
     testedPolarization: string
     	path, filename, and .txt to a text file containing a table with photon energy
     	and fraction polarization for the light used to test the mirrors and create the
     	reflectivity file
     '''
-    def __init__(self, reflFile, testedPolarization, precision = 1e-4, **kwargs):
+    def __init__(self, reflFile, testedPolarization, **kwargs):
         self.fileName = reflFile
         self.polFile = testedPolarization
-        self.precision = precision
         if ('zoom' not in kwargs):
         	kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
         super(MultiLayerMirror, self).__init__(**kwargs)
@@ -96,13 +95,13 @@ class MultiLayerMirror(FlatOpticalElement):
         wavelength = 1.23984282 / photons['energy']   # wavelength is in nm assuming energy is in keV
         c_squared = (spread_refl ** 2) / (2. * np.log(2))
         c_is_zero = (c_squared == 0)
-        c_squared += c_is_zero * self.precision
-        refl_prob = max_refl * np.exp(-((wavelength - peak_wavelength) ** 2) / (2 * c_squared))
-        photons['probability'][c_is_zero] = 0
+    	
+        refl_prob = np.zeros(len(wavelength))
+        refl_prob[~c_is_zero] = max_refl[~c_is_zero] * np.exp(-((wavelength[~c_is_zero] - peak_wavelength[~c_is_zero]) ** 2) / (2 * c_squared[~c_is_zero]))
         
         # find probability of being reflected due to polarization
         # v_1 is parallel to plane, good reflection direction
-        refl_prob *= np.einsum('ij,ij->i', polarization, v_1)**2
+        refl_prob[~c_is_zero] *= np.einsum('ij,ij->i', polarization[~c_is_zero], v_1[~c_is_zero]) ** 2
         refl_prob[np.isnan(refl_prob)] = 0
         # multiply probability by probability of reflection
         photons['probability'] *= refl_prob / 100
