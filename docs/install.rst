@@ -2,6 +2,8 @@
 Installation
 ============
 
+.. _sect-installmarxccode:
+
 `marx`_ C code
 ==============
 In order to build the interface to the `marx`_ C code, you need to set the path

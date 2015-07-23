@@ -6,9 +6,6 @@
    Do something about the effective areas. Can be read out after mirror is initialized.
 
 .. todo::
-   Move the compile stage from the import phase to the install phase
-
-.. todo::
    Make a setup.py parameter for the marxsource code and marx compiled binary location
 '''
 import os
@@ -19,8 +16,13 @@ from ..math.pluecker import h2e, e2h
 from .base import OpticalElement, photonlocalcoords
 from .aperture import BaseAperture
 
-from _marx import ffi
-from _marx import lib as marx
+try:
+    from _marx import lib as marx
+    from _marx import ffi
+    HAS_MARX = True
+except ImportError:
+    HAS_MARX = False
+
 
 class MarxError(Exception):
     '''Error in the compiled Marx C module'''
@@ -30,8 +32,11 @@ class MarxError(Exception):
 class MarxMirror(OpticalElement, BaseAperture):
     '''Interface to MARX mirror module
 
-    This class provides an interface to the MARX mirror module. It requires
-    both the MARX source code and the compiles MARX binaries. When this model
+    This class provides an interface to the `MARX <http://space.mit.edu/ASC/marx/>`_
+    mirror module. It requires
+    both the MARX source code and compiled MARX binaries as explained in the
+    :ref:`Installation instructions for MARXS <sect-installmarxccode>`
+    When this model
     is initialized, it requires the path and filename to a MARX setup file.
 
     The default geometry is such that the focal point is at the origin of the
@@ -46,7 +51,7 @@ class MarxMirror(OpticalElement, BaseAperture):
     in this way it supports all mirror models that the traditional MARX version
     implements, most notable the "HRMA" and "IXO" mirrors. Details on the
     "HRMA" mirror (which is used to simulate Chandra) can be found at
-    http://space.mit.edu/ASC/marx/indetail/hardwaremodel.html#hrma-model , The
+    http://space.mit.edu/ASC/marx/indetail/hardwaremodel.html#hrma-model . The
     "IXO" mirror model is a simplified version with some generilazations that
     works very similar in general, but is not documented, because (from a MARX
     standpoint) it is only meant for developers.
@@ -62,6 +67,8 @@ class MarxMirror(OpticalElement, BaseAperture):
         # If the state shared between different object that use the s
         # same C module? In that case I need to add a lock so that only
         # one object of this class can exist at any one time.
+        if not HAS_MARX:
+            raise MarxError('MARX C code is not available. Please see installation instucttions.')
         if not os.path.isfile(parfile):
             raise IOError('MARX parameter file {0} does NOT exist.'.format(parfile))
         else:
