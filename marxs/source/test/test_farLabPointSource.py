@@ -7,11 +7,10 @@ def test_photon_generation():
 	the starting positions of the photons are within the aperture.
 	'''
 	pos = [1., 0., 0.]
-	polar = [0., 0., 0.]
 	rate = 10
 	center = [0., 0.5, 0.]
-	source = LabSource(pos, polar, rate, 5., position = center, zoom = [1., 1., 2.8])
-	
+	source = LabSource(pos, flux=rate, energy=5., position = center, zoom = [1., 1., 2.8])
+
 	photons = source.generate_photons(1.)
 	for i in range (0, 10):
 		assert photons['pos'][i][1] >= -0.5

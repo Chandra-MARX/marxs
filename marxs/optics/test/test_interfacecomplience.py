@@ -26,7 +26,7 @@ all_oe = [ThinLens(focallength=100),
                                 facetargs={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
                                            }),
-		  Baffle()
+          Baffle()
           ]
 
 # Each elements will be used multiple times.
@@ -38,7 +38,7 @@ all_oe = [ThinLens(focallength=100),
 # Make a test photon list
 # Some of this should be separate tests, e.g. source position vs. pointing.
 # Can I vary energy for e.g. grating?
-mysource = ConstantPointSource((30., 30.), 1., 300.)
+mysource = ConstantPointSource((30., 30.), energy=1., flux=300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
 masterphotons = mypointing.process_photons(masterphotons)
