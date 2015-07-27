@@ -6,11 +6,6 @@ from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 
-def random_polarization(n, dir_array):
-    # randomly choose polarization (temporary)
-    angles = np.random.uniform(0, 2 * np.pi, n)
-    return polarization_vectors(dir_array, angles)
-
 
 class timedependentspectrum(object):
     '''
@@ -29,29 +24,35 @@ class timedependentspectrum(object):
         energies[t >=1] = self.en2
         return energies
 
+class SourceSpecificationError(Exception):
+    pass
 
 class Source(SimulationSequenceElement):
     '''Make this ABC once I have worked out the interface'''
     def __init__(self, **kwargs):
-        self.energy = kwargs.pop('energy')
-        self.flux = kwargs.pop('flux')
+        self.energy = kwargs.pop('energy', 1.)
+        self.flux = kwargs.pop('flux', 1.)
         self.polarization = kwargs.pop('polarization', None)
 
         super(Source, self).__init__(**kwargs)
 
     def generate_times(self, exposuretime):
         if callable(self.flux):
-            return self.rate(exposuretime)
+            return self.flux(exposuretime)
         elif np.isscalar(self.flux):
             return np.arange(0, exposuretime, 1./self.flux)
         else:
-            raise ValueError('Rate must be a number of a callable.')
+            raise SourceSpecificationError('`flux` must be a number or a callable.')
 
     def generate_energies(self, t):
         n = len(t)
         # function
         if callable(self.energy):
-            return self.energy(t)
+            en = self.energy(t)
+            if len(en) != n:
+                raise SourceSpecificationError('`energy` has to return an array of same size as input time array.')
+            else:
+                return en
         # constant energy
         elif np.isscalar(self.energy):
             return np.ones(n) * self.energy
@@ -65,14 +66,18 @@ class Source(SimulationSequenceElement):
             return rand(n)
         # anything else
         else:
-            raise ValueError('energy must be number, function, 2*n array or have fields "energy" and "flux".')
+            raise SourceSpecificationError('`energy` must be number, function, 2*n array or have fields "energy" and "flux".')
 
 
     def generate_polarization(self, times, energies):
         n = len(times)
         # function
         if callable(self.polarization):
-            return self.polarization(times, energies)
+            pol = self.polarization(times, energies)
+            if len(pol) != n:
+                raise SourceSpecificationError('`polarization` has to return an array of same size as input time and energy arrays.')
+            else:
+                return pol
         elif np.isscalar(self.polarization):
             return np.ones(n) * self.polarization
         # 2 * n numpy array
@@ -84,9 +89,9 @@ class Source(SimulationSequenceElement):
             rand = RandomArbitraryPdf(self.energy['angle'], self.energy['probability'])
             return rand(n)
         elif self.polarization is None:
-            return np.random.uniform(0, 2* np.pi, n)
+            return np.random.uniform(0, 2 * np.pi, n)
         else:
-            raise ValueError('polarization must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
+            raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 
     def generate_photon(self):
         pass
@@ -170,7 +175,7 @@ class PointingModel(SimulationSequenceElement):
 
     Conventions:
 
-    - All angles (``ra``, ``dec``, and ``roll`` are given in decimal degrees.
+    - All angles (``ra``, ``dec``, and ``roll``) are given in decimal degrees.
     - x-axis points to sky aimpoint.
     - ``roll = 0`` means: z axis points North (measured N -> E).
 
