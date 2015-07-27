@@ -4,22 +4,107 @@ from transforms3d.euler import euler2mat
 
 from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
+from ..math.random import RandomArbitraryPdf
 
-'''TO-DO: make proper object hirachy, always call super on init. Pass args through, e.g. for name.'''
+
+class timedependentspectrum(object):
+    '''
+
+    Example
+    ------
+    >>> mysource = Source(energy=timedependedspectrum(2.3, 3.4))
+    '''
+    def __init__(self, en1, en2):
+        self.en1 = en1
+        self.en2 = en2
+
+    def __call__(self, t):
+        energies = np.zeros_like(t)
+        energies[t < 1] = self.en1
+        energies[t >=1] = self.en2
+        return energies
+
+class SourceSpecificationError(Exception):
+    pass
 
 class Source(SimulationSequenceElement):
     '''Make this ABC once I have worked out the interface'''
+    def __init__(self, **kwargs):
+        self.energy = kwargs.pop('energy', 1.)
+        self.flux = kwargs.pop('flux', 1.)
+        self.polarization = kwargs.pop('polarization', None)
+
+        super(Source, self).__init__(**kwargs)
+
+    def generate_times(self, exposuretime):
+        if callable(self.flux):
+            return self.flux(exposuretime)
+        elif np.isscalar(self.flux):
+            return np.arange(0, exposuretime, 1./self.flux)
+        else:
+            raise SourceSpecificationError('`flux` must be a number or a callable.')
+
+    def generate_energies(self, t):
+        n = len(t)
+        # function
+        if callable(self.energy):
+            en = self.energy(t)
+            if len(en) != n:
+                raise SourceSpecificationError('`energy` has to return an array of same size as input time array.')
+            else:
+                return en
+        # constant energy
+        elif np.isscalar(self.energy):
+            return np.ones(n) * self.energy
+        # 2 * n numpy array
+        elif hasattr(self.energy, 'shape') and (self.energy.shape[0] == 2):
+            rand = RandomArbitraryPdf(self.energy[0, :], self.energy[1, :])
+            return rand(n)
+        # np.recarray or astropy.table.Table
+        elif hasattr(self.energy, '__getitem__'):
+            rand = RandomArbitraryPdf(self.energy['energy'], self.energy['flux'])
+            return rand(n)
+        # anything else
+        else:
+            raise SourceSpecificationError('`energy` must be number, function, 2*n array or have fields "energy" and "flux".')
+
+
+    def generate_polarization(self, times, energies):
+        n = len(times)
+        # function
+        if callable(self.polarization):
+            pol = self.polarization(times, energies)
+            if len(pol) != n:
+                raise SourceSpecificationError('`polarization` has to return an array of same size as input time and energy arrays.')
+            else:
+                return pol
+        elif np.isscalar(self.polarization):
+            return np.ones(n) * self.polarization
+        # 2 * n numpy array
+        elif hasattr(self.polarization, 'shape') and (self.polarization.shape[0] == 2):
+            rand = RandomArbitraryPdf(self.polarization[0, :], self.polarization[1, :])
+            return rand(n)
+        # np.recarray or astropy.table.Table
+        elif hasattr(self.polarization, '__getitem__'):
+            rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
+            return rand(n)
+        elif self.polarization is None:
+            return np.random.uniform(0, 2 * np.pi, n)
+        else:
+            raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
+
     def generate_photon(self):
         pass
 
-    def generate_photons(self):
+    def generate_photons(self, exposuretime):
         # Similar to optics this could be given if generate_photons is given!
-        pass
-    
-    def random_polarization(self, n, dir_array):
-        # randomly choose polarization (temporary)
-        angles = np.random.uniform(0, 2 * np.pi, n)
-        return polarization_vectors(dir_array, angles)
+        times = self.generate_times(exposuretime)
+        energies = self.generate_energies(times)
+        pol = self.generate_polarization(times, energies)
+        n = len(times)
+        return Table({'time': times, 'energy': energies, 'polangle': pol,
+                      'probability': np.ones(n)})
+
 
 
 class ConstantPointSource(Source):
@@ -29,22 +114,16 @@ class ConstantPointSource(Source):
     - constant flux (I mean constant, not Poisson distributed - this is not
       an astrophysical source, it's for code testing.)
     '''
-    def __init__(self, coords, flux, energy, polarization=np.nan, effective_area=1):
+    def __init__(self, coords, **kwargs):
         self.coords = coords
-        self.flux = flux
-        self.effective_area = effective_area
-        self.rate = flux * effective_area
-        self.energy = energy
-        self.polarization = polarization
+        super(ConstantPointSource, self).__init__(**kwargs)
 
-    def generate_photons(self, t):
-        n = t  * self.rate
-        out = np.empty((6, n))
-        out[0, :] = np.arange(0, t, 1. / self.rate)
-        for i, val in enumerate([self.coords[0], self.coords[1], self.energy, self.polarization]):
-            out[i + 1, :] = val
-        out[5, :] = 1.
-        return Table(out.T, names = ('time', 'ra', 'dec', 'energy', 'polarization', 'probability'))
+    def generate_photons(self, exposuretime):
+        photons = super(ConstantPointSource, self).generate_photons(exposuretime)
+        photons['ra'] = np.ones(len(photons)) * self.coords[0]
+        photons['dec'] = np.ones(len(photons)) * self.coords[1]
+
+        return photons
 
 class SymbolFSource(Source):
     '''Source shaped like the letter F.
@@ -96,7 +175,7 @@ class PointingModel(SimulationSequenceElement):
 
     Conventions:
 
-    - All angles (``ra``, ``dec``, and ``roll`` are given in decimal degrees.
+    - All angles (``ra``, ``dec``, and ``roll``) are given in decimal degrees.
     - x-axis points to sky aimpoint.
     - ``roll = 0`` means: z axis points North (measured N -> E).
 
@@ -147,7 +226,6 @@ class FixedPointing(PointingModel):
         --------------------
         Negative sign for dec and roll, because these are defined
         opposite to the right hand rule.
-
         Note: I hope I figured it out right. If not, I can always bail
         and use astropy.coordinates for this.
         '''
@@ -170,4 +248,5 @@ class FixedPointing(PointingModel):
         photons['dir'][:, 2] = - np.sin(dec)
         photons['dir'][:, 3] = 0
         photons['dir'][:, :3] = np.dot(np.linalg.inv(self.mat3d), photons['dir'][:, :3].T).T
+        photons['polarization'] = np.ones_like(ra)
         return photons

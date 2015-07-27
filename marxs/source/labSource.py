@@ -1,14 +1,14 @@
 import numpy as np
 from astropy.table import Table, Column
 
-from .source import Source
 from ..optics.base import FlatOpticalElement
+from .source import Source
 from ..optics.polarization import polarization_vectors
 
 
 class FarLabConstantPointSource(Source, FlatOpticalElement):
     '''Simple in-lab source used with aperture
-    
+
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
     - photon direction determined by location of source, and selected photon starting position
@@ -28,17 +28,15 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
     energy: UNKNOWN
         TODO: determine representation of energy distribution
     **kwargs: 'position', 'orientation', 'zoom'
-        4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords 
+        4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords
     '''
-    def __init__(self, sourcePos, polarization, rate, energy, **kwargs):
-        self.sourcePos = sourcePos
-        self.polar = polarization
-        self.rate = rate
+    def __init__(self, sourcepos, **kwargs):
+        self.sourcePos = sourcepos
         super(FarLabConstantPointSource, self).__init__(**kwargs)
 
-    def generate_photons(self, t):
-        n = int(t * self.rate)
-
+    def generate_photons(self, exposuretime):
+        photons = super(FarLabConstantPointSource, self).generate_photons(exposuretime)
+        n = len(photons)
         # randomly choose direction - photons uniformly distributed over baffle plate area
         # coordinate axes: origin at baffle plate, tube center. +x source, +y window, +z up
         # measurements in mm
@@ -51,10 +49,10 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
                         pos[1, :] - self.sourcePos[1],
                         pos[2, :] - self.sourcePos[2],
                         np.zeros(n)])
-                        
-        polarization = self.random_polarization(n, dir.T)
-        
-        return Table({'pos': pos.T, 'dir': dir.T, 'energy': np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
+        photons['pos'] = pos.T
+        photons['dir'] = dir.T
+        photons['polarization'] = polarization_vectors(dir.T, photons['polangle'])
+        return photons
 
 
 class LabConstantPointSource(Source):
@@ -67,7 +65,7 @@ class LabConstantPointSource(Source):
       in which case polarization is relative to positive x axis, ALL GLOBAL AXES
     - TODO: figure out how to provide energy distribution
     - TODO: improve direction capability to allow for vetor and angle around that vector
-    
+
     Parameters
     ----------------
     position: 3 element list
@@ -79,24 +77,23 @@ class LabConstantPointSource(Source):
     energy: UNKNOWN
         TODO: determine representation of energy distribution
     direction: string
-    	hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'
+        hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'
     '''
-    def __init__(self, position, polarization, rate, energy, direction = None):
-        self.pos = position
-        self.polar = polarization
-        self.rate = rate
-        self.energy = energy
+    def __init__(self, position, direction=None, **kwargs):
         self.dir = direction
-    
-    def generate_photons(self, t):
-        n = (int)(t * self.rate)
+        self.position = position
+        super(LabConstantPointSource, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        photons = super(LabConstantPointSource, self).generate_photons(exposuretime)
+        n = len(photons)
 
         # assign position to photons
-        pos = np.array([self.pos[0] * np.ones(n),
-                        self.pos[1] * np.ones(n),
-                        self.pos[2] * np.ones(n),
+        pos = np.array([self.position[0] * np.ones(n),
+                        self.position[1] * np.ones(n),
+                        self.position[2] * np.ones(n),
                         np.ones(n)])
-        
+
         # randomly choose direction - photons go in all directions from source
         theta = np.random.uniform(0, 2 * np.pi, n);
         phi = np.arcsin(np.random.uniform(-1, 1, n))
@@ -104,9 +101,7 @@ class LabConstantPointSource(Source):
                         np.sin(theta) * np.cos(phi),
                         np.sin(phi),
                         np.zeros(n)])
-                        
-        polarization = self.random_polarization(n, dir.T)
-        
+
         if (self.dir != None):
         	if (self.dir[1] == 'x'):
         		col = 0
@@ -117,6 +112,8 @@ class LabConstantPointSource(Source):
         	dir[col] = abs(dir[col])
         	if (self.dir[0] == '-'):
         		dir[col] *= -1
-        
-		# provided polarization table must contain only UNIT VECTORS
-        return Table({'pos': pos.T, 'dir': dir.T, 'energy': self.energy * np.ones(n).T, 'polarization': polarization, 'probability': np.ones(n).T})
+
+        photons.add_column(Column(name='pos', data=pos.T))
+        photons.add_column(Column(name='dir', data=dir.T))
+        photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
+        return photons
