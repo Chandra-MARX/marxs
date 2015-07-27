@@ -57,7 +57,7 @@ class Source(SimulationSequenceElement):
         elif np.isscalar(self.energy):
             return np.ones(n) * self.energy
         # 2 * n numpy array
-        elif hasattr(self.energy, 'shape') and (self.shape[0] == 2):
+        elif hasattr(self.energy, 'shape') and (self.energy.shape[0] == 2):
             rand = RandomArbitraryPdf(self.energy[0, :], self.energy[1, :])
             return rand(n)
         # np.recarray or astropy.table.Table
@@ -81,12 +81,12 @@ class Source(SimulationSequenceElement):
         elif np.isscalar(self.polarization):
             return np.ones(n) * self.polarization
         # 2 * n numpy array
-        elif hasattr(self.energy, 'shape') and (self.shape[0] == 2):
-            rand = RandomArbitraryPdf(self.energy[0, :], self.energy[1, :])
+        elif hasattr(self.polarization, 'shape') and (self.polarization.shape[0] == 2):
+            rand = RandomArbitraryPdf(self.polarization[0, :], self.polarization[1, :])
             return rand(n)
         # np.recarray or astropy.table.Table
-        elif hasattr(self.energy, '__getitem__'):
-            rand = RandomArbitraryPdf(self.energy['angle'], self.energy['probability'])
+        elif hasattr(self.polarization, '__getitem__'):
+            rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
             return rand(n)
         elif self.polarization is None:
             return np.random.uniform(0, 2 * np.pi, n)

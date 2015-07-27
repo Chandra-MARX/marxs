@@ -57,11 +57,11 @@ class RandomArbitraryPdf(object):
         if not np.all(pdf >= 0):
             raise ValueError('pdf cannot have negative elements.')
 
-        self.x = x
+        self.x = np.asarray(x)
         self.bin_width = np.hstack(([0], np.diff(x)))
         if not np.all(self.bin_width >=0):
             raise ValueError('x must be input in increasing order.')
-        pdf = pdf * self.bin_width
+        pdf = np.asarray(pdf) * self.bin_width
         self.sort = sort
         self.randomize_in_bin = randomize_in_bin
 

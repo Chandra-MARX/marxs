@@ -7,19 +7,19 @@ from ..source import Source, SourceSpecificationError
 def test_energy_input_default():
     '''For convenience and testing, defaults for time, energy and pol are set.'''
     s = Source()
-    photons = s.generate_photons(5.1)
+    photons = s.generate_photons(5.)
     assert len(photons) == 5
     assert np.all(photons['energy'] == 1.)
-    assert len(set(photons['pol_angle'])) == 5  # all pol angles are different
+    assert len(set(photons['polangle'])) == 5  # all pol angles are different
 
 def test_flux_input():
     '''Options: contant rate or function'''
     # 1. constant rate
     s = Source(flux=5)
-    photons = s.generate_photons(5.01)
+    photons = s.generate_photons(5.)
     assert len(photons) == 25
     delta_t = np.diff(photons['time'])
-    assert np.all(delta_t == delta_t[0]) # constante rate
+    assert np.allclose(delta_t, delta_t[0]) # constante rate
 
     # 2. function
     def f(t):
@@ -30,7 +30,7 @@ def test_flux_input():
     assert np.all(photons['time'] == np.logspace(1, 2))
 
     # 3. anything else
-    s = Source(flux=ValueError)
+    s = Source(flux=ValueError())
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
     assert '`flux` must be' in str(e.value)
@@ -49,7 +49,7 @@ def test_energy_input():
     photons = s.generate_photons(5)
     assert np.all(photons['energy'] == photons['time'])
     # bad function
-    s = Source(energy=np.sum)
+    s = Source(energy=lambda x: np.array([np.sum(x)]))
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
     assert 'an array of same size as' in str(e.value)
@@ -67,10 +67,10 @@ def test_energy_input():
         ind0510 = (en >= 0.5) & (en <=1.0)
         ind2030 = (en >= 2.) & (en <=3.0)
         assert (ind0510.sum() + ind2030.sum()) == len(photons)
-        assert ind0510.sum() < ind3030.sum()
+        assert ind0510.sum() < ind2030.sum()
 
     # 4. anything else
-    s = Source(energy=ValueError)
+    s = Source(energy=object())
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
     assert '`energy` must be' in str(e.value)
@@ -80,16 +80,16 @@ def test_polarization_input():
     # 1. 100 % polarized flux
     s = Source(polarization=2.)
     photons = s.generate_photons(5)
-    assert np.all(photons['plo_angle'] == 2.)
+    assert np.all(photons['polangle'] == 2.)
 
     # 2. function
     def f(t, en):
         return t * en
     s = Source(polarization=f, energy=2.)
     photons = s.generate_photons(5)
-    assert np.all(photons['pol_angle'] == photons['time'] * photons['energy'])
+    assert np.all(photons['polangle'] == photons['time'] * photons['energy'])
     # bad function
-    s = Source(ploarization=np.dot)
+    s = Source(polarization=lambda x, y: np.array([np.dot(x, y)]))
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
     assert 'an array of same size as' in str(e.value)
@@ -98,24 +98,24 @@ def test_polarization_input():
     # spectrum with distinct lines
     polgrid = [0.5, 1., 2., 3.]
     probgrid = [456., 1., 0., 2.]  # first entry (456) will be ignored
-    s1 = Source(ploarization={'angle': polgrid, 'probability': probgrid})
+    s1 = Source(polarization={'angle': polgrid, 'probability': probgrid})
     s2 = Source(polarization=np.vstack([polgrid, probgrid]))
     s3 = Source(polarization=Table({'angle': polgrid, 'probability': probgrid}))
     for s in [s1, s2, s3]:
         photons = s.generate_photons(1000)
-        pol = photons['pol_angle']
-        ind0510 = (en >= 0.5) & (en <=1.0)
-        ind2030 = (en >= 2.) & (en <=3.0)
+        pol = photons['polangle']
+        ind0510 = (pol >= 0.5) & (pol <=1.0)
+        ind2030 = (pol >= 2.) & (pol <=3.0)
         assert (ind0510.sum() + ind2030.sum()) == len(photons)
-        assert ind0510.sum() < ind3030.sum()
+        assert ind0510.sum() < ind2030.sum()
 
     # 4. None (unpolarized source)
     s = Source(polarization=None)
     photons = s.generate_photons(5)
-    assert len(set(photons['pol_angle'])) == len(photons) # all different
+    assert len(set(photons['polangle'])) == len(photons) # all different
 
     # 5. anything else
-    s = Source(energy=ValueError)
+    s = Source(polarization=object())
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
-    assert '`polarizarion` must be' in str(e.value)
+    assert '`polarization` must be' in str(e.value)
