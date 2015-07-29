@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from astropy.table import Table
 
-from ..source import Source, SourceSpecificationError
+from ..source import Source, SourceSpecificationError, poisson_process
 
 def test_energy_input_default():
     '''For convenience and testing, defaults for time, energy and pol are set.'''
@@ -119,3 +119,14 @@ def test_polarization_input():
     with pytest.raises(SourceSpecificationError) as e:
         photons = s.generate_photons(5)
     assert '`polarization` must be' in str(e.value)
+
+def test_poisson_process():
+    '''Do some consistency checks for the Poisson process.
+
+    It turns out that this is hard to test properly, without reimplemention the
+    scipy version.
+    '''
+    p = poisson_process(20.)
+    times = p(100.)
+    assert (len(times) > 1500) and (len(times) < 2500)
+    assert (times[-1] > 99.) and (times[-1] < 100.)
