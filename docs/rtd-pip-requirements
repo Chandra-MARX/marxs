@@ -1,3 +1,2 @@
-matplotlib >= 1.4
 astropy
 transforms3d
