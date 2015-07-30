@@ -8,23 +8,6 @@ from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 
 
-class timedependentspectrum(object):
-    '''
-
-    Example
-    ------
-    >>> mysource = Source(energy=timedependedspectrum(2.3, 3.4))
-    '''
-    def __init__(self, en1, en2):
-        self.en1 = en1
-        self.en2 = en2
-
-    def __call__(self, t):
-        energies = np.zeros_like(t)
-        energies[t < 1] = self.en1
-        energies[t >=1] = self.en2
-        return energies
-
 def poisson_process(rate):
     '''Return a function that generates Poisson distributed times with rate ``rate``.
 
@@ -113,7 +96,7 @@ class Source(SimulationSequenceElement):
         - ``None``:
           An unpolarized source. Every photons is assigned a random polarization.
         - number: Constant polarization angle for all photons.
-        - (2, N) `numpp.ndarray` or object with ``angle`` and ``probability`` columns
+        - (2, N) `numpy.ndarray` or object with ``angle`` and ``probability`` columns
           (e.g. `dict` or `astropy.table.Table`), where "probability" really means
           "probability density" here.
           The summed probability density will automatically be normalized to one.
