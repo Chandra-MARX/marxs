@@ -13,7 +13,7 @@ For each type of source, we need to specifiy the following properties:
 - Spectrum of photon energies
 - Polarization
 
-Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed, e.g. a spectrum and polarization that changes continuously over time due to a flare in the lightcurve. Examples and details are given in :ref:`sect-source-fluxenpol`.
+Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed, e.g. a spectrum and polarization that changes continuously over time due to a flare in the lightcurve. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `Source`.
 
 In addition, we need to give the location of the source and its size and shape (most of the currently implemented sources are point sources, but additional shapes will be added in the future):
 
@@ -177,3 +177,10 @@ Speficy the position for an astrophysical source
 
 Specify the position for a laboratory source
 --------------------------------------------
+
+Design your own sources
+-----------------------
+
+The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included source to see how this is done best.
+
+.. autoclass:: Source
