@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import expon
 from astropy.table import Table, Column
 from transforms3d.euler import euler2mat
 
@@ -7,28 +8,110 @@ from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 
 
-class timedependentspectrum(object):
-    '''
+def poisson_process(rate):
+    '''Return a function that generates Poisson distributed times with rate ``rate``.
 
-    Example
-    ------
-    >>> mysource = Source(energy=timedependedspectrum(2.3, 3.4))
-    '''
-    def __init__(self, en1, en2):
-        self.en1 = en1
-        self.en2 = en2
+    Parameters
+    ----------
+    rate : float
+        Expectation value for the rate of events.
 
-    def __call__(self, t):
-        energies = np.zeros_like(t)
-        energies[t < 1] = self.en1
-        energies[t >=1] = self.en2
-        return energies
+    Returns
+    -------
+    poisson_rate : function
+        Function that generates Poisson distributed times with rate ``rate``.
+    '''
+    def poisson_rate(exposuretime):
+        '''Generate Poisson distributed times.
+
+        Parameters
+        ----------
+        exposuretime : float
+
+        Returns
+        -------
+        times : `numpy.ndarray`
+            Poisson distributed times.
+        '''
+        # Make 10 % more numbers then we expect to need, because it's random
+        times = expon.rvs(scale=1./rate, size=exposuretime * rate * 1.1)
+        # If we don't have enough numbers right now, add some more.
+        while times.sum() < exposuretime:
+            times = np.hstack([times, expon.rvs(scale=1/rate,
+                                                size=(exposuretime - times.sum() * rate * 1.1))])
+        times = np.cumsum(times)
+        return times[times < exposuretime]
+    return poisson_rate
 
 class SourceSpecificationError(Exception):
     pass
 
 class Source(SimulationSequenceElement):
-    '''Make this ABC once I have worked out the interface'''
+    '''Base class for all photons sources.
+
+    This class provides a very general implementation of photons sources. Typically,
+    it is not used directly, but a more specialized subclass, such as `ConstantPointSource` for an
+    astronomical source or `LabConstantPointSource` for a source at a finite distance.
+
+    Most of the derived source support the same input argumets as `Source`, thus they are
+    explained in detail here.
+
+    Parameters
+    ----------
+    flux : number or callable
+        This sets the total flux from a source in photons/s/effective area; the default value
+        is 1 cts/s.
+        Options are:
+
+        - number: Constant (not Poisson distributed) flux.
+        - callable: Function that takes a total exposure time as input and returns an array
+          of photon emission times between 0 and the total exposure time.
+
+    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarray` or `dict` or `astropy.table.Table`
+
+        This input decides the energy of the emitted photons; the default value is 1 keV.
+        Possible formats are:
+
+        - number: Constant energy.
+        - (2, N) `numpy.ndarray` or object with ``energy`` and ``flux`` columns (e.g. `dict` or
+          `astropy.table.Table`), where "flux" here really is a short form for
+          "flux density" and is given in the units of photons/s/keV.
+          For a (2, N) array the first column is the energy, the
+          second column is the flux density.
+          Given this table, the code assumes a piecewise constant spectrum. The "energy"
+          values contain the **upper** limit of each bin, the "flux" array the flux density
+          in each bin. The first entry in the "flux" array is ignored, because the lower bound
+          of this bin is undefined.
+          The code draws an energy from this spectrum for every photon created.
+        - A function or callable object: This option allows for full customization. The
+          function must take an array of photon times as input and return an equal length
+          array of photon energies in keV.
+
+    polarization: contant or None, (2, N) `numpy.ndarray`, `dict`, `astropy.table.Table` or similar or callable.
+        There are several different ways to set the polarization angle of the photons for a
+        polarized source. In all cases, the angle is given in radian and is measured North
+        through East. (We ignore the special case of a polarized source exactly on a pole.)
+        The default value is ``None`` (unpolarized source).
+
+        - ``None``:
+          An unpolarized source. Every photons is assigned a random polarization.
+        - number: Constant polarization angle for all photons.
+        - (2, N) `numpy.ndarray` or object with ``angle`` and ``probability`` columns
+          (e.g. `dict` or `astropy.table.Table`), where "probability" really means
+          "probability density" here.
+          The summed probability density will automatically be normalized to one.
+          For a (2, N) array the first column is the angle, the second column is the
+          probability *density*. Given this table, the code assumes a piecewise constant
+          probability density. The "angle" values contain the **upper** limit of each bin,
+          the "probability" array the probability density in this bin. The first entry in
+          the "probability" array is ignored, because the lower bound
+          of this bin is undefined. The code draws an energy from this spectrum for every
+          photon created.
+        - a callable (function or callable object): This option allows full customization.
+          The function is called with two arrays (time and energy values) as input
+          and must return an array of equal length that contains the polarization angles in
+          radian.
+    '''
     def __init__(self, **kwargs):
         self.energy = kwargs.pop('energy', 1.)
         self.flux = kwargs.pop('flux', 1.)
@@ -94,10 +177,27 @@ class Source(SimulationSequenceElement):
             raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 
     def generate_photon(self):
-        pass
+        raise NotImplementedError
 
     def generate_photons(self, exposuretime):
-        # Similar to optics this could be given if generate_photons is given!
+        '''Central function to generate photons.
+
+        Calling this function generates a a photon table according to the `flux`, `energy`,
+        and `polarization` of this source. The number of photons depends on the total
+        exposure time, which is a parameter of this function. Depending on the setting for
+        `flux` the photons could be distributed equally over the interval 0..exposuretime
+        or follow some other distribution.
+
+        Parameters
+        ----------
+        exposuretime : float
+            Total exposure time in seconds.
+
+        Returns
+        -------
+        photons : `astropy.table.Table`
+            Table with photon properties.
+        '''
         times = self.generate_times(exposuretime)
         energies = self.generate_energies(times)
         pol = self.generate_polarization(times, energies)
@@ -108,11 +208,15 @@ class Source(SimulationSequenceElement):
 
 
 class ConstantPointSource(Source):
-    '''Simplest possible source for testing purposes:
+    '''Astrophysical point source.
 
-    - constant energy
-    - constant flux (I mean constant, not Poisson distributed - this is not
-      an astrophysical source, it's for code testing.)
+    Parameters
+    ----------
+    coords : Tuple of 2 elements
+        Ra and Dec in decimal degrees.
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
     '''
     def __init__(self, coords, **kwargs):
         self.coords = coords
@@ -128,24 +232,26 @@ class ConstantPointSource(Source):
 class SymbolFSource(Source):
     '''Source shaped like the letter F.
 
-    This source provies a non-symmetric source for testing purposes.
+    This source provides a non-symmetric source for testing purposes.
 
     Parameters
     ----------
+    coords : tuple of 2 elements
+        Ra and Dec in decimal degrees.
     size : float
         size scale in degrees
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
     '''
-    def __init__(self, coords, flux, energy, polarization=np.nan, effective_area=1, size=1):
+    def __init__(self, coords, size=1, **kwargs):
         self.coords = coords
-        self.flux = flux
-        self.effective_area = effective_area
-        self.rate = flux * effective_area
-        self.energy = energy
-        self.polarization = polarization
         self.size = size
+        super(ConstantPointSource, self).__init__(**kwargs)
 
-    def generate_photons(self, t):
-        n = t  * self.rate
+    def generate_photons(self, exposuretime):
+        photons = super(ConstantPointSource, self).generate_photons(exposuretime)
+        n = len(photons)
         elem = np.random.choice(3, size=n)
 
         ra = np.empty(n)
@@ -158,16 +264,10 @@ class SymbolFSource(Source):
         ra[elem == 2] += 0.8 * self.size
         dec[elem == 2] += 0.3 * self.size * np.random.random(np.sum(elem == 2))
 
+        photons['ra'] = ra
+        photons['dec'] = dec
 
-        out = np.empty((6, n))
-        out[0, :] = np.arange(0, t, 1. / self.rate)
-        out[1,:] = ra
-        out[2,:] = dec
-        out[3, :] = self.energy
-        out[4,:] = self.polarization
-        out[5, :] = 1.
-        return Table(out.T, names = ('time', 'ra', 'dec', 'energy', 'polarization', 'probability'))
-
+        return photons
 
 
 class PointingModel(SimulationSequenceElement):
@@ -204,6 +304,34 @@ class PointingModel(SimulationSequenceElement):
 
 
 class FixedPointing(PointingModel):
+    r'''Transform spacecraft to fixed sky system.
+
+    This matrix transforms from the spacecraft system to a
+    right-handed Cartesian system that is defined in the following
+    way: the (x,y) plane is defined by the celestial equator, and
+    the x-axis points to :math:`(\alpha, \delta) = (0,0)`.
+
+    Parameters
+    ----------
+    coords : tuple of 2 elements
+        Ra and Dec of telescope aimpoint in decimal degrees.
+    roll : float
+        ``roll = 0`` means: z axis points North (measured N -> E).
+
+    Note
+    ----
+    For :math:`\delta \pm 90^{\circ}` the :math:`\alpha` value is
+    irrelevant for the pointing direction - any right ascension will
+    lead to a pointing on the pole. A value for ``ra`` is still
+    required, because it determines the orientation of the detector
+    plane. Obviously, for pointing straight at the pole, the simple
+    interpretation *z axis points north* is meaningless, but the
+    combination of ``ra``, ``dec`` and ``roll`` still uniquely
+    determines the position of the coordinate system.
+
+    Negative sign for dec and roll in the code, because these are defined
+    opposite to the right hand rule.
+    '''
     def __init__(self, **kwargs):
         self.coords = kwargs.pop('coords')
         self.ra = self.coords[0]
@@ -215,20 +343,6 @@ class FixedPointing(PointingModel):
 
         super(FixedPointing, self).__init__(**kwargs)
 
-        '''Transform spacecraft to fixed sky system.
-
-        This matrix transforms from the spacecraft system to a
-        right-handed Cartesian system that is defined in the following
-        way: the (x,y) plane is defined by the celestial equator, and
-        the x-axis points to :math:`(\alpha, \delta) = (0,0)`.
-
-        Implementation notes
-        --------------------
-        Negative sign for dec and roll, because these are defined
-        opposite to the right hand rule.
-        Note: I hope I figured it out right. If not, I can always bail
-        and use astropy.coordinates for this.
-        '''
         self.mat3d = euler2mat(np.deg2rad(self.ra),
                                np.deg2rad(-self.dec),
                                np.deg2rad(-self.roll), 'rzyx')
