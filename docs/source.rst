@@ -172,15 +172,34 @@ Lastly, if polarization is a function, it will be called with time and energy as
 Speficy the position for an astrophysical source
 ------------------------------------------------
 
+The following astropysical source are included in marxs:
+
+.. autoclass:: ConstantPointSource
+
+.. autoclass:: SymbolFSource
+	       
+An astrophysical source in marxs has to be followed by a pointing modle as first optical element that translates the sky coordiantes into the coordinates system of the satallite (see `pos4d`).
+Sources can be used with the following pointing model:
+
+.. autoclass:: FixedPointing
+
 
 .. _sect-source-lab:
 
 Specify the position for a laboratory source
 --------------------------------------------
 
-Design your own sources
------------------------
+Sources in the lab are specified in the same coordinate system used for all other optical elements, see `pos4d` for details.
 
-The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included source to see how this is done best.
+The following laboratory sources are provided:
+
+.. autoclass:: marxs.source.labSource.FarLabConstantPointSource
+
+.. autoclass:: marxs.source.labSource.LabConstantPointSource
+
+Design your own sources and pointing model
+------------------------------------------
+
+The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 
 .. autoclass:: Source

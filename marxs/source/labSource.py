@@ -18,15 +18,10 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
     - TODO: figure out how to provide energy distribution
 
     Parameters
-    ----------------
+    ----------
+    flux, energy, polarization: see `Source`
     sourcePos: 3 element list
         3D coordinates of photon source (not aperture)
-    polarization: UNKNOWN
-        TODO: determine representation of polarization (needs magnitude and orientation, anything else?)
-    rate: float
-        photons generated per second
-    energy: UNKNOWN
-        TODO: determine representation of energy distribution
     **kwargs: 'position', 'orientation', 'zoom'
         4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords
     '''
@@ -67,7 +62,7 @@ class LabConstantPointSource(Source):
     - TODO: improve direction capability to allow for vetor and angle around that vector
 
     Parameters
-    ----------------
+    ----------
     position: 3 element list
         3D coordinates of photon source
     polarization: UNKNOWN
