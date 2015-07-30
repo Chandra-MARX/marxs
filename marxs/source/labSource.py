@@ -19,11 +19,13 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
 
     Parameters
     ----------
-    flux, energy, polarization: see `Source`
     sourcePos: 3 element list
         3D coordinates of photon source (not aperture)
-    **kwargs: 'position', 'orientation', 'zoom'
-        4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords
+    kwargs: 'position', 'orientation', 'zoom'
+        4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords, see `pos4d`.
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
+
     '''
     def __init__(self, sourcepos, **kwargs):
         self.sourcePos = sourcepos
@@ -65,14 +67,12 @@ class LabConstantPointSource(Source):
     ----------
     position: 3 element list
         3D coordinates of photon source
-    polarization: UNKNOWN
-        TODO: determine representation of polarization (needs magnitude and orientation, anything else?)
-    rate: float
-        photons generated per second
-    energy: UNKNOWN
-        TODO: determine representation of energy distribution
     direction: string
         hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
+
     '''
     def __init__(self, position, direction=None, **kwargs):
         self.dir = direction

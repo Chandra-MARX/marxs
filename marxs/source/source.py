@@ -67,7 +67,7 @@ class Source(SimulationSequenceElement):
         - callable: Function that takes a total exposure time as input and returns an array
           of photon emission times between 0 and the total exposure time.
 
-    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarracy` or `dict` or `astropy.table.Table`
+    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarray` or `dict` or `astropy.table.Table`
 
         This input decides the energy of the emitted photons; the default value is 1 keV.
         Possible formats are:
@@ -212,9 +212,11 @@ class ConstantPointSource(Source):
 
     Parameters
     ----------
-    flux, energy, polarization : see `Source`
     coords : Tuple of 2 elements
         Ra and Dec in decimal degrees.
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
     '''
     def __init__(self, coords, **kwargs):
         self.coords = coords
@@ -234,11 +236,13 @@ class SymbolFSource(Source):
 
     Parameters
     ----------
-    flux, energy, polarization : see `Source`
     coords : tuple of 2 elements
         Ra and Dec in decimal degrees.
     size : float
         size scale in degrees
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
     '''
     def __init__(self, coords, size=1, **kwargs):
         self.coords = coords
@@ -300,7 +304,7 @@ class PointingModel(SimulationSequenceElement):
 
 
 class FixedPointing(PointingModel):
-    '''Transform spacecraft to fixed sky system.
+    r'''Transform spacecraft to fixed sky system.
 
     This matrix transforms from the spacecraft system to a
     right-handed Cartesian system that is defined in the following
