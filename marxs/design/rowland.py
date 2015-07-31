@@ -291,6 +291,8 @@ class GratingArrayStructure(OpticalElement):
         Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
         the segment crosses the y axis.
     '''
+    output_cols = ['facet']
+
     def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
         if not (radius[1] > radius[0]):
@@ -461,16 +463,14 @@ class GratingArrayStructure(OpticalElement):
         - a much faster "approximate" intersection test by projection on a x = const plane
           (possibly as a kdtree from scipy.spatial).
         '''
-        photons_out = []
+        self.add_output_cols(photons)
+
         for i, f in enumerate(self.facets):
-            intersect, interpos, temp = f.intersect(photons['dir'], photons['pos'])
-            p_out = f.process_photons(photons[intersect], interpos[intersect])
-            p_out['facet'] = [i] * intersect.sum()
-            photons_out.append(p_out)
-            photons = photons[~intersect]
-        # append photons that did not intersect a facet
-        photons_out.append(photons)
-        return table.vstack(photons_out)
+            intersect, interpos, intercoos = f.intersect(photons['dir'].data, photons['pos'].data)
+            p_out = f.process_photons(photons, intersect, interpos, intercoos)
+            p_out['facet'] = i
+
+        return photons
 
     def intersect(self, photons):
         raise NotImplementedError
