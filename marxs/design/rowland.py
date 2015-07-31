@@ -205,7 +205,7 @@ def design_tilted_torus(f, alpha, beta):
 
     Notes
     -----
-    The geometry used here really needs o be explained in a figure.
+    The geometry used here really needs to be explained in a figure.
     However, some notes to explain at least the meaning of the symbols on the code
     are in order:
 
@@ -251,7 +251,7 @@ class GratingArrayStructure(OpticalElement):
     inserting the gratings into the beam for separate observations. The
     uncertainty is expressed as an affine transformation matrix.
 
-    All uncertianty metrices should only consist of translation and rotations
+    All uncertianty matrices should only consist of translation and rotations
     and all uncertainties should be relatively small.
 
     After any of the :attribute:`facet_pos`, :attribute:`facet_uncertainty` or
@@ -259,13 +259,13 @@ class GratingArrayStructure(OpticalElement):
     called to renerate the facets on the GAS.
     This mechanism can be used to estimate the influence of manufacturing
     uncertainties. First, run a simulation with an ideal GAS, then change
-    the values, regenrate the facets and rerun te simulation. Comparing the
-    results will allow you to estiamte the effect of the manufacturing
-    misalignments.
+    the values, regenerate the facets and rerun the simulation. Comparing the
+    results will allow you to estimate the effect of the manufacturing
+    misalignment.
 
     The order in which all the transformations are applied to the facet is
-    chosen, such that all rotations are done around the actual center of the
-    facet or GAS respoectively. "Uncertainty" roations are always done *after*
+    chosen such that all rotations are done around the actual center of the
+    facet or GAS respectively. "Uncertainty" roations are always done *after*
     all other rotations are accounted for.
 
     Use ``pos4d`` in ``facetargs`` to set a fixed rotation for all facets, e.g.
@@ -291,7 +291,14 @@ class GratingArrayStructure(OpticalElement):
         Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
         the segment crosses the y axis.
     '''
+
     output_columns = ['facet']
+
+    tangent_to_torus = False
+    '''If ``True`` the default orientation (before applying blaze, uncertainties etc.) of facets is
+    such that they are tangents to the torus in the center of the facet.
+    If ``False`` they are perpendicular to perfectly focussed rays.
+    '''
 
     def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
@@ -394,10 +401,13 @@ class GratingArrayStructure(OpticalElement):
             angles = self.distribute_facets_on_arc(r)
             for a in angles:
                 facet_pos = self.xyz_from_ra(r, a).flatten()
-                #facet_normal = np.array(self.rowland.normal(x, y, z))
+                if self.tangent_to_torus:
+                    facet_normal = np.array(self.rowland.normal(facet_pos))
+                else:
+                    facet_normal = facet_pos
                 # Find the rotation between [1, 0, 0] and the new normal
                 # Keep grooves (along e_y) parallel to e_y
-                rot_mat = ex2vec_fix(facet_pos, np.array([0., 1., 0.]))
+                rot_mat = ex2vec_fix(facet_normal, np.array([0., 1., 0.]))
 
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
         return pos4d

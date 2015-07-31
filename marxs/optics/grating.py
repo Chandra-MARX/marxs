@@ -26,7 +26,7 @@ def uniform_efficiency_factory(max_order = 3):
     uniform efficiency : callable
         A callable that always returns ``order`` for every photon input.
     '''
-    def uniform_efficiency(energy, polarization):
+    def uniform_efficiency(energy, *args):
         if np.isscalar(energy):
             return np.random.randint(-max_order, max_order + 1), 1.
         else:
@@ -53,7 +53,7 @@ def constant_order_factory(order = 1):
     select_constant_order : callable
         A callable that always returns ``order`` for every photon input.
     '''
-    def select_constant_order(energy, polarization):
+    def select_constant_order(energy, *args):
         '''Always select the same order'''
         return np.ones_like(energy, dtype=int) * order, np.ones_like(energy)
 
@@ -72,7 +72,7 @@ class EfficiencyFile(object):
         # Cumulative probability for orders, normalized to 1.
         self.cumprob = np.cumsum(dat[:, 1:], axis=1) / self.totalprob[:, None]
 
-    def __call__(self, energies, polarization):
+    def __call__(self, energies, *args):
         orderind = np.empty(len(energies), dtype=int)
         ind = np.empty(len(energies), dtype=int)
         for i, e in enumerate(energies):
@@ -106,8 +106,8 @@ class FlatGrating(FlatOpticalElement):
     d : float
         grating constant
     order_selector : callable
-        A function or callable object that accepts photon energy and
-        polarization as input and returns a grating order (integer)
+        A function or callable object that accepts photon energy, polarization and the blaze angle
+        as input and returns a grating order (integer)
         and a probability (float).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
@@ -116,7 +116,7 @@ class FlatGrating(FlatOpticalElement):
         .. warning::
            Reflection gratings are untested so far!
     '''
-    output_columns = ['order', 'grat_y', 'grat_z']
+    output_columns = ['order', 'grat_y', 'grat_z', 'blaze']
     order_sign_convention = None
 
     def __init__(self, **kwargs):
@@ -136,6 +136,11 @@ class FlatGrating(FlatOpticalElement):
 
         wave = energy2wave / photons['energy'].data[intersect]
         m, prob = self.order_selector(photons['energy'].data[intersect], photons['polarization'].data[intersect])
+        # calculate angle between normal and (ray projected in plane perpendicular to grooved)
+        # -> this is the blaze angle
+        p_perp_to_grooves = norm_vector(p - np.dot(p, l)[:, np.newaxis] * l)
+        blazeangle = np.arccos(np.dot(p_perp_to_grooves, -n))
+
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         if self.order_sign_convention is None:
@@ -151,7 +156,7 @@ class FlatGrating(FlatOpticalElement):
         if not self.transmission:
             direction *= -1
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
-        return dir, m, prob
+        return dir, m, prob, blazeangle
 
     def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
         '''
@@ -171,6 +176,7 @@ class FlatGrating(FlatOpticalElement):
             intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
         self.add_output_cols(photons)
         if intersect.sum() > 0:
+
             dir, m, p = self.diffract_photons(photons, intersect)
             photons['pos'][intersect] = interpos[intersect]
             photons['dir'][intersect] = dir
@@ -178,6 +184,7 @@ class FlatGrating(FlatOpticalElement):
             photons['grat_y'][intersect] = intercoos[intersect, 0]
             photons['grat_z'][intersect] = intercoos[intersect, 1]
             photons['probability'][intersect] *= p
+
         return photons
 
 class CATGrating(FlatGrating):
