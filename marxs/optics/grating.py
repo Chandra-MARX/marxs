@@ -129,13 +129,13 @@ class FlatGrating(FlatOpticalElement):
 
     def diffract_photons(self, photons):
         '''Vectorized implementation'''
-        p = norm_vector(h2e(photons['dir']))
+        p = norm_vector(h2e(photons['dir'].data))
         n = self.geometry['plane'][:3]
         l = h2e(self.geometry['e_y'])
         d = h2e(self.geometry['e_z'])
 
-        wave = energy2wave / photons['energy']
-        m, prob = self.order_selector(photons['energy'], photons['polarization'])
+        wave = energy2wave / photons['energy'].data
+        m, prob = self.order_selector(photons['energy'].data, photons['polarization'].data)
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         if self.order_sign_convention is None:
@@ -164,7 +164,7 @@ class FlatGrating(FlatOpticalElement):
             grating and only photons intersecting this grating are passed in.
             The array ``interpos`` contains the intersection points in the global
             coordinate system, ``intercoos`` in the local (y,z) system of the grating.
-            If not all three of ``intersect``, ``interpos`` and ``intercoos` are passed in, they are
+            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
             calculated here. No checks are done on passed-in values.
         '''
         if (interpos is None) or (intercoos is None) or (intersect is None):
@@ -177,7 +177,7 @@ class FlatGrating(FlatOpticalElement):
             photons['order'][intersect] = m
             photons['grat_y'][intersect] = intercoos[intersect, 0]
             photons['grat_z'][intersect] = intercoos[intersect, 1]
-            photons['probability'][intersect] = photons['probability'][intersect] * p
+            photons['probability'][intersect] *= p
         return photons
 
 class CATGrating(FlatGrating):

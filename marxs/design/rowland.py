@@ -465,10 +465,12 @@ class GratingArrayStructure(OpticalElement):
         '''
         self.add_output_cols(photons)
 
+        dir = photons['dir'].data
+        pos = photons['pos'].data
         for i, f in enumerate(self.facets):
-            intersect, interpos, intercoos = f.intersect(photons['dir'].data, photons['pos'].data)
-            p_out = f.process_photons(photons, intersect, interpos, intercoos)
-            p_out['facet'] = i
+            intersect, interpos, intercoos = f.intersect(dir, pos)
+            photons = f.process_photons(photons, intersect, interpos, intercoos)
+            photons['facet'] = i
 
         return photons
 
