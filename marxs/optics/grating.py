@@ -129,13 +129,13 @@ class FlatGrating(FlatOpticalElement):
 
     def diffract_photons(self, photons):
         '''Vectorized implementation'''
-        p = norm_vector(h2e(photons['dir']))
+        p = norm_vector(h2e(photons['dir'].data))
         n = self.geometry['plane'][:3]
         l = h2e(self.geometry['e_y'])
         d = h2e(self.geometry['e_z'])
 
-        wave = energy2wave / photons['energy']
-        m, prob = self.order_selector(photons['energy'], photons['polarization'])
+        wave = energy2wave / photons['energy'].data
+        m, prob = self.order_selector(photons['energy'].data, photons['polarization'].data)
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         if self.order_sign_convention is None:
@@ -153,33 +153,31 @@ class FlatGrating(FlatOpticalElement):
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
         return dir, m, prob
 
-    def process_photons(self, photons, interpos=None, intercoos=None):
+    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
         '''
         Other Parameters
         ----------------
-        interpos, intercoos : array (N, 4)
-            This parameter is here for performance reasons. In many cases, the
+        intersect, interpos, intercoos : array (N, 4)
+            These parameters are here for performance reasons. In many cases, the
             intersection point between the grating and the rays has been calculated
             by the calling routine to decide which photon is processed by which
             grating and only photons intersecting this grating are passed in.
             The array ``interpos`` contains the intersection points in the global
             coordinate system, ``intercoos`` in the local (y,z) system of the grating.
-            If ``interpos`` and ``intercoos` are not passed in, they are
+            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
             calculated here. No checks are done on passed-in values.
         '''
-        if (interpos is None) or (intercoos is None):
+        if (interpos is None) or (intercoos is None) or (intersect is None):
             intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
-        else:
-            intersect = np.ones(len(photons), dtype=bool)
         self.add_output_cols(photons)
         if intersect.sum() > 0:
             dir, m, p = self.diffract_photons(photons[intersect])
-            photons['pos'][intersect] = interpos
+            photons['pos'][intersect] = interpos[intersect]
             photons['dir'][intersect] = dir
             photons['order'][intersect] = m
-            photons['grat_y'][intersect] = intercoos[:, 0]
-            photons['grat_z'][intersect] = intercoos[:, 1]
-            photons['probability'][intersect] = photons['probability'][intersect] * p
+            photons['grat_y'][intersect] = intercoos[intersect, 0]
+            photons['grat_z'][intersect] = intercoos[intersect, 1]
+            photons['probability'][intersect] *= p
         return photons
 
 class CATGrating(FlatGrating):
