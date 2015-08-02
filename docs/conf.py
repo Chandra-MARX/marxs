@@ -22,15 +22,15 @@ sys.path.insert(0, os.path.abspath('..'))
 
 
 # Mock oout the C extention, so that readthedocs can build the docs.
-from mock import Mock as MagicMock
+# from mock import Mock as MagicMock
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return Mock()
+# class Mock(MagicMock):
+#     @classmethod
+#     def __getattr__(cls, name):
+#             return Mock()
 
-MOCK_MODULES = ['marxs.optics.marx']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+# MOCK_MODULES = ['marxs.optics.marx']
+# sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
 # -- General configuration ------------------------------------------------
