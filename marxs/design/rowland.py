@@ -291,7 +291,7 @@ class GratingArrayStructure(OpticalElement):
         Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
         the segment crosses the y axis.
     '''
-    output_cols = ['facet']
+    output_columns = ['facet']
 
     def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
@@ -470,7 +470,7 @@ class GratingArrayStructure(OpticalElement):
         for i, f in enumerate(self.facets):
             intersect, interpos, intercoos = f.intersect(dir, pos)
             photons = f.process_photons(photons, intersect, interpos, intercoos)
-            photons['facet'] = i
+            photons['facet'][intersect] = i
 
         return photons
 
