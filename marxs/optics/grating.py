@@ -127,15 +127,15 @@ class FlatGrating(FlatOpticalElement):
             raise ValueError('Input parameter "d" (Grating constant) is required.')
         super(FlatGrating, self).__init__(**kwargs)
 
-    def diffract_photons(self, photons):
+    def diffract_photons(self, photons, intersect):
         '''Vectorized implementation'''
-        p = norm_vector(h2e(photons['dir'].data))
+        p = norm_vector(h2e(photons['dir'].data[intersect]))
         n = self.geometry['plane'][:3]
         l = h2e(self.geometry['e_y'])
         d = h2e(self.geometry['e_z'])
 
-        wave = energy2wave / photons['energy'].data
-        m, prob = self.order_selector(photons['energy'].data, photons['polarization'].data)
+        wave = energy2wave / photons['energy'].data[intersect]
+        m, prob = self.order_selector(photons['energy'].data[intersect], photons['polarization'].data[intersect])
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         if self.order_sign_convention is None:
@@ -171,7 +171,7 @@ class FlatGrating(FlatOpticalElement):
             intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
         self.add_output_cols(photons)
         if intersect.sum() > 0:
-            dir, m, p = self.diffract_photons(photons[intersect])
+            dir, m, p = self.diffract_photons(photons, intersect)
             photons['pos'][intersect] = interpos[intersect]
             photons['dir'][intersect] = dir
             photons['order'][intersect] = m
