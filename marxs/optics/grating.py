@@ -168,7 +168,7 @@ class FlatGrating(FlatOpticalElement):
             calculated here. No checks are done on passed-in values.
         '''
         if (interpos is None) or (intercoos is None) or (intersect is None):
-            intersect, interpos, intercoos = self.intersect(photons['dir'], photons['pos'])
+            intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
         self.add_output_cols(photons)
         if intersect.sum() > 0:
             dir, m, p = self.diffract_photons(photons[intersect])
