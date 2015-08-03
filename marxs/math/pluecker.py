@@ -50,10 +50,10 @@ def h2e(h):
         Euclidean coordinates. Same shape as ``e`` except that the last
         last dimension is now has 3 elements.
     '''
-    if np.all(h[..., 3] != 0):
-        return (h[..., :3].T / h[..., 3].T).T
-    elif np.all(h[..., 3] == 0):
+    if np.all(h[..., 3] == 0) or np.allclose(h[..., 3], 1):
         return h[..., :3]
+    elif np.all(h[..., 3] != 0):
+        return (h[..., :3] / h[..., 3][..., None])
     else:
         raise ValueError('Input array must be either all euklidean points or all points at infinity.')
 
@@ -194,7 +194,3 @@ def point_dir2plane(h_point, h_dir):
 #         E.N non-null.
 #   @ Point (-eN:E.N) and distinct direction vectors ExN1 and ExN2 lie in the
 #         plane.
-
-
-
-
