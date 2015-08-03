@@ -40,6 +40,24 @@ def test_zeros_order():
     # no offset between old and new ray
     assert np.allclose(np.cross(h2e(photons['pos']) - h2e(p['pos']), h2e(p['dir'])), 0)
 
+def test_translation_invariance():
+    '''For homogeneous gratings, the diffrection eqn does not care where the ray hits.'''
+    dir = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
+    pos = np.tile(np.array([1., 0., 0., 1.]), (2, 1))
+    delta_pos = np.array([0, .23, -.34, 0.])
+    pos[1,:] += delta_pos
+    photons = Table({'pos': pos,
+                     'dir': dir,
+                     'energy': np.ones(2),
+                     'polarization': np.ones(2),
+                     'probability': np.ones(2),
+                     })
+    for order in [-1, 0, 1]:
+        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order))
+        p = g.process_photons(photons)
+        assert np.allclose(p['dir'][0, :], p['dir'][1, :])
+        assert np.allclose(p['pos'][0, :], p['pos'][1, :] - delta_pos)
+
 def test_order_dependence():
     '''For small theta, the change in direction is m * dtheta'''
     photons = Table({'pos': np.ones((5,4)),
