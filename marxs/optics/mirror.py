@@ -25,7 +25,7 @@ class ThinLens(FlatOpticalElement):
 
     >>> import matplotlib.pyplot as plt
     >>> from marxs import source, optics
-    >>> mysource = source.ConstantPointSource((30., 30.), 1., 300.)
+    >>> mysource = source.ConstantPointSource((30., 30.))
     >>> mypointing = source.FixedPointing(coords=(30., 30.))
     >>> myslit = optics.RectangleAperture(zoom=2)
     >>> lens = optics.ThinLens(focallength=10,zoom=40)
@@ -37,7 +37,7 @@ class ThinLens(FlatOpticalElement):
 
     >>> mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-9.6, 0, 0]), zoom=1e5)
     >>> photons = mdet.process_photons(photons)
-    >>> plt.plot(p['det_x'], p['det_y'], 's')
+    >>> fig = plt.plot(photons['det_x'], photons['det_y'], 's')
     '''
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')

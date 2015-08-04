@@ -15,12 +15,14 @@ class Simulator(object):
 
     Example:
 
+    >>> from marxs import source
     >>> mysource = source.ConstantPointSource(coords=(30., 30.), flux=1e-4, energy=2.)
-    >>> sky2mission = source.ConstantPointing(coords=(30., 30.))
-    sequence = [,
-                source.Sky2Mission(30., 30.),
-                mirror.GaussianBlur(0.5),
-                detector.InfiniteCCD(0.5)]
+    >>> sky2mission = source.FixedPointing(coords=(30., 30.))
+
+    #sequence = [,
+    #            source.Sky2Mission(30., 30.),
+    #            mirror.GaussianBlur(0.5),
+    #            detector.InfiniteCCD(0.5)]
     '''
 
     def __init__(self, sequence):
