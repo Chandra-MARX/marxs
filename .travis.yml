@@ -2,9 +2,9 @@ sudo: false
 
 cache:
   pip: true
-  directories:
-    - $HOME/marxs-5.1.0
-    - $HOME/build/Chandra-MARX/marxs/marx/
+  #directories:
+  #  - $HOME/marxs-5.1.0
+  #  - $HOME/build/Chandra-MARX/marxs/marx/
 
 language: python
 python:
