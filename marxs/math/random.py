@@ -32,18 +32,19 @@ class RandomArbitraryPdf(object):
     >>> # Set seed so this example returns exact same numbers every time
     >>> np.random.seed(0)
     >>> a = RandomArbitraryPdf(np.array([1,2,3]), np.array([0.2,1,6]))
-    >>> array([ 2.79172504,  2.52889492,  2.56804456,  2.92559664,  2.07103606,
-    ...     2.0871293 ,  2.0202184 ,  2.83261985,  2.77815675,  2.87001215])
+    >>> a(10)
+    array([ 2.79172504,  2.52889492,  2.56804456,  2.92559664,  2.07103606,
+            2.0871293 ,  2.0202184 ,  2.83261985,  2.77815675,  2.87001215])
 
     As you can see, in this case the chance to draw from the 1-2 interval is only
     1/7 and it did not happen this time.
 
-    If, instead, we want to have exact bin edges returned it looks like this:
+    If, instead, we want to have exact (upper) bin edges returned it looks like this:
     >>> a = RandomArbitraryPdf(np.array([1,2,3]), np.array([0,1,6]), randomize_in_bin=False)
     >>> a(10)
-    array([2, 2, 2, 2, 1, 2, 2, 2, 2, 2])
+    array([3, 3, 3, 3, 2, 3, 3, 3, 3, 3])
 
-    As expected, most numbers are 2, with a 1 mixed in.
+    As expected, most numbers are 3, with a 2 mixed in.
 
     References
     ----------

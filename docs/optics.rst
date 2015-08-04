@@ -25,7 +25,7 @@ Optical elements are generated with the following keywords:
 - Optical elements are placed in 3-d space with the ``pos4d`` keyward, or the ``zoom``, ``orientation`` and ``position`` keywords as explained in :ref:`coordsys`:
 
   >>> from marxs.optics import FlatDetector
-  >>> det1 = FlatDetector(position=[5., 1., 0.], zoom=[1, 50.2, 50.2])  
+  >>> det1 = FlatDetector(position=[5., 1., 0.], zoom=[1, 50.2, 50.2], pixsize=0.1)  
   
 - Optical elements can have a name:
 
@@ -64,7 +64,7 @@ Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
 The gratings implemented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photon to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that expects a function (or other callable) that assigngs each diffrated photon to a gratings order. For example, the following code makes a grating where the photons are distributed with equal probability in all orders from -2 to 2:
 
-   >>> from marx.optics import FlatGrating, uniform_efficiency_factory
+   >>> from marxs.optics import FlatGrating, uniform_efficiency_factory
    >>> select_ord = uniform_efficiency_factory(2)
    >>> mygrating = FlatGrating(d=0.002, order_selector=select_ord)
 
