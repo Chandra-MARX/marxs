@@ -22,9 +22,14 @@ def test_radius_of_photon_shell():
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
     photons = marxm.process_photons(photons)
-    r1, r2 = find_radius_of_photon_shell(photons, 3, 9e4)
+    r1, r2 = find_radius_of_photon_shell(photons, 0, 9e4)
     assert abs(r1 - 5380.) < 10.
     assert abs(r2 - 5495.) < 10.
+    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3)
+    assert abs(r1 - 433.) < 1.
+    assert abs(r2 - 442.) < 1.
+    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3, percentile=[49, 49.1])
+    assert (r2 -r1) < 0.01
 
 def test_design_tilted_torus():
     '''Test the trivial case with analytic answers and consistency for other angles'''
