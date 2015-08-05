@@ -177,13 +177,14 @@ class FlatGrating(FlatOpticalElement):
         self.add_output_cols(photons)
         if intersect.sum() > 0:
 
-            dir, m, p = self.diffract_photons(photons, intersect)
+            dir, m, p, blaze = self.diffract_photons(photons, intersect)
             photons['pos'][intersect] = interpos[intersect]
             photons['dir'][intersect] = dir
             photons['order'][intersect] = m
             photons['grat_y'][intersect] = intercoos[intersect, 0]
             photons['grat_z'][intersect] = intercoos[intersect, 1]
             photons['probability'][intersect] *= p
+            photons['blaze'][intersect] = blaze
 
         return photons
 
