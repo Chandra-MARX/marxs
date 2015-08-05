@@ -184,6 +184,16 @@ def test_GratingArrayStructure_2pi():
     ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
     assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
 
+def test_GAS_facets_on_radius():
+    '''test distribution of facets on radius for d_r is non-integer multiple of d_facet.'''
+    myrowland = RowlandTorus(1000., 1000.)
+    class mock_facet(OpticalElement):
+        pass
+    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], facetclass=mock_facet)
+    assert np.all(gas.distribute_facets_on_radius() == [320., 380.])
+    gas.radius = [300., 340.]
+    assert gas.distribute_facets_on_radius() == [320.]
+
 def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
@@ -196,7 +206,7 @@ def test_facet_rotation_via_facetargs():
 def test_persistent_facetargs():
     '''Make sure that facet_args is still intact after generating facets.
 
-    This is important to allow tweaks of a single parameter and then to regerante the facets.
+    This is important to allow tweaks of a single parameter and then to regenerate the facets.
     '''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e4/2, 9e4/2)

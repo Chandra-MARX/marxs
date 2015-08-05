@@ -339,13 +339,25 @@ class GratingArrayStructure(OpticalElement):
         return anglediff
 
     def max_facets_on_arc(self, radius):
-        '''Calculate maximal; number of facets that can be placed at a certain radius.'''
+        '''Calculate maximal number of facets that can be placed at a certain radius.
+
+        Parameters
+        ----------
+        radius : float
+            Radius of circle where the centers of all facets will be placed.
+        '''
         return radius * self.anglediff() // self.d_facet
 
     def distribute_facets_on_arc(self, radius):
         '''Distribute facets on an arc.
 
         The facets are distributed as evenly as possible over the arc.
+
+        ..note::
+
+          Contrary to `distribute_facets_on_radius`, facets never stretch beyond the limits set by the ``phi`` parameter
+          of the GAS. If an arc segment is not wide enough to accommodate at least a single facet,
+          it will go empty.
 
         Parameters
         ----------
@@ -366,13 +378,32 @@ class GratingArrayStructure(OpticalElement):
         return (self.phi[0] + centerangles) % (2. * np.pi)
 
     def max_facets_on_radius(self):
-        return (self.radius[1] - self.radius[0]) // self.d_facet
+        '''Distribute facets on a radius.
+
+        Returns
+        -------
+        n : int
+            Number of facets needed to cover a given radius segment.
+            Facets might reach beyond the radius limits if the difference between
+            inner and outer radius is not an integer multiple of the facet size.
+        '''
+        return int(np.ceil((self.radius[1] - self.radius[0]) / self.d_facet))
 
     def distribute_facets_on_radius(self):
-        '''Distributes facets as evenly as possible along a radius'''
+        '''Distributes facets as evenly as possible along a radius.
+
+        .. note::
+           Unlike `distribute_facets_on_arc`, this function will have facets reaching
+           beyond the limits of the radius, if the distance between inner and outer radius
+           is not an integer multiple of the facet size.
+
+        Returns
+        -------
+        radii : np.ndarray
+            Radii of the facet *center* positions.
+        '''
         n = self.max_facets_on_radius()
-        d_between = (self.radius[1] - self.radius[0] - n * self.d_facet) / (n + 1)
-        return self.radius[0] + d_between + 0.5 * self.d_facet + np.arange(n) * (d_between + self.d_facet)
+        return np.mean(self.radius) + np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_facet
 
     def xyz_from_ra(self, radius, angle):
         '''Get Cartesian coordiantes for radius, angle and the rowland circle.
