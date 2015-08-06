@@ -119,6 +119,9 @@ class Source(SimulationSequenceElement):
 
         super(Source, self).__init__(**kwargs)
 
+    def __call__(self, *args, **kwargs):
+        return self.generate_photons(*args, **kwargs)
+
     def generate_times(self, exposuretime):
         if callable(self.flux):
             return self.flux(exposuretime)
