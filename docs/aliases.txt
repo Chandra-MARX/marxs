@@ -1,1 +1,1 @@
-.. _marx: http://space.mit.edu/cxc/marx/
+.. _classic marx: http://space.mit.edu/cxc/marx/
