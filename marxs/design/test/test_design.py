@@ -22,9 +22,14 @@ def test_radius_of_photon_shell():
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
     photons = marxm.process_photons(photons)
-    r1, r2 = find_radius_of_photon_shell(photons, 3, 9e4)
+    r1, r2 = find_radius_of_photon_shell(photons, 0, 9e4)
     assert abs(r1 - 5380.) < 10.
     assert abs(r2 - 5495.) < 10.
+    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3)
+    assert abs(r1 - 433.) < 1.
+    assert abs(r2 - 442.) < 1.
+    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3, percentile=[49, 49.1])
+    assert (r2 -r1) < 0.01
 
 def test_design_tilted_torus():
     '''Test the trivial case with analytic answers and consistency for other angles'''
@@ -179,6 +184,16 @@ def test_GratingArrayStructure_2pi():
     ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
     assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
 
+def test_GAS_facets_on_radius():
+    '''test distribution of facets on radius for d_r is non-integer multiple of d_facet.'''
+    myrowland = RowlandTorus(1000., 1000.)
+    class mock_facet(OpticalElement):
+        pass
+    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], facetclass=mock_facet)
+    assert np.all(gas.distribute_facets_on_radius() == [320., 380.])
+    gas.radius = [300., 340.]
+    assert gas.distribute_facets_on_radius() == [320.]
+
 def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
@@ -191,7 +206,7 @@ def test_facet_rotation_via_facetargs():
 def test_persistent_facetargs():
     '''Make sure that facet_args is still intact after generating facets.
 
-    This is important to allow tweaks of a single parameter and then to regerante the facets.
+    This is important to allow tweaks of a single parameter and then to regenerate the facets.
     '''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e4/2, 9e4/2)
