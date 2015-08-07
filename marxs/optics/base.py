@@ -2,7 +2,7 @@ from functools import wraps
 from copy import copy
 
 import numpy as np
-from astropy.table import Table, Row, Column
+from astropy.table import Table, Row
 
 from ..math.pluecker import *
 from ..base import SimulationSequenceElement, _parse_position_keywords
@@ -33,34 +33,6 @@ class OpticalElement(SimulationSequenceElement):
     of the new mirror object will be set to [2, 0, 0, 1].
     '''
 
-    output_columns = []
-    '''This is a list of strings that names the output properties.
-
-    This gives the names of the output properties from this optical element.
-    `process_photon` or `process_photons` are responsible for calculating the values of these
-    properties. For example, for a mirror of nested shells one might set
-    ``output_columns = ['mirror_shell']`` to pass the information on which shell the interaction
-    took place to the user.
-
-    The following properties are always included in the output and do not need to be listed here:
-
-        dir : `numpy.ndarray`
-            4-d direction vector of ray in homogeneous coordinates
-        pos : `numpy.ndarray`
-            4-d position of last interaction pf the photons with any optical element in
-            homogeneous coordinates. Together with ``dir`` this determines the equation
-            of the ray.
-        energy : float
-            Photon energy in keV.
-        polarization : float
-            Polarization angle of the photons.
-        probability : float
-            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
-            passes the optical element and to number between 0 and 1 to express a probability that
-            the photons passes.
-    '''
-
-
     def __init__(self, **kwargs):
         self.pos4d = _parse_position_keywords(kwargs)
 
@@ -72,17 +44,6 @@ class OpticalElement(SimulationSequenceElement):
             if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
                 self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)
-
-    def add_output_cols(self, photons):
-        '''Add output columns of the correct format (currently: float) to the photon array.
-
-        The objects `output_columns` attribute lists the names of all columns that will be added.
-        '''
-        temp = np.empty(len(photons))
-        temp[:] = np.nan
-        for n in self.output_columns:
-            if n not in photons.colnames:
-                photons.add_column(Column(name=n, data=temp))
 
     def process_photon(self, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.

@@ -3,8 +3,14 @@ from collections import OrderedDict
 import numpy as np
 from transforms3d import affines
 
+from astropy.table import Column
+
 class MarxsElement(object):
     '''Base class for all elements in a MARXS simulation.
+
+    This includes elements that actually change photon properties such as grating and
+    mirrors, but also abstract concepts that do not have a direct hardware
+    representation such as a "Rowland Torus".
     '''
     def __init__(self, **kwargs):
         if 'name' in kwargs:
@@ -19,8 +25,49 @@ class MarxsElement(object):
         return OrderedDict(element=self.name)
 
 class SimulationSequenceElement(MarxsElement):
-    '''Base class for all elements in a simulation sequence.'''
-    pass
+    '''Base class for all elements in a simulation sequence that process photons.'''
+    output_columns = []
+    '''This is a list of strings that names the output properties.
+
+    This gives the names of the output properties from this optical element.
+    `process_photon` or `process_photons` are responsible for calculating the values of these
+    properties. For example, for a mirror of nested shells one might set
+    ``output_columns = ['mirror_shell']`` to pass the information on which shell the interaction
+    took place to the user.
+
+    The following properties are always included in the output and do not need to be listed here:
+
+        dir : `numpy.ndarray`
+            4-d direction vector of ray in homogeneous coordinates
+        pos : `numpy.ndarray`
+            4-d position of last interaction pf the photons with any optical element in
+            homogeneous coordinates. Together with ``dir`` this determines the equation
+            of the ray.
+        energy : float
+            Photon energy in keV.
+        polarization : float
+            Polarization angle of the photons.
+        probability : float
+            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
+            passes the optical element and to number between 0 and 1 to express a probability that
+            the photons passes.
+    '''
+
+    def add_output_cols(self, photons):
+        '''Add output columns of the correct format (currently: float) to the photon array.
+
+        The objects `output_columns` attribute lists the names of all columns that will be added.
+        '''
+        temp = np.empty(len(photons))
+        temp[:] = np.nan
+        for n in self.output_columns:
+            if n not in photons.colnames:
+                photons.add_column(Column(name=n, data=temp))
+
+
+    def __call__(self, photons, *args, **kwargs):
+        return self.process_photons(photons, *args, **kwargs)
+
 
 def _parse_position_keywords(kwargs):
     '''Parse keywords to define position.
