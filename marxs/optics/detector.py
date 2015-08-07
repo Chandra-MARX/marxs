@@ -28,7 +28,10 @@ class FlatDetector(FlatOpticalElement):
     pixsize : float
         size of pixels in mm
     '''
-    output_columns = ['det_x', 'det_y', 'detpix_x', 'detpix_y']
+
+    loc_coos_name = ['det_x', 'det_y']
+    '''name for output columns that contain the interaction point in local coordinates.'''
+
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
@@ -43,12 +46,7 @@ class FlatDetector(FlatOpticalElement):
                 warn('Detector size is not an integer multiple of pixel size. It will be rounded.')
             self.centerpix[i] = (self.npix[i] - 1) / 2
 
-    def process_photons(self, photons):
-        intersect, h_intersect, det_coords = self.intersect(photons['dir'], photons['pos'])
-        self.add_output_cols(photons)
-        photons['pos'][intersect] = h_intersect[intersect]
-        photons['det_x'][intersect] = det_coords[intersect, 0]
-        photons['det_y'][intersect] = det_coords[intersect, 1]
-        photons['detpix_x'][intersect] = det_coords[intersect, 0] / self.pixsize + self.centerpix[0]
-        photons['detpix_y'][intersect] = det_coords[intersect, 1] / self.pixsize + self.centerpix[1]
-        return photons
+    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+        detx = intercoos[intersect, 0] / self.pixsize + self.centerpix[0]
+        dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
+        return {'detpix_x': detx, 'detpix_y': dety}
