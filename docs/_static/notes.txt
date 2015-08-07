@@ -1,0 +1,2 @@
+Sphinx needs the _static directory as build time, but git cannot track empty
+directories. Thus, I add this notes file, just so that the directory is not empty.
