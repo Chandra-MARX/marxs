@@ -123,6 +123,15 @@ class OpticalElement(SimulationSequenceElement):
 class FlatOpticalElement(OpticalElement):
     '''Base class for geometrically flat optical elements.
 
+    Compared with `OpticalElement` this adds methods to make the implementation of
+    flat elements easier. It adds a default `geometry`, a fast, vectorized method `intersect`,
+    and a template to `process_photons`.
+
+    Derived classes have the option to implement their own `process_photons` or, alternatively,
+    they can implement a function called
+    ``specific_process_photons(photons, intersect, interpos, intercoos)`` that returns a dictionary
+    of the form ``{'column name': value, ...}`` where value is an array that holds one value for
+    each photon that intersect the optical element.
     '''
 
     geometry = {'center': np.array([0, 0, 0, 1.]),
@@ -165,6 +174,9 @@ class FlatOpticalElement(OpticalElement):
     ``zoom``).
     '''
 
+    loc_coos_name = ['y', 'z']
+    '''name for output columns that contain the interaction point in local coordinates.'''
+
     def __init__(self, **kwargs):
         super(FlatOpticalElement, self).__init__(**kwargs)
         for c in 'xyz':
@@ -206,6 +218,43 @@ class FlatOpticalElement(OpticalElement):
         elif (dir.ndim == 1) and not intersect:
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
+
+    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
+        '''
+        Other Parameters
+        ----------------
+        intersect, interpos, intercoos : array (N, 4)
+            These parameters are here for performance reasons. In many cases, the
+            intersection point between the grating and the rays has been calculated
+            by the calling routine to decide which photon is processed by which
+            grating and only photons intersecting this grating are passed in.
+            The array ``interpos`` contains the intersection points in the global
+            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
+            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
+            calculated here. No checks are done on passed-in values.
+        '''
+        if hasattr(self, 'specific_process_photons'):
+            if (interpos is None) or (intercoos is None) or (intersect is None):
+                intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
+            if intersect.sum() > 0:
+                outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
+                self.add_output_cols(photons, self.loc_coos_name + outcols.keys())
+                # Add ID number to ID col, if requested
+                if self.id_col is not None:
+                    photons[self.id_col][intersect] = self.id_num
+                # Set position in different coordinate systems
+                photons['pos'][intersect] = interpos[intersect]
+                photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
+                photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+                for col in outcols:
+                    if col == 'probability':
+                        photons[col][intersect] *= outcols[col]
+                    else:
+                        photons[col][intersect] = outcols[col]
+
+            return photons
+        else:
+            return super(FlatOpticalElement, self).process_photons(photons)
 
 
 def photonlocalcoords(f, colnames=['pos', 'dir']):

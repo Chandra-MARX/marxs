@@ -116,8 +116,11 @@ class FlatGrating(FlatOpticalElement):
         .. warning::
            Reflection gratings are untested so far!
     '''
-    output_columns = ['order', 'grat_y', 'grat_z', 'blaze']
     order_sign_convention = None
+
+    loc_coos_name = ['grat_y', 'grat_z']
+    '''name for output columns that contain the interaction point in local coordinates.'''
+
 
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
@@ -158,35 +161,10 @@ class FlatGrating(FlatOpticalElement):
         dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
         return dir, m, prob, blazeangle
 
-    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
-        '''
-        Other Parameters
-        ----------------
-        intersect, interpos, intercoos : array (N, 4)
-            These parameters are here for performance reasons. In many cases, the
-            intersection point between the grating and the rays has been calculated
-            by the calling routine to decide which photon is processed by which
-            grating and only photons intersecting this grating are passed in.
-            The array ``interpos`` contains the intersection points in the global
-            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
-            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
-            calculated here. No checks are done on passed-in values.
-        '''
-        if (interpos is None) or (intercoos is None) or (intersect is None):
-            intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
-        self.add_output_cols(photons)
-        if intersect.sum() > 0:
+    def specific_process_photons(self, photons, intersect, interpos, intercoos):
 
-            dir, m, p, blaze = self.diffract_photons(photons, intersect)
-            photons['pos'][intersect] = interpos[intersect]
-            photons['dir'][intersect] = dir
-            photons['order'][intersect] = m
-            photons['grat_y'][intersect] = intercoos[intersect, 0]
-            photons['grat_z'][intersect] = intercoos[intersect, 1]
-            photons['probability'][intersect] *= p
-            photons['blaze'][intersect] = blaze
-
-        return photons
+        dir, m, p, blaze = self.diffract_photons(photons, intersect)
+        return {'dir': dir, 'probability': p, 'order': m, 'blaze': blaze}
 
 class CATGrating(FlatGrating):
     '''Critical-Angle-Transmission Grating

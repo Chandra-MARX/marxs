@@ -25,7 +25,8 @@ class MarxsElement(object):
         return OrderedDict(element=self.name)
 
 class SimulationSequenceElement(MarxsElement):
-    '''Base class for all elements in a simulation sequence that process photons.'''
+    '''Base class for all elements in a simulation sequence that processes photons.'''
+
     output_columns = []
     '''This is a list of strings that names the output properties.
 
@@ -53,16 +54,48 @@ class SimulationSequenceElement(MarxsElement):
             the photons passes.
     '''
 
-    def add_output_cols(self, photons):
+    id_col = None
+    '''String that names an id column for output.
+
+    Set this to a string to add an automatic numbering to the output. This is especially useful
+    if there are several identical optical components that are used in parallel, e.g. there
+    are four identical CCDs. Setting ``id_col = "CCD_ID"`` and the `if_num` of each CCD to a number
+    will add a column ``CCD_ID`` with a value of 1,2,3, or 4 for each photon hitting one of those
+    CCDs.
+
+    Currently, this will not work with all optical elements.
+    '''
+
+    def __init__(self, **kwargs):
+        self.id_num = kwargs.pop('id_num', -9)
+        super(SimulationSequenceElement, self).__init__(**kwargs)
+
+    def add_output_cols(self, photons, colnames=[]):
         '''Add output columns of the correct format (currently: float) to the photon array.
 
-        The objects `output_columns` attribute lists the names of all columns that will be added.
+        This function takes the column names that are added to ``photons`` from several sources:
+
+        - `id_col` (if not ``None``)
+        - `output_columns`
+        - the ``colnames`` parameter.
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Table columns are added to.
+        colnames : list of strings
+            Column names to be added; in addition several object properties can be used to
+            set the column names, see description above.
         '''
         temp = np.empty(len(photons))
         temp[:] = np.nan
-        for n in self.output_columns:
+        for n in self.output_columns + colnames:
             if n not in photons.colnames:
                 photons.add_column(Column(name=n, data=temp))
+
+        if self.id_col is not None:
+            if self.id_col not in photons.colnames:
+                photons.add_column(Column(name=self.id_col, data=-np.ones(len(photons))))
 
 
     def __call__(self, photons, *args, **kwargs):
