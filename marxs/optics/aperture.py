@@ -13,6 +13,9 @@ class BaseAperture(object):
 
 
 class RectangleAperture(FlatOpticalElement, BaseAperture):
+    '''Select the position where a parallel ray from an astrophysical source starts the simulation.
+
+    '''
     def process_photons(self, photons):
         self.add_colpos(photons)
         # random positions in system of aperture

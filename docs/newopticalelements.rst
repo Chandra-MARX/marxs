@@ -11,13 +11,23 @@ The documentation of both classes provides details on the methods and attributes
 
 Base classes for optical elements
 ---------------------------------
+Marxs elments are specified in an object hirachy with increasingly specialized classes. We list those classes here, beccause each of them contributes to the functionality of marxs optical elements.
+
+.. autoclass:: marxs.base.MarxsElement
+
+.. autoclass:: marxs.base.SimulationSequenceElement
+
+.. autosummary::
+   :toctree: API
+
+   SimulationSequenceElement.output_columns
+   SimulationSequenceElement.id_col
 
 .. autoclass:: OpticalElement
 
 .. autosummary::
    :toctree: API
 
-   OpticalElement.output_columns
    OpticalElement.geometry
    OpticalElement.process_photon
    OpticalElement.process_photons
@@ -31,6 +41,7 @@ following in addition:
    :toctree: API
 
    FlatOpticalElement.geometry
+   FlatOpticalElement.loc_coos_name
    FlatOpticalElement.intersect
 
 Example for a derived class

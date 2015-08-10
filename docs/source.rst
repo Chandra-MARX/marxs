@@ -5,7 +5,7 @@
 Define the source in a marxs run
 ================================
 
-A "source" in marxs is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in marx is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
+A "source" in marxs is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in Marxs is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
 
 For each type of source, we need to specifiy the following properties:
 
@@ -13,7 +13,7 @@ For each type of source, we need to specifiy the following properties:
 - Spectrum of photon energies
 - Polarization
 
-Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed, e.g. a spectrum and polarization that changes continuously over time due to a flare in the lightcurve. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `Source`.
+Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `Source`.
 
 In addition, we need to give the location of the source and its size and shape (most of the currently implemented sources are point sources, but additional shapes will be added in the future):
 
@@ -26,7 +26,7 @@ In addition, we need to give the location of the source and its size and shape (
 Specify flux, energy and polarizarion for a source
 --------------------------------------------------
 
-The source flux, the energy and the polarization of sources are specified in the same way for astrophysical source and lab source. We show a few examples here and spell out the full specification below.
+The source flux, the energy and the polarization of sources are specified in the same way for astrophysical sources and lab sources. We show a few examples here and spell out the full specification below.
 
 Flux
 ^^^^
@@ -49,7 +49,9 @@ The source flux can just be a number, giving the total counts / second (if no nu
      0.8
      1.0
 
-This will generate 5 counts per second for 20 seconds with an absolutely constant (no Poisson) rate, so the photons list will contain 100 photons. ``flux`` can also be set to a function that takes the total exposure time as input and returns a list of times, one per photon. In the following example we show how to implement a `Poisson process <https://en.wikipedia.org/wiki/Poisson_process>`_ where the time intervals between two photons are `exponentially distributed <https://en.wikipedia.org/wiki/Poisson_process#Properties>`_ with an average rate of 100 events per second (that is 0.01 s between events):
+This will generate 5 counts per second for 20 seconds with an absolutely constant (no Poisson) rate, so the photons list will contain 100 photons.
+
+``flux`` can also be set to a function that takes the total exposure time as input and returns a list of times, one per photon. In the following example we show how to implement a `Poisson process <https://en.wikipedia.org/wiki/Poisson_process>`_ where the time intervals between two photons are `exponentially distributed <https://en.wikipedia.org/wiki/Poisson_process#Properties>`_ with an average rate of 100 events per second (so the average time difference between events is 0.01 s):
 
     >>> from scipy.stats import expon
     >>> def poisson_rate(exposuretime):
@@ -57,7 +59,7 @@ This will generate 5 counts per second for 20 seconds with an absolutely constan
     ...     return times[times < exposuretime]
     >>> star = ConstantPointSource(coords=(0,0), flux=poisson_rate)
 
-Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons), instead we recommend using `poisson_process` which will generate the appropriate function automatically given the expected rate:
+Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). Marxs provides a better implementation called `poisson_process` which will generate the appropriate function automatically given the expected rate:
 
     >>> from marxs.source.source import poisson_process
     >>> star = ConstantPointSource(coords=(11., 12.), flux=poisson_process(100.))
@@ -79,7 +81,7 @@ Similarly to the flux, the input for ``energy`` can just be a number, which spec
        6.7
        6.7
 
-We can also specify a spectrum, by giving binned energy and flux density values. The energy values are taken as the *upper* egde of the bin; the first value of the flux density array is ignored since the lower bound for this bin is undefined. The spectrum can either be in the form of a (2, N) `numpy.ndarray` or it can be some type of table, e.g. an `astropy.table.Table` or a `dict <dict>` with columns named "energy" and "flux" (meaning: "flux density" in counts/s/unit area/keV). All of the sources in the following example have the same input spectrum (the plot looks a little different, because photon energies are randomly drawn from the spectrum, so there is a Poisson uncertainty):
+We can also specify a spectrum, by giving binned energy and flux density values. The energy values are taken as the *upper* egde of the bin; the first value of the flux density array is ignored since the lower bound for this bin is undefined. The spectrum can either be in the form of a (2, N) `numpy.ndarray` or it can be some type of table, e.g. an `astropy.table.Table` or a `dict <dict>` with columns named "energy" and "flux" (meaning: "flux density" in counts/s/unit area/keV). In the following exmaple, we specify the same spectrum in three differect ways (the plot looks a little different, because photon energies are randomly drawn from the spectrum, so there is a Poisson uncertainty):
 
 .. ipython::
 
@@ -121,7 +123,7 @@ We can also specify a spectrum, by giving binned energy and flux density values.
    @savefig histograms.png width=6in align=center
    In [464]:    lab = plt.ylabel('Counts / bin')
 
-If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.table.Table` `read/write interface <https://astropy.readthedocs.org/en/latest/io/unified.html>`_ offers a convenient way to read it into python:
+If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.table.Table` `read/write interface <https://astropy.readthedocs.org/en/stable/io/unified.html>`_ offers a convenient way to read it into python:
 
     >>> from astropy.table import Table
     >>> spectrum = Table.read('AGNspec.dat', format='ascii')  # doctest: +SKIP
@@ -151,13 +153,13 @@ Lastly, "energy" can be a function that assigns energy values based on the timin
 
 Polarization
 ^^^^^^^^^^^^
-An unpolarized source can be created with ``polarization=None`` (this is also the default). In this case, a random polarization is assigned to every photon. The other options are very similar to "energy": Allowed are a constant value or a table of some form (see examples above) with two columns "angle" and "probability" (really probability density) or a numpy array where the first column represents the angle and the second one the probability density. Here is an example where most polarization are randomly oriented, but an orientation around :math:`35^{\circ}` (0.6 in radian) is a lot more likely.
+An unpolarized source can be created with ``polarization=None`` (this is also the default). In this case, a random polarization is assigned to every photon. The other options are very similar to "energy": Allowed are a constant value or a table of some form (see examples above) with two columns "angle" and "probability" (really "probability density") or a numpy array where the first column represents the angle and the second one the probability density. Here is an example where most polarizations are randomly oriented, but an orientation around :math:`35^{\circ}` (0.6 in radian) is a lot more likely.
 
-    >>> angels = np.array([0., 0.5, 0.7, 2 * np.pi])
+    >>> angles = np.array([0., 0.5, 0.7, 2 * np.pi])
     >>> prob = np.array([1, 1., 8., 1.])
-    >>> polsource = ConstantPointSource(coords=(0.,0.), polarization={'angle': angels, 'probability': prob})
+    >>> polsource = ConstantPointSource(coords=(0.,0.), polarization={'angle': angles, 'probability': prob})
 
-Lastly, if polarization is a function, it will be called with time and energy as parameters allowing for time and energy dependent polarization distributions, e.g. the following function returns a 50% polarization fraction in the 6.4 keV Fe flourescence line after a a certain features comes into view at t=1000 s.
+Lastly, if polarization is a function, it will be called with time and energy as parameters allowing for time and energy dependent polarization distributions. The following function returns a 50% polarization fraction in the 6.4 keV Fe flourescence line after a a certain features comes into view at t=1000 s.
 
     >>> def polfunc(time, energy):
     ...     pol = np.random.uniform(high=2*np.pi, size=len(time))
@@ -173,17 +175,18 @@ Lastly, if polarization is a function, it will be called with time and energy as
 Speficy the position for an astrophysical source
 ------------------------------------------------
 
-The following astropysical source are included in marxs:
+An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the sattellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
+
+
+The following astropysical sources are included in marxs:
 
 .. autoclass:: ConstantPointSource
 
 .. autoclass:: SymbolFSource
 	       
-An astrophysical source in marxs has to be followed by a pointing modle as first optical element that translates the sky coordiantes into the coordinates system of the satallite (see `pos4d`).
 Sources can be used with the following pointing model:
 
 .. autoclass:: FixedPointing
-
 
 .. _sect-source-lab:
 
@@ -198,8 +201,8 @@ The following laboratory sources are provided:
 
 .. autoclass:: marxs.source.labSource.LabConstantPointSource
 
-Design your own sources and pointing model
-------------------------------------------
+Design your own sources and pointing models
+-------------------------------------------
 
 The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 
