@@ -34,6 +34,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy cffi sphinx matplotlib ipython
   - source activate test-environment
   - pip install transforms3d
+  - pip install alabaster --upgrade
   - python setup.py install
 
 matrix:
