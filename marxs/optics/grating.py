@@ -72,7 +72,7 @@ class EfficiencyFile(object):
     ----------
     filename : string
         Path to the efficiency file.
-    orders : `np.ndarray` or list
+    orders : list
         List of orders in the file. Must match the number of columns with probabilities.
     '''
     def __init__(self, filename, orders):
