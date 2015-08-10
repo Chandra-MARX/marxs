@@ -1,4 +1,4 @@
-sudo: false
+#sudo: false
 
 cache:
   pip: true
@@ -16,6 +16,8 @@ before_install:
   - cd ..
 
 install:
+  - sudo apt-get update
+  - sudo apt-get install graphviz
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
