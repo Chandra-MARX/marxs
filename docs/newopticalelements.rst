@@ -5,6 +5,12 @@ Define your own optical element
 
 Marxs comes with a selection of useful optical elements and for many cases these elements are sufficient to define your mission. However, if that is not the case, you may want to write your own code to deal with those pieces that marxs is missing. We are very interested in adding more elements to marxs and we would love to hear from you. Just click the github link in the sidebar and open an issue or pull request to add your code to marxs.
 
+Marxs elments are specified in an object hirachy with increasingly specialized classes. We list those classes here, beccause each of them contributes to the functionality of marxs optical elements.
+
+.. inheritance-diagram:: marxs.base.MarxsElement marxs.base.SimulationSequenceElement marxs.optics.base.OpticalElement marxs.optics.base.FlatOpticalElement marxs.optics.baffle.Baffle marxs.optics.mirror.ThinLens marxs.optics.marx.MarxMirror marxs.optics.detector.FlatDetector marxs.optics.multiLayerMirror.MultiLayerMirror marxs.optics.aperture.RectangleAperture marxs.optics.grating.FlatGrating marxs.optics.grating.CATGrating
+   :parts: 1
+   
+
 In this section, we explain how to add a new optical element to marxs. All optical elements must be derived directly or indirectly from the optical element base class `OpticalElement`. For flat optical elements marxs already provides `FlatOpticalElement`, which adds a default geometry (the box shape discussed in :ref:`pos4d`) and a `FlatOpticalElement.intersect` method that calculates where a ray hits the active surface of that element.
 
 The documentation of both classes provides details on the methods and attributes that should be overwritten in derived classes.
@@ -12,12 +18,21 @@ The documentation of both classes provides details on the methods and attributes
 Base classes for optical elements
 ---------------------------------
 
+.. autoclass:: marxs.base.MarxsElement
+
+.. autoclass:: marxs.base.SimulationSequenceElement
+
+.. autosummary::
+   :toctree: API
+
+   SimulationSequenceElement.output_columns
+   SimulationSequenceElement.id_col
+
 .. autoclass:: OpticalElement
 
 .. autosummary::
    :toctree: API
 
-   OpticalElement.output_columns
    OpticalElement.geometry
    OpticalElement.process_photon
    OpticalElement.process_photons
@@ -31,7 +46,9 @@ following in addition:
    :toctree: API
 
    FlatOpticalElement.geometry
+   FlatOpticalElement.loc_coos_name
    FlatOpticalElement.intersect
+
 
 Example for a derived class
 ---------------------------

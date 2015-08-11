@@ -5,16 +5,18 @@ Define the design of an instrument / mission
 ============================================
 
 A simulation is defined by creating objects for all optical elements such as mirrors and gratings and
-sorting these optical elements in the order in which a photons encounters them. Marxs works under the
+sorting these optical elements in the order in which a photon encounters them. Marxs works under the
 assumption that the order of elements is fixed. A photon does not have to interact with each element
 (e.g. it can miss a grating, but still be detected by another focal plane instrument), but under no circumstance will a photon ever go back
 to an element it already passed.
 
 There are ways to describe layouts where photons split between different paths, such as in the
-design of XMM-Newton where some photons pass the gratings and get refelcted into the RGS detectors,
+design of XMM-Newton where some photons pass the gratings and get reflected into the RGS detectors,
 while others continue on their path without ever encountering a grating until they hit the imaging
 detectors. Such complex setups are described in :ref:`complexgeometry`.
 
+
+.. _args for optical elements:
 
 Define an optical element for the simulation
 --------------------------------------------
@@ -32,7 +34,7 @@ Optical elements are generated with the following keywords:
   >>> from marxs.optics import FlatDetector
   >>> det1 = FlatDetector(name='back-illuminated CCD No 1')
 
-- Individual optical elements might add more keywords (e.g. the pixel size for a detector or the filename of a parameter file); those are listed below for the individual optical elements, e.g.:
+- Individual optical elements might add more keywords (e.g. the pixel size for a detector or the filename of a parameter file); those are listed below for the individual optical elements. Here is an example for a detector:
 
   >>> from marxs.optics import FlatDetector
   >>> det1 = FlatDetector(pixsize=0.04)
@@ -42,7 +44,7 @@ Optical elements are generated with the following keywords:
 List of optical elements provided by marxs
 ------------------------------------------
 Note that elements which generate photons (astropysical sources or lab sources) are not listed here. See :ref:`sources`.
-For convenience all of the commonly elements listed in the following can be imported directly from ``marxs.optics`` such as:
+For convenience the following elements can be imported directly from ``marxs.optics`` such as:
 
     >>> from marxs.optics import Baffle
 
@@ -50,14 +52,30 @@ This short from is recommended over the long form:
 
     >>> from marxs.optics.baffle import Baffle
 
+.. _sect-apertures:
+    
+Entrance apertures
+^^^^^^^^^^^^^^^^^^
+
+For astrophysical sources, we assume that the rays are parallel when they reach the experiement. The direction of the photons is given by the location of the source on the sky and the pointing model, but we still need to select which of the parallel rays we select for the simulation. This is done by an optical element that we call an "aperture" in Marxs. In the case of the `MarxMirror` this fuctionality is already included in the code that describes the mirror. For designs that do not use the `MarxMirror` the following entrace aperture is included in Marxs:
+
 .. autosummary::
    :toctree: API
 
    aperture.RectangleAperture
+
+
+General optical elements
+^^^^^^^^^^^^^^^^^^^^^^^^
+   
+.. autosummary::
+   :toctree: API
+
    baffle.Baffle
    mirror.ThinLens
    marx.MarxMirror
    detector.FlatDetector
+   multiLayerMirror.MultiLayerMirror
 
 
 Diffraction gratings

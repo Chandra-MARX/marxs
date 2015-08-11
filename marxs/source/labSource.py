@@ -12,17 +12,15 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
     - photon direction determined by location of source, and selected photon starting position
-    - aperture is parallel to y-z plane
     - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
       in which case polarization is relative to positive x axis, ALL GLOBAL AXES
-    - TODO: figure out how to provide energy distribution
 
     Parameters
     ----------
     sourcePos: 3 element list
         3D coordinates of photon source (not aperture)
-    kwargs: 'position', 'orientation', 'zoom'
-        4x4 pos4d matrix for transformations in homogeneous coords from local coords to global coords, see `pos4d`.
+    kwargs: ``pos4d`` or ``position``, ``orientation``, and ``zoom`` can be used to set the position,
+        size and orientation of the rectangular apeture; see `pos4d` for details.
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
 
@@ -55,20 +53,20 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
 class LabConstantPointSource(Source):
     '''Simple in-lab source for testing purposes
 
-    - point source
     - photons uniformly distributed in all directions
     - photon start position is source position
     - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
       in which case polarization is relative to positive x axis, ALL GLOBAL AXES
-    - TODO: figure out how to provide energy distribution
-    - TODO: improve direction capability to allow for vetor and angle around that vector
 
     Parameters
     ----------
     position: 3 element list
         3D coordinates of photon source
     direction: string
-        hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'
+        Hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'.
+        In many cases, it is sufficient to simulate photons for one hemisphere. In this case, the
+        parameter ``direction`` can reduce the runtime by reducing the number of photons that are
+        not relevant for the simulation.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.

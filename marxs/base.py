@@ -59,7 +59,8 @@ class SimulationSequenceElement(MarxsElement):
 
     Set this to a string to add an automatic numbering to the output. This is especially useful
     if there are several identical optical components that are used in parallel, e.g. there
-    are four identical CCDs. Setting ``id_col = "CCD_ID"`` and the `if_num` of each CCD to a number
+    are four identical CCDs. Setting ``id_col = "CCD_ID"`` and passing an ``id_num=1, 2, 3, 4``
+    keyword respectively to each CCD
     will add a column ``CCD_ID`` with a value of 1,2,3, or 4 for each photon hitting one of those
     CCDs.
 

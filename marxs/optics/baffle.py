@@ -4,7 +4,7 @@ from .base import FlatOpticalElement
 
 
 class Baffle(FlatOpticalElement):
-	'''Plate with rectangular hole that allows photons through
+	'''Plate with rectangular hole that allows photons through.
 
 	The probability of photons that miss is set to 0.
 	'''

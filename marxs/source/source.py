@@ -67,13 +67,13 @@ class Source(SimulationSequenceElement):
         - callable: Function that takes a total exposure time as input and returns an array
           of photon emission times between 0 and the total exposure time.
 
-    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarray` or `dict` or `astropy.table.Table`
+    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarray` or `dict <dict>` or `astropy.table.Table`
 
         This input decides the energy of the emitted photons; the default value is 1 keV.
         Possible formats are:
 
         - number: Constant energy.
-        - (2, N) `numpy.ndarray` or object with ``energy`` and ``flux`` columns (e.g. `dict` or
+        - (2, N) `numpy.ndarray` or object with columns "energy" and "flux" (e.g. `dict <dict>` or
           `astropy.table.Table`), where "flux" here really is a short form for
           "flux density" and is given in the units of photons/s/keV.
           For a (2, N) array the first column is the energy, the
@@ -87,7 +87,7 @@ class Source(SimulationSequenceElement):
           function must take an array of photon times as input and return an equal length
           array of photon energies in keV.
 
-    polarization: contant or None, (2, N) `numpy.ndarray`, `dict`, `astropy.table.Table` or similar or callable.
+    polarization: contant or ``None``, (2, N) `numpy.ndarray`, `dict <dict>`, `astropy.table.Table` or similar or callable.
         There are several different ways to set the polarization angle of the photons for a
         polarized source. In all cases, the angle is given in radian and is measured North
         through East. (We ignore the special case of a polarized source exactly on a pole.)
@@ -95,18 +95,17 @@ class Source(SimulationSequenceElement):
 
         - ``None``:
           An unpolarized source. Every photons is assigned a random polarization.
-        - number: Constant polarization angle for all photons.
-        - (2, N) `numpy.ndarray` or object with ``angle`` and ``probability`` columns
-          (e.g. `dict` or `astropy.table.Table`), where "probability" really means
-          "probability density" here.
+        - number: Constant polarization angle for all photons (in radian).
+        - (2, N) `numpy.ndarray` or object with columns "angle" and "probability"
+          (e.g. `dict <dict>` or `astropy.table.Table`), where "probability" really means
+          "probability density".
           The summed probability density will automatically be normalized to one.
           For a (2, N) array the first column is the angle, the second column is the
           probability *density*. Given this table, the code assumes a piecewise constant
           probability density. The "angle" values contain the **upper** limit of each bin,
           the "probability" array the probability density in this bin. The first entry in
           the "probability" array is ignored, because the lower bound
-          of this bin is undefined. The code draws an energy from this spectrum for every
-          photon created.
+          of this bin is undefined.
         - a callable (function or callable object): This option allows full customization.
           The function is called with two arrays (time and energy values) as input
           and must return an array of equal length that contains the polarization angles in
@@ -331,9 +330,6 @@ class FixedPointing(PointingModel):
     interpretation *z axis points north* is meaningless, but the
     combination of ``ra``, ``dec`` and ``roll`` still uniquely
     determines the position of the coordinate system.
-
-    Negative sign for dec and roll in the code, because these are defined
-    opposite to the right hand rule.
     '''
     def __init__(self, **kwargs):
         self.coords = kwargs.pop('coords')
@@ -345,7 +341,10 @@ class FixedPointing(PointingModel):
             self.roll = 0.
 
         super(FixedPointing, self).__init__(**kwargs)
-
+        '''
+        Negative sign for dec and roll in the code, because these are defined
+        opposite to the right hand rule.
+        '''
         self.mat3d = euler2mat(np.deg2rad(self.ra),
                                np.deg2rad(-self.dec),
                                np.deg2rad(-self.roll), 'rzyx')

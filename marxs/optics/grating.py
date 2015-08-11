@@ -61,6 +61,20 @@ def constant_order_factory(order = 1):
 
 
 class EfficiencyFile(object):
+    '''Select grating order from a probability distribution in a data file.
+
+    The file format supported by this class is as follows:
+    The first colum contains energy values in keV, all remaining columns have the probability
+    that a photons with this energy is diffracted into the respective order. The probabilites
+    for each order do not have to add up to 1.
+
+    Parameters
+    ----------
+    filename : string
+        Path to the efficiency file.
+    orders : list
+        List of orders in the file. Must match the number of columns with probabilities.
+    '''
     def __init__(self, filename, orders):
         dat = np.loadtxt(filename)
         self.energy = dat[:, 0]
@@ -88,7 +102,7 @@ class FlatGrating(FlatOpticalElement):
     The grating is assumed to be geometrically thin, i.e. all photons enter on
     the face of the grating, not through the sides.
 
-    The sign convention for grating orders is determined by the ``order_sign_convenction``
+    The sign convention for grating orders is determined by the ``order_sign_convention``
     attribute. If this is ``None``, the following, somewhat arbitrary convention is chosen:
     Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
     negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`

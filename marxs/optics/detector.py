@@ -27,6 +27,9 @@ class FlatDetector(FlatOpticalElement):
     ----------
     pixsize : float
         size of pixels in mm
+
+    kwargs :
+       see `args for optical elements`
     '''
 
     loc_coos_name = ['det_x', 'det_y']

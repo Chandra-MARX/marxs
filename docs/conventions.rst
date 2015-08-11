@@ -1,5 +1,5 @@
 =================================================
-Coordinate system, conventions and physical units
+Coordinates and units
 =================================================
 
 .. _coordsys:
