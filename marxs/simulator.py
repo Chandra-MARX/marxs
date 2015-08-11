@@ -11,10 +11,19 @@ class SimulationSequence(SimulationSequenceElement):
     ----------
     sequence : list
         The elements of this list are all optical elements that process photons.
-    preprocess_steps : list of callables
-        Each callable must accept a photon table on input and return a photon table on output.
-    postprocess_steps : list of callables
-        Each callable must accept a photon table on input and return a photon table on output.
+    preprocess_steps : list
+        The elements of this list are functions or callable objects that accept a photon list as input
+        and returns no output (but changing the photon list in place, e.g. adding meta-data is
+        allowed)  (*default*: ``[]``). All ``preprocess_steps`` are run before *every* optical element
+        in the sequence.
+        An example would be a function that writes the photon list to disk as a backup before
+        every optical element or prints some informational message.
+        If your function returns a modified photon list, treat it as an optical element and place it
+        in `sequence`.
+    postprocess_steps : list
+        See `preprecess_steps` except that thee steps are run *after* each sequnece element
+         (*default*: ``[]``).
+
 
     Example
     -------
@@ -33,14 +42,14 @@ class SimulationSequence(SimulationSequenceElement):
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])
     >>> ccd = optics.FlatDetector(pixsize=0.05)
     >>> sequence = [sky2mission, aper, mirr, ccd]
-    >>> my_instrument = SimulationSequence(sequence)
+    >>> my_instrument = SimulationSequence(sequence=sequence)
 
     Finally, we run one set of photons through the instrument:
 
     >>> photons_in = mysource.generate_photons(1e5)
     >>> photons_out = my_instrument(photons_in)
 
-    Now, let us check where the photons fall onthe detector:
+    Now, let us check where the photons fall on the detector:
 
     >>> set(photons_out['detpix_x'].round())
     set([19.0, 20.0])
@@ -49,20 +58,20 @@ class SimulationSequence(SimulationSequenceElement):
     40 * 40 pixel detector).
     '''
 
-    def __init__(self, sequence, preprocess_steps=[], postprocess_steps=[], **kwargs):
-        for elem in sequence + preprocess_steps + postprocess_steps:
+    def __init__(self, **kwargs):
+        self.sequence = kwargs.pop('sequence')
+        self.preprocess_steps = kwargs.pop('preprocess_steps', [])
+        self.postprocess_steps = kwargs.pop('postprocess_steps', [])
+        for elem in self.sequence + self.preprocess_steps + self.postprocess_steps:
             if not callable(elem):
-                raise SimulationSetupError('{0} is not callable.'.format(str(sequence[0])))
-        self.sequence = sequence
-        self.preprocess_steps = preprocess_steps
-        self.postprocess_steps = postprocess_steps
+                raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
         super(SimulationSequence, self).__init__(**kwargs)
 
     def process_photons(self, photons):
         for elem in self.sequence:
             for p in self.preprocess_steps:
-                photons = p.process_photons(photons)
-            photons = elem.process_photons(photons)
+                p(photons)
+            photons = elem(photons)
             for p in self.postprocess_steps:
-                photons = p.process_photons(photons)
+                p(photons)
         return photons
