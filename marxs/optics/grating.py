@@ -2,7 +2,7 @@
 
 import numpy as np
 from astropy.table import Column
-from transforms3d import affines
+from transforms3d import affines, axangles
 
 from ..math.pluecker import *
 from ..math.utils import norm_vector
@@ -97,7 +97,7 @@ class EfficiencyFile(object):
 
 
 class FlatGrating(FlatOpticalElement):
-    '''Flat grating with grooves parallel to the y axis.
+    '''Flat grating
 
     The grating is assumed to be geometrically thin, i.e. all photons enter on
     the face of the grating, not through the sides.
@@ -125,8 +125,10 @@ class FlatGrating(FlatOpticalElement):
         and a probability (float).
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
-        reflection grating. *(Default: ``True`` )*
-
+        reflection grating. (*Default*: ``True`` )
+    groove_angle : float
+        Angle between the direction of the grooves and the local y axis in radian.
+        (*Default*: ``0.``)
         .. warning::
            Reflection gratings are untested so far!
     '''
@@ -139,21 +141,25 @@ class FlatGrating(FlatOpticalElement):
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
         self.transmission = kwargs.pop('transmission', True)
-        self.d = kwargs.pop('d', None)
-        if self.d is None:
+        if 'd' not in kwargs:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
+        self.d = kwargs.pop('d')
+        self.groove_ang = kwargs.pop('groove_angle', 0.)
         super(FlatGrating, self).__init__(**kwargs)
+        self.groove4d = axangles.axangle2aff(self.geometry['e_x'][:3], self.groove_ang)
+        self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
+        self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_z'])
 
     def diffract_photons(self, photons, intersect):
         '''Vectorized implementation'''
         p = norm_vector(h2e(photons['dir'].data[intersect]))
         n = self.geometry['plane'][:3]
-        l = h2e(self.geometry['e_y'])
-        d = h2e(self.geometry['e_z'])
+        l = h2e(self.geometry['e_groove'])
+        d = h2e(self.geometry['e_perp_groove'])
 
         wave = energy2wave / photons['energy'].data[intersect]
         m, prob = self.order_selector(photons['energy'].data[intersect], photons['polarization'].data[intersect])
-        # calculate angle between normal and (ray projected in plane perpendicular to grooved)
+        # calculate angle between normal and (ray projected in plane perpendicular to groove)
         # -> this is the blaze angle
         p_perp_to_grooves = norm_vector(p - np.dot(p, l)[:, np.newaxis] * l)
         blazeangle = np.arccos(np.dot(p_perp_to_grooves, -n))
@@ -164,8 +170,8 @@ class FlatGrating(FlatOpticalElement):
             sign = 1.
         else:
             sign = self.order_sign_convention(photons)
-        p_d = np.dot(p, h2e(self.geometry['e_z'])) + sign * m * wave / self.d
-        p_l = np.dot(p, h2e(self.geometry['e_y']))
+        p_d = np.dot(p, d) + sign * m * wave / self.d
+        p_l = np.dot(p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = 1. - np.sqrt(p_d**2 + p_l**2)
         # Check if the photons have same direction compared to normal before
