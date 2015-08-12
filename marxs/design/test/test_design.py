@@ -29,7 +29,7 @@ def test_radius_of_photon_shell():
     assert abs(r1 - 433.) < 1.
     assert abs(r2 - 442.) < 1.
     r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3, percentile=[49, 49.1])
-    assert (r2 -r1) < 0.01
+    assert (r2 - r1) < 0.01
 
 def test_design_tilted_torus():
     '''Test the trivial case with analytic answers and consistency for other angles'''
@@ -166,7 +166,7 @@ def test_GratingArrayStructure():
 
     # Check that initially all uncertainties are 0
     for i in range(len(gas.facet_pos)):
-        assert np.allclose(gas.facet_pos[i], gas.facets[i].pos4d)
+        assert np.allclose(gas.facet_pos[i], gas.sequence[i].pos4d)
 
 def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
@@ -197,11 +197,11 @@ def test_GAS_facets_on_radius():
 def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
-    mytorus = RowlandTorus(9e4/2, 9e4/2)
-    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+    mytorus = RowlandTorus(9e3/2, 9e3/2)
+    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
-    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
-    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.facets[0].geometry['e_x'][:3], mygascat.facets[0].geometry['e_x'][:3]))), 15.)
+    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
+    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.sequence[0].geometry['e_x'][:3], mygascat.sequence[0].geometry['e_x'][:3]))), 15.)
 
 def test_persistent_facetargs():
     '''Make sure that facet_args is still intact after generating facets.
@@ -210,6 +210,54 @@ def test_persistent_facetargs():
     '''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e4/2, 9e4/2)
-    facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}
+    # id_col is automatically added in GAS is not present here.
+    # So, pass in an id_col to make sure the comparison below will still work.
+    facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff, 'id_col': 'facet'}
     mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs=facet_args)
     assert mygas.facet_args == facet_args
+
+def test_run_photons_through_gas():
+    '''And check that they have the expected labels.
+
+    No need to check here that the grating equation works - that's part of the grating tests/
+    '''
+    # Setup only.
+    mysource = ConstantPointSource((30., 30.), flux=1., energy=1.)
+    photons = mysource.generate_photons(1000)
+    mypointing = FixedPointing(coords=(30, 30.))
+    photons = mypointing.process_photons(photons)
+    marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
+    photons = marxm.process_photons(photons)
+    gratingeff = uniform_efficiency_factory(1)
+    facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}
+    mytorus = RowlandTorus(9e3/2, 9e3/2)
+
+    # Now the real test with different input for facet_args
+
+    for i in [1, 2, 3, 4]:
+        if i == 1:
+            kwargs = {}
+            f = 'facet'
+        elif i == 2:
+            kwargs = {'id_col': 'qewr'}
+            f = 'qewr'
+        elif i == 3:
+            facet_args['id_col'] = 'ttt'
+            f = 'ttt'
+            kwargs = {}
+        elif i == 4:
+            facet_args['id_col'] = 'uuu'
+            f = 'uuu'
+            kwargs = {'id_col': 'yyy'}
+
+        mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs=facet_args, **kwargs)
+
+        p = mygas(photons.copy())
+        indorder = np.isfinite(p['order'])
+        indfacet = p[f] >=0
+        assert np.all(indorder == indfacet)
+
+        assert set(p['order'][indorder]) == set([-1, 0, 1])
+        # -1 means no hit - passing between facets
+        allfacets = set([-1]).union(set(np.arange(len(mygas.sequence))))
+        assert set(p[f]).issubset(allfacets)

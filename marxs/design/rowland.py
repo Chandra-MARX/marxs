@@ -12,6 +12,7 @@ from ..optics import FlatDetector
 from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..math.rotations import ex2vec_fix
 from ..math.pluecker import e2h, h2e
+from ..simulator import SimulationSequence
 
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
@@ -233,7 +234,7 @@ class FacetPlacementError(Exception):
     pass
 
 
-class GratingArrayStructure(OpticalElement):
+class GratingArrayStructure(SimulationSequence, OpticalElement):
     '''
 
     When a ``GratingArrayStructure`` (GAS) is initialized, it places as many
@@ -292,13 +293,12 @@ class GratingArrayStructure(OpticalElement):
         the segment crosses the y axis.
     '''
 
-    output_columns = ['facet']
-
     tangent_to_torus = False
     '''If ``True`` the default orientation (before applying blaze, uncertainties etc.) of facets is
     such that they are tangents to the torus in the center of the facet.
     If ``False`` they are perpendicular to perfectly focussed rays.
     '''
+    id_col = 'facet'
 
     def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
         self.rowland = rowland
@@ -314,10 +314,16 @@ class GratingArrayStructure(OpticalElement):
         self.x_range = x_range
         self.d_facet = d_facet
         self.facet_class = kwargs.pop('facetclass')
-        self.facet_args = kwargs.pop('facetargs', {})
+        # Need to operate on a copy here, to avoid chainginf facet_args of outer level
+        self.facet_args = kwargs.pop('facetargs', {}).copy()
+        # Sequence needs to be part of kwargs for SimulationSequence.__init__
+        # but we overwrite the sequence in generate_facets anyway
+        kwargs['sequence'] = []
 
         super(GratingArrayStructure, self).__init__(**kwargs)
 
+        if 'id_col' not in self.facet_args:
+            self.facet_args['id_col'] = self.id_col
         self.uncertainty = np.eye(4)
         self.facet_pos = self.facet_position()
         self.facet_uncertainty = [np.eye(4)] * len(self.facet_pos)
@@ -451,7 +457,6 @@ class GratingArrayStructure(OpticalElement):
         gsa = GSA( ... args ...)
         gsa.generate_facets(FlatGrating, {'d': 0.002})
         '''
-        self.facets = []
         # _parse_position_keywords pops off keywords, thus operate on a copy here
         facet_args = facet_args.copy()
         facet_pos4d = _parse_position_keywords(facet_args)
@@ -488,32 +493,8 @@ class GratingArrayStructure(OpticalElement):
                      ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
-            self.facets.append(facet_class(pos4d = f_pos4d, name='{0}  Facet {1} in GAS {2}'.format(name, i, self.name), **facet_args))
 
-    def process_photons(self, photons):
-        '''
-
-        This is a simple brute-force implementation. It does assume that every
-        photon will interact with one grating at most, but is not any more clever
-        than that. This means that a lot of relatively expansive intersection
-        calculations are done.
-
-        In those designs that we study, the GAS is almost flat (because the Rowland
-        circle is large), so I could implement e.g.:
-
-        - a much faster "approximate" intersection test by projection on a x = const plane
-          (possibly as a kdtree from scipy.spatial).
-        '''
-        self.add_output_cols(photons)
-
-        dir = photons['dir'].data
-        pos = photons['pos'].data
-        for i, f in enumerate(self.facets):
-            intersect, interpos, intercoos = f.intersect(dir, pos)
-            photons = f.process_photons(photons, intersect, interpos, intercoos)
-            photons['facet'][intersect] = i
-
-        return photons
+            self.sequence.append(facet_class(pos4d = f_pos4d, name='{0}  Facet {1} in GAS {2}'.format(name, i, self.name), id_num=i, **facet_args))
 
     def intersect(self, photons):
         raise NotImplementedError
