@@ -13,7 +13,7 @@ from ..base import _parse_position_keywords
 from ...design import RowlandTorus, GratingArrayStructure
 from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
-from ...simulator import SimulationSequence
+from ...simulator import Sequence
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -24,13 +24,13 @@ all_oe = [ThinLens(focallength=100),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           GratingArrayStructure(mytorus, d_facet=0.1, x_range=[0.5, 1.], radius=[0,.5],
-                                facetclass=FlatGrating,
-                                facetargs={'zoom':0.05, 'd':0.002,
+                                elem_class=FlatGrating,
+                                elem_args={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
                                            }),
           Baffle(),
           MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
-          SimulationSequence(sequence=[]),
+          Sequence(sequence=[]),
           ]
 
 # Each elements will be used multiple times.

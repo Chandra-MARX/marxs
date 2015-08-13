@@ -102,19 +102,6 @@ class FlatGrating(FlatOpticalElement):
     The grating is assumed to be geometrically thin, i.e. all photons enter on
     the face of the grating, not through the sides.
 
-    The sign convention for grating orders is determined by the ``order_sign_convention``
-    attribute. If this is ``None``, the following, somewhat arbitrary convention is chosen:
-    Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
-    negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
-    the physical situation is the same, but the sign of the grating order will be reversed.
-    In this sense, the convention chosen is arbitrarily. However, it has some practical
-    advantages: The implementation is fast and all photons passing through the grating
-    in the same diffraction order are displaced in the same way. (Contrary to the
-    convention in :class:`CATGrating`.)
-    If ``order_sign_convention`` is not ``None`` is has to be a callable that accepts the
-    photons table as input and returns an a float (e.g. ``+1``) or an array filled with -1
-    or +1.
-
     Parameters
     ----------
     d : float
@@ -129,10 +116,26 @@ class FlatGrating(FlatOpticalElement):
     groove_angle : float
         Angle between the direction of the grooves and the local y axis in radian.
         (*Default*: ``0.``)
-        .. warning::
-           Reflection gratings are untested so far!
+
+    .. warning::
+       Reflection gratings are untested so far!
     '''
+
     order_sign_convention = None
+    '''
+    The sign convention for grating orders is determined by the ``order_sign_convention``
+    attribute. If this is ``None``, the following, somewhat arbitrary convention is chosen:
+    Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
+    negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
+    the physical situation is the same, but the sign of the grating order will be reversed.
+    In this sense, the convention chosen is arbitrarily. However, it has some practical
+    advantages: The implementation is fast and all photons passing through the grating
+    in the same diffraction order are displaced in the same way. (Contrary to the
+    convention in :class:`CATGrating`.)
+    If ``order_sign_convention`` is not ``None`` is has to be a callable that accepts the
+    photons table as input and returns an a float (e.g. ``+1``) or an array filled with -1
+    or +1.
+    '''
 
     loc_coos_name = ['grat_y', 'grat_z']
     '''name for output columns that contain the interaction point in local coordinates.'''
@@ -145,7 +148,9 @@ class FlatGrating(FlatOpticalElement):
             raise ValueError('Input parameter "d" (Grating constant) is required.')
         self.d = kwargs.pop('d')
         self.groove_ang = kwargs.pop('groove_angle', 0.)
+
         super(FlatGrating, self).__init__(**kwargs)
+
         self.groove4d = axangles.axangle2aff(self.geometry['e_x'][:3], self.groove_ang)
         self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
         self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_z'])

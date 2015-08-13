@@ -143,21 +143,21 @@ def test_GratingArrayStructure():
     myrowland = RowlandTorus(10000., 10000.)
     class mock_facet(OpticalElement):
         pass
-    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], facetclass=mock_facet)
+    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], elem_class=mock_facet)
     assert gas.max_facets_on_arc(300.) == 12
     angles = gas.distribute_facets_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
     assert np.alltrue((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
     assert gas.max_facets_on_radius() == 10
     assert np.all(gas.distribute_facets_on_radius() == np.arange(315., 600., 30.))
-    assert len(gas.facet_pos) == 177
+    assert len(gas.elem_pos) == 177
     center = gas.calc_ideal_center()
     assert center[1] == 0
     assert center[2] == (300. + 600.) / 2.
     assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
-    #     for f in gas.facet_pos:
+    #     for f in gas.elem_pos:
     #         elem[0].plot(f[elem[1],3], f[elem[2],3], 's')
     # plt.show()  # or move mouse in window or something.
 
@@ -165,8 +165,8 @@ def test_GratingArrayStructure():
     # I just cannot think of a good way to check that right now.
 
     # Check that initially all uncertainties are 0
-    for i in range(len(gas.facet_pos)):
-        assert np.allclose(gas.facet_pos[i], gas.sequence[i].pos4d)
+    for i in range(len(gas.elem_pos)):
+        assert np.allclose(gas.elem_pos[i], gas.elements[i].pos4d)
 
 def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
@@ -174,11 +174,11 @@ def test_GratingArrayStructure_2pi():
     myrowland = RowlandTorus(10000., 10000.)
     class mock_facet(OpticalElement):
         pass
-    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], facetclass=mock_facet)
+    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], elem_class=mock_facet)
     assert gas.max_facets_on_arc(300.) > 10
-    n = len(gas.facet_pos)
+    n = len(gas.elem_pos)
     yz = np.empty((n, 2))
-    for i, p in enumerate(gas.facet_pos):
+    for i, p in enumerate(gas.elem_pos):
         yz[i, :] = p[1:3, 3]
     phi = np.arctan2(yz[:, 1], yz[:, 0])
     ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
@@ -189,7 +189,7 @@ def test_GAS_facets_on_radius():
     myrowland = RowlandTorus(1000., 1000.)
     class mock_facet(OpticalElement):
         pass
-    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], facetclass=mock_facet)
+    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
     assert np.all(gas.distribute_facets_on_radius() == [320., 380.])
     gas.radius = [300., 340.]
     assert gas.distribute_facets_on_radius() == [320.]
@@ -198,10 +198,10 @@ def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e3/2, 9e3/2)
-    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
-    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
-    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.sequence[0].geometry['e_x'][:3], mygascat.sequence[0].geometry['e_x'][:3]))), 15.)
+    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
+    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.elements[0].geometry['e_x'][:3], mygascat.elements[0].geometry['e_x'][:3]))), 15.)
 
 def test_persistent_facetargs():
     '''Make sure that facet_args is still intact after generating facets.
@@ -213,8 +213,8 @@ def test_persistent_facetargs():
     # id_col is automatically added in GAS is not present here.
     # So, pass in an id_col to make sure the comparison below will still work.
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff, 'id_col': 'facet'}
-    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs=facet_args)
-    assert mygas.facet_args == facet_args
+    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], elem_class=FlatGrating, elem_args=facet_args)
+    assert mygas.elem_args == facet_args
 
 def test_run_photons_through_gas():
     '''And check that they have the expected labels.
@@ -250,7 +250,7 @@ def test_run_photons_through_gas():
             f = 'uuu'
             kwargs = {'id_col': 'yyy'}
 
-        mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs=facet_args, **kwargs)
+        mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args=facet_args, **kwargs)
 
         p = mygas(photons.copy())
         indorder = np.isfinite(p['order'])
@@ -259,5 +259,5 @@ def test_run_photons_through_gas():
 
         assert set(p['order'][indorder]) == set([-1, 0, 1])
         # -1 means no hit - passing between facets
-        allfacets = set([-1]).union(set(np.arange(len(mygas.sequence))))
+        allfacets = set([-1]).union(set(np.arange(len(mygas.elements))))
         assert set(p[f]).issubset(allfacets)

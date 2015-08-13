@@ -2,17 +2,14 @@ from __future__ import division
 
 import numpy as np
 from scipy import optimize
-from astropy import table
 import transforms3d
-from transforms3d.affines import decompose44
 
 from ..optics.base import OpticalElement
 from ..base import _parse_position_keywords, MarxsElement
 from ..optics import FlatDetector
-from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..math.rotations import ex2vec_fix
 from ..math.pluecker import e2h, h2e
-from ..simulator import SimulationSequence
+from ..simulator import Parallel
 
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
@@ -234,43 +231,18 @@ class FacetPlacementError(Exception):
     pass
 
 
-class GratingArrayStructure(SimulationSequence, OpticalElement):
-    '''
+class GratingArrayStructure(Parallel, OpticalElement):
+    '''A collection of diffraction gratings on the Rowland torus.
 
-    When a ``GratingArrayStructure`` (GAS) is initialized, it places as many
-    facets as possible in the space available. Those facets are positioned
-    on the Rowland circle.
+    When a ``GratingArrayStructure`` (GAS) is initialized, it places
+    grating facets in the space available on the Rowland circle.
 
     After generation, individual facet positions can be adjusted by hand by
-    editing the :attribute:`facet_pos`.
-    Also, additional misalingments for each facet can be introduced by
-    editing :attribute:`facet_uncertainty`, e.g. to represent uncertainties
-    in the manufacturing process. This attribute holds a list of affine
-    transformation matrices.
-    The global position and rotation of the total GAS can be changed with
-    :attribute:`uncertainty`, e.g. the represent the reproducibility of
-    inserting the gratings into the beam for separate observations. The
-    uncertainty is expressed as an affine transformation matrix.
+    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for details.
 
-    All uncertianty matrices should only consist of translation and rotations
-    and all uncertainties should be relatively small.
-
-    After any of the :attribute:`facet_pos`, :attribute:`facet_uncertainty` or
-    :attribute:`uncertainty` is changed, :method:`generate_facets` needs to be
-    called to renerate the facets on the GAS.
-    This mechanism can be used to estimate the influence of manufacturing
-    uncertainties. First, run a simulation with an ideal GAS, then change
-    the values, regenerate the facets and rerun the simulation. Comparing the
-    results will allow you to estimate the effect of the manufacturing
-    misalignment.
-
-    The order in which all the transformations are applied to the facet is
-    chosen such that all rotations are done around the actual center of the
-    facet or GAS respectively. "Uncertainty" roations are always done *after*
-    all other rotations are accounted for.
-
-    Use ``pos4d`` in ``facetargs`` to set a fixed rotation for all facets, e.g.
-    for a CAT grating.
+    After any of the :attribute:`elem_pos`, :attribute:`elem_uncertainty` or
+    :attribute:`uncertainty` is changed, :method:`generate_elements` needs to be
+    called to regenerate the facets on the GAS.
 
     Parameters
     ----------
@@ -281,7 +253,8 @@ class GratingArrayStructure(SimulationSequence, OpticalElement):
         accommodate a minimum thickness of the surrounding frame.)
     x_range: list of 2 floats
         Minimum and maximum of the x coordinate that is searched for an intersection
-        with the torus.
+        with the torus. A ray can intersect a torus in up to four points. ``x_range``
+        specififes the range for the numerical search for the intersection point.
     radius : list of 2 floats float
         Inner and outer radius of the GAS as measured in the yz-plane from the
         origin.
@@ -298,6 +271,7 @@ class GratingArrayStructure(SimulationSequence, OpticalElement):
     such that they are tangents to the torus in the center of the facet.
     If ``False`` they are perpendicular to perfectly focussed rays.
     '''
+
     id_col = 'facet'
 
     def __init__(self, rowland, d_facet, x_range, radius, phi=[0., 2*np.pi], **kwargs):
@@ -313,21 +287,8 @@ class GratingArrayStructure(SimulationSequence, OpticalElement):
         self.phi = phi
         self.x_range = x_range
         self.d_facet = d_facet
-        self.facet_class = kwargs.pop('facetclass')
-        # Need to operate on a copy here, to avoid chainginf facet_args of outer level
-        self.facet_args = kwargs.pop('facetargs', {}).copy()
-        # Sequence needs to be part of kwargs for SimulationSequence.__init__
-        # but we overwrite the sequence in generate_facets anyway
-        kwargs['sequence'] = []
 
         super(GratingArrayStructure, self).__init__(**kwargs)
-
-        if 'id_col' not in self.facet_args:
-            self.facet_args['id_col'] = self.id_col
-        self.uncertainty = np.eye(4)
-        self.facet_pos = self.facet_position()
-        self.facet_uncertainty = [np.eye(4)] * len(self.facet_pos)
-        self.generate_facets(self.facet_class, self.facet_args)
 
     def calc_ideal_center(self):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
@@ -422,7 +383,7 @@ class GratingArrayStructure(SimulationSequence, OpticalElement):
         x = self.rowland.solve_quartic(y=y,z=z, interval=self.x_range)
         return np.vstack([x,y,z]).T
 
-    def facet_position(self):
+    def calculate_elempos(self):
         '''Calculate ideal facet positions based on rowland geometry.
 
         Returns
@@ -448,53 +409,3 @@ class GratingArrayStructure(SimulationSequence, OpticalElement):
 
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
         return pos4d
-
-    def generate_facets(self, facet_class, facet_args={}):
-        '''
-        Example
-        -------
-        from marxs.optics.grating import FlatGrating
-        gsa = GSA( ... args ...)
-        gsa.generate_facets(FlatGrating, {'d': 0.002})
-        '''
-        # _parse_position_keywords pops off keywords, thus operate on a copy here
-        facet_args = facet_args.copy()
-        facet_pos4d = _parse_position_keywords(facet_args)
-        tfacet, rfacet, zfacet, Sfacet = decompose44(facet_pos4d)
-        if not np.allclose(Sfacet, 0.):
-            raise ValueError('pos4 for facet includes shear, which is not supported for gratings.')
-        name = facet_args.pop('name', '')
-
-        gas_center = self.calc_ideal_center()
-        Tgas = translation2aff(gas_center)
-
-        for i in range(len(self.facet_pos)):
-            f_center, rrown, ztemp, stemp = decompose44(self.facet_pos[i])
-            Tfacetgas = translation2aff(-np.array(gas_center) + f_center)
-            tsigfacet, rsigfacet, ztemp, stemp = decompose44(self.facet_uncertainty[i])
-            if not np.allclose(ztemp, 1.):
-                raise FacetPlacementError('Zoom is not supported in the facet uncertainty.')
-            if not np.allclose(stemp, 0.):
-                raise FacetPlacementError('Shear is not supported in the facet uncertainty.')
-            # Will be able to write this so much better in python 3.5,
-            # but for now I don't want to nest np.dot too much so here it goes
-            f_pos4d = np.eye(4)
-            for m in reversed([self.pos4d,  # any change between GAS system and global
-                      # coordiantes, e.g. if x is not optical axis
-                      Tgas,  # move to center of GAS
-                      self.uncertainty,  # uncertainty in GAS positioning
-                      Tfacetgas,  # translate facet center to GAS center
-                      translation2aff(tsigfacet),  # uncertaintig in translation for facet
-                      translation2aff(tfacet),  # any additional offset of facet. Probably 0
-                      mat2aff(rsigfacet),  # uncertainty in rotation for facet
-                      mat2aff(rrown),   # rotate grating normal to be normal to Rowland torus
-                      mat2aff(rfacet),  # Any rotation of facet, e.g. for CAT gratings
-                      zoom2aff(zfacet),  # sets size of grating
-                     ]):
-                assert m.shape == (4, 4)
-                f_pos4d = np.dot(m, f_pos4d)
-
-            self.sequence.append(facet_class(pos4d = f_pos4d, name='{0}  Facet {1} in GAS {2}'.format(name, i, self.name), id_num=i, **facet_args))
-
-    def intersect(self, photons):
-        raise NotImplementedError
