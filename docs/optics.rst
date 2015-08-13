@@ -78,7 +78,7 @@ General optical elements
    multiLayerMirror.MultiLayerMirror
 
 
-.. module:: marxs.optics.gratings
+.. module:: marxs.optics.grating
 
 Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
@@ -93,11 +93,11 @@ The grating module contains different classes for gratings and also different pr
 .. autosummary::
    :toctree: API
 
-   grating.FlatGrating
-   grating.CATGrating
-   grating.constant_order_factory
-   grating.uniform_efficiency_factory
-   grating.EfficiencyFile
+   FlatGrating
+   CATGrating
+   constant_order_factory
+   uniform_efficiency_factory
+   EfficiencyFile
 	       
 
 

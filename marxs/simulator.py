@@ -3,6 +3,7 @@ from transforms3d.affines import decompose44
 
 from .math.utils import translation2aff, zoom2aff, mat2aff
 from .base import SimulationSequenceElement, _parse_position_keywords
+from .optics.base import OpticalElement
 
 
 class SimulationSetupError(Exception):
@@ -81,7 +82,7 @@ class Sequence(SimulationSequenceElement):
                 p(photons)
         return photons
 
-class Parallel(SimulationSequenceElement):
+class Parallel(OpticalElement):
     '''A container for several identical optical elements.
 
     This object describes a set of similar elements that operate in parallel,
@@ -154,8 +155,8 @@ class Parallel(SimulationSequenceElement):
 
     >>> from marxs.simulator import Parallel
     >>> from marxs.optics import FlatDetector as CCD
-    >>> detect = Parallel(elem_class=CCD, elem_args={'pixsize': 0.01, 'zoom'=5},
-    ...                   elem_pos=[[0, -10.1, -10.1],[0, .1, -10.1],[0, -10.1, .1],[0, .1, .1]],
+    >>> detect = Parallel(elem_class=CCD, elem_args={'pixsize': 0.01, 'zoom': 5},
+    ...                   elem_pos={'position': [[0, -10.1, -10.1],[0, .1, -10.1],[0, -10.1, .1],[0, .1, .1]]},
     ...                   id_col='CCD_ID')
 
     A column that notes which CCD was hit by each photon will be added to the photon table when it
