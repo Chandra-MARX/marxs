@@ -6,12 +6,14 @@ import pytest
 from .. import (RectangleAperture, ThinLens, FlatDetector,
                 FlatGrating, uniform_efficiency_factory, constant_order_factory,
                 MarxMirror)
+
 from ..aperture import BaseAperture
 from ...source import ConstantPointSource, FixedPointing
 from ..base import _parse_position_keywords
 from ...design import RowlandTorus, GratingArrayStructure
 from ..baffle import Baffle
-
+from ..multiLayerMirror import MultiLayerMirror
+from ...simulator import Sequence
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -22,11 +24,13 @@ all_oe = [ThinLens(focallength=100),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           GratingArrayStructure(mytorus, d_facet=0.1, x_range=[0.5, 1.], radius=[0,.5],
-                                facetclass=FlatGrating,
-                                facetargs={'zoom':0.05, 'd':0.002,
+                                elem_class=FlatGrating,
+                                elem_args={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
                                            }),
-          Baffle()
+          Baffle(),
+          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
+          Sequence(sequence=[]),
           ]
 
 # Each elements will be used multiple times.
@@ -69,18 +73,24 @@ class TestOpticalElementInterface:
     '''
     def test_one_vs_many_in_call_signature(self, photons, elem):
         '''processing a single photon should give same result as photon list'''
+        if isinstance(elem, MultiLayerMirror):
+            pytest.xfail("#22")
+
         assert np.all(photons['dir'] == photons['dir'])
         p = photons[[0]]
         # Process individually
         single = photons[0]
-        try:
-            # For apertures input pos is ignored, but still needs to be there
-            # to keep the function signature consistent.
-            dir, pos, energy, pol, prob = elem.process_photon(single['dir'], single['pos'], single['energy'], single['polarization'])
-            compare_results = True
-        except NotImplementedError:
-            # It's OK if only the a vectorized process_photons is implemented
-            # but if both exist, they need to return the same answer.
+        if hasattr(elem, 'process_photon'):
+            try:
+                # For apertures input pos is ignored, but still needs to be there
+                # to keep the function signature consistent.
+                dir, pos, energy, pol, prob = elem.process_photon(single['dir'], single['pos'], single['energy'], single['polarization'])
+                compare_results = True
+            except NotImplementedError:
+                # It's OK if only the a vectorized process_photons is implemented
+                # but if both exist, they need to return the same answer.
+                compare_results = False
+        else:
             compare_results = False
         # Process as table
         if isinstance(elem, BaseAperture):

@@ -2,6 +2,7 @@ from StringIO import StringIO
 import numpy as np
 from numpy.random import random
 from astropy.table import Table
+from transforms3d import axangles
 
 from ..grating import (FlatGrating, CATGrating,
                        constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
@@ -93,6 +94,42 @@ def test_energy_dependence():
     lam = energy2wave / p['energy']
     theta = np.arctan2(p['dir'][:, 2], p['dir'][:, 0])
     assert np.allclose(1. * lam, 1./500. * np.sin(theta))
+
+def test_groove_direction():
+    '''Direction of grooves many not be parallel to y axis.'''
+    photons = Table({'pos': np.tile([1., 0, 0, 1], (5,1)),
+                     'dir': np.tile([1., 0, 0, 0], (5,1)),
+                     'energy': np.ones(5),
+                     'polarization': np.ones(5),
+                     'probability': np.ones(5),
+                     })
+    g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    assert np.allclose(np.dot(g.geometry['e_groove'], g.geometry['e_perp_groove']), 0.)
+    p = g.process_photons(photons.copy())
+
+    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
+    p1 = g1.process_photons(photons.copy())
+
+    pos3d = axangles.axangle2mat([1,0,0], .3)
+    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), orientation=pos3d)
+    p2 = g2.process_photons(photons.copy())
+
+    pos4d = axangles.axangle2aff([1,0,0], .1)
+    g3 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.2, pos4d=pos4d)
+    p3 = g3.process_photons(photons.copy())
+
+    def angle_in_yz(vec1, vec2):
+        '''project in the y,z plane (the plane of the grating) and calculate angle.'''
+        v1 = vec1[1:3]
+        v2 = vec2[1:3]
+        arccosalpha = np.dot(v1, v2) / np.sqrt(np.dot(v1, v1) * np.dot(v2, v2))
+        return np.arccos(arccosalpha)
+
+    assert np.allclose(angle_in_yz(p1['dir'][0,:], p2['dir'][0, :]), 0)
+    assert np.allclose(angle_in_yz(p3['dir'][0,:], p2['dir'][0, :]), 0)
+
+    for px in [p1, p2, p3]:
+            assert np.allclose(angle_in_yz(p['dir'][0,:], px['dir'][0, :]), 0.3)
 
 def test_order_convention():
     dirs = np.zeros((3, 4))

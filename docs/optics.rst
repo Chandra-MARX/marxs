@@ -78,6 +78,8 @@ General optical elements
    multiLayerMirror.MultiLayerMirror
 
 
+.. module:: marxs.optics.grating
+
 Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
 The gratings implemented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photon to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that expects a function (or other callable) that assigngs each diffrated photon to a gratings order. For example, the following code makes a grating where the photons are distributed with equal probability in all orders from -2 to 2:
@@ -91,23 +93,40 @@ The grating module contains different classes for gratings and also different pr
 .. autosummary::
    :toctree: API
 
-   grating.FlatGrating
-   grating.CATGrating
-   grating.constant_order_factory
-   grating.uniform_efficiency_factory
-   grating.EfficiencyFile
+   FlatGrating
+   CATGrating
+   constant_order_factory
+   uniform_efficiency_factory
+   EfficiencyFile
 	       
 
 
-
-
-
-
+.. module:: marxs.simulator
 .. _complexgeometry:
 
 Complex designs
 ---------------
 
-.. todo::
+Most optical elements only change rays that intersect them (`Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
 
-   Write about complex designs with parallel path.
+Marxs offers two classes to make handling complext designs more comfortable: `Sequence` and `Parallel`.
+The class `Sequence` can be used to group several optical elements. There are two use cases:
+
+- Group several optical elements that are passed by each photon in sequence.
+- Group several different parallel elements, e.g. a CCD detector and a proportional counter that are both mounted in the focal plane.
+
+In contrast, `Parallel` in meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
+  
+
+
+.. autoclass:: Sequence
+
+.. autoclass:: Parallel
+
+.. autosummary::
+   :toctree: API
+
+   Parallel.uncertainty
+   Parallel.elements
+   Parallel.calculate_elempos
+   Parallel.generate_elements
