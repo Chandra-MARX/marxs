@@ -10,7 +10,7 @@ class SimulationSetupError(Exception):
 
 
 class Sequence(SimulationSequenceElement):
-    '''A SimulationSequence is a container that summarizes several optical elements..
+    '''A Sequence is a container that summarizes several optical elements..
 
     Parameters
     ----------
@@ -26,7 +26,7 @@ class Sequence(SimulationSequenceElement):
         If your function returns a modified photon list, treat it as an optical element and place it
         in `sequence`.
     postprocess_steps : list
-        See `preprecess_steps` except that thee steps are run *after* each sequnece element
+        See ``preprocess_steps`` except that the steps are run *after* each sequnece element
          (*default*: ``[]``).
 
 
@@ -82,7 +82,7 @@ class Sequence(SimulationSequenceElement):
         return photons
 
 class Parallel(SimulationSequenceElement):
-    '''A container for several identical optical elements, e.g. chips of a CCD.
+    '''A container for several identical optical elements.
 
     This object describes a set of similar elements that operate in parallel,
     meaning that each photon will only interact with one of them (although that is
@@ -96,12 +96,12 @@ class Parallel(SimulationSequenceElement):
     This class has build-in support to simulate uncertainties in the manufacturing
     process.
     After generation, individual positions can be adjusted by hand by
-    editing the :attribute:`elem_pos`.
+    editing the ``elem_pos``.
     Also, additional misalingments for each facetelement can be introduced by
-    editing :attribute:`elem_uncertainty`. This attribute holds a list of affine
+    editing ``elem_uncertainty``. This attribute holds a list of affine
     transformation matrices.
     The global position and rotation of the combined element can be changed with
-    :attribute:`uncertainty`, e.g. the represent the reproducibility of
+    `uncertainty`, e.g. the represent the reproducibility of
     inserting the gratings into the beam for separate observations or the positioning
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
@@ -109,8 +109,8 @@ class Parallel(SimulationSequenceElement):
     All uncertianty matrices should only consist of translation and rotations
     and all uncertainties should be relatively small.
 
-    After any of the :attribute:`elem_pos`, :attribute:`elem_uncertainty` or
-    :attribute:`uncertainty` is changed, :method:`generate_elements` needs to be
+    After any of the attributes ``elem_pos``, ``elem_uncertainty`` or
+    ``uncertainty`` is changed, `generate_elements` needs to be
     called to regenerate the positions of the individual elements using
 
     - the global position of ``Parallel.pos4d``
@@ -125,15 +125,42 @@ class Parallel(SimulationSequenceElement):
     misalignment.
 
     The order in which all the transformations are applied to the facet is
-    chosen such that all rotations are done around the actual center of the
-    facet or GAS respectively. "Uncertainty" roations are always done *after*
+    chosen such that all rotations are done around the center of the
+    individual element or the whole structure respectively.
+    "Uncertainty" roations are always done *after*
     all other rotations are accounted for.
 
-    Use ``pos4d`` in ``elem_args`` to set a fixed rotation for all facets, e.g.
-    for a CAT grating.
 
     Parameters
     ----------
+    elem_class : class
+        Class of the individual elements
+    elem_args : dict
+        Dictionary of keyword arguments that are used to initialize the individual
+        arguments. This can contain position related keywords as listed in `pos4d`;
+        those will be applied to *each* element (e.g. set the zoom for each of them).
+    elem_pos : list of arrays or dictionary of lists
+        Gives the position of the individual elements. This can either be a list of
+        (4,4) nd.arrays or a dictionary with entries of ``pos4d`` or ``position``,
+        ``orientation`` and ``zoom`` as explained in `pos4d` where each entry in the
+        dictionary is a list of values
+        ((3,3) matrices for ``orientation``, (3,) vectors for ``position`` etc.).
+
+    Example
+    -------
+    In this example we build up a detector made up of four CCD. Each CCD is 10 mm * 10 mm
+    large and has a pixel size of 0.01 mm. The CCDs are set in a square with small spaces
+    in between.
+
+    >>> from marxs.simulator import Parallel
+    >>> from marxs.optics import FlatDetector as CCD
+    >>> detect = Parallel(elem_class=CCD, elem_args={'pixsize': 0.01, 'zoom'=5},
+    ...                   elem_pos=[[0, -10.1, -10.1],[0, .1, -10.1],[0, -10.1, .1],[0, .1, .1]],
+    ...                   id_col='CCD_ID')
+
+    A column that notes which CCD was hit by each photon will be added to the photon table when it
+    is processed by ``photons = detect(photons)``. The name of this colum will be "CCD_ID".
+    (If the `id_col` argument is not passed, the name will be the generic "element".)
     '''
 
     id_col = 'element'
@@ -142,16 +169,17 @@ class Parallel(SimulationSequenceElement):
     '''Uncertainty of pos4d.
 
     The global position and rotation of the combined element can be changed with
-    :attribute:`uncertainty`, e.g. the represent the reproducibility of
+    `uncertainty`, e.g. the represent the reproducibility of
     inserting the gratings into the beam for separate observations or the positioning
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
     '''
 
     elements = []
-    '''List of objectselements that make up the parallel structure.
+    '''List of elements that make up the parallel structure.
 
-    Initially, this is an empty list, it will be filled by `generate_elements`.'''
+    Initially, this is an empty list, it will be filled by `generate_elements`.
+    '''
 
     def __init__(self, **kwargs):
 
@@ -200,7 +228,17 @@ class Parallel(SimulationSequenceElement):
         raise NotImplementedError
 
     def generate_elements(self):
+        '''Initialize all optical elements.
 
+        After any of the ``elem_pos``, ``elem_uncertainty`` or
+        ``uncertainty`` attributes has changed, `generate_elements` needs to be
+        called to regenerate the positions of the individual elements using
+
+        - the global position of ``Parallel.pos4d``
+        - the position of each element ``Parallel.elem_pos`` relativ to the global position
+        - the global uncertainty `uncertainty`.
+        - the uncertainty for individual facets.
+        '''
         # _parse_position_keywords pops off keywords, thus operate on a copy here
         elem_args = self.elem_args.copy()
         elem_pos4d = _parse_position_keywords(elem_args)

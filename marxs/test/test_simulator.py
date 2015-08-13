@@ -41,3 +41,6 @@ def test_badinput():
     with pytest.raises(SimulationSetupError) as e:
         seq = Sequence(sequence=[ThinLens], preprocess_steps=[5])
     assert "is not callable" in str(e.value)
+
+# Tests for Parallel could be here, but Parallel is a fairly general container.
+# It is easier to test a specific case - and the tests for GratingArrayStructure do that already.
