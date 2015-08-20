@@ -301,7 +301,7 @@ class PointingModel(SimulationSequenceElement):
     def process_photons(self, photons):
         # Could also loop over single photons if not implemented in
         # derived class.
-        self.add_plucker(photons)
+        self.add_dir(photons)
         raise NotImplementedError
 
 
@@ -335,10 +335,7 @@ class FixedPointing(PointingModel):
         self.coords = kwargs.pop('coords')
         self.ra = self.coords[0]
         self.dec = self.coords[1]
-        if 'roll' in kwargs:
-            self.roll = kwargs.pop('roll')
-        else:
-            self.roll = 0.
+        self.roll = kwargs.pop('roll', 0.)
 
         super(FixedPointing, self).__init__(**kwargs)
         '''
@@ -363,6 +360,6 @@ class FixedPointing(PointingModel):
         photons['dir'][:, 1] = - np.cos(dec) * np.sin(ra)
         photons['dir'][:, 2] = - np.sin(dec)
         photons['dir'][:, 3] = 0
-        photons['dir'][:, :3] = np.dot(np.linalg.inv(self.mat3d), photons['dir'][:, :3].T).T
+        photons['dir'][:, :3] = np.dot(self.mat3d.T, photons['dir'][:, :3].T).T
         photons['polarization'] = np.ones_like(ra)
         return photons
