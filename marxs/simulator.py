@@ -142,10 +142,13 @@ class Parallel(OpticalElement):
         those will be applied to *each* element (e.g. set the zoom for each of them).
     elem_pos : list of arrays or dictionary of lists
         Gives the position of the individual elements. This can either be a list of
-        (4,4) nd.arrays or a dictionary with entries of ``pos4d`` or ``position``,
+        (4,4) np.arrays or a dictionary with entries of ``pos4d`` or ``position``,
         ``orientation`` and ``zoom`` as explained in `pos4d` where each entry in the
         dictionary is a list of values
         ((3,3) matrices for ``orientation``, (3,) vectors for ``position`` etc.).
+        Sub-classes of `Parallel` can implement a method `calculate_elempos` to
+        determine the position of their elements automatically. In this case, they should set
+        ``elem_pos=None``.
 
     Example
     -------
