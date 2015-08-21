@@ -98,7 +98,7 @@ class Parallel(OpticalElement):
     process.
     After generation, individual positions can be adjusted by hand by
     editing the ``elem_pos``.
-    Also, additional misalingments for each facetelement can be introduced by
+    Also, additional misalingments for each element can be introduced by
     editing ``elem_uncertainty``. This attribute holds a list of affine
     transformation matrices.
     The global position and rotation of the combined element can be changed with
