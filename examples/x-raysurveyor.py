@@ -1,8 +1,6 @@
 import numpy as np
 import transforms3d
 import astropy.table
-import scipy
-import scipy.optimize
 
 from marxs.source import ConstantPointSource, FixedPointing
 from marxs.design import RowlandTorus, find_radius_of_photon_shell, GratingArrayStructure
@@ -26,14 +24,6 @@ def generate_facet_uncertainty(n, xyz, angle_xyz):
     rotation = np.random.normal(size=(n, 3)) * angle_xyz[np.newaxis, :]
     return [compose(t, euler2mat(a[0], a[1], a[2], 'sxyz'), np.ones(3)) for t, a in zip(translation, rotation)]
 
-def find_best_detector_position(photons):
-
-    def width(x, photons):
-        mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5,pixsize=1.)
-        photons = mdet.process_photons(photons)
-        return np.std(photons['det_y'])
-
-    return scipy.optimize.minimize(width, 0, args=(photons,), options={'maxiter': 20, 'disp': True})
 
 ### Here the example really starts
 
@@ -50,21 +40,21 @@ photons = photons[photons['probability'] > 0]
 radius0 = find_radius_of_photon_shell(photons, 0, 9e3)
 mytorus = RowlandTorus(9e3/2, 9e3/2)
 
-gratingeff = uniform_efficiency_factory()
+# gratingeff = uniform_efficiency_factory()
 
 # catfile = '/Users/hamogu/MITDropbox/projects/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
-# catfile = '/melkor/d1/guenther/marx/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
-# gratingeff = EfficiencyFile(catfile, orders=np.arange(2, -13, -1))
+catfile = '/melkor/d1/guenther/marx/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
+gratingeff = EfficiencyFile(catfile, orders=np.arange(2, -13, -1))
 # gratingeff = constant_order_factory(-8)
 
-mygas = GratingArrayStructure(mytorus, d_facet=90., x_range=[5e3,1e4], radius=[538., 550.], facetclass=FlatGrating, facetargs={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+# mygas = GratingArrayStructure(mytorus, d_facet=90., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
 
 blazeang = 0
 
 blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(blazeang))
 R, r, pos4d = design_tilted_torus(9e3, np.deg2rad(blazeang), np.deg2rad(2*blazeang))
 mytorustilt = RowlandTorus(R, r, pos4d=pos4d)
-mygas = GratingArrayStructure(mytorustilt, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], facetclass=FlatGrating, facetargs={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': catorders})
+mygas = GratingArrayStructure(mytorustilt, d_facet=80., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
 
 pg = photons[(photons['mirror_shell'] == 0) & (photons['probability'] > 0)]
 
@@ -112,12 +102,12 @@ for c in p.colnames:
         pout.remove_column(c)
 
 # output facet information
-facet = np.arange(len(mygascattilt.facets))
+facet = np.arange(len(mygas.elements))
 facet_tab = astropy.table.Table({'facet':facet, 'facet_x': facet, 'facet_y': facet, 'facet_z':facet})
 for i in facet:
-    facet_tab['facet_x'][i] = mygascattilt.facets[i].pos4d[0, 3]
-    facet_tab['facet_y'][i] = mygascattilt.facets[i].pos4d[1, 3]
-    facet_tab['facet_z'][i] = mygascattilt.facets[i].pos4d[2, 3]
+    facet_tab['facet_x'][i] = mygas.elements[i].pos4d[0, 3]
+    facet_tab['facet_y'][i] = mygas.elements[i].pos4d[1, 3]
+    facet_tab['facet_z'][i] = mygas.elements[i].pos4d[2, 3]
 
 photfac = astropy.table.join(pout, facet_tab)
 photfac.write('../xraysurveyor/facets.fits', overwrite=True)

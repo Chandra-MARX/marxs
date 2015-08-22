@@ -98,7 +98,7 @@ class Parallel(OpticalElement):
     process.
     After generation, individual positions can be adjusted by hand by
     editing the ``elem_pos``.
-    Also, additional misalingments for each facetelement can be introduced by
+    Also, additional misalingments for each element can be introduced by
     editing ``elem_uncertainty``. This attribute holds a list of affine
     transformation matrices.
     The global position and rotation of the combined element can be changed with
@@ -128,7 +128,7 @@ class Parallel(OpticalElement):
     The order in which all the transformations are applied to the facet is
     chosen such that all rotations are done around the center of the
     individual element or the whole structure respectively.
-    "Uncertainty" roations are always done *after*
+    "Uncertainty" rotations are always done *after*
     all other rotations are accounted for.
 
 
@@ -140,12 +140,21 @@ class Parallel(OpticalElement):
         Dictionary of keyword arguments that are used to initialize the individual
         arguments. This can contain position related keywords as listed in `pos4d`;
         those will be applied to *each* element (e.g. set the zoom for each of them).
+        Usually, the same arguments will be applied to all facets.
+        In the special case that the value of a dictionary entry is a list with the same
+        length as ``elem_pos``, one value of this list will be used for each element. This
+        makes it possible to specify e.g. different grating constants for individual facets.
+        (Note that this has to be a list. Other python types like tuple or np.array that behave
+        like lists in some contexts are not allowed here to avoid ambiguities.)
     elem_pos : list of arrays or dictionary of lists
         Gives the position of the individual elements. This can either be a list of
-        (4,4) nd.arrays or a dictionary with entries of ``pos4d`` or ``position``,
+        (4,4) np.arrays or a dictionary with entries of ``pos4d`` or ``position``,
         ``orientation`` and ``zoom`` as explained in `pos4d` where each entry in the
         dictionary is a list of values
         ((3,3) matrices for ``orientation``, (3,) vectors for ``position`` etc.).
+        Sub-classes of `Parallel` can implement a method `calculate_elempos` to
+        determine the position of their elements automatically. In this case, they should set
+        ``elem_pos=None``.
 
     Example
     -------
@@ -195,7 +204,7 @@ class Parallel(OpticalElement):
             n = len(elem_pos[keys[0]])
             # Turn dictionary of lists into list of dicts and parse position keywords
             for i in range(len(keys) -1):
-                if n != len(elem_pos[keys[i+1]]):
+                if not(hasattr(elem_pos[keys[i+1]], '__len__')) or (n != len(elem_pos[keys[i+1]])):
                     raise ValueError('All elements in elem_pos must have the same number of entries.')
             self.elem_pos = []
             for i in range(n):
@@ -240,17 +249,25 @@ class Parallel(OpticalElement):
         - the global uncertainty `uncertainty`.
         - the uncertainty for individual facets.
         '''
-        # _parse_position_keywords pops off keywords, thus operate on a copy here
-        elem_args = self.elem_args.copy()
-        elem_pos4d = _parse_position_keywords(elem_args)
-        telem, relem, zelem, Selem = decompose44(elem_pos4d)
-        if not np.allclose(Selem, 0.):
-            raise ValueError('pos4 for elem includes shear, which is not supported here.')
-        name = elem_args.pop('name', '')
 
         self.elements = []
 
         for i in range(len(self.elem_pos)):
+            # _parse_position_keywords pops off keywords, thus operate on a copy here
+            elem_args = self.elem_args.copy()
+            # check if elem_args is the same for every element
+            specific_elem_args = {}
+            for k, v in elem_args.iteritems():
+                if isinstance(v, list) and (len(v) == len(self.elem_pos)):
+                    specific_elem_args[k] = v[i]
+                else:
+                    specific_elem_args[k] = v
+            elem_pos4d = _parse_position_keywords(specific_elem_args)
+            telem, relem, zelem, Selem = decompose44(elem_pos4d)
+            if not np.allclose(Selem, 0.):
+                raise ValueError('pos4 for elem includes shear, which is not supported here.')
+            name = elem_args.pop('name', '')
+
             e_center, e_rot, e_zoom, stemp = decompose44(self.elem_pos[i])
             tsigelem, rsigelem, zsigelem, stemp = decompose44(self.elem_uncertainty[i])
             if not np.allclose(stemp, 0.):
@@ -272,8 +289,8 @@ class Parallel(OpticalElement):
                               ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
+            self.elements.append(self.elem_class(pos4d = f_pos4d, name='{0}  Elem {1} in {2}'.format(name, i, self.name), id_num=i, **specific_elem_args))
 
-            self.elements.append(self.elem_class(pos4d = f_pos4d, name='{0}  Elem {1} in {2}'.format(name, i, self.name), id_num=i, **elem_args))
 
 
     def process_photons(self, photons):
