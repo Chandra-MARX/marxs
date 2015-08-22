@@ -262,11 +262,13 @@ class Parallel(OpticalElement):
                     specific_elem_args[k] = v[i]
                 else:
                     specific_elem_args[k] = v
+            if 'name' not in specific_elem_args:
+                specific_elem_args['name'] = 'Elem {0} in {1}'.format(i, self.name)
+
             elem_pos4d = _parse_position_keywords(specific_elem_args)
             telem, relem, zelem, Selem = decompose44(elem_pos4d)
             if not np.allclose(Selem, 0.):
                 raise ValueError('pos4 for elem includes shear, which is not supported here.')
-            name = elem_args.pop('name', '')
 
             e_center, e_rot, e_zoom, stemp = decompose44(self.elem_pos[i])
             tsigelem, rsigelem, zsigelem, stemp = decompose44(self.elem_uncertainty[i])
@@ -289,7 +291,7 @@ class Parallel(OpticalElement):
                               ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
-            self.elements.append(self.elem_class(pos4d = f_pos4d, name='{0}  Elem {1} in {2}'.format(name, i, self.name), id_num=i, **specific_elem_args))
+            self.elements.append(self.elem_class(pos4d = f_pos4d, id_num=i, **specific_elem_args))
 
 
 

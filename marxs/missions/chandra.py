@@ -26,7 +26,7 @@ import numpy as np
 
 from astropy.table import Table
 from transforms3d.utils import normalized_vector as norm_vec
-from transforms3d.taitbryan import euler2mat
+from transforms3d.euler import euler2mat, mat2euler
 
 from ..optics import MarxMirror as HDMA
 from ..optics import FlatDetector, FlatGrating, uniform_efficiency_factory
@@ -126,10 +126,10 @@ class ACISChip(FlatDetector):
         mn[:, 0] -= NOMINAL_FOCALLENGTH
         detx = self.ODET[0] - mn[:, 1] / mn[:, 0] / self.pixsize_in_rad
         dety = self.ODET[1] + mn[:, 2] / mn[:, 0] / self.pixsize_in_rad
-        photons.meta['ACSYS1'] = 'CHIP:AXAF-ACIS-1.0'
-        photons.meta['ACSYS2'] = 'TDET:{0}'.format(self.TDET['version'])
-        photons.meta['ACSYS3'] = 'DET:ASC-FP-1.1'
-        #photons.meta['ACSYS4'] = 'SKY:ASC-FP-1.1'
+        photons.meta['ACSYS1'] = ('CHIP:AXAF-ACIS-1.0', 'reference for chip coord system')
+        photons.meta['ACSYS2'] = ('TDET:{0}'.format(self.TDET['version']), 'reference for tiled detector coord system')
+        photons.meta['ACSYS3'] = ('DET:ASC-FP-1.1', 'reference for focal plane coord system')
+        #photons.meta['ACSYS4'] = ('SKY:ASC-FP-1.1', 'reference for sky coord system')
         return {'chipx': chip[:, 0], 'chipy': chip[:, 1],
                 'tdetx': tdet[:, 0], 'tdety': tdet[:, 1],
                 'detx': detx, 'dety': dety}
@@ -229,7 +229,7 @@ read-out streaks,
         photons.meta['SIM_Y'] = self.aimpoint[1] - self.detoffset[1]
         photons.meta['SIM_Z'] = self.aimpoint[2] - self.detoffset[2]
         photons.meta['DETNAM'] = 'ACIS-' + ''.join([str(i) for i in self.chips])
-        photons.meta['INSTRUME'] = 'ACIS'
+        photons.meta['INSTRUME'] = ('ACIS', 'Instrument')
         return photons
 
 class LissajousDither(FixedPointing):
@@ -238,20 +238,56 @@ class LissajousDither(FixedPointing):
     Parameters
     ----------
     DitherAmp : np.array
-        (pitch, yaw) dither amplitude in arcsec
+        (pitch, yaw, roll) dither amplitude in arcsec (same unit for roll!)
     DitherPeriod : np.array
-        (pitch, yaw) dither Period in sec
+        (pitch, yaw, roll) dither Period in sec
     DitherPhase : np.array
-        (pitch, yaw) dither phase at ``time = 0``
+        (pitch, yaw, roll) dither phase at ``time = 0``
     '''
     def __init__(self, **kwargs):
-        self.DitherAmp = kwargs.pop('DitherAmp', np.array([8., 8.]))
-        self.DitherPeriod = kwargs.pop('DitherPeriod', np.array([1000., 707.]))
-        self.DitherPhase = kwargs.pop('DitherPhase', np.zeros(2))
+        self.DitherAmp = kwargs.pop('DitherAmp', np.array([8., 8., 0.]))
+        self.DitherPeriod = kwargs.pop('DitherPeriod', np.array([1000., 707., 1e5]))
+        self.DitherPhase = kwargs.pop('DitherPhase', np.zeros(3))
         self.__init__(**kwargs)
 
     def dither(self, time):
-        return np.deg2rad(self.DitherAmp[..., :] / 3600.) * np.sin(2. * np.pi * time[:, ...] / self.DitherPeriod[..., :] + self.DitherPhase[..., :])
+        '''Calculate the dither offset relative to pointing direction.
+
+        Parameters
+        ----------
+        time : np.array
+            Time when the dither motion should be calculated
+
+        Returns
+        -------
+        delta : np.array of shape (N, 3)
+            dither motion in pitch, yaw, roll for N times
+        '''
+        return np.deg2rad(self.DitherAmp / 3600.) * np.sin(2. * np.pi * time[:, np.newaxis] / self.DitherPeriod + self.DitherPhase)
+
+    def pointing(self, time):
+        dither = self.dither(self,time)
+        pointing = np.empty_like(dither)
+        for i in range(dither.shape[0]):
+            d = dither[i, :]
+            mat3d = euler2mat(d[0], d[1], d[2], 'szyx')
+            pointing[i, :] = mat2euler(np.dot(mat3d.T, self.mat3d.T).T, 'rzyx')
+        pointing [:,1:] *= -1
+        return np.rad2deg(pointing)
+
+def plot_asol(pointing):
+    print self.ra, self.dec, self.roll
+    print pointing[0, :]
+    fig = plt.figure()
+    ax1 = fig.add_subplot(211)
+    ax1.plot(pointing[:, 0], pointing[:, 1])
+    ax2 = fig.add_subplot(212)
+    ax2.plot(pointing[:, 2])
+
+
+    def write_asol(self, photons, timestep=0.256):
+        time = np.arange(0, photons.meta['EXPTIME'], timestep)
+
 
     def process_photons(self, photons):
         photons = super(LissajousDither, self).process_photons(photons)
@@ -271,5 +307,5 @@ class Chandra(Sequence):
     parameter, so that it can be set in a pythonic way.
     '''
     def process_photons(photons):
-        photons.meta['MISSION'] = 'AXAF'
-        photons.meta['TELESCOP'] = 'CHANDRA'
+        photons.meta['MISSION'] = ('AXAF', 'Mission')
+        photons.meta['TELESCOP'] = ('CHANDRA', 'Telescope')

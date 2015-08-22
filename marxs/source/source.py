@@ -204,9 +204,11 @@ class Source(SimulationSequenceElement):
         energies = self.generate_energies(times)
         pol = self.generate_polarization(times, energies)
         n = len(times)
-        return Table({'time': times, 'energy': energies, 'polangle': pol,
-                      'probability': np.ones(n)})
-
+        photons = Table({'time': times, 'energy': energies, 'polangle': pol,
+                         'probability': np.ones(n)})
+        photons.meta['EXPTIME'] = (exposuretime, 'total exposure time [s]')
+        #photons.meta['DATE-OBS'] =
+        return photons
 
 
 class ConstantPointSource(Source):
@@ -302,7 +304,8 @@ class PointingModel(SimulationSequenceElement):
         # Could also loop over single photons if not implemented in
         # derived class.
         self.add_dir(photons)
-        raise NotImplementedError
+        return photons
+
 
 
 class FixedPointing(PointingModel):
@@ -318,7 +321,7 @@ class FixedPointing(PointingModel):
     coords : tuple of 2 elements
         Ra and Dec of telescope aimpoint in decimal degrees.
     roll : float
-        ``roll = 0`` means: z axis points North (measured N -> E).
+        ``roll = 0`` means: z axis points North (measured N -> E). Angle in degrees.
 
     Note
     ----
@@ -352,7 +355,7 @@ class FixedPointing(PointingModel):
         ----------
         photons : astropy.table.Table
         '''
-        self.add_dir(photons)
+        photons = super(FixedPointing, self).process_photons(photons)
         ra = np.deg2rad(photons['ra'])
         dec = np.deg2rad(photons['dec'])
         # Minus sign here because photons start at +inf and move towards origin
@@ -362,4 +365,7 @@ class FixedPointing(PointingModel):
         photons['dir'][:, 3] = 0
         photons['dir'][:, :3] = np.dot(self.mat3d.T, photons['dir'][:, :3].T).T
         photons['polarization'] = np.ones_like(ra)
+        photons.meta['RA_PNT'] = (self.ra, '[deg] Pointing RA')
+        photons.meta['DEC_PNT'] = (self.dec, '[deg] Pointing Dec')
+        photons.meta['ROLL_PNT'] = (self.roll, '[deg] Pointing Roll')
         return photons

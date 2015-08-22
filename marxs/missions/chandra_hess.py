@@ -1,14 +1,17 @@
+import os
+
 import numpy as np
 import astropy
 from transforms3d.axangles import axangle2mat
 from transforms3d.affines import compose
-from marxs.optics import FlatGrating, uniform_efficiency_factory
 
-from marxs.simulator import Parallel
+from ..optics import FlatGrating, uniform_efficiency_factory
+from ..simulator import Parallel
 
 class HESS(Parallel):
     def __init__(self, **kwargs):
-        self.hess = astropy.table.Table.read('HESSdesign.rdb')
+        path = os.path.dirname(__file__)
+        self.hess = astropy.table.Table.read(os.path.join(path, 'HESSdesign.rdb'))
         '''The HESS datafile is commented very well inside the rdb file.
         Here, I just need to make a note about the relation of the coordinate systems:
         The vectors that define the facet edges are called x and y in the rdb file.
@@ -21,7 +24,8 @@ class HESS(Parallel):
         kwargs['elem_class'] = FlatGrating
         # Gratings are defined in order MEG, then HEG
         d = [4001.95 * 1e-7] * 192 + [2000.81 * 1e-7] * 144
-        kwargs['elem_args'] = {'order_selector': uniform_efficiency_factory, 'd': d}
+        kwargs['elem_args'] = {'order_selector': uniform_efficiency_factory,
+                               'd': d, 'name' : list(self.hess['hessloc'])}
         super(HESS, self).__init__(**kwargs)
 
     def calculate_elempos(self):
@@ -40,12 +44,10 @@ class HESS(Parallel):
         # All those vectors are already normalized
         facnorm = np.vstack([hess[s+'u'].data for s in 'xyz'])
         uxf = np.vstack([hess[s+'uxf'].data for s in 'xyz'])
-        uyf = np.vstack([hess[s+'uyf'].data for s in 'xyz'])
         ul = np.vstack([hess[s+'ul'].data for s in 'xyz'])
-        ud = np.vstack([hess[s+'ud'].data for s in 'xyz'])
 
         # Angle between y edge of grating and grove (edges not parallel to grooves)
-        groove_angle = np.arccos(np.einsum('ij,ij->j',ul, uxf))
+        groove_angle = -np.arccos(np.einsum('ij,ij->j',ul, uxf))
         self.elem_args['groove_angle'] = list(groove_angle)
         zoom = np.array([1.035*25.4/2, 0.920*25.4/2, 1])
 
@@ -67,17 +69,3 @@ class HESS(Parallel):
             pos4d = compose(cen[:, i], rot, zoom)
             pos4ds.append(pos4d)
         return pos4ds
-
-
-mygrat = FlatGrating(d=0.0002, pos4d=pos4ds[0], groove_angle=-groove_angle[0], order_selector = None)
-assert np.allclose(mygrat.geometry['e_x'][:3], facnorm[:, 0], atol=1e-5)
-assert np.allclose(mygrat.geometry['e_y'][:3], uxf[:, 0], atol=1e-5)
-assert np.allclose(mygrat.geometry['e_z'][:3], uyf[:, 0], atol=1e-5)
-assert np.allclose(mygrat.geometry['e_groove'][:3], ul[:, 0], atol=1e-5)
-
-# following checks that the order matches what is assumed in the code
-# If any of this fails, the way the gratings properties are assigned in the HESS code need
-# to be adjusted.
-shell = np.array([int(s[0]) for s in hess['hessloc']])
-assert (shell <=3).sum() == 192
-assert (shell > 3).sum() == 144
