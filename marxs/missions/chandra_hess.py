@@ -50,10 +50,15 @@ class HESS(Parallel):
         uxf = np.vstack([hess[s+'uxf'].data for s in 'xyz'])
         uyf = np.vstack([hess[s+'uyf'].data for s in 'xyz'])
 
-        zoom = np.array([1.035*25.4/2, 0.920*25.4/2, 1])
-
         pos4ds = []
         for i in range(facnorm.shape[1]):
+            if int(self.hess['hessloc'][i][0]) <= 3:
+                # Size of MEG facets
+                zoom = np.array([1, 1.035*25.4/2, 1.035*25.4/2])
+            else:
+                # Size of HEG facets
+                zoom = np.array([1, 0.920*25.4/2, 0.920*25.4/2])
+
             rot = np.eye(3)
             rot[:, 0] = facnorm[:, i]
             rot[:, 1] = uxf[:, i]
