@@ -24,9 +24,10 @@ from math import cos, sin
 from ConfigParser import ConfigParser
 import numpy as np
 
-from astropy.table import Table
+from astropy.table import Table, Column
 from transforms3d.utils import normalized_vector as norm_vec
-from transforms3d.euler import euler2mat, mat2euler
+from transforms3d.euler import euler2mat
+from transforms3d.quaternions import mat2quat
 
 from ..optics import MarxMirror as HDMA
 from ..optics import FlatDetector, FlatGrating, uniform_efficiency_factory
@@ -117,7 +118,7 @@ class ACISChip(FlatDetector):
         # +1 because Chandra pixel convention is 1 based
         chip = intercoos[intersect, :] / self.pixsize + self.centerpix + 1
         tdet = chip2tdet(chip, self.TDET, self.id_num)
-        # DET is based on spacecraft coordiantes, but in observation they need to be derived
+        # DET is based on spacecraft coordiantes, but in observations they need to be derived
         # from pixel coordiantes because that's all we have.
         # Here, we already know the spacecraft coordiantes (STF), so we can start from there.
         # I just hope it is consistent and I did not screw up the offsets at some point.
@@ -248,7 +249,7 @@ class LissajousDither(FixedPointing):
         self.DitherAmp = kwargs.pop('DitherAmp', np.array([8., 8., 0.]))
         self.DitherPeriod = kwargs.pop('DitherPeriod', np.array([1000., 707., 1e5]))
         self.DitherPhase = kwargs.pop('DitherPhase', np.zeros(3))
-        self.__init__(**kwargs)
+        super(LissajousDither, self).__init__(**kwargs)
 
     def dither(self, time):
         '''Calculate the dither offset relative to pointing direction.
@@ -261,42 +262,73 @@ class LissajousDither(FixedPointing):
         Returns
         -------
         delta : np.array of shape (N, 3)
-            dither motion in pitch, yaw, roll for N times
+            dither motionoffset in pitch, yaw, roll for N times in rad
         '''
         return np.deg2rad(self.DitherAmp / 3600.) * np.sin(2. * np.pi * time[:, np.newaxis] / self.DitherPeriod + self.DitherPhase)
 
     def pointing(self, time):
-        dither = self.dither(self,time)
-        pointing = np.empty_like(dither)
-        for i in range(dither.shape[0]):
-            d = dither[i, :]
-            mat3d = euler2mat(d[0], d[1], d[2], 'szyx')
-            pointing[i, :] = mat2euler(np.dot(mat3d.T, self.mat3d.T).T, 'rzyx')
-        pointing [:,1:] *= -1
-        return np.rad2deg(pointing)
+        nominal = np.deg2rad(np.array([self.ra, self.dec, self.roll]))
+        return nominal + self.dither(time)
 
-def plot_asol(pointing):
-    print self.ra, self.dec, self.roll
-    print pointing[0, :]
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax1.plot(pointing[:, 0], pointing[:, 1])
-    ax2 = fig.add_subplot(212)
-    ax2.plot(pointing[:, 2])
+    def photons_dir(self, ra, dec, time):
+        '''Calculate direction on photons in homogeneous coordinates.
+
+        Parameters
+        ----------
+        ra : np.array
+            RA for each photon in rad
+        dec : np.array
+            DEC or each photon in rad
+        time : np.array
+            Time for each photons in sec
+
+        Returns
+        -------
+        photons_dir : np.array of shape (n, 4)
+            Homogeneous direction vector for each photon
+        '''
+        # Minus sign here because photons start at +inf and move towards origin
+        pointing = self.pointing(time)
+
+        photons_dir = np.zeros((len(ra), 4))
+        photons_dir[:, 0] = - np.cos(dec) * np.cos(ra)
+        photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
+        photons_dir[:, 2] = - np.sin(dec)
+        for i in range(len(ra)):
+            self.mat3d = euler2mat(np.deg2rad(pointing[i, 0]),
+                                   np.deg2rad(-pointing[i, 1]),
+                                   np.deg2rad(-pointing[i, 2]), 'rzyx')
+
+            photons_dir[i, :3] = np.dot(self.mat3d.T, photons_dir[i, :3])
+
+        return photons_dir
 
 
-    def write_asol(self, photons, timestep=0.256):
+    def write_asol(self, photons, asolfile, timestep=0.256):
         time = np.arange(0, photons.meta['EXPTIME'], timestep)
+        pointing = self.pointing(time)
+        asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
+                     name = ['time', 'ra', 'dec', 'roll'],
+                    )
+        asol['time'].unit = 's'
+        # The following columns represent measured offsets in Chandra
+        # They are not part of this simulation. Simply set them to 0
+        for col in [ 'ra_err', 'dec_err', 'roll_err',
+                     'dy', 'dz', 'dtheta', 'dy_err', 'dz_err', 'dtheta_err',
+                      'roll_bias', 'pitch_bias', 'yaw_bias', 'roll_bias_err', 'pitch_bias_err', 'yaw_bias_err']:
+            asol[col] = np.zeros_like(time)
+            if 'bias' in col:
+                asol[col].unit = 'deg / s'
+            elif ('dy' in col) or ('dz' in col):
+                asol[col].unit = 'mm'
+            else:
+                asol[col].unit = 'deg'
+        asol['q_att'] = [mat2quat(euler2mat(np.deg2rad(p[0]),
+                                   np.deg2rad(-p[1]),
+                                   np.deg2rad(-p[2]), 'rzyx'))
+                         for p in pointing]
+        asol.write(asolfile, format='fits')
 
-
-    def process_photons(self, photons):
-        photons = super(LissajousDither, self).process_photons(photons)
-        dither = self.dither(photons['time'])
-        for i in range(len(photons)):
-            d = dither[i, :]
-            mat3d = euler2mat(d[0], d[1], d[2])
-            photons['dir'][i, :3] = np.dot(mat3d.T, photons['dir'][i, :3].T).T
-        return photons
 
 
 
@@ -309,3 +341,4 @@ class Chandra(Sequence):
     def process_photons(photons):
         photons.meta['MISSION'] = ('AXAF', 'Mission')
         photons.meta['TELESCOP'] = ('CHANDRA', 'Telescope')
+        return super(Chandra, self).process_photons(photons)
