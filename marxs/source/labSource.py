@@ -7,13 +7,12 @@ from ..optics.polarization import polarization_vectors
 
 
 class FarLabConstantPointSource(Source, FlatOpticalElement):
-    '''Simple in-lab source used with aperture
+    '''Simple in-lab point source used with aperture
 
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
     - photon direction determined by location of source, and selected photon starting position
-    - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
-      in which case polarization is relative to positive x axis, ALL GLOBAL AXES
+	- aperture is in its local y-z plane
 
     Parameters
     ----------
@@ -23,17 +22,15 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
         size and orientation of the rectangular apeture; see `pos4d` for details.
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
-
     '''
-    def __init__(self, sourcepos, **kwargs):
-        self.sourcePos = sourcepos
+    def __init__(self, sourcePos, **kwargs):
+        self.sourcePos = sourcePos
         super(FarLabConstantPointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
         photons = super(FarLabConstantPointSource, self).generate_photons(exposuretime)
         n = len(photons)
-        # randomly choose direction - photons uniformly distributed over baffle plate area
-        # coordinate axes: origin at baffle plate, tube center. +x source, +y window, +z up
+        # randomly choose direction - photons uniformly distributed over aperture area
         # measurements in mm
         pos = np.dot(self.pos4d, np.array([np.zeros(n),
                                            np.random.uniform(-1, 1, n),
@@ -51,12 +48,11 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
 
 
 class LabConstantPointSource(Source):
-    '''Simple in-lab source for testing purposes
+    '''Simple in-lab point source
 
     - photons uniformly distributed in all directions
     - photon start position is source position
-    - polarization angle is assumed relative to positive y axis unless direction is exactly along y axis,
-      in which case polarization is relative to positive x axis, ALL GLOBAL AXES
+    - TODO: improve direction capability to allow for vector and angle around that vector
 
     Parameters
     ----------
@@ -70,7 +66,6 @@ class LabConstantPointSource(Source):
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
-
     '''
     def __init__(self, position, direction=None, **kwargs):
         self.dir = direction

@@ -6,7 +6,7 @@ from ..math.pluecker import *
 def polarization_vectors(dir_array, angles):
 	'''Takes angle polarizations and converts them to vectors in the direction of polarization.
 	
-	- Follows convention: Vector perpendicular to photon direction and closest to +y axis is
+	Follows convention: Vector perpendicular to photon direction and closest to +y axis is
 	angle 0 for polarization direction, unless photon direction is parallel to the y axis, in
 	which case the vector closest to the +x axis is angle 0.
 	
@@ -27,7 +27,7 @@ def polarization_vectors(dir_array, angles):
 #		r = h2e(dir_array[i])
 #		r /= np.linalg.norm(r)
 #		if not (np.isclose(r[0], 0.) and np.isclose(r[2], 0.)):
-#			# polarization relative to positive y at 0              
+#			# polarization relative to positive y at 0
 #			v_1 = y - (r * np.dot(r, y))
 #			v_1 /= np.linalg.norm(v_1)
 #		else:
@@ -38,7 +38,7 @@ def polarization_vectors(dir_array, angles):
 #		# right hand coordinate system is v_1, v_2, r (photon direction)
 #		v_2 = np.cross(r, v_1)
 #		polarization[i, 0:3] = v_1 * np.cos(angles[i]) + v_2 * np.sin(angles[i])
-#		polarization[i, 3] = 0	
+#		polarization[i, 3] = 0
 	
 	r = dir_array.copy()[:,0:3]
 	r /= np.linalg.norm(r, axis=1)[:, np.newaxis]
