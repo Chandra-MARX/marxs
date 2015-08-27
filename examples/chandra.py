@@ -1,7 +1,7 @@
 import numpy as np
 
 from marxs.missions.chandra_hess import HESS
-from marxs.missions.chandra import ACIS
+from marxs.missions import chandra
 from marxs.source import ConstantPointSource, FixedPointing
 from marxs.optics import MarxMirror, FlatDetector
 from marxs.analysis import find_best_detector_position, measure_FWHM
@@ -10,6 +10,7 @@ mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
 mypointing = FixedPointing(coords=(30, 30.))
 marxm = MarxMirror('../marxs/optics/hrma.par', position=np.array([0., 0,0]))
 hetg = HESS()
+acis = chandra.ACIS(chips=[0,1,2,3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
 mydet = FlatDetector(zoom=1e5, pixsize=23.985e-3)
 
 photons = mysource.generate_photons(100000)

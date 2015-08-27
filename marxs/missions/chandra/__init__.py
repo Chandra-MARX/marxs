@@ -35,6 +35,7 @@ from ..optics import FlatDetector, FlatGrating, uniform_efficiency_factory
 from ..source import FixedPointing
 from ..simulator import Sequence, Parallel
 from ..math.pluecker import h2e
+from .fits_headers import complete_header
 
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
@@ -158,6 +159,8 @@ read-out streaks,
     Numbers are taken for the Chandra coordinate memo I at
     http://cxc.harvard.edu/contrib/jcm/ncoords.ps
     '''
+
+    id_col = 'CCD_ID'
 
     def __init__(self, chips, **kwargs):
 
@@ -315,7 +318,7 @@ class LissajousDither(FixedPointing):
 
 
     def write_asol(self, photons, asolfile, timestep=0.256):
-        time = np.arange(0, photons.meta['EXPTIME'], timestep)
+        time = np.arange(0, photons.meta['EXPOSURE'], timestep)
         pointing = self.pointing(time)
         asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
                      name = ['time', 'ra', 'dec', 'roll'],
@@ -337,7 +340,18 @@ class LissajousDither(FixedPointing):
                                    np.deg2rad(-p[1]),
                                    np.deg2rad(-p[2]), 'rzyx'))
                          for p in pointing]
-        asol.write(asolfile, format='fits')
+        # Copy info like the exposure time from the photons list meta to asol,
+        # but not column specific keywords like TTYPEn, TCTYPn, MTYPEn, MFORMn, etc:
+        for k in photons.meta:
+            if (('TYP' not in k) and ('FORM' not in k) and
+                ('TCR' not in k) and ('TCDEL' not in k) and (k not in asol.meta)):
+                asol.meta[k] = photons.meta[k]
+        asol.meta['EXTNAME'] = 'ASPECT'
+        complete_headers(asol.meta, 'ACASOL', ['OGIP', 'TEMPORALDATA', 'ASPECT'])
+        # In MARXS t=0 is the start of the observation, but for Chandra we need to make that
+        # consistent with the value of the TSTART keyword.
+        asol['time'] += asol.meta['TSTART']
+        asol.write(asolfile, format='fits', checksum=True)
 
 
 

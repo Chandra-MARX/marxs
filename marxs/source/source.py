@@ -206,7 +206,8 @@ class Source(SimulationSequenceElement):
         n = len(times)
         photons = Table({'time': times, 'energy': energies, 'polangle': pol,
                          'probability': np.ones(n)})
-        photons.meta['EXPTIME'] = (exposuretime, 'total exposure time [s]')
+        photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
+
         #photons.meta['DATE-OBS'] =
         return photons
 
