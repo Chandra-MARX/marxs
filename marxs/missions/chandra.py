@@ -29,6 +29,7 @@ from transforms3d.utils import normalized_vector as norm_vec
 from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
 
+from .. import optics
 from ..optics import MarxMirror as HDMA
 from ..optics import FlatDetector, FlatGrating, uniform_efficiency_factory
 from ..source import FixedPointing
@@ -81,14 +82,14 @@ def chip2tdet(chip, tdet, id_num):
     theta = tdet['theta'][id_num]
     rotation = np.array([[cos(theta), sin(theta)],
                          [-sin(theta), cos(theta)]])
-    return scale * handedness * rotation * (chip - 0.5) + (origin_tdet + 0.5)
+    return scale * handedness * np.dot(rotation, (chip - 0.5).T).T + (origin_tdet + 0.5)
 
 
 class ACISChip(FlatDetector):
     TDET = {'version': 'ACIS-2.2',
             'theta': np.deg2rad(np.array([90., 270., 90., 270., 0, 0, 0, 0, 0, 0])),
             'scale': np.ones(10),
-            'handness': np.ones(10), # could be list of arrays
+            'handedness': np.ones(10), # could be list of arrays
             'origin': np.array([[3061, 5131],
                                 [5131, 4107],
                                 [3061, 4085],
@@ -125,15 +126,22 @@ class ACISChip(FlatDetector):
         fc = h2e(interpos[intersect, :])
         mn = fc  # Systems differ only in x-direction
         mn[:, 0] -= NOMINAL_FOCALLENGTH
-        detx = self.ODET[0] - mn[:, 1] / mn[:, 0] / self.pixsize_in_rad
-        dety = self.ODET[1] + mn[:, 2] / mn[:, 0] / self.pixsize_in_rad
+        x = mn[:, 1] / mn[:, 0] / self.pixsize_in_rad
+        y = mn[:, 2] / mn[:, 0] / self.pixsize_in_rad
+        detx = self.ODET[0] - x
+        dety = self.ODET[1] + y
+        theta = np.deg2rad(photons.meta['ROLL_PNT'][0])
+        skyx = self.ODET[0] - x * cos(theta) - y * sin(theta)
+        skyy = self.ODET[1] - x * sin(theta) + y * cos(theta)
+
         photons.meta['ACSYS1'] = ('CHIP:AXAF-ACIS-1.0', 'reference for chip coord system')
         photons.meta['ACSYS2'] = ('TDET:{0}'.format(self.TDET['version']), 'reference for tiled detector coord system')
         photons.meta['ACSYS3'] = ('DET:ASC-FP-1.1', 'reference for focal plane coord system')
-        #photons.meta['ACSYS4'] = ('SKY:ASC-FP-1.1', 'reference for sky coord system')
+        photons.meta['ACSYS4'] = ('SKY:ASC-FP-1.1', 'reference for sky coord system')
         return {'chipx': chip[:, 0], 'chipy': chip[:, 1],
                 'tdetx': tdet[:, 0], 'tdety': tdet[:, 1],
-                'detx': detx, 'dety': dety}
+                'detx': detx, 'dety': dety,
+                'x': skyx, 'y': skyy,}
 
 class ACIS(Parallel):
     '''
@@ -151,7 +159,24 @@ read-out streaks,
     http://cxc.harvard.edu/contrib/jcm/ncoords.ps
     '''
 
-    def get_corners():
+    def __init__(self, chips, **kwargs):
+
+        # This stuff is Chandra specific, but applies to HRC, too.
+        # Move to a more general class, once the HRC gets implemented.
+        self.aimpoint = kwargs.pop('aimpoint')
+        self.detoffset = np.array([kwargs.pop(['DetOffsetX'], 0),
+                                    0,
+                                    kwargs.pop(['DetOffsetY'], 0)])
+        # Now the ACIS specific case
+        kwargs['elem_pos'] = None
+        kwargs['elem_class'] = ACISChip
+        kwargs['elem_args'] = {'pixsize': 0.023985 }
+
+        super(ACIS, self).__init__(**kwargs)
+        self.chips = chips
+        self.elements = [self.elements[i] for i in chips]
+
+    def get_corners(self):
         '''Get the coordinates of the ACIS pixel corners.
 
         Currently, this method reads the datafile included with MARX, but alternatively if could also
@@ -166,9 +191,11 @@ read-out streaks,
             There is one dictionary per ACIS chip.
         '''
         conf = ConfigParser()
-        conf.read('../../setup.cfg')
-        marxscr = conf.get('MARX', 'srcdir')
-        t = Table.read(os.path.join('data', 'pixlib', 'pix_corner_lsi.par'), format='ascii')
+        # get the basename of the path
+        basedir = os.path.dirname(os.path.dirname(os.path.dirname(optics.__file__)))
+        conf.read(os.path.join(basedir, 'setup.cfg'))
+        marxsrc = conf.get('MARX', 'srcdir')
+        t = Table.read(os.path.join(marxsrc, 'marx', 'data', 'pixlib', 'pix_corner_lsi.par'), format='ascii')
         out = []
         for chip in ACIS_name:
             coos = {}
@@ -178,40 +205,23 @@ read-out streaks,
             out.append(coos)
         return out
 
-    def __init__(self, chips, **kwargs):
-
-        # This stuff is Chandra specific, but applies to HRC, too.
-        # Move to a more general class, once the HRC gets implemented.
-        self.aimpoint = kwargs.pop('aimpoint')
-        self.dettoffset = np.array([kwargs.pop(['DetOffsetX'], 0),
-                                    0,
-                                    kwargs.pop(['DetOffsetY'], 0)])
-        # Now the ACIS specific case
-        kwargs['elem_pos'] = None
-        kwargs['elem_class'] = ACISChip
-        kwargs['elem_args'] = {'pixsize': 0.023985 }
-
-        super(ACIS, self).__init__(**kwargs)
-        self.chips = chips
-        self.elements = self.elements[chips]
-
     def calculate_elempos(self):
         # This stuff is true for HRC, too. Move to more general class, once HRC is implemened.
         corners = self.get_corners()
         pos4d = []
         for i, n in enumerate(ACIS_name):
             # LSI (local science) instrument coordinates
-            # notation fomr coordiante memo: e_x is not unit vector!
+            # notation from coordiante memo: e_x, e_y, e_z is not unit vector!
             p0 = corners[i]['LL']
-            e_x = corners[i]['LR'] - p0
-            e_y = corners[i]['UL'] - p0
-            e_z = np.cross(e_x, e_y)
-            center = p0 + 0.5 * e_x + 0.5 * e_y
+            e_y = corners[i]['LR'] - p0
+            e_z = corners[i]['UL'] - p0
+            e_x = np.cross(e_y, e_z)
+            center = p0 + 0.5 * e_y + 0.5 * e_z
             # This contains the rotation and the zoom.
             # Note: If I find out that I screwed up the direction of the rotation
             #       I have to treat the zoom separately, because without the .T
             #       it would not work.
-            rotlsi = np.vstack([e_x / 2, e_y / 2, norm_vec(e_z)]).T
+            rotlsi = np.vstack([norm_vec(e_x), e_y / 2, e_z / 2]).T
             A = np.eye(4)
             A[:3, :3] = rotlsi
             A[:3, 3] = center
@@ -224,7 +234,7 @@ read-out streaks,
             pos4d.append(A)
         return pos4d
 
-    def process_photons(photons, *args, **kwargs):
+    def process_photons(self, photons, *args, **kwargs):
         photons = super(ACIS, self).process_photons(photons, *args, **kwargs)
         photons.meta['SIM_X'] = self.aimpoint[0] - self.detoffset[0]
         photons.meta['SIM_Y'] = self.aimpoint[1] - self.detoffset[1]

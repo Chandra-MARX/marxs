@@ -7,6 +7,7 @@ from marxs.design import RowlandTorus, find_radius_of_photon_shell, GratingArray
 from marxs.optics import MarxMirror, FlatGrating, uniform_efficiency_factory, FlatDetector, EfficiencyFile, constant_order_factory
 from marxs.design.rowland import design_tilted_torus
 from marxs.math.pluecker import h2e
+from marxs.analysis import find_best_detector_position, measure_FWHM
 
 ### Define some functions -> comment, test and move to main program.
 
@@ -29,7 +30,7 @@ def generate_facet_uncertainty(n, xyz, angle_xyz):
 
 mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
 mypointing = FixedPointing(coords=(30, 30.))
-marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
+marxm = MarxMirror('../marxs/optics/hrma.par', position=np.array([0., 0,0]))
 
 photons = mysource.generate_photons(100000)
 photons = mypointing.process_photons(photons)
@@ -42,14 +43,14 @@ mytorus = RowlandTorus(9e3/2, 9e3/2)
 
 # gratingeff = uniform_efficiency_factory()
 
-# catfile = '/Users/hamogu/MITDropbox/projects/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
-catfile = '/melkor/d1/guenther/marx/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
+catfile = '/Users/hamogu/MITDropbox/projects/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
+#catfile = '/melkor/d1/guenther/marx/xraysurveyor/sim_input/Si-ox_p200_th15_dc02_d6110.dat'
 gratingeff = EfficiencyFile(catfile, orders=np.arange(2, -13, -1))
 # gratingeff = constant_order_factory(-8)
 
 # mygas = GratingArrayStructure(mytorus, d_facet=90., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
 
-blazeang = 0
+blazeang = 1.5
 
 blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(blazeang))
 R, r, pos4d = design_tilted_torus(9e3, np.deg2rad(blazeang), np.deg2rad(2*blazeang))
@@ -74,17 +75,17 @@ xbest = find_best_detector_position(pg[pg['order']==-8])
 p = pg[pg['probability'] > 0]
 
 
-# Simple plot - could be done in glue, but is simpler in this script
+# # Simple plot - could be done in glue, but is simpler in this script
 
-for x, c in zip([0, xbest.x, 1000], 'bgrcmk'):
-    p = pg[:]
-    mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5,pixsize=1.)
-    p = mdet.process_photons(p)
-    ind = (p['probability'] > 0) & (p['order'] == -8)
-    plt.plot(p['det_x'][ind], p['det_y'][ind], c+'s', label='{0}'.format(x))
-    plt.plot(p['det_x'][~ind], p['det_y'][~ind], c+'.')
+# for x, c in zip([0, xbest.x, 1000], 'bgrcmk'):
+#     p = pg[:]
+#     mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5,pixsize=1.)
+#     p = mdet.process_photons(p)
+#     ind = (p['probability'] > 0) & (p['order'] == -8)
+#     plt.plot(p['det_x'][ind], p['det_y'][ind], c+'s', label='{0}'.format(x))
+#     plt.plot(p['det_x'][~ind], p['det_y'][~ind], c+'.')
 
-plt.legend()
+# plt.legend()
 
 
 # Make output for glue.
@@ -110,5 +111,4 @@ for i in facet:
     facet_tab['facet_z'][i] = mygas.elements[i].pos4d[2, 3]
 
 photfac = astropy.table.join(pout, facet_tab)
-photfac.write('../xraysurveyor/facets.fits', overwrite=True)
-
+photfac.write('xraysurveyor.fits', overwrite=True)
