@@ -24,42 +24,22 @@ from math import cos, sin
 from ConfigParser import ConfigParser
 import numpy as np
 
-from astropy.table import Table, Column
+from astropy.table import Table
 from transforms3d.utils import normalized_vector as norm_vec
 from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
 
-from .. import optics
-from ..optics import MarxMirror as HDMA
-from ..optics import FlatDetector, FlatGrating, uniform_efficiency_factory
-from ..source import FixedPointing
-from ..simulator import Sequence, Parallel
-from ..math.pluecker import h2e
-from .fits_headers import complete_header
+from ... import optics
+from ...optics import MarxMirror as HDMA
+from ...optics import FlatDetector, FlatGrating, uniform_efficiency_factory
+from ...source import FixedPointing
+from ...simulator import Sequence, Parallel
+from ...math.pluecker import h2e
+from .fitsheaders import complete_header
+from .data import NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE
 
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
-
-NOMINAL_FOCALLENGTH = 10061.65
-'''Numbers taken from the Chandra coordinate memo I
-
-at http://cxc.harvard.edu/contrib/jcm/ncoords.ps
-'''
-
-AIMPOINTS = {'ACIS-I': [-.782, 0, -233.592],
-             'ACIS-S': [-.684, 0, -190.133],
-             'HRC-I': [-1.040, 0, 126.985],
-             'HRC-S': [-1.43, 0, 250.456],
-             }
-'''Default aimpoints from coordiante memo.
-
-A lot of work has gone into aimpoints since 2001, specifically because they also move on the
-detector. For now, we just implement this simple look-up here, but a more detailed implementation
-that reaches out to CALDB might be needed in the future.
-
-Numbers are taken for the Chandra coordinate memo I at
-http://cxc.harvard.edu/contrib/jcm/ncoords.ps
-'''
 
 
 def chip2tdet(chip, tdet, id_num):
@@ -87,29 +67,12 @@ def chip2tdet(chip, tdet, id_num):
 
 
 class ACISChip(FlatDetector):
-    TDET = {'version': 'ACIS-2.2',
-            'theta': np.deg2rad(np.array([90., 270., 90., 270., 0, 0, 0, 0, 0, 0])),
-            'scale': np.ones(10),
-            'handedness': np.ones(10), # could be list of arrays
-            'origin': np.array([[3061, 5131],
-                                [5131, 4107],
-                                [3061, 4085],
-                                [5131, 3061],
-                                [ 791, 1702],
-                                [1833, 1702],
-                                [2875, 1702],
-                                [3917, 1702],
-                                [4959, 1702],
-                                [6001, 1702]])
-    }
-    '''Constant to used to transform from ACIS chip coordinates to TDET system.
 
-    Numbers are taken for the Chandra coordinate memo I at
-    http://cxc.harvard.edu/contrib/jcm/ncoords.ps
-    '''
-
-    ODET = [4096.5, 4096.5]
-    pixsize_in_rad = np.deg2rad(0.492 / 3600.)
+    def __init__(self, **kwargs):
+        self.TDET = TDET['ACIS']
+        self.ODET = ODET['ACIS']
+        self.pixsize_in_rad = np.deg2rad(PIXSIZE['ACIS'])
+        super(ACISChip, self).__init__(**kwargs)
 
     @property
     def chip_name(self):
@@ -275,13 +238,13 @@ class LissajousDither(FixedPointing):
         Returns
         -------
         delta : np.array of shape (N, 3)
-            dither motionoffset in pitch, yaw, roll for N times in rad
+            dither motion offset in pitch, yaw, roll for N times in rad
         '''
         return np.deg2rad(self.DitherAmp / 3600.) * np.sin(2. * np.pi * time[:, np.newaxis] / self.DitherPeriod + self.DitherPhase)
 
     def pointing(self, time):
         nominal = np.deg2rad(np.array([self.ra, self.dec, self.roll]))
-        return nominal + self.dither(time)
+        return nominal + self.dither(time) / np.array([np.cos(np.deg2rad(self.dec)), 1., 1.])
 
     def photons_dir(self, ra, dec, time):
         '''Calculate direction on photons in homogeneous coordinates.
@@ -318,11 +281,11 @@ class LissajousDither(FixedPointing):
 
 
     def write_asol(self, photons, asolfile, timestep=0.256):
-        time = np.arange(0, photons.meta['EXPOSURE'], timestep)
-        pointing = self.pointing(time)
+        time = np.arange(0, photons.meta['EXPOSURE'][0], timestep)
+        pointing = np.rad2deg(self.pointing(time))
         asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
-                     name = ['time', 'ra', 'dec', 'roll'],
-                    )
+                     names=['time', 'ra', 'dec', 'roll'],
+                     )
         asol['time'].unit = 's'
         # The following columns represent measured offsets in Chandra
         # They are not part of this simulation. Simply set them to 0
@@ -347,11 +310,11 @@ class LissajousDither(FixedPointing):
                 ('TCR' not in k) and ('TCDEL' not in k) and (k not in asol.meta)):
                 asol.meta[k] = photons.meta[k]
         asol.meta['EXTNAME'] = 'ASPECT'
-        complete_headers(asol.meta, 'ACASOL', ['OGIP', 'TEMPORALDATA', 'ASPECT'])
+        complete_header(asol.meta, None, 'ACASOL', ['OGIP', 'TEMPORALDATA', 'ASPECT'])
         # In MARXS t=0 is the start of the observation, but for Chandra we need to make that
         # consistent with the value of the TSTART keyword.
-        asol['time'] += asol.meta['TSTART']
-        asol.write(asolfile, format='fits', checksum=True)
+        asol['time'] += asol.meta['TSTART'][0]
+        asol.write(asolfile, format='fits')  # , checksum=True) - works only with fits interface
 
 
 
