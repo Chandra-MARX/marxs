@@ -11,6 +11,9 @@ Note that string1 and string2 depend on the paths of those files.
 '''
 
 def normalEnergyFunc(mean, stdDev):
+	'''This creates and returns a function that assigns energies to photons randomly
+	according to the normal distribution with the given mean and standard deviation.
+	'''
     def energyFunc(photonTimes):
         n = len(photonTimes)
         return np.random.normal(mean, stdDev, n)
@@ -27,7 +30,6 @@ rotation2 = np.array([[0, 0, 1],
 					  [0, 1, 0],
 					  [-1, 0, 0]])
 
-#source = LabConstantPointSource([100., 0., 0.], -1., 1., 0.35, direction='-x')
 source = LabConstantPointSource([100., 0., 0.], direction='-x', energy = normalEnergyFunc(0.31, 0.003), flux = 1e9)
 mirror = MultiLayerMirror(string1, string2, position=np.array([0., 0., 0.]), orientation=rotation1)
 detector = FlatDetector(1., position=np.array([0., 0., 25.]), orientation=rotation2, zoom = np.array([1, 100, 100]))
