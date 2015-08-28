@@ -2,13 +2,12 @@ import os
 
 import numpy as np
 import astropy
-from transforms3d.axangles import axangle2mat
 from transforms3d.affines import compose
 
-from ..optics import FlatGrating, uniform_efficiency_factory
-from ..simulator import Parallel
+from ...optics import FlatGrating, uniform_efficiency_factory
+from ...simulator import Parallel
 
-class HESS(Parallel):
+class HETG(Parallel):
 
     id_col = 'facet'
 
@@ -29,7 +28,7 @@ class HESS(Parallel):
         d = [4001.95 * 1e-7] * 192 + [2000.81 * 1e-7] * 144
         kwargs['elem_args'] = {'order_selector': uniform_efficiency_factory(),
                                'd': d, 'name' : list(self.hess['hessloc'])}
-        super(HESS, self).__init__(**kwargs)
+        super(HETG, self).__init__(**kwargs)
 
     def calculate_elempos(self):
         '''Read position of facets from file.
@@ -69,7 +68,7 @@ class HESS(Parallel):
 
     def generate_elements(self):
         '''generate elements as usual, set groove direction from table afterwards.'''
-        super(HESS, self).generate_elements()
+        super(HETG, self).generate_elements()
         ul = np.vstack([self.hess[s+'ul'].data for s in 'xyz'])
         ud = np.vstack([self.hess[s+'ud'].data for s in 'xyz'])
         for i in range(len(self.elements)):
