@@ -7,6 +7,11 @@ class Baffle(FlatOpticalElement):
 	'''Plate with rectangular hole that allows photons through.
 
 	The probability of photons that miss is set to 0.
+	
+	Parameters
+	----------
+	photons: astropy Table
+		table that includes information on all of the photons
 	'''
 	def process_photons(self, photons):
 		intersect, h_intersect, det_coords = self.intersect(photons['dir'].data, photons['pos'].data)
