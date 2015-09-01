@@ -28,6 +28,7 @@ from astropy.table import Table
 from transforms3d.utils import normalized_vector as norm_vec
 from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
+from transforms3d.axangles import axangle2mat
 
 from ... import optics
 from ...optics import MarxMirror as HDMA
@@ -240,11 +241,62 @@ class LissajousDither(FixedPointing):
         delta : np.array of shape (N, 3)
             dither motion offset in pitch, yaw, roll for N times in rad
         '''
-        return np.deg2rad(self.DitherAmp / 3600.) * np.sin(2. * np.pi * time[:, np.newaxis] / self.DitherPeriod + self.DitherPhase)
+        return np.deg2rad(self.DitherAmp / 3600.) * np.sin(2. * np.pi * time[:, np.newaxis] / self.DitherPeriod + self.DitherPhase)  / np.array([np.cos(np.deg2rad(self.dec)), 1., 1.])
 
     def pointing(self, time):
+        '''Calculate the pointing direction for a set of times
+
+        There are the steps to convert the dither (which are offsets) to the total
+        pointing direction with the roll properly taken care of.
+        (See marxasp.c in the marx code for more details.)
+
+        1.  Convert ra/dec offsets to absolute pointing.
+        2.  Roll resulting vector about nominal pointing
+        3.  Convert result to ra/dec.
+
+        Parameters
+        ----------
+        time : np.array
+            Array of times
+
+        Results
+        -------
+        pointing : (n, 3) np.array
+            Ra, Dec, roll values in radian for the pointing direction at time t.
+        '''
         nominal = np.deg2rad(np.array([self.ra, self.dec, self.roll]))
-        return nominal + self.dither(time) / np.array([np.cos(np.deg2rad(self.dec)), 1., 1.])
+        dither = self.dither(time)
+        # roll in astronomical system is defined opposite of the usual mathematical angle
+        # because the ra in the coordinate system increases in the other direction.
+        roll = - nominal[2] + dither[:, 2]
+        # Express directions as x,y,z vectors
+        phi = nominal[0]
+        theta = np.pi/2. - nominal[1]
+        e_nominal = np.array([np.sin(phi) * np.sin(theta),
+                              np.cos(phi) * np.sin(theta),
+                              np.cos(theta)])
+        phi = nominal[0] + dither[:, 0]
+        theta = np.pi/2.- (nominal[1] + dither[:, 1])
+        e_dither = np.vstack([np.sin(phi) * np.sin(theta),
+                              np.cos(phi) * np.sin(theta),
+                              np.cos(theta)]).T
+        pointing_dir = np.zeros_like(dither)
+
+        # common case for Chandra
+        if np.allclose(roll, roll[0]):
+            mat = axangle2mat(e_nominal, roll[0], is_normalized=True)
+            constant_roll = True
+
+        for i in range(len(time)):
+            if not constant_roll:
+                mat = axangle2mat(e_nominal, roll[i], is_normalized=True)
+            pointing_dir[i, :] = np.dot(mat, e_dither[i, :])
+
+        # convert x,y,z pointing back to ra, dec, roll
+        pointing = np.vstack([np.arctan2(pointing_dir[:, 0], pointing_dir[:, 1]) % (2.*np.pi),
+                              np.pi / 2. - np.arccos(pointing_dir[:, 2]),
+                              roll]).T
+        return pointing
 
     def photons_dir(self, ra, dec, time):
         '''Calculate direction on photons in homogeneous coordinates.
@@ -271,11 +323,11 @@ class LissajousDither(FixedPointing):
         photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
         photons_dir[:, 2] = - np.sin(dec)
         for i in range(len(ra)):
-            self.mat3d = euler2mat(np.deg2rad(pointing[i, 0]),
-                                   np.deg2rad(-pointing[i, 1]),
-                                   np.deg2rad(-pointing[i, 2]), 'rzyx')
+            mat3d = euler2mat(np.deg2rad(pointing[i, 0]),
+                              np.deg2rad(-pointing[i, 1]),
+                              np.deg2rad(-pointing[i, 2]), 'rzyx')
 
-            photons_dir[i, :3] = np.dot(self.mat3d.T, photons_dir[i, :3])
+            photons_dir[i, :3] = np.dot(mat3d.T, photons_dir[i, :3])
 
         return photons_dir
 

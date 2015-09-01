@@ -29,7 +29,8 @@ mypointing.write_asol(photons, 'asol.fits')
 import astropy
 masol = astropy.table.Table.read('/melkor/d1/guenther/marx/oneoff/testmarxs/sim_asol.fits')
 asol = astropy.table.Table.read('asol.fits')
-
+plt.plot(asol['ra'], asol['dec'])
+plt.plot(masol['ra'], masol['dec'])
 #photons = mydet(photons)
 
 p = photons[(photons['order']==-1) & (photons['facet'] > 194)]
