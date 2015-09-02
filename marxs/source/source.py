@@ -393,4 +393,8 @@ class FixedPointing(PointingModel):
         photons.meta['RA_PNT'] = (self.ra, '[deg] Pointing RA')
         photons.meta['DEC_PNT'] = (self.dec, '[deg] Pointing Dec')
         photons.meta['ROLL_PNT'] = (self.roll, '[deg] Pointing Roll')
+        photons.meta['RA_NOM'] = (self.ra, '[deg] Nominal Pointing RA')
+        photons.meta['DEC_NOM'] = (self.dec, '[deg] Nominal Pointing Dec')
+        photons.meta['ROLL_NOM'] = (self.roll, '[deg] Nominal Pointing Roll')
+
         return photons

@@ -39,3 +39,23 @@ def test_stationary_pointing():
     lissphotons = lisspointing(photons.copy())
 
     assert np.allclose(fixedphotons['dir'], lissphotons['dir'])
+
+def test_detector_coordsystems():
+    '''Compare detector coordinates for known photon direction with CIAO dmcoords.'''
+    mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
+    mypointing = chandra.LissajousDither(coords=(30.,30.), roll=15.)
+    # marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
+    acis = chandra.ACIS(chips=[0,1,2,3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
+
+    photons = mysource.generate_photons(2)
+    photons = mypointing(photons)
+    # We want reproducible direction, so don't use mirror, but set direction by hand
+    # photons = marxm(photons)
+    # photons = photons[photons['probability'] > 0]
+    photons['pos'] = np.array([[100., 0, 0, 1],[100, 0, 0, 1]])
+
+    photons = acis(photons)
+    # We need the asol to run CIAO.
+    # I've done that already and the expected numbers are hard-coded in the assert statement.
+    # Here are commands I used:
+    # mypointing.write_asol(photons, 'asol.fits')

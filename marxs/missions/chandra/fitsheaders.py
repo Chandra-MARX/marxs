@@ -6,7 +6,7 @@ from astropy import time
 import astropy.units as u
 
 from ..._version import get_versions
-from .data import TLMINMAX, PIXSIZE, NOMINAL_FOCALLENGTH
+from .data import TLMINMAX, PIXSIZE, NOMINAL_FOCALLENGTH, ODET
 
 def update_header(header, h):
     for elem in h:
@@ -87,29 +87,32 @@ DMKEYWORDS = [('MTYPE1', 'chip'), ('MFORM1', 'chipx,chipy'),
 
 def add_evt_column_header(header, data):
     '''Add CIAO keywords to header of an eventfile.'''
-    instr = header['INTRUME']
+    instr = header['INSTRUME'][0]
     if instr not in TLMINMAX.keys():
         raise KeyError('TLMIN and TLMAX not specified for detector {0}'.format(instr))
     colnamesup = [c.upper() for c in data.colnames]
     if len(set(data.colnames)) != len(set(colnamesup)):
         raise KeyError('Fits files are case insensitive. Column names in data must be unique if converted to upper case.')
     tl = TLMINMAX[instr]
+    odet = ODET[instr]
     for i, k in enumerate(data.colnames):
         if k.upper() in tl:
-            header['TLMIN'.format(i+1)] = tl[k.upper()][0]
-            header['TLMAX'.format(i+1)] = tl[k.upper()][1]
+            header['TLMIN{0}'.format(i+1)] = tl[k.upper()][0]
+            header['TLMAX{0}'.format(i+1)] = tl[k.upper()][1]
     for k in DMKEYWORDS:
         header[k[0]] = k[1]
 
     # Turn X,Y into a WCS that e.g. ds9 can interpret
-    indx = colnamesup.index('X')
+    indx = colnamesup.index('X') + 1
     header['TCTYP{0}'.format(indx)] = 'RA---TAN'
     header['TCRVL{0}'.format(indx)] = header['RA_PNT']
-    header['TCDLT{0}'.format(indx)] = -PIXSIZE['instr']  # - because RA increases to left
-    indy = colnamesup.index('Y')
+    header['TCDLT{0}'.format(indx)] = -PIXSIZE[instr]  # - because RA increases to left
+    header['TCRPX{0}'.format(indx)] = odet[0]
+    indy = colnamesup.index('Y') + 1
     header['TCTYP{0}'.format(indy)] = 'DEC---TAN'
     header['TCRVL{0}'.format(indy)] = header['DEC_PNT']
-    header['TCDLT{0}'.format(indy)] = PIXSIZE['instr']  # - because RA increases to left
+    header['TCDLT{0}'.format(indy)] = PIXSIZE[instr]
+    header['TCRPX{0}'.format(indy)] = odet[1]
 
 
 def complete_header(header, data=None, content=['UNKNOWN'], hduclass='UNKNOWN'):

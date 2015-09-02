@@ -379,3 +379,9 @@ class Chandra(Sequence):
         photons.meta['MISSION'] = ('AXAF', 'Mission')
         photons.meta['TELESCOP'] = ('CHANDRA', 'Telescope')
         return super(Chandra, self).process_photons(photons)
+
+    def write_evt(self, photons, filename):
+        photons.meta['EXTNAME'] = 'EVENTS'
+        complete_header(photons.meta, photons, 'EVT1', ['OGIP', 'EVENTS', 'ALL'])
+        photons.write(filename, format='fits')
+        # add_GTIs(filename)
