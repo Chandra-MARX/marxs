@@ -1,0 +1,14 @@
+#-*-sh-*---------------------------------------------------------------------
+# MIT MARXASP Parameter file       Flight / Version 5.0 (Jan 2011)
+#   Creates an aspect solution file for the MARX internal dither model
+#----------------------------------------------------------------------------
+#
+# Simulation setup and control
+#
+#----------------------------------------------------------------------------
+OutputFile,s,a,"sim_asol.fits",,,"output filename"
+MarxDir,s,a,"point",,,"Simulation Output Directory"
+TimeDel,r,a,0.256,,,"Aspect Sampling interval (seconds)"
+#----------------------------------------------------------------------------
+mode,s,hl,"hl","ql|hl|q|h",,"mode for parameter file"
+

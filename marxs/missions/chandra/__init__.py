@@ -268,7 +268,7 @@ class LissajousDither(FixedPointing):
         dither = self.dither(time)
         # roll in astronomical system is defined opposite of the usual mathematical angle
         # because the ra in the coordinate system increases in the other direction.
-        roll = - nominal[2] + dither[:, 2]
+        roll = nominal[2] + dither[:, 2]
         # Express directions as x,y,z vectors
         phi = nominal[0]
         theta = np.pi/2. - nominal[1]
@@ -284,12 +284,12 @@ class LissajousDither(FixedPointing):
 
         # common case for Chandra
         if np.allclose(roll, roll[0]):
-            mat = axangle2mat(e_nominal, roll[0], is_normalized=True)
+            mat = axangle2mat(e_nominal, -roll[0], is_normalized=True)
             constant_roll = True
 
         for i in range(len(time)):
             if not constant_roll:
-                mat = axangle2mat(e_nominal, roll[i], is_normalized=True)
+                mat = axangle2mat(e_nominal, -roll[i], is_normalized=True)
             pointing_dir[i, :] = np.dot(mat, e_dither[i, :])
 
         # convert x,y,z pointing back to ra, dec, roll
@@ -317,15 +317,14 @@ class LissajousDither(FixedPointing):
         '''
         # Minus sign here because photons start at +inf and move towards origin
         pointing = self.pointing(time)
-
         photons_dir = np.zeros((len(ra), 4))
         photons_dir[:, 0] = - np.cos(dec) * np.cos(ra)
         photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
         photons_dir[:, 2] = - np.sin(dec)
         for i in range(len(ra)):
-            mat3d = euler2mat(np.deg2rad(pointing[i, 0]),
-                              np.deg2rad(-pointing[i, 1]),
-                              np.deg2rad(-pointing[i, 2]), 'rzyx')
+            mat3d = euler2mat(pointing[i, 0],
+                              - pointing[i, 1],
+                              - pointing[i, 2], 'rzyx')
 
             photons_dir[i, :3] = np.dot(mat3d.T, photons_dir[i, :3])
 
@@ -374,10 +373,9 @@ class LissajousDither(FixedPointing):
 class Chandra(Sequence):
     '''
 
-    Uses CALDB environment variable for now. Might want to change that to a
-    parameter, so that it can be set in a pythonic way.
+
     '''
-    def process_photons(photons):
+    def process_photons(self, photons):
         photons.meta['MISSION'] = ('AXAF', 'Mission')
         photons.meta['TELESCOP'] = ('CHANDRA', 'Telescope')
         return super(Chandra, self).process_photons(photons)
