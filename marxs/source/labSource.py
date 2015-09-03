@@ -6,7 +6,7 @@ from .source import Source
 from ..optics.polarization import polarization_vectors
 
 
-class FarLabConstantPointSource(Source, FlatOpticalElement):
+class FarLabPointSource(Source, FlatOpticalElement):
     '''Simple in-lab point source used with aperture
 
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
@@ -25,10 +25,10 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
     '''
     def __init__(self, sourcePos, **kwargs):
         self.sourcePos = sourcePos
-        super(FarLabConstantPointSource, self).__init__(**kwargs)
+        super(FarLabPointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(FarLabConstantPointSource, self).generate_photons(exposuretime)
+        photons = super(FarLabPointSource, self).generate_photons(exposuretime)
         n = len(photons)
         # randomly choose direction - photons uniformly distributed over aperture area
         # measurements in mm
@@ -47,7 +47,7 @@ class FarLabConstantPointSource(Source, FlatOpticalElement):
         return photons
 
 
-class LabConstantPointSource(Source):
+class LabPointSource(Source):
     '''Simple in-lab point source
 
     - photons uniformly distributed in all directions
@@ -70,10 +70,10 @@ class LabConstantPointSource(Source):
     def __init__(self, position, direction=None, **kwargs):
         self.dir = direction
         self.position = position
-        super(LabConstantPointSource, self).__init__(**kwargs)
+        super(LabPointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(LabConstantPointSource, self).generate_photons(exposuretime)
+        photons = super(LabPointSource, self).generate_photons(exposuretime)
         n = len(photons)
 
         # assign position to photons

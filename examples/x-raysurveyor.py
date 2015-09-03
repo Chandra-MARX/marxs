@@ -4,7 +4,7 @@ import astropy.table
 import scipy
 import scipy.optimize
 
-from marxs.source import ConstantPointSource, FixedPointing
+from marxs.source import PointSource, FixedPointing
 from marxs.design import RowlandTorus, find_radius_of_photon_shell, GratingArrayStructure
 from marxs.optics import MarxMirror, FlatGrating, uniform_efficiency_factory, FlatDetector, EfficiencyFile, constant_order_factory
 from marxs.design.rowland import design_tilted_torus
@@ -37,7 +37,7 @@ def find_best_detector_position(photons):
 
 ### Here the example really starts
 
-mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
+mysource = PointSource((30., 30.), energy=1., flux=1.)
 mypointing = FixedPointing(coords=(30, 30.))
 marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
 

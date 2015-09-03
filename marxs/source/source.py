@@ -50,8 +50,8 @@ class Source(SimulationSequenceElement):
     '''Base class for all photons sources.
 
     This class provides a very general implementation of photons sources. Typically,
-    it is not used directly, but a more specialized subclass, such as `ConstantPointSource` for an
-    astronomical source or `LabConstantPointSource` for a source at a finite distance.
+    it is not used directly, but a more specialized subclass, such as `PointSource` for an
+    astronomical source or `LabPointSource` for a source at a finite distance.
 
     Most of the derived source support the same input argumets as `Source`, thus they are
     explained in detail here.
@@ -78,7 +78,7 @@ class Source(SimulationSequenceElement):
           "flux density" and is given in the units of photons/s/keV.
           For a (2, N) array the first column is the energy, the
           second column is the flux density.
-          Given this table, the code assumes a piecewise constant spectrum. The "energy"
+          Given this table, the code assumes a piecewise flat spectrum. The "energy"
           values contain the **upper** limit of each bin, the "flux" array the flux density
           in each bin. The first entry in the "flux" array is ignored, because the lower bound
           of this bin is undefined.
@@ -209,7 +209,7 @@ class Source(SimulationSequenceElement):
 
 
 
-class ConstantPointSource(Source):
+class PointSource(Source):
     '''Astrophysical point source.
 
     Parameters
@@ -222,10 +222,10 @@ class ConstantPointSource(Source):
     '''
     def __init__(self, coords, **kwargs):
         self.coords = coords
-        super(ConstantPointSource, self).__init__(**kwargs)
+        super(PointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(ConstantPointSource, self).generate_photons(exposuretime)
+        photons = super(PointSource, self).generate_photons(exposuretime)
         photons['ra'] = np.ones(len(photons)) * self.coords[0]
         photons['dec'] = np.ones(len(photons)) * self.coords[1]
 
@@ -249,10 +249,10 @@ class SymbolFSource(Source):
     def __init__(self, coords, size=1, **kwargs):
         self.coords = coords
         self.size = size
-        super(ConstantPointSource, self).__init__(**kwargs)
+        super(PointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(ConstantPointSource, self).generate_photons(exposuretime)
+        photons = super(PointSource, self).generate_photons(exposuretime)
         n = len(photons)
         elem = np.random.choice(3, size=n)
 

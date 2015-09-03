@@ -36,8 +36,8 @@ Flux
 
 The source flux can just be a number, giving the total counts / second (if no number is given, the default is ``flux=1``).
 
-     >>> from marxs.source import ConstantPointSource
-     >>> star = ConstantPointSource(coords=(23., 45.), flux=5.)
+     >>> from marxs.source import PointSource
+     >>> star = PointSource(coords=(23., 45.), flux=5.)
      >>> photons = star.generate_photons(20)
      >>> print photons['time'][:6]
      time
@@ -57,12 +57,12 @@ This will generate 5 counts per second for 20 seconds with an absolutely constan
     >>> def poisson_rate(exposuretime):
     ...     times = expon.rvs(scale=0.01, size=exposuretime * 0.01 * 2.)
     ...     return times[times < exposuretime]
-    >>> star = ConstantPointSource(coords=(0,0), flux=poisson_rate)
+    >>> star = PointSource(coords=(0,0), flux=poisson_rate)
 
 Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). Marxs provides a better implementation called `poisson_process` which will generate the appropriate function automatically given the expected rate:
 
     >>> from marxs.source.source import poisson_process
-    >>> star = ConstantPointSource(coords=(11., 12.), flux=poisson_process(100.))
+    >>> star = PointSource(coords=(11., 12.), flux=poisson_process(100.))
 
 .. autofunction:: poisson_process
 
@@ -70,7 +70,7 @@ Energy
 ^^^^^^
 Similarly to the flux, the input for ``energy`` can just be a number, which specifies the energy of a monochromatic source in keV (the default is ``energy=1``):
 
-    >>> FeKalphaline = ConstantPointSource(coords=(255., -33.), energy=6.7)
+    >>> FeKalphaline = PointSource(coords=(255., -33.), energy=6.7)
     >>> photons = FeKalphaline.generate_photons(5)
     >>> print photons['energy']
     energy
@@ -127,7 +127,7 @@ If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.
 
     >>> from astropy.table import Table
     >>> spectrum = Table.read('AGNspec.dat', format='ascii')  # doctest: +SKIP
-    >>> agn = ConstantPointSource(energy=spectrum)  # doctest: +SKIP
+    >>> agn = PointSource(energy=spectrum)  # doctest: +SKIP
 
 Lastly, "energy" can be a function that assigns energy values based on the timing of each photon. This allows for time dependent spectra. As an example, we show a function where the photon energy is 0.5 keV for times smaller than 5 s and 2 keV for larger times.
   
@@ -157,7 +157,7 @@ An unpolarized source can be created with ``polarization=None`` (this is also th
 
     >>> angles = np.array([0., 0.5, 0.7, 2 * np.pi])
     >>> prob = np.array([1, 1., 8., 1.])
-    >>> polsource = ConstantPointSource(coords=(0.,0.), polarization={'angle': angles, 'probability': prob})
+    >>> polsource = PointSource(coords=(0.,0.), polarization={'angle': angles, 'probability': prob})
 
 Lastly, if polarization is a function, it will be called with time and energy as parameters allowing for time and energy dependent polarization distributions. The following function returns a 50% polarization fraction in the 6.4 keV Fe flourescence line after a a certain features comes into view at t=1000 s.
 
@@ -180,7 +180,7 @@ An astrophysical source in Marxs must be followed by a pointing model as first o
 
 The following astropysical sources are included in marxs:
 
-.. autoclass:: ConstantPointSource
+.. autoclass:: PointSource
 
 .. autoclass:: SymbolFSource
 	       
@@ -197,9 +197,9 @@ Sources in the lab are specified in the same coordinate system used for all othe
 
 The following laboratory sources are provided:
 
-.. autoclass:: marxs.source.labSource.FarLabConstantPointSource
+.. autoclass:: marxs.source.labSource.FarLabPointSource
 
-.. autoclass:: marxs.source.labSource.LabConstantPointSource
+.. autoclass:: marxs.source.labSource.LabPointSource
 
 Design your own sources and pointing models
 -------------------------------------------

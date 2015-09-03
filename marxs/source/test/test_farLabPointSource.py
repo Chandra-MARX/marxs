@@ -1,5 +1,5 @@
 import numpy as np
-from ..labSource import FarLabConstantPointSource as LabSource
+from ..labSource import FarLabPointSource as LabSource
 
 
 def test_photon_generation():

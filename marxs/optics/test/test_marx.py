@@ -19,7 +19,7 @@ def test_noexplicettimedependence():
     mirror shell 0, which turned out to be due to ``sorted_index`` being a int,
     while marx expects an *unsigned* int.
     '''
-    mysource = marxs.source.source.ConstantPointSource((30., 30.), flux=1., energy=1.)
+    mysource = marxs.source.source.PointSource((30., 30.), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = marxs.source.source.FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)
