@@ -5,7 +5,7 @@ import pytest
 
 from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell, design_tilted_torus
 from ...optics.base import OpticalElement
-from ...source import ConstantPointSource, FixedPointing
+from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
 
 def parametrictorus(R, r, theta, phi):
@@ -16,7 +16,7 @@ def parametrictorus(R, r, theta, phi):
     return np.array([x, y, z]).T
 
 def test_radius_of_photon_shell():
-    mysource = ConstantPointSource((30., 30.), flux=1., energy=1.)
+    mysource = PointSource((30., 30.), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)
@@ -222,7 +222,7 @@ def test_run_photons_through_gas():
     No need to check here that the grating equation works - that's part of the grating tests/
     '''
     # Setup only.
-    mysource = ConstantPointSource((30., 30.), flux=1., energy=1.)
+    mysource = PointSource((30., 30.), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)

@@ -1,2 +1,2 @@
-from .source import ConstantPointSource, FixedPointing
-from .labSource import FarLabConstantPointSource
+from .source import PointSource, FixedPointing
+from .labSource import FarLabPointSource

@@ -42,7 +42,7 @@ class Sequence(SimulationSequenceElement):
     Then, we build up the parts of the simulation, source, pointing model and hardware
     of our instrument:
 
-    >>> mysource = source.ConstantPointSource(coords=(30., 30.), flux=1e-3, energy=2.)
+    >>> mysource = source.PointSource(coords=(30., 30.), flux=1e-3, energy=2.)
     >>> sky2mission = source.FixedPointing(coords=(30., 30.))
     >>> aper = optics.RectangleAperture(position=[50., 0., 0.])
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])

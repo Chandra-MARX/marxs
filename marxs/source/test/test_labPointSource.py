@@ -1,5 +1,5 @@
 import numpy as np
-from ..labSource import LabConstantPointSource as LabSource
+from ..labSource import LabPointSource as LabSource
 
 def test_photon_generation():
 	'''This tests the lab point source. It checks that the starting points are all

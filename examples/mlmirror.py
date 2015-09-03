@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 
-from marxs.source.labSource import LabConstantPointSource
+from marxs.source.labSource import LabPointSource
 from marxs.optics.multiLayerMirror import MultiLayerMirror
 from marxs.optics.detector import FlatDetector
 
@@ -30,7 +30,7 @@ rotation2 = np.array([[0, 0, 1],
 					  [0, 1, 0],
 					  [-1, 0, 0]])
 
-source = LabConstantPointSource([100., 0., 0.], direction='-x', energy = normalEnergyFunc(0.31, 0.003), flux = 1e9)
+source = LabPointSource([100., 0., 0.], direction='-x', energy = normalEnergyFunc(0.31, 0.003), flux = 1e9)
 mirror = MultiLayerMirror(string1, string2, position=np.array([0., 0., 0.]), orientation=rotation1)
 detector = FlatDetector(1., position=np.array([0., 0., 25.]), orientation=rotation2, zoom = np.array([1, 100, 100]))
 

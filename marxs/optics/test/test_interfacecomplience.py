@@ -8,7 +8,7 @@ from .. import (RectangleAperture, ThinLens, FlatDetector,
                 MarxMirror)
 
 from ..aperture import BaseAperture
-from ...source import ConstantPointSource, FixedPointing
+from ...source import PointSource, FixedPointing
 from ..base import _parse_position_keywords
 from ...design import RowlandTorus, GratingArrayStructure
 from ..baffle import Baffle
@@ -42,7 +42,7 @@ all_oe = [ThinLens(focallength=100),
 # Make a test photon list
 # Some of this should be separate tests, e.g. source position vs. pointing.
 # Can I vary energy for e.g. grating?
-mysource = ConstantPointSource((30., 30.), energy=1., flux=300.)
+mysource = PointSource((30., 30.), energy=1., flux=300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
 masterphotons = mypointing.process_photons(masterphotons)

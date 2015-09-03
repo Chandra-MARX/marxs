@@ -1,6 +1,6 @@
 import numpy as np
 
-from marxs.source.labSource import LabConstantPointSource
+from marxs.source.labSource import LabPointSource
 from marxs.optics.multiLayerMirror import MultiLayerMirror
 from marxs.optics.detector import FlatDetector
 
@@ -17,7 +17,7 @@ def test_src_mir_det():
 						  [0, 1, 0],
 						  [-1, 0, 0]])
 
-	source = LabConstantPointSource([10., 0., 0.], flux=100., energy=-1.)
+	source = LabPointSource([10., 0., 0.], flux=100., energy=-1.)
 	mirror = MultiLayerMirror(string1, string2, position=np.array([0., 0., 0.]), orientation=rotation1)
 	detector = FlatDetector(1., position=np.array([0., 0., 10.]), orientation=rotation2, zoom = np.array([1, 100, 100]))
 
