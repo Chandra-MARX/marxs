@@ -54,8 +54,10 @@ def test_translation_invariance():
                      'probability': np.ones(2),
                      })
     for order in [-1, 0, 1]:
-        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order))
-        p = g.process_photons(photons)
+        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order), zoom=20)
+        p = g.process_photons(photons.copy())
+        assert np.all(p['order'] == order)
+        assert np.allclose(p['pos'][:, 0], 0)
         assert np.allclose(p['dir'][0, :], p['dir'][1, :])
         assert np.allclose(p['pos'][0, :], p['pos'][1, :] - delta_pos)
 
