@@ -48,7 +48,7 @@ class FlatDetector(FlatOpticalElement):
             z  = zoom[i + 1]
             self.npix[i] = 2 * z // self.pixsize
             if (2. * z / self.pixsize - self.npix[i]) > 1e-3:
-                warnings.warn('Detector size is not an integer multiple of pixel size. It will be rounded.', PixelSizeWarning)
+                warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), PixelSizeWarning)
             self.centerpix[i] = (self.npix[i] - 1) / 2
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):

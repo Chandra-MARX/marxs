@@ -30,7 +30,7 @@ def generate_facet_uncertainty(n, xyz, angle_xyz):
 
 mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
 mypointing = FixedPointing(coords=(30, 30.))
-marxm = MarxMirror('../marxs/optics/hrma.par', position=np.array([0., 0,0]))
+marxm = MarxMirror('x-raysurveyor.par', position=np.array([0., 0,0]))
 
 photons = mysource.generate_photons(100000)
 photons = mypointing.process_photons(photons)

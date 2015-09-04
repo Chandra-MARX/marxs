@@ -6,32 +6,31 @@ from marxs.source import ConstantPointSource, FixedPointing
 from marxs.optics import MarxMirror
 from marxs.analysis import find_best_detector_position, measure_FWHM
 
-mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
-#mypointing = FixedPointing(coords=(30, 30.))
-mypointing = chandra.LissajousDither(coords=(30.,30.), roll=15.)
+mysource = ConstantPointSource((30., 30.), energy=1., flux=50.)
+mypointing = FixedPointing(coords=(30, 30.))
+# mypointing = chandra.LissajousDither(coords=(30.,30.), roll=0.)
 marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
 hetg = HETG()
-acis = chandra.ACIS(chips=[0,1,2,3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
+acis = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
 #mydet = FlatDetector(zoom=1e5, pixsize=23.985e-3)
 
-photons = mysource.generate_photons(1000)
+# Chandra class is not finished yet.
+Chandra = chandra.Chandra(sequence=[mypointing, marxm, hetg, acis])
+
+photons = mysource.generate_photons(5000)
+#photons = Chandra(photons)
+
 photons = mypointing(photons)
 photons = marxm(photons)
 photons = photons[photons['probability'] > 0]
 
-#photons = hetg(photons)
-#photons['hetgy'] = photons['pos'].data[:,1]/photons['pos'].data[:,3]
-#photons['hetgz'] = photons['pos'].data[:,2]/photons['pos'].data[:,3]
+photons = hetg(photons)
+photons['hetgy'] = photons['pos'].data[:,1]/photons['pos'].data[:,3]
+photons['hetgz'] = photons['pos'].data[:,2]/photons['pos'].data[:,3]
 
 photons = acis(photons)
 mypointing.write_asol(photons, 'asol.fits')
-
-import astropy
-masol = astropy.table.Table.read('/melkor/d1/guenther/marx/oneoff/testmarxs/sim_asol.fits')
-asol = astropy.table.Table.read('asol.fits')
-plt.plot(asol['ra'], asol['dec'])
-plt.plot(masol['ra'], masol['dec'])
-#photons = mydet(photons)
+Chandra.write_evt(photons, 'photons.fits')
 
 p = photons[(photons['order']==-1) & (photons['facet'] > 194)]
 xbest = find_best_detector_position(p, col='det_x')
@@ -63,3 +62,11 @@ for i in facet:
 
 photfac = astropy.table.join(pout, facet_tab)
 photfac.write('chandra.fits', overwrite=True)
+
+
+mfits = astropy.table.Table.read('point.fits')
+for c in mfits.colnames:
+    if len(mfits[c].shape) > 1:
+        mfits.remove_column(c)
+
+mfits.write('marx.fits', overwrite=True)

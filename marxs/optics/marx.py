@@ -68,7 +68,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         # same C module? In that case I need to add a lock so that only
         # one object of this class can exist at any one time.
         if not HAS_MARX:
-            raise MarxError('MARX C code is not available. Please see installation instucttions.')
+            raise MarxError('MARX C code is not available. Please see installation instructions.')
         if not os.path.isfile(parfile):
             raise IOError('MARX parameter file {0} does NOT exist.'.format(parfile))
         else:
