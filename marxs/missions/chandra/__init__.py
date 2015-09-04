@@ -96,8 +96,8 @@ class ACISChip(FlatDetector):
         detx = self.ODET[0] - x
         dety = self.ODET[1] + y
         theta = np.deg2rad(photons.meta['ROLL_PNT'][0])
-        skyx = self.ODET[0] - x * cos(theta) - y * sin(theta)
-        skyy = self.ODET[1] - x * sin(theta) + y * cos(theta)
+        skyx = self.ODET[0] - x * cos(theta) + y * sin(theta)
+        skyy = self.ODET[1] + x * sin(theta) + y * cos(theta)
 
         photons.meta['ACSYS1'] = ('CHIP:AXAF-ACIS-1.0', 'reference for chip coord system')
         photons.meta['ACSYS2'] = ('TDET:{0}'.format(self.TDET['version']), 'reference for tiled detector coord system')
@@ -382,6 +382,9 @@ class Chandra(Sequence):
 
     def write_evt(self, photons, filename):
         photons.meta['EXTNAME'] = 'EVENTS'
+        # rename RA, DEC columns - otherwise CIAO tasks will be confused.
+        photons.rename_column('ra', 'marxs_ra')
+        photons.rename_column('dec', 'marxs_dec')
         complete_header(photons.meta, photons, 'EVT1', ['OGIP', 'EVENTS', 'ALL'])
         photons.write(filename, format='fits')
         # add_GTIs(filename)
