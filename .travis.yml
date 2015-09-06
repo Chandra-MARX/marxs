@@ -41,8 +41,8 @@ install:
   - pip install transforms3d
   - pip install alabaster --upgrade
   # Set the location the MARX c code and compiled version in setup.cfg
-  - sed -e s/'srcdir ='/'srcdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx-5\.1\.0\/'/g setup.cfg
-  - sed -e s/'libdir ='/'libdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx\/lib\/'/g setup.cfg
+  - sed -i.bak s/'srcdir ='/'srcdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx-5\.1\.0\/'/g setup.cfg
+  - sed -i.bak s/'libdir ='/'libdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx\/lib\/'/g setup.cfg
   - python setup.py install
 
 matrix:
