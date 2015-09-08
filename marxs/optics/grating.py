@@ -1,8 +1,7 @@
 '''Gratings and efficiency files'''
 
 import numpy as np
-from astropy.table import Column
-from transforms3d import affines, axangles
+from transforms3d import axangles
 
 from ..math.pluecker import *
 from ..math.utils import norm_vector
@@ -168,7 +167,9 @@ class FlatGrating(FlatOpticalElement):
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
         # -> this is the blaze angle
         p_perp_to_grooves = norm_vector(p - np.dot(p, l)[:, np.newaxis] * l)
-        blazeangle = np.arccos(np.dot(p_perp_to_grooves, -n))
+        # Use abs here so that blaze angle is always in 0..pi/2
+        # independent of the relative orientation of p and n.
+        blazeangle = np.arccos(np.abs(np.dot(p_perp_to_grooves, n)))
 
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
