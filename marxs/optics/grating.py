@@ -1,8 +1,7 @@
 '''Gratings and efficiency files'''
 
 import numpy as np
-from astropy.table import Column
-from transforms3d import affines, axangles
+from transforms3d import axangles
 
 from ..math.pluecker import *
 from ..math.utils import norm_vector
@@ -81,10 +80,11 @@ class EfficiencyFile(object):
         if len(orders) != (dat.shape[1] - 1):
             raise ValueError('orders has len={0}, but data files has {1} order columns.'.format(len(orders), dat.shape[1] - 1))
         self.orders = np.array(orders)
+        self.prob = dat[:, 1:]
         # Probability to end up in any order
-        self.totalprob = np.sum(dat[:, 1:], axis=1)
+        self.totalprob = np.sum(self.prob, axis=1)
         # Cumulative probability for orders, normalized to 1.
-        self.cumprob = np.cumsum(dat[:, 1:], axis=1) / self.totalprob[:, None]
+        self.cumprob = np.cumsum(self.prob, axis=1) / self.totalprob[:, None]
 
     def __call__(self, energies, *args):
         orderind = np.empty(len(energies), dtype=int)
@@ -167,7 +167,9 @@ class FlatGrating(FlatOpticalElement):
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
         # -> this is the blaze angle
         p_perp_to_grooves = norm_vector(p - np.dot(p, l)[:, np.newaxis] * l)
-        blazeangle = np.arccos(np.dot(p_perp_to_grooves, -n))
+        # Use abs here so that blaze angle is always in 0..pi/2
+        # independent of the relative orientation of p and n.
+        blazeangle = np.arccos(np.abs(np.dot(p_perp_to_grooves, n)))
 
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
@@ -178,7 +180,7 @@ class FlatGrating(FlatOpticalElement):
         p_d = np.dot(p, d) + sign * m * wave / self.d
         p_l = np.dot(p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
-        p_n = 1. - np.sqrt(p_d**2 + p_l**2)
+        p_n = np.sqrt(1. - p_d**2 - p_l**2)
         # Check if the photons have same direction compared to normal before
         direction = np.sign(np.dot(p, n), dtype=np.float)
         if not self.transmission:

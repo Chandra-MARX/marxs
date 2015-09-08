@@ -14,6 +14,7 @@ from ...design import RowlandTorus, GratingArrayStructure
 from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
+from ...missions.chandra.hess import HETG
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -31,6 +32,7 @@ all_oe = [ThinLens(focallength=100),
           Baffle(),
           MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
           Sequence(sequence=[]),
+          HETG(),
           ]
 
 # Each elements will be used multiple times.

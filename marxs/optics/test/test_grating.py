@@ -54,10 +54,41 @@ def test_translation_invariance():
                      'probability': np.ones(2),
                      })
     for order in [-1, 0, 1]:
-        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order))
-        p = g.process_photons(photons)
+        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order), zoom=20)
+        p = g.process_photons(photons.copy())
+        assert np.all(p['order'] == order)
+        assert np.allclose(p['pos'][:, 0], 0)
         assert np.allclose(p['dir'][0, :], p['dir'][1, :])
         assert np.allclose(p['pos'][0, :], p['pos'][1, :] - delta_pos)
+
+def test_angle_dependence():
+    '''Test the grating angle for non-perpendicular incidence.
+
+    For this test, I write the grating equation in its simple traditional form:
+    :math:`m \lambda = \delta s = d sin(\alpha)`.
+
+    If the incoming ray is not perpendicular to the grating, we use the angle beta
+    between the incoming ray and the grating normal. The grating equation than looks
+    like this for m = 1:
+    :math:`\delta s = \delta s_2 - \delta s_1 = d sin(\alpha) - d sin(\beta)`.
+    '''
+    d = 0.001
+    beta = np.deg2rad([0., 5., 10., 20.])
+    dir = np.zeros((len(beta), 4))
+    dir[:, 2] = np.sin(beta)
+    dir[:, 0] = -np.cos(beta)
+    pos = np.ones((len(beta), 4))
+    photons = Table({'pos': pos,
+                     'dir': dir,
+                     'energy': np.ones(len(beta)),
+                     'polarization': np.ones(len(beta)),
+                     'probability': np.ones(len(beta)),
+                     })
+    g = FlatGrating(d=0.001,  order_selector=constant_order_factory(1), zoom=20)
+    p = g(photons)
+    # compare sin alpha to expected value: sin(alpha) = sin(beta) + lambda/d
+    alpha = np.arctan2(p['dir'][:, 2], -p['dir'][:, 0])
+    assert np.allclose(np.sin(alpha), np.sin(beta) + 1.2398419292004202e-06/d)
 
 def test_order_dependence():
     '''For small theta, the change in direction is m * dtheta'''

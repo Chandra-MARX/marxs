@@ -1,12 +1,14 @@
 from __future__ import division
-from warnings import warn
+import warnings
 
-import numpy as np
 from transforms3d.affines import decompose44
 
-from ..math.pluecker import *
 from .base import FlatOpticalElement
 
+class PixelSizeWarning(Warning):
+    pass
+
+warnings.filterwarnings("always", ".*", PixelSizeWarning)
 
 class FlatDetector(FlatOpticalElement):
     '''Flat detector with square pixels
@@ -46,7 +48,7 @@ class FlatDetector(FlatOpticalElement):
             z  = zoom[i + 1]
             self.npix[i] = 2 * z // self.pixsize
             if (2. * z / self.pixsize - self.npix[i]) > 1e-3:
-                warn('Detector size is not an integer multiple of pixel size. It will be rounded.')
+                warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), PixelSizeWarning)
             self.centerpix[i] = (self.npix[i] - 1) / 2
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):

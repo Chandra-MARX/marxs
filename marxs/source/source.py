@@ -204,9 +204,12 @@ class Source(SimulationSequenceElement):
         energies = self.generate_energies(times)
         pol = self.generate_polarization(times, energies)
         n = len(times)
-        return Table({'time': times, 'energy': energies, 'polangle': pol,
-                      'probability': np.ones(n)})
+        photons = Table({'time': times, 'energy': energies, 'polangle': pol,
+                         'probability': np.ones(n)})
+        photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
 
+        #photons.meta['DATE-OBS'] =
+        return photons
 
 
 class PointSource(Source):
@@ -302,7 +305,8 @@ class PointingModel(SimulationSequenceElement):
         # Could also loop over single photons if not implemented in
         # derived class.
         self.add_dir(photons)
-        raise NotImplementedError
+        return photons
+
 
 
 class FixedPointing(PointingModel):
@@ -318,7 +322,7 @@ class FixedPointing(PointingModel):
     coords : tuple of 2 elements
         Ra and Dec of telescope aimpoint in decimal degrees.
     roll : float
-        ``roll = 0`` means: z axis points North (measured N -> E).
+        ``roll = 0`` means: z axis points North (measured N -> E). Angle in degrees.
 
     Note
     ----
@@ -346,20 +350,51 @@ class FixedPointing(PointingModel):
                                np.deg2rad(-self.dec),
                                np.deg2rad(-self.roll), 'rzyx')
 
+    def photons_dir(self, ra, dec, time):
+        '''Calculate direction on photons in homogeneous coordinates.
+
+        Parameters
+        ----------
+        ra : np.array
+            RA for each photon in rad
+        dec : np.array
+            DEC or each photon in rad
+        time : np.array
+            Time for each photons in sec
+
+        Returns
+        -------
+        photons_dir : np.array of shape (n, 4)
+            Homogeneous direction vector for each photon
+        '''
+        # Minus sign here because photons start at +inf and move towards origin
+        photons_dir = np.zeros((len(ra), 4))
+        photons_dir[:, 0] = - np.cos(dec) * np.cos(ra)
+        photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
+        photons_dir[:, 2] = - np.sin(dec)
+        photons_dir[:, :3] = np.dot(self.mat3d.T, photons_dir[:, :3].T).T
+
+        return photons_dir
+
+    def photons_pol(self, ra, dec, polangle, time):
+        return np.ones_like(ra)
+
     def process_photons(self, photons):
         '''
         Parameters
         ----------
         photons : astropy.table.Table
         '''
-        self.add_dir(photons)
-        ra = np.deg2rad(photons['ra'])
-        dec = np.deg2rad(photons['dec'])
-        # Minus sign here because photons start at +inf and move towards origin
-        photons['dir'][:, 0] = - np.cos(dec) * np.cos(ra)
-        photons['dir'][:, 1] = - np.cos(dec) * np.sin(ra)
-        photons['dir'][:, 2] = - np.sin(dec)
-        photons['dir'][:, 3] = 0
-        photons['dir'][:, :3] = np.dot(self.mat3d.T, photons['dir'][:, :3].T).T
-        photons['polarization'] = np.ones_like(ra)
+        photons = super(FixedPointing, self).process_photons(photons)
+        ra = np.deg2rad(photons['ra'].data)
+        dec = np.deg2rad(photons['dec'].data)
+        photons['dir'] = self.photons_dir(ra, dec, photons['time'].data)
+        photons['polarization'] = self.photons_pol(ra, dec, photons['time'].data, photons['polangle'].data)
+        photons.meta['RA_PNT'] = (self.ra, '[deg] Pointing RA')
+        photons.meta['DEC_PNT'] = (self.dec, '[deg] Pointing Dec')
+        photons.meta['ROLL_PNT'] = (self.roll, '[deg] Pointing Roll')
+        photons.meta['RA_NOM'] = (self.ra, '[deg] Nominal Pointing RA')
+        photons.meta['DEC_NOM'] = (self.dec, '[deg] Nominal Pointing Dec')
+        photons.meta['ROLL_NOM'] = (self.roll, '[deg] Nominal Pointing Roll')
+
         return photons
