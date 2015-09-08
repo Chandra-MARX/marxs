@@ -4,7 +4,7 @@ import numpy as np
 from astropy.table import Table
 
 from ... import chandra
-from ....source import ConstantPointSource, FixedPointing
+from ....source import PointSource, FixedPointing
 #from .....optics import MarxMirror
 
 
@@ -30,7 +30,7 @@ def test_ditherpattern():
 
 def test_stationary_pointing():
     '''Constant pointing can also be realized through a Lissajous with amplitude=0.'''
-    mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
+    mysource = PointSource((30., 30.), energy=1., flux=1.)
     fixedpointing = FixedPointing(coords=(30., 30.), roll=15.)
     lisspointing = chandra.LissajousDither(coords=(30.,30.), roll=15., DitherAmp=np.zeros(3))
 
@@ -48,7 +48,7 @@ def test_detector_coordsystems():
     The most obvious one is the size of the pixel - currently the number of pixels times
     the pixel size does now match the length of the chip precisely.
     '''
-    mysource = ConstantPointSource((30., 30.), energy=1., flux=1.)
+    mysource = PointSource((30., 30.), energy=1., flux=1.)
     mypointing = chandra.LissajousDither(coords=(30.,30.), roll=15.)
     # marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
     acis = chandra.ACIS(chips=[0,1,2,3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
