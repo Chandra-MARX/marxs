@@ -1,9 +1,44 @@
 from collections import OrderedDict
+import inspect
 
 import numpy as np
 from transforms3d import affines
 
 from astropy.table import Column
+
+
+class DocMeta(type):
+    '''Metaclass to inherit docstrings when reqired.
+
+    When a derived class overwrites a method that was already defined in its
+    base class, the new method usually has the same purpose as the original method
+    and often uses the same parameters, too, although the implementation differs
+    slightly.
+    In this case, it should have the same docstring, too.
+    This metaclass will look for methods that are undocumented and add the docstring
+    of the appropriate parent method to them.
+    '''
+    def __new__(mcs, name, bases, dict):
+        # make a class here with the same method resolution order
+        # but no attributes of its own (so that we can make it here without an
+        # infinite loop, because making it will also go through this metaclass)
+        if name == 'temporaryclass':
+            return type.__new__(mcs, name, bases, dict)
+        temp = type('temporaryclass', bases, {})
+        mro = inspect.getmro(temp)
+
+        for k in dict:
+            # for items that have a docstring (i.e. methods) that is empty
+            if hasattr(dict[k], '__doc__') and dict[k].__doc__ is None:
+                for b in mro:
+                    # look if has defines the method
+                    # (it might not in case of multiple inheritance)
+                    if hasattr(b, k):
+                        dict[k].__doc__ = getattr(b, k).__doc__
+                        break
+
+        return type.__new__(mcs, name, bases, dict)
+
 
 class MarxsElement(object):
     '''Base class for all elements in a MARXS simulation.
@@ -12,7 +47,10 @@ class MarxsElement(object):
     mirrors, but also abstract concepts that do not have a direct hardware
     representation such as a "Rowland Torus".
     '''
+    __metaclass__ = DocMeta
+
     def __init__(self, **kwargs):
+        '''Define a new MARXS element.'''
         if 'name' in kwargs:
             self.name = kwargs.pop('name')
         else:
