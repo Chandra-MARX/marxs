@@ -43,6 +43,17 @@ def test_design_tilted_torus():
     assert R == 4.9794336175561327
     assert pos4d[0,3] == 0.027390523158633273
 
+def test_design_tilted_torus_negative_angles():
+    '''Tilt the torus the other way. Should be same geometry in general.'''
+    R, r, pos4d = design_tilted_torus(10, np.deg2rad(3), np.deg2rad(6))
+    Rn, rn, pos4dn = design_tilted_torus(10, np.deg2rad(-3), np.deg2rad(-6))
+    assert R == Rn
+    assert r == rn
+    assert pos4d[0,3] == pos4dn[0, 3]
+    assert pos4d[1, 3] == 0 # torus in xz plane
+    assert pos4dn[1, 3] == 0
+    assert pos4d[2, 3] == - pos4dn[2, 3]
+
 def test_torus():
     '''Test the torus equation for a set of points.
 
@@ -133,6 +144,30 @@ def test_torus_normal():
 
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_phi), 0.)
+
+def torus_cut_is_circle():
+    '''Cutting the torus in a plane that includes the symmetry axis should give a cirlce.
+
+    Check that that's true even for a tilted torus.
+    '''
+    R, r, pos4d = design_tilted_torus(10, np.deg2rad(-3), np.deg2rad(-6))
+    torus = RowlandTorus(R, r, pos4d=pos4d)
+
+    z = np.arange(0., torus.r *0.8, 5)
+    x = np.zeros_like(z)
+    xguess = torus.r + torus.R
+    for i, iz in enumerate(z):
+        x[i] = torus.solve_quartic(None, 0, iz, [0.99 * xguess, 1.1 * xguess])
+        xguess = x[i]
+
+    # This should be a circle of radius r around a center.
+    # Where exactly is the center?
+    # Assuming no y rotation:
+    circle_center = np.dot(torus.pos4d[:3,:3], torus.R * np.array([1, 0,0])) + torus.pos4d[:3,3]
+    circle_center_xz = circle_center[[0,2]]
+    p = np.vstack([x,z])
+    d = np.linalg.norm(p - circle_center_xz[:, np.newaxis], axis=0)
+    assert np.allclose(d, torus.r)
 
 def test_GratingArrayStructure():
     '''Check a GAS for consistency
