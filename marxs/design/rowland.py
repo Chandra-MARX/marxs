@@ -217,7 +217,11 @@ def design_tilted_torus(f, alpha, beta):
     r = f / (2. * np.cos(alpha))
     CatH = r * np.sqrt(2 * (1 + np.cos(2 * (beta - alpha))))
     HF = np.sqrt(f**2 + CatH**2 - 2 * f * CatH * np.cos(beta))
-    gamma = np.arccos(HF / (2 * r))
+    # If alpha is negative, then everything is "on the other side".
+    # The sign of gamma cannot be found through the arccos, so need to set it here
+    # with sign(alpha).
+    # Another gotcha: np.sign(0) = 0, but we want 1 (or -1)
+    gamma = np.arccos(HF / (2 * r)) * (np.sign(alpha) or 1)
     R = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha + gamma) - r
     FCt = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha)
     x_Ct = FCt * np.cos(alpha + gamma)
