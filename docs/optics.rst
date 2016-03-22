@@ -72,6 +72,7 @@ General optical elements
    :toctree: API
 
    baffle.Baffle
+   mirror.PerfectLens
    mirror.ThinLens
    marx.MarxMirror
    detector.FlatDetector
