@@ -4,7 +4,27 @@ from transforms3d.axangles import axangle2mat
 
 from .base import FlatOpticalElement
 from ..math.pluecker import *
+from ..math.utils import norm_vector
 
+class PerfectLens(FlatOpticalElement):
+    '''This describes an infinitely large lens that focusses all rays exactly.
+
+    It is computationally cheap and if the details of the mirror are not important
+    to the simulation, a thin lens might provide an approximation for
+    X-ray focussing. In many cases the ``PerfectLens`` will be combined with some blur
+    function (e.g. random scatter by 1 arsec) to achieve a simple approximation to some
+    mirror specification.
+    '''
+    def __init__(self, **kwargs):
+        self.focallength = kwargs.pop('focallength')
+        super(PerfectLens, self).__init__(**kwargs)
+
+    def process_photons(self, photons):
+        # A ray through the center is not broken.
+        # So, find out where a central ray would go.
+        focuspoints = h2e(self.geometry['center']) + self.focallength * norm_vector(h2e(photons['dir']))
+        photons['dir'] = e2h(focuspoints - h2e(photons['pos']), 0)
+        return photons
 
 class ThinLens(FlatOpticalElement):
     '''Focus rays with the thin lens approximation
