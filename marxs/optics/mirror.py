@@ -9,8 +9,9 @@ from ..math.utils import norm_vector
 class PerfectLens(FlatOpticalElement):
     '''This describes an infinitely large lens that focusses all rays exactly.
 
+    This lens is just perfect, it has no astigmatism, no absorption, etc.
     It is computationally cheap and if the details of the mirror are not important
-    to the simulation, a thin lens might provide an approximation for
+    to the simulation, a perfect lens might provide an approximation for
     X-ray focussing. In many cases the ``PerfectLens`` will be combined with some blur
     function (e.g. random scatter by 1 arsec) to achieve a simple approximation to some
     mirror specification.
