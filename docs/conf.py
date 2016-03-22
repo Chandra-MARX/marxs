@@ -53,8 +53,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'matplotlib.sphinxext.plot_directive',
-    'IPython.sphinxext.ipython_directive',
-    'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 numpydoc_show_class_members = False

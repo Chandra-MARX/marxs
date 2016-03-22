@@ -83,45 +83,9 @@ Similarly to the flux, the input for ``energy`` can just be a number, which spec
 
 We can also specify a spectrum, by giving binned energy and flux density values. The energy values are taken as the *upper* egde of the bin; the first value of the flux density array is ignored since the lower bound for this bin is undefined. The spectrum can either be in the form of a (2, N) `numpy.ndarray` or it can be some type of table, e.g. an `astropy.table.Table` or a `dict <dict>` with columns named "energy" and "flux" (meaning: "flux density" in counts/s/unit area/keV). In the following exmaple, we specify the same spectrum in three differect ways (the plot looks a little different, because photon energies are randomly drawn from the spectrum, so there is a Poisson uncertainty):
 
-.. ipython::
+.. plot:: pyplots/sourcespectrum.py
+   :include-source:
 
-   In [448]:    import numpy as np
-
-   In [449]:    import matplotlib.pyplot as plt
-
-   In [450]:    from astropy.table import Table
-
-   In [451]:    from marxs.source.source import Source
-
-   In [452]:    en = np.arange(0.5, 7., .5)
-
-   In [453]:    flux = en**(-2)
-
-   In [454]:    dictspectrum = {'energy': en, 'flux': flux}
-
-   In [455]:    s1 = Source(energy=dictspectrum, name='dict')
-
-   In [456]:    tablespectrum = Table([en, flux], names=['energy', 'flux'])
-
-   In [457]:    s2 = Source(energy=tablespectrum, name='table')
-
-   In [458]:    numpyspectrum = np.vstack([en, flux])
-
-   In [459]:    s3 = Source(energy=numpyspectrum, name='2d array')
-
-   In [460]:    fig = plt.figure()
-
-   In [461]:    for s in [s1, s2, s3]:
-      .....:            photons = s.generate_photons(1e3)
-      .....:            plt.hist(photons['energy'], histtype='step', label=s.name, bins=20)
-      .....:     
-
-   In [462]:    leg = plt.legend()
-
-   In [463]:    lab = plt.xlabel('Energy [keV]')
-
-   @savefig histograms.png width=6in align=center
-   In [464]:    lab = plt.ylabel('Counts / bin')
 
 If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.table.Table` `read/write interface <https://astropy.readthedocs.org/en/stable/io/unified.html>`_ offers a convenient way to read it into python:
 
