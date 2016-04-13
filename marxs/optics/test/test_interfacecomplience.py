@@ -15,6 +15,7 @@ from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra.hess import HETG
+from ..scatter import RadialMirrorScatter
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -33,6 +34,7 @@ all_oe = [ThinLens(focallength=100),
           MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
           Sequence(sequence=[]),
           HETG(),
+          RadialMirrorScatter(inplanescatter=0.1),
           ]
 
 # Each elements will be used multiple times.

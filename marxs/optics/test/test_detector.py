@@ -21,6 +21,11 @@ def test_pixelnumbers():
     assert closeornan(photons['detpix_x'], np.array([19.5, 39.3, np.nan]))
     assert closeornan(photons['detpix_y'], np.array([9, 11.5, np.nan]))
 
+    # Regression test: This was rounded down to [39, 39] at some point.
+    det = FlatDetector(pixsize=0.05)
+    assert det.npix == [40, 40]
+
+
 def test_nonintegerwarning(recwarn):
     det = FlatDetector(zoom=np.array([1.,2.,3.]), pixsize=0.3)
     w = recwarn.pop()

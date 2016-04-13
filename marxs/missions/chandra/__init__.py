@@ -19,9 +19,7 @@ Properties that are very easy to define and that are very unlikely to ever chang
 That makes is easier to see where the numbers come from and thus helps for users
 who look at this module as an example of how to build up complex marxs setups.
 '''
-import os
 from math import cos, sin
-from ConfigParser import ConfigParser
 import numpy as np
 
 from astropy.table import Table
@@ -30,14 +28,14 @@ from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
 from transforms3d.axangles import axangle2mat
 
-from ... import optics
 from ...optics import MarxMirror as HDMA
 from ...optics import FlatDetector, FlatGrating, uniform_efficiency_factory
 from ...source import FixedPointing
 from ...simulator import Sequence, Parallel
 from ...math.pluecker import h2e
 from .fitsheaders import complete_header
-from .data import NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE
+from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE,
+    PIX_CORNER_LSI_PAR)
 
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
@@ -85,7 +83,7 @@ class ACISChip(FlatDetector):
         chip = intercoos[intersect, :] / self.pixsize + self.centerpix + 1
         tdet = chip2tdet(chip, self.TDET, self.id_num)
         # DET is based on spacecraft coordiantes, but in observations they need to be derived
-        # from pixel coordiantes because that's all we have.
+        # from pixel coordinates because that's all we have.
         # Here, we already know the spacecraft coordiantes (STF), so we can start from there.
         # I just hope it is consistent and I did not screw up the offsets at some point.
         fc = h2e(interpos[intersect, :])
@@ -137,7 +135,8 @@ read-out streaks,
         # Now the ACIS specific case
         kwargs['elem_pos'] = None
         kwargs['elem_class'] = ACISChip
-        kwargs['elem_args'] = {'pixsize': 0.023985 }
+        # Use 0.024 because that's more consistent with 1024 pix
+        kwargs['elem_args'] = {'pixsize': 0.024 } # {'pixsize': 0.023985 }
 
         super(ACIS, self).__init__(**kwargs)
         self.chips = chips
@@ -157,12 +156,7 @@ read-out streaks,
             3d coordinates of the chip corner in LSI coordinates.
             There is one dictionary per ACIS chip.
         '''
-        conf = ConfigParser()
-        # get the basename of the path
-        basedir = os.path.dirname(os.path.dirname(os.path.dirname(optics.__file__)))
-        conf.read(os.path.join(basedir, 'setup.cfg'))
-        marxsrc = conf.get('MARX', 'srcdir')
-        t = Table.read(os.path.join(marxsrc, 'marx', 'data', 'pixlib', 'pix_corner_lsi.par'), format='ascii')
+        t = Table.read(PIX_CORNER_LSI_PAR, format='ascii')
         out = []
         for chip in ACIS_name:
             coos = {}

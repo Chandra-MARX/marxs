@@ -1,6 +1,7 @@
 from __future__ import division
 import warnings
 
+import numpy as np
 from transforms3d.affines import decompose44
 
 from .base import FlatOpticalElement
@@ -46,7 +47,7 @@ class FlatDetector(FlatOpticalElement):
         self.centerpix = [0, 0]
         for i in (0, 1):
             z  = zoom[i + 1]
-            self.npix[i] = 2 * z // self.pixsize
+            self.npix[i] = int(np.round(2. * z / self.pixsize))
             if (2. * z / self.pixsize - self.npix[i]) > 1e-3:
                 warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), PixelSizeWarning)
             self.centerpix[i] = (self.npix[i] - 1) / 2
