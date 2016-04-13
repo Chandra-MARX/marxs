@@ -34,11 +34,12 @@ In that case, simply recompile and install `classic marx`_ as *P* osition *I* nd
 
     make distclean
     ./configure --prefix=/path/to/your/instalation/ CFLAGS="-O2 -g -fPIC"
+    make clean
     make
     make install
 
 I promise that the performance difference is so small, you won't notice
-it when you run the classic `classic marx`_ version, but it allows the setup process of
+it when you run the `classic marx`_ version, but it allows the setup process of
 this python module to compile the interface to use those libraries.
 
 If you are a developer, you might want to tell git to ignore the local path

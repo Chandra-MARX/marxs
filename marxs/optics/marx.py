@@ -52,8 +52,8 @@ class MarxMirror(OpticalElement, BaseAperture):
     implements, most notable the "HRMA" and "IXO" mirrors. Details on the
     "HRMA" mirror (which is used to simulate Chandra) can be found at
     http://space.mit.edu/ASC/marx/indetail/hardwaremodel.html#hrma-model . The
-    "IXO" mirror model is a simplified version with some generilazations that
-    works very similar in general, but is not documented, because (from a MARX
+    "IXO" mirror model is a simplified version with some generalizations that
+    works very similar in general, but is not documented because (from a MARX
     standpoint) it is only meant for developers.
 
     Parameters
