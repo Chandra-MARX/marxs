@@ -47,30 +47,33 @@ def axangle2mat(axes, angles, is_normalized=False):
 
     Parameters
     ----------
-    axis : 3 element sequence
+    axes : np.array of shape (N, 3)
        vector specifying axis for rotation.
-    angle : scalar
+    angle : np.array
        angle of rotation in radians.
     is_normalized : bool, optional
        True if `axis` is already normalized (has norm of 1).  Default False.
 
     Returns
     -------
-    mat : array shape (3,3)
-       rotation matrix for specified rotation
+    mat : array shape (N, 3,3)
+       rotation matrices for specified rotation
 
     Notes
     -----
     From: http://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
     '''
+    if len(angles) != axes.shape[0]:
+        raise ValueError('There must be one angle for each axes vector.')
+
     if not is_normalized:
-        axes = axes / np.linalg.norm(axes, axis=0)
+        axes = axes / np.linalg.norm(axes, axis=1)[:, None]
     c = np.cos(angles); s = np.sin(angles); C = 1-c
-    x = axes[0, :]; y = axes[1, :]; z = axes[2, :]
+    x = axes[:, 0]; y = axes[:, 1]; z = axes[:, 2]
     xs = x*s;   ys = y*s;   zs = z*s
     xC = x*C;   yC = y*C;   zC = z*C
     xyC = x*yC; yzC = y*zC; zxC = z*xC
     return np.array([
             [ x*xC+c,   xyC-zs,   zxC+ys ],
             [ xyC+zs,   y*yC+c,   yzC-xs ],
-            [ zxC-ys,   yzC+xs,   z*zC+c ]])
+            [ zxC-ys,   yzC+xs,   z*zC+c ]]).swapaxes(0,2).swapaxes(1,2)
