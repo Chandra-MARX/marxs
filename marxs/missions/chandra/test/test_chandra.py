@@ -84,3 +84,17 @@ def test_detector_coordsystems():
     assert np.allclose(photons['x'], [4096.5, 4499., 3988.5, 3693.4, 4204.34], atol=atol)
     assert np.allclose(photons['y'], [4096.5, 3988.65, 3693.4, 4204.5, 4499.], atol=atol)
     assert np.allclose(photons['tdetx'], [4137.2, 4555, 4137.77, 3720, 4138.25], atol=atol)
+
+
+def test_ACIS_pixel_number():
+    '''The pixel size and chip size given in the docs are not consistent.
+
+    Make sure we end up with 1024*1024 chips.
+    '''
+    acis = chandra.ACIS(chips=[0, 1, 2, 3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
+    for i in range(3):
+        assert acis.elements[i].npix == [1024, 1024]
+
+    acis = chandra.ACIS(chips=[4, 5, 6, 7, 8, 9], aimpoint=chandra.AIMPOINTS['ACIS-I'])
+    for i in range(5):
+        assert acis.elements[i].npix == [1024, 1024]
