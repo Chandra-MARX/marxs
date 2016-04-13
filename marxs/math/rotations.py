@@ -36,3 +36,41 @@ def ex2vec_fix(e1, efix):
     rot[:, 2] = np.cross(rot[:, 0], rot[:, 1])
     return rot
 
+import numpy as np
+
+
+def axangle2mat(axes, angles, is_normalized=False):
+    ''' Rotation matrix for rotation angle `angle` around `axis`
+
+    This is a vectorized version of the routine of the same name in
+    ``tansforms3d``.
+
+    Parameters
+    ----------
+    axis : 3 element sequence
+       vector specifying axis for rotation.
+    angle : scalar
+       angle of rotation in radians.
+    is_normalized : bool, optional
+       True if `axis` is already normalized (has norm of 1).  Default False.
+
+    Returns
+    -------
+    mat : array shape (3,3)
+       rotation matrix for specified rotation
+
+    Notes
+    -----
+    From: http://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
+    '''
+    if not is_normalized:
+        axes = axes / np.linalg.norm(axes, axis=0)
+    c = np.cos(angles); s = np.sin(angles); C = 1-c
+    x = axes[0, :]; y = axes[1, :]; z = axes[2, :]
+    xs = x*s;   ys = y*s;   zs = z*s
+    xC = x*C;   yC = y*C;   zC = z*C
+    xyC = x*yC; yzC = y*zC; zxC = z*xC
+    return np.array([
+            [ x*xC+c,   xyC-zs,   zxC+ys ],
+            [ xyC+zs,   y*yC+c,   yzC-xs ],
+            [ zxC-ys,   yzC+xs,   z*zC+c ]])

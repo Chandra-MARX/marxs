@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
+from transforms3d import axangles
 
-from ..rotations import ex2vec_fix
+from ..rotations import ex2vec_fix, axangle2mat
 
 def is_orthogonal(a):
     '''Return True is a matrix is orthonormal'''
@@ -33,3 +34,13 @@ def test_ex2vec_fix_invalid_input():
         t = ex2vec_fix(v, 3 * v)
     assert 'are parallel' in str(e.value)
 
+
+def test_axangle2mat():
+    '''Check that vectorized version gives same answers.'''
+    axis = np.random.rand(3,4)
+    angles = np.arange(4)
+    out = axangle2mat(axis, angles)
+    assert np.all(out[:, :, 0] == np.eye(3))
+    for i in range(3):
+        out1 = axangles.axangle2mat(axis[:, i + 1], angles[i + 1])
+        assert np.allclose(out[:, :, i + 1], out1)
