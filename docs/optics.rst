@@ -75,8 +75,10 @@ General optical elements
    mirror.PerfectLens
    mirror.ThinLens
    marx.MarxMirror
+   scatter.RadialMirrorScatter
    detector.FlatDetector
    multiLayerMirror.MultiLayerMirror
+
 
 
 .. module:: marxs.optics.grating
