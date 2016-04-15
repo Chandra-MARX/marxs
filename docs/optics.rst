@@ -76,6 +76,7 @@ General optical elements
    mirror.ThinLens
    marx.MarxMirror
    scatter.RadialMirrorScatter
+   filter.EnergyFilter
    detector.FlatDetector
    multiLayerMirror.MultiLayerMirror
 
