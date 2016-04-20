@@ -129,7 +129,7 @@ class FlatOpticalElement(OpticalElement):
 
     Derived classes have the option to implement their own `process_photons` or, alternatively,
     they can implement a function called
-    ``specific_process_photons(photons, intersect, interpos, intercoos)`` that returns a dictionary
+    ``specific_process_photons(self, photons, intersect, interpos, intercoos)`` that returns a dictionary
     of the form ``{'column name': value, ...}`` where value is an array that holds one value for
     each photon that intersect the optical element.
     '''

@@ -16,6 +16,7 @@ from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra.hess import HETG
 from ..scatter import RadialMirrorScatter
+from ..filter import EnergyFilter
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -35,6 +36,8 @@ all_oe = [ThinLens(focallength=100),
           Sequence(sequence=[]),
           HETG(),
           RadialMirrorScatter(inplanescatter=0.1),
+          # not a useful filterfunc, but OK for testing with a few other dependencies
+          EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
           ]
 
 # Each elements will be used multiple times.

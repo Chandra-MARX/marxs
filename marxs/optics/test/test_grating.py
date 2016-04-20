@@ -8,6 +8,7 @@ from ..grating import (FlatGrating, CATGrating,
                        constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
 from ...math.pluecker import h2e
 from ... import energy2wave
+from ...utils import generate_test_photons
 
 def test_zeros_order():
     '''Photons diffracted into order 0 should just pass through'''
@@ -43,16 +44,12 @@ def test_zeros_order():
 
 def test_translation_invariance():
     '''For homogeneous gratings, the diffrection eqn does not care where the ray hits.'''
-    dir = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
+    photons = generate_test_photons(2)
+    photons['dir'] = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
     pos = np.tile(np.array([1., 0., 0., 1.]), (2, 1))
     delta_pos = np.array([0, .23, -.34, 0.])
     pos[1,:] += delta_pos
-    photons = Table({'pos': pos,
-                     'dir': dir,
-                     'energy': np.ones(2),
-                     'polarization': np.ones(2),
-                     'probability': np.ones(2),
-                     })
+    photons['pos'] = pos
     for order in [-1, 0, 1]:
         g = FlatGrating(d=1./500, order_selector=constant_order_factory(order), zoom=20)
         p = g.process_photons(photons.copy())
@@ -128,12 +125,8 @@ def test_energy_dependence():
 
 def test_groove_direction():
     '''Direction of grooves many not be parallel to y axis.'''
-    photons = Table({'pos': np.tile([1., 0, 0, 1], (5,1)),
-                     'dir': np.tile([1., 0, 0, 0], (5,1)),
-                     'energy': np.ones(5),
-                     'polarization': np.ones(5),
-                     'probability': np.ones(5),
-                     })
+    photons = generate_test_photons(5)
+
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
     assert np.allclose(np.dot(g.geometry['e_groove'], g.geometry['e_perp_groove']), 0.)
     p = g.process_photons(photons.copy())
