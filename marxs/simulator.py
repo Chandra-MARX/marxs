@@ -11,7 +11,7 @@ class SimulationSetupError(Exception):
 
 
 class Sequence(SimulationSequenceElement):
-    '''A Sequence is a container that summarizes several optical elements..
+    '''A Sequence is a container that summarizes several optical elements.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ class Sequence(SimulationSequenceElement):
         The elements of this list are all optical elements that process photons.
     preprocess_steps : list
         The elements of this list are functions or callable objects that accept a photon list as input
-        and returns no output (but changing the photon list in place, e.g. adding meta-data is
+        and return no output (but changing the photon list in place, e.g. adding meta-data is
         allowed)  (*default*: ``[]``). All ``preprocess_steps`` are run before *every* optical element
         in the sequence.
         An example would be a function that writes the photon list to disk as a backup before
@@ -27,7 +27,7 @@ class Sequence(SimulationSequenceElement):
         If your function returns a modified photon list, treat it as an optical element and place it
         in `sequence`.
     postprocess_steps : list
-        See ``preprocess_steps`` except that the steps are run *after* each sequnece element
+        See ``preprocess_steps`` except that the steps are run *after* each sequence element
          (*default*: ``[]``).
 
 

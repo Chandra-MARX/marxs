@@ -9,7 +9,7 @@ from .. import (RectangleAperture, ThinLens, FlatDetector,
 
 from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
-from ..base import _parse_position_keywords
+from ..base import _parse_position_keywords, FlatStack
 from ...design import RowlandTorus, GratingArrayStructure
 from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
@@ -17,6 +17,7 @@ from ...simulator import Sequence
 from ...missions.chandra.hess import HETG
 from ..scatter import RadialMirrorScatter
 from ..filter import EnergyFilter
+
 
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
@@ -38,6 +39,7 @@ all_oe = [ThinLens(focallength=100),
           RadialMirrorScatter(inplanescatter=0.1),
           # not a useful filterfunc, but OK for testing with a few other dependencies
           EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
+          FlatStack(sequence=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
           ]
 
 # Each elements will be used multiple times.

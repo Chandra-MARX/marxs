@@ -131,7 +131,9 @@ class FlatOpticalElement(OpticalElement):
     they can implement a function called
     ``specific_process_photons(self, photons, intersect, interpos, intercoos)`` that returns a dictionary
     of the form ``{'column name': value, ...}`` where value is an array that holds one value for
-    each photon that intersect the optical element.
+    each photon that intersects the optical element. In the special case of ``probability`` the
+    return value should only contain the probability assigned in **this** element. This value
+    will be multiplied with the previous probabilities of each photon automatically.
     '''
 
     geometry = {'center': np.array([0, 0, 0, 1.]),
@@ -255,6 +257,74 @@ class FlatOpticalElement(OpticalElement):
             return photons
         else:
             return super(FlatOpticalElement, self).process_photons(photons)
+
+
+class FlatStack(FlatOpticalElement):
+    '''Convenience class for several flat, stacked optical elements.
+
+    This class is meant to simplify the specification of a single physical
+    element, that fullfills several logical functions, e.g. a detector can be seen
+    as a a sequence of a contamination layer (which modified the probability of a photon
+    reching the CCD), a QE filter (which modifies the probability of detecting the photon),
+    and the pixelated CCD (which sorts the photons in pixels). All these things can be
+    approximated as happening in the same physical spot, and thus it is convenient to
+    treat all three functions as one element.
+
+    Parameters
+    ----------
+    sequence : list of classes
+        List of class names specifying the layers in the stack
+    keywords : list of dicts
+        Dictionaries specifying the properties of each layer (do not set the position
+        of individual elements)
+
+    Example
+    -------
+    In this example, we will define a single flat CCD with a QE of 0.5 for all energies.
+
+    >>> from marxs.optics import FlatStack, EnergyFilter, FlatDetector
+    >>> myccd = FlatStack(position=[0, 2, 2], zoom=2,
+    ...     sequence=[EnergyFilter, FlatDetector],
+    ...     keywords=[{'filterfunc': lambda x: 0.5}, {'pixsize': 0.05}])
+
+    '''
+
+    def __init__(self, **kwargs):
+        sequence = kwargs.pop('sequence')
+        keywords = kwargs.pop('keywords')
+        super(FlatStack, self).__init__(**kwargs)
+        self.sequence = []
+        for elem, k in zip(sequence, keywords):
+            self.sequence.append(elem(pos4d=self.pos4d, **k))
+
+    def specific_process_photons(self, *args, **kwargs):
+        return {}
+
+    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
+        '''
+        Parameters
+        ----------
+        intersect, interpos, intercoos : array (N, 4)
+            These parameters are here for performance reasons. In many cases, the
+            intersection point between the grating and the rays has been calculated
+            by the calling routine to decide which photon is processed by which
+            grating and only photons intersecting this grating are passed in.
+            The array ``interpos`` contains the intersection points in the global
+            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
+            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
+            calculated here. No checks are done on passed-in values.
+        '''
+        if (interpos is None) or (intercoos is None) or (intersect is None):
+            intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
+        if intersect.sum() > 0:
+            # This line calls FlatOpticalElement.process_photons to add ID cols and local coos
+            # is requested (this could also be done by any of the contained sequence elements,
+            # but we want the user to be able to specify that for either of them).
+            photons = super(FlatStack, self).process_photons(photons, intersect, interpos, intercoos)
+            for e in self.sequence:
+                photons = e.process_photons(photons, intersect, interpos, intercoos)
+
+        return photons
 
 
 def photonlocalcoords(f, colnames=['pos', 'dir']):
