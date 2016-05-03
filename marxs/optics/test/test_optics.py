@@ -12,6 +12,7 @@ import marxs.optics.base
 import marxs.optics.aperture
 import marxs.source
 import marxs.source.source
+from marxs.utils import generate_test_photons
 
 @pytest.fixture(autouse=True)
 def photons1000():
@@ -113,3 +114,24 @@ def test_photonlocalcoords_decorator():
     photontab = oetest.functiontodecorate(photontab)
     assert np.allclose(photontab['dir'], dir)
     assert np.allclose(photontab['pos'], pos)
+
+
+def test_FlatStack():
+    '''Run a stack of two elements and check that both are applied to the photons.'''
+    fs = marxs.optics.FlatStack(position=[0, 5, 0], zoom=2,
+                                sequence=[marxs.optics.EnergyFilter, marxs.optics.FlatDetector],
+                                keywords=[{'filterfunc': lambda x: 0.5},{}])
+    # Check all layers are at the same position
+    assert np.allclose(fs.geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.sequence[0].geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.sequence[1].geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.pos4d, fs.sequence[1].pos4d)
+
+    p = generate_test_photons(5)
+    # Photons 0, 1 miss the stack
+    p['pos'][:, 1] = [0, 1, 3.1, 4, 5]
+    fs.loc_coos_name = ['a', 'b']
+    p = fs(p)
+    assert np.allclose(p['probability'], [1, 1, .5, .5, .5])
+    assert np.all(np.isnan(p['a'][:2]))
+    assert np.allclose(p['a'][2:], [-1.9, -1., 0])

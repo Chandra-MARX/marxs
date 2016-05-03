@@ -6,5 +6,6 @@ from .mirror import ThinLens, PerfectLens
 from .baffle import Baffle
 from .scatter import RadialMirrorScatter
 from .filter import EnergyFilter
+from .base import FlatStack
 
 __all__ = ['RectangeAperture', 'FlatDetector']

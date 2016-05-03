@@ -113,15 +113,15 @@ Complex designs
 
 Most optical elements only change rays that intersect them (`Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
 
-Marxs offers two classes to make handling complext designs more comfortable: `Sequence` and `Parallel`.
+Marxs offers three classes to make handling complext designs more comfortable: `Sequence` and `Parallel`.
 The class `Sequence` can be used to group several optical elements. There are two use cases:
 
 - Group several optical elements that are passed by each photon in sequence.
 - Group several different parallel elements, e.g. a CCD detector and a proportional counter that are both mounted in the focal plane.
 
-In contrast, `Parallel` in meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
+In contrast, `Parallel` is meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
   
-
+`FlatStack` is a special case of the `Sequence` where several flat optical elements are passed by the photons in sequence and all elements are so close to each other, that this can be treated as a single interaction. An example is contamination on a CCD detector, which can be modeled as a Sequence of an `EnergyFilter` and a `FlatDetector`.
 
 .. autoclass:: Sequence
 
@@ -134,3 +134,6 @@ In contrast, `Parallel` in meant for designs with identical elements, e.g. a cam
    Parallel.elements
    Parallel.calculate_elempos
    Parallel.generate_elements
+
+
+.. autoclass:: marxs.optics.FlatStack
