@@ -131,7 +131,9 @@ class FlatOpticalElement(OpticalElement):
     they can implement a function called
     ``specific_process_photons(self, photons, intersect, interpos, intercoos)`` that returns a dictionary
     of the form ``{'column name': value, ...}`` where value is an array that holds one value for
-    each photon that intersect the optical element.
+    each photon that intersects the optical element. In the special case of ``probability`` the
+    return value should only contain the probability assigned in **this** element. This value
+    will be multiplied with the previous probabilities of each photon automatically.
     '''
 
     geometry = {'center': np.array([0, 0, 0, 1.]),
