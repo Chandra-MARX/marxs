@@ -63,6 +63,7 @@ For astrophysical sources, we assume that the rays are parallel when they reach 
    :toctree: API
 
    aperture.RectangleAperture
+   aperture.CirlceAperture
 
 
 General optical elements
