@@ -24,6 +24,7 @@ mytorus = RowlandTorus(0.5, 0.5)
 
 all_oe = [ThinLens(focallength=100),
           RectangleAperture(),
+          CircleAperture(),
           FlatDetector(pixsize=2., zoom=100.),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),

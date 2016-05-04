@@ -82,9 +82,7 @@ class CircleAperture(FlatAperture):
     '''
     def generate_local_xy(self, n):
         phi = np.random.random(n) * 2. * np.pi
-        phi = phi.reshape((-1, 1))
         r = np.sqrt(np.random.random(n))
-        r = r.reshape((-1, 1))
         if not np.isclose(np.linalg.norm(self.geometry['v_y']),
                         np.linalg.norm(self.geometry['v_z'])):
             raise GeometryError('Aperture does not have same size in y, z direction.')

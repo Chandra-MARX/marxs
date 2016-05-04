@@ -259,7 +259,7 @@ class GratingArrayStructure(Parallel, OpticalElement):
         Minimum and maximum of the x coordinate that is searched for an intersection
         with the torus. A ray can intersect a torus in up to four points. ``x_range``
         specififes the range for the numerical search for the intersection point.
-    radius : list of 2 floats float
+    radius : list of 2 floats
         Inner and outer radius of the GAS as measured in the yz-plane from the
         origin.
     phi : list of 2 floats
