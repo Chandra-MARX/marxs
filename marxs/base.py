@@ -6,6 +6,8 @@ from transforms3d import affines
 
 from astropy.table import Column
 
+class GeometryError(Exception):
+    pass
 
 class DocMeta(type):
     '''Metaclass to inherit docstrings when reqired.

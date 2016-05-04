@@ -5,7 +5,7 @@ import pytest
 
 from .. import (RectangleAperture, ThinLens, FlatDetector,
                 FlatGrating, uniform_efficiency_factory, constant_order_factory,
-                MarxMirror)
+                MarxMirror, CircleAperture)
 
 from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
