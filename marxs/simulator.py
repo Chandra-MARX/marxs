@@ -273,7 +273,7 @@ class Parallel(OpticalElement):
             e_center, e_rot, e_zoom, stemp = decompose44(self.elem_pos[i])
             tsigelem, rsigelem, zsigelem, stemp = decompose44(self.elem_uncertainty[i])
             if not np.allclose(stemp, 0.):
-                raise ElemPlacementError('Shear is not supported in the elem uncertainty.')
+                raise SimulationSetupError('Shear is not supported in the elem uncertainty.')
             # Will be able to write this so much better in python 3.5,
             # but for now I don't want to nest np.dot too much so here it goes
             f_pos4d = np.eye(4)

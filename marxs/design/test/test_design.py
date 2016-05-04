@@ -28,7 +28,7 @@ def test_radius_of_photon_shell():
     r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3)
     assert abs(r1 - 433.) < 1.
     assert abs(r2 - 442.) < 1.
-    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3, percentile=[49, 49.1])
+    r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3, percentile=[49, 49.001])
     assert (r2 - r1) < 0.01
 
 def test_design_tilted_torus():

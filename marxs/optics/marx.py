@@ -194,6 +194,14 @@ class MarxMirror(OpticalElement, BaseAperture):
         photons['probability'][photons['unreflected'] | photons['mirror_vblocked']] = 0
         return photons
 
+    @property
+    def area(self):
+        '''Area of the aperture.
+
+        This does not take into account any projection effects for
+        apertures that are not perpendicular to the optical axis.
+        '''
+        return marx.Marx_Mirror_Geometric_Area
 
 
 
