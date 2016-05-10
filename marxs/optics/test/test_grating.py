@@ -155,6 +155,7 @@ def test_groove_direction():
     for px in [p1, p2, p3]:
             assert np.allclose(angle_in_yz(p['dir'][0,:], px['dir'][0, :]), 0.3)
 
+
 def test_order_convention():
     dirs = np.zeros((3, 4))
     dirs[1, 2] = 0.01
@@ -175,6 +176,7 @@ def test_order_convention():
     # intersection point with grating cannot depend on order
     assert np.all(p1['pos'].data == m1['pos'].data)
 
+
 def test_CAT_order_convention():
     dirs = np.zeros((3, 4))
     dirs[:, 0] = -1.
@@ -191,12 +193,11 @@ def test_CAT_order_convention():
     gm = CATGrating(d=1./5000, order_selector=constant_order_factory(-5), zoom=2)
     m5 = gm.process_photons(photons.copy())
     for g in [gm, gp]:
-        assert np.all(g.order_sign_convention(photons) == np.array([1, 1, -1]))
+        assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, 1, -1]))
     assert p5['dir'][1, 2] > 0
     assert p5['dir'][2, 2] < 0
     assert m5['dir'][1, 2] < 0
     assert m5['dir'][2, 2] > 0
-
 
 
 def test_uniform_efficiency_factory():
@@ -207,12 +208,14 @@ def test_uniform_efficiency_factory():
     assert set(testout[0]) == set([-2, -1 , 0, 1, 2])
     assert len(testout[0]) == len(testout[1])
 
+
 def test_constant_order_factory():
     '''Constant order will give always the same order'''
     f = constant_order_factory(2)
     testout = f(np.ones(15), np.ones(15))
     assert np.all(testout[0] == 2)
     assert len(testout[0]) == len(testout[1])
+
 
 def test_EfficiencyFile():
     '''Read in the efficency from a file.
@@ -228,3 +231,15 @@ def test_EfficiencyFile():
     assert np.allclose(testout[1], .6)
     assert set(testout[0]) == set([-2 , 0])
     assert (testout[0] == 0).sum()  < (testout[0] == -2).sum()
+
+
+def test_CATGRating_misses():
+    '''Regression test: CAT gratings that intersect only a fraction of rays
+    returned an array of the wrong dimension from order_sign_convention.'''
+    photons = generate_test_photons(5)
+    photons['pos'][:, 1] = np.arange(5)
+
+    cat = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
+    p = cat(photons)
+    assert np.all(np.isnan(p['order'][3:]))
+    assert np.all(np.isnan(p['grat_y'][3:]))
