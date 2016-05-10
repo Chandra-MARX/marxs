@@ -121,25 +121,30 @@ class FlatGrating(FlatOpticalElement):
        Reflection gratings are untested so far!
     '''
 
-    order_sign_convention = None
-    '''
-    The sign convention for grating orders is determined by the ``order_sign_convention``
-    attribute. If this is ``None``, the following, somewhat arbitrary convention is chosen:
-    Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
-    negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
-    the physical situation is the same, but the sign of the grating order will be reversed.
-    In this sense, the convention chosen is arbitrarily. However, it has some practical
-    advantages: The implementation is fast and all photons passing through the grating
-    in the same diffraction order are displaced in the same way. (Contrary to the
-    convention in :class:`CATGrating`.)
-    If ``order_sign_convention`` is not ``None`` is has to be a callable that accepts the
-    photons table as input and returns an a float (e.g. ``+1``) or an array filled with -1
-    or +1.
-    '''
-
     loc_coos_name = ['grat_y', 'grat_z']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
+    def order_sign_convention(self, p):
+        '''Set sign convention for grating orders.
+
+        This sets the following, somewhat arbitrary convention:
+        Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
+        negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
+        the physical situation is the same, but the sign of the grating order will be reversed.
+        In this sense, the convention chosen is arbitrarily. However, it has some practical
+        advantages: The implementation is fast and all photons passing through the grating
+        in the same diffraction order are displaced in the same way. (Contrary to the
+        convention in :class:`CATGrating`.)
+        ``order_sign_convention`` has to be a callable that accepts an array
+        of eukledian direction vectors as input and returns ``+1``, ``-1``,
+        or an array filled with ``-1`` or ``+1``.
+
+        Parameters
+        ----------
+        p : np.array
+            Array of Eucleadian direction vectors
+        '''
+        return 1
 
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
@@ -173,10 +178,7 @@ class FlatGrating(FlatOpticalElement):
 
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
-        if self.order_sign_convention is None:
-            sign = 1.
-        else:
-            sign = self.order_sign_convention(photons)
+        sign = self.order_sign_convention(p)
         p_d = np.dot(p, d) + sign * m * wave / self.d
         p_l = np.dot(p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
@@ -204,13 +206,12 @@ class CATGrating(FlatGrating):
     '''
 
 
-    def order_sign_convention(self, photons):
+    def order_sign_convention(self, p):
         '''Convention to chose the sign for CAT grating orders
 
         Blazing happens on the side of the negative orders. Obviously, this
         convention is only meaningful if the photons do not arrive perpendicular to the grating.
         '''
-        p = h2e(photons['dir'])
         d = h2e(self.geometry['e_z'])
         dotproduct = np.dot(p, d)
         sign = np.sign(dotproduct)
