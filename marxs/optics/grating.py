@@ -107,9 +107,13 @@ class FlatGrating(FlatOpticalElement):
     d : float
         grating constant
     order_selector : callable
-        A function or callable object that accepts photon energy, polarization and the blaze angle
-        as input and returns a grating order (integer)
-        and a probability (float).
+        A function or callable object that accepts arrays of photon energy, polarization
+        and the blaze angle
+        as input and returns arrays for  grating order (integer)
+        and probability (float). The probabiliy expresses the chance that the photon passes
+        the grating and is not absorbed, e.g. if the probability that a photon at energy E ends
+        up in order=[-2, -1, 0, 1, 2] is [0, 0, .5, .3, .0] , then the returned probability for
+        all photons should be 0.8.
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. (*Default*: ``True`` )
