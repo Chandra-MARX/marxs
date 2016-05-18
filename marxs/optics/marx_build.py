@@ -14,9 +14,9 @@ conf.read('setup.cfg')
 marxscr = conf.get('MARX', 'srcdir')
 marxlib = conf.get('MARX', 'libdir')
 
-sources = [('pfile', 'src', 'pfile.c'), ('libsrc', 'mirror.c')]
+sources = [('pfile', 'src', 'pfile.c'), ('marx', 'libsrc', 'mirror.c')]
 headers = [('pfile', 'src'), ('jdmath', 'src') , ('jdfits', 'src'),
-           ('src',), ('libsrc',)]
+           ('marx', 'src',), ('marx', 'libsrc',)]
 
 ffi.set_source("_marx",
 '''
