@@ -30,11 +30,11 @@ class GlobalEnergyFilter(OpticalElement):
     >>> energygrid = [.1, .5, 1., 2., 5.]
     >>> filtercurve = [.1, .5, .9, .9, .5]
     >>> f = interp1d(energygrid, filtercurve)
-    >>> blockingfilter = EnergyFilter(filterfunc=f)
+    >>> blockingfilter = GlobalEnergyFilter(filterfunc=f)
 
     See also
     --------
-    `~marxs.optics.filter.EnergyFilter` describes a real optical element that
+    `EnergyFilter` describes a real optical element that
     has a position in 4-d space.
     '''
     def __init__(self, **kwargs):
@@ -68,6 +68,11 @@ class EnergyFilter(FlatOpticalElement):
     >>> filtercurve = [.1, .5, .9, .9, .5]
     >>> f = interp1d(energygrid, filtercurve)
     >>> blockingfilter = EnergyFilter(filterfunc=f, position=[4, 1, 0], zoom=4)
+
+    See also
+    --------
+    `GlobalEnergyFilter` describes filter that globally affects
+    all photons independent of their physical location.
     '''
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
