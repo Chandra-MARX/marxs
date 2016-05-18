@@ -85,7 +85,7 @@ setup_args = {
     #     'hello': ['*.msg'],
     # },
 
-    'setup_requires': ["six", "astropy>=1.0", "transforms3d", "sphinx"],
+    'setup_requires': ["setuptools", "six", "astropy>=1.0", "transforms3d", "sphinx"],
     'install_requires': ["six", "sphinx"],
     'requires': ["six", 'sphinx'],
     'tests_require': ['pytest'],
