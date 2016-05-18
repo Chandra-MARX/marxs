@@ -28,10 +28,8 @@ env:
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
-        # For this package-template, we include examples of Cython modules,
-        # so Cython is required for testing. If your package does not include
-        # Cython code, you can set CONDA_DEPENDENCIES=''
         - CONDA_DEPENDENCIES='numpy scipy astropy cffi sphinx matplotlib'
+        - DEBUG=True
     matrix:
         # Make sure that egg_info works without dependencies
         - SETUP_CMD='egg_info'
