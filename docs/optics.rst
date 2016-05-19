@@ -127,6 +127,10 @@ In contrast, `Parallel` is meant for designs with identical elements, e.g. a cam
 
 .. autoclass:: Sequence
 
+.. autoclass:: marxs.optics.FlatStack
+
+.. autoclass:: KeepCol
+
 .. autoclass:: Parallel
 
 .. autosummary::
@@ -137,5 +141,3 @@ In contrast, `Parallel` is meant for designs with identical elements, e.g. a cam
    Parallel.calculate_elempos
    Parallel.generate_elements
 
-
-.. autoclass:: marxs.optics.FlatStack
