@@ -47,8 +47,8 @@ before_install:
 install:
 
     # Set the location the MARX c code and compiled version in setup.cfg
-    - sed -i.bak s/'srcdir ='/'srcdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx-5\.1\.0\/'/g setup.cfg
-    - sed -i.bak s/'libdir ='/'libdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx\/lib\/'/g setup.cfg
+    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.1.0/|g' setup.cfg
+    - sed -i.bak 's|libdir =|libdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx/lib/|g' setup.cfg
 
     # We now use the ci-helpers package to set up our testing environment.
     # This is done by using Miniconda and then using conda and pip to install
