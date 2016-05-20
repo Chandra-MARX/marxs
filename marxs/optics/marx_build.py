@@ -1,5 +1,5 @@
 from os import path
-from ConfigParser import ConfigParser
+from astropy.extern.six.moves.configparser import ConfigParser
 from cffi import FFI
 
 with open ("marxs/optics/cdef.txt", "r") as myfile:
@@ -10,13 +10,16 @@ ffi.cdef(cdeftxt)
 
 
 conf = ConfigParser()
-conf.read('setup.cfg')
+# When setup.py is run, then setup.cfg is in the current directory
+# However, when runngin this in pytest, it's in ../
+# So offer both options here (files not found are silently ignored).
+conf.read(['setup.cfg', '../setup.cfg'])
 marxscr = conf.get('MARX', 'srcdir')
 marxlib = conf.get('MARX', 'libdir')
 
 sources = [('pfile', 'src', 'pfile.c'), ('marx', 'libsrc', 'mirror.c')]
 headers = [('pfile', 'src'), ('jdmath', 'src') , ('jdfits', 'src'),
-           ('marx', 'src'), ('marx', 'libsrc')]
+           ('marx', 'src',), ('marx', 'libsrc',), ('src',), ('libsrc',)]
 
 ffi.set_source("_marx",
 '''

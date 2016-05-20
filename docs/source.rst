@@ -36,10 +36,11 @@ Flux
 
 The source flux can just be a number, giving the total counts / second (if no number is given, the default is ``flux=1``).
 
+     >>> from __future__ import print_function
      >>> from marxs.source import PointSource
      >>> star = PointSource(coords=(23., 45.), flux=5.)
      >>> photons = star.generate_photons(20)
-     >>> print photons['time'][:6]
+     >>> print(photons['time'][:6])
      time
      ----
      0.0
@@ -72,7 +73,7 @@ Similarly to the flux, the input for ``energy`` can just be a number, which spec
 
     >>> FeKalphaline = PointSource(coords=(255., -33.), energy=6.7)
     >>> photons = FeKalphaline.generate_photons(5)
-    >>> print photons['energy']
+    >>> print(photons['energy'])
     energy
     ------
        6.7
@@ -104,7 +105,7 @@ Lastly, "energy" can be a function that assigns energy values based on the timin
     ...     return en
     >>> mysource = Source(energy=time_dependent_energy)
     >>> photons = mysource.generate_photons(7)
-    >>> print photons['time', 'energy']
+    >>> print(photons['time', 'energy'])
     time energy
     ---- ------
      0.0    0.5

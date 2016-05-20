@@ -1,101 +1,125 @@
 #!/usr/bin/env python
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 from __future__ import print_function
 
+
+import glob
+import os
 import sys
-# To use a consistent encoding
-from codecs import open
-from os import path
-from ConfigParser import ConfigParser, NoOptionError
 
-from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-from sphinx.setup_command import BuildDoc
+import ah_bootstrap
+from setuptools import setup
 
-import versioneer
+#A dirty hack to get around some early import/configurations ambiguities
+if sys.version_info[0] >= 3:
+    import builtins
+else:
+    import __builtin__ as builtins
+builtins._ASTROPY_SETUP_ = True
 
+from astropy_helpers.setup_helpers import (register_commands, get_debug_option,
+                                           get_package_info)
+from astropy_helpers.git_helpers import get_git_devstr
+from astropy_helpers.version_helpers import generate_version_py
 
+from astropy.extern.six.moves.configparser import ConfigParser, NoOptionError
 
-### versioneer ###
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'marxs/_version.py'
-versioneer.versionfile_build = 'marxs/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'marxs-' # dirname like 'myproject-1.2.0'
+# Get some values from the setup.cfg
+from distutils import config
+conf = config.ConfigParser()
 
-### py.test ###
-class PyTest(TestCommand):
-    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+conf.read(['setup.cfg'])
+metadata = dict(conf.items('metadata'))
 
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ['marxs', 'docs']
+PACKAGENAME = metadata.get('package_name', 'packagename')
+DESCRIPTION = metadata.get('description', 'Astropy affiliated package')
+AUTHOR = metadata.get('author', '')
+AUTHOR_EMAIL = metadata.get('author_email', '')
+LICENSE = metadata.get('license', 'unknown')
+URL = metadata.get('url', 'http://astropy.org')
 
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
+# Get the long description from the package's docstring
+__import__(PACKAGENAME)
+package = sys.modules[PACKAGENAME]
+LONG_DESCRIPTION = package.__doc__
 
-    def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
+# Store the package name in a built-in variable so it's easy
+# to get from other parts of the setup infrastructure
+builtins._ASTROPY_PACKAGE_NAME_ = PACKAGENAME
 
+# VERSION should be PEP386 compatible (http://www.python.org/dev/peps/pep-0386)
+VERSION = '0.1.dev'
 
-cmdclass = versioneer.get_cmdclass()
-cmdclass['test'] = PyTest
-cmdclass['build_sphinx'] = BuildDoc
+# Indicates if this version is a release version
+RELEASE = 'dev' not in VERSION
 
-setup_args = {
-    'name': 'marxs',
-    'description': 'Multi Architecture Raytracer for X-ray satellites',
-    'author': 'MIT / H. M. Guenther',
-    'author_email': 'hgunther@mit.edu',
+if not RELEASE:
+    VERSION += get_git_devstr(False)
 
-    'version': versioneer.get_version(),
-    'cmdclass': cmdclass,
+# Populate the dict of setup command overrides; this should be done before
+# invoking any other functionality from distutils since it can potentially
+# modify distutils' behavior.
+cmdclassd = register_commands(PACKAGENAME, VERSION, RELEASE)
 
-    'license': 'GPLv3+',
+# Freeze build information in version.py
+generate_version_py(PACKAGENAME, VERSION, RELEASE,
+                    get_debug_option(PACKAGENAME))
 
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    'classifiers': [
-        # How mature is this project? Common values are
-        # 3 - Alpha
-        # 4 - Beta
-        # 5 - Production/Stable
-        'Development Status :: 2 - Pre-Alpha',
-        # Indicate who your project is intended for
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Astronomy'
-        # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-        # Specify the Python versions you support here. In particular, ensure.
-        # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        ],
-
-    'packages': find_packages(),
-    # to be done  - or use astropy template?
-    # package_data = {
-    #     # If any package contains *.txt or *.rst files, include them:
-    #     '': ['*.txt', '*.rst'],
-    #     # And include any *.msg files found in the 'hello' package, too:
-    #     'hello': ['*.msg'],
-    # },
-
-    'setup_requires': ["astropy>=1.0", "transforms3d"],
-    'install_requires': [],
-    'tests_require': ['pytest'],
-    'zip_safe': False,
-    }
-### import DESCRIPTION file ###
-here = path.abspath(path.dirname(__file__))
-# Get the long description from the relevant file
-with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
-    setup_args['long_description'] = f.read()
+# Treat everything in scripts except README.rst as a script to be installed
+scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
+           if os.path.basename(fname) != 'README.rst']
 
 
+# Get configuration information from all of the various subpackages.
+# See the docstring for setup_helpers.update_package_files for more
+# details.
+package_info = get_package_info()
+
+# Add the project-global data
+package_info['package_data'].setdefault(PACKAGENAME, [])
+package_info['package_data'][PACKAGENAME].append('data/*')
+
+# Define entry points for command-line scripts
+entry_points = {'console_scripts': []}
+
+entry_point_list = conf.items('entry_points')
+for entry_point in entry_point_list:
+    entry_points['console_scripts'].append('{0} = {1}'.format(entry_point[0],
+                                                              entry_point[1]))
+
+# Include all .c files, recursively, including those generated by
+# Cython, since we can not do this in MANIFEST.in with a "dynamic"
+# directory name.
+c_files = []
+for root, dirs, files in os.walk(PACKAGENAME):
+    for filename in files:
+        if filename.endswith('.c'):
+            c_files.append(
+                os.path.join(
+                    os.path.relpath(root, PACKAGENAME), filename))
+package_info['package_data'][PACKAGENAME].extend(c_files)
+
+# Note that requires and provides should not be included in the call to
+# ``setup``, since these are now deprecated. See this link for more details:
+# https://groups.google.com/forum/#!topic/astropy-dev/urYO8ckB2uM
+
+setup_args = {'name': PACKAGENAME,
+              'version': VERSION,
+              'description': DESCRIPTION,
+              'scripts': scripts,
+              'install_requires': ['astropy', 'transforms3d'],
+              'author': AUTHOR,
+              'author_email': AUTHOR_EMAIL,
+              'license': LICENSE,
+              'url': URL,
+              'long_description': LONG_DESCRIPTION,
+              'cmdclass': cmdclassd,
+              'zip_safe': False,
+              'use_2to3': False,
+              'entry_points': entry_points,
+              'setup_requires': ['astropy', 'transforms3d'],  # We use six from astropy.extern
+              }
+setup_args.update(package_info)
 
 # check is MARX C code is configured in setup.py and if it is, add to
 # appropriate arguments to setup args
@@ -110,8 +134,8 @@ try:
         setup_args['setup_requires'].append("cffi>=1.0.0")
         print('Using MARX C code at {0}\n and compiled libraries at {1}'.format(marxscr, marxlib))
     else:
-       print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+        print('MARX C code is not configured in setup.cfg - modules will be disabled.')
 except NoOptionError:
-   print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+    print('MARX C code is not configured in setup.cfg - modules will be disabled.')
 
 setup(**setup_args)

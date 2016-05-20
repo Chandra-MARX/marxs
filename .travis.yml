@@ -1,9 +1,17 @@
+language: python
+
+python:
+    - 2.7
+    - 3.5
+
 sudo: false
 
 addons:
   apt:
     packages:
     - graphviz
+    - texlive-latex-extra
+    - dvipng
 
 cache:
   pip: true
@@ -11,7 +19,23 @@ cache:
   #  - $HOME/marxs-5.1.0
   #  - $HOME/build/Chandra-MARX/marxs/marx/
 
-language: python
+env:
+    global:
+        # The following versions are the 'default' for tests, unless
+        # overridden underneath. They are defined here in order to save having
+        # to repeat them for all configurations.
+        - NUMPY_VERSION=stable
+        - ASTROPY_VERSION=stable
+        - SETUP_CMD='test'
+        - PIP_DEPENDENCIES='transforms3d'
+        - CONDA_DEPENDENCIES='scipy cffi sphinx matplotlib'
+        - DEBUG=True
+    matrix:
+        # Make sure that egg_info works without dependencies
+        # - SETUP_CMD='egg_info'
+        # Try all python versions with the latest numpy
+        - SETUP_CMD='test'
+
 
 before_install:
   - wget ftp://space.mit.edu/pub/cxc/marx/v5.1/marx-dist-5.1.0.tar.gz
@@ -21,38 +45,70 @@ before_install:
   - cd ..
 
 install:
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy astropy cffi sphinx matplotlib ipython
-  - source activate test-environment
-  - pip install transforms3d
-  - pip install alabaster --upgrade
-  # Set the location the MARX c code and compiled version in setup.cfg
-  - sed -i.bak s/'srcdir ='/'srcdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx-5\.1\.0\/'/g setup.cfg
-  - sed -i.bak s/'libdir ='/'libdir = \/home\/travis\/build\/Chandra-MARX\/marxs\/marx\/lib\/'/g setup.cfg
-  - python setup.py install
+    # Set the location the MARX c code and compiled version in setup.cfg
+    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.1.0/|g' setup.cfg
+    - sed -i.bak 's|libdir =|libdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx/lib/|g' setup.cfg
+
+    # We now use the ci-helpers package to set up our testing environment.
+    # This is done by using Miniconda and then using conda and pip to install
+    # dependencies. Which dependencies are installed using conda and pip is
+    # determined by the CONDA_DEPDENDENCIES and PIP_DEPENDENCIES variables,
+    # which should be space-delimited lists of package names. See the README
+    # in https://github.com/astropy/ci-helpers for information about the full
+    # list of environment variables that can be used to customize your
+    # environment. In some cases, ci-helpers may not offer enough flexibility
+    # in how to install a package, in which case you can have additional
+    # commands in the install: section below.
+
+    - git clone git://github.com/astropy/ci-helpers.git
+    - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
+
+    # As described above, using ci-helpers, you should be able to set up an
+    # environment with dependencies installed using conda and pip, but in some
+    # cases this may not provide enough flexibility in how to install a
+    # specific dependency (and it will not be able to install non-Python
+    # dependencies). Therefore, you can also include commands below (as
+    # well as at the start of the install section or in the before_install
+    # section if they are needed before setting up conda) to install any
+    # other dependencies.
+
+    # - pip install alabaster --upgrade
 
 matrix:
     include:
 
-        # Check for sphinx doc build warnings
-        - os: linux
-          env: PYTHON_VERSION=2.7 SETUP_CMD='sphinx-build docs docs/_build -W'
-        - os: linux
-          env: PYTHON_VERSION=2.7 SETUP_CMD='python setup.py test'
+        # Do a coverage test in Python 2.
+        - python: 2.7
+          env: SETUP_CMD='test --coverage'
+
+        # Check for sphinx doc build warnings - we do this first because it
+        # may run for a long time
+        - python: 2.7
+          env: SETUP_CMD='build_sphinx -w'
+
+        # Try Astropy development version
+        - python: 2.7
+          env: ASTROPY_VERSION=development
+        - python: 3.5
+          env: ASTROPY_VERSION=development
+        # - python: 2.7
+        #   env: ASTROPY_VERSION=lts
+        # - python: 3.5
+        #  env: ASTROPY_VERSION=lts
+
+        # Try older numpy versions
+        - python: 2.7
+          env: NUMPY_VERSION=1.10
+
+        # Try numpy pre-release
+        - python: 3.5
+          env: NUMPY_VERSION=prerelease
+
 
 script:
-    - $SETUP_CMD
+   - python setup.py $SETUP_CMD
+
+after_success:
+    # The coveragerc file may be customized as needed for your package.
+    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='marxs/tests/coveragerc'; fi

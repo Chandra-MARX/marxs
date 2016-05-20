@@ -77,6 +77,7 @@ def test_list_elemargs():
                       )
     assert 'All elements in elem_pos must have the same number' in str(e.value)
 
+
 def test_keepcols():
     '''Check keep cols fir very simple case.'''
     t = Table({'a': [1,2]})

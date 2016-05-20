@@ -2,6 +2,12 @@
 Installation
 ============
 
+Requirements
+============
+
+- numpy >=1.8
+- scipy
+
 .. _sect-installmarxccode:
 
 `classic marx`_ C code

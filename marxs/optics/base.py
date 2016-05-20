@@ -40,7 +40,7 @@ class OpticalElement(SimulationSequenceElement):
         # attribute to an instance attribute
         self.geometry = copy(self.geometry)
 
-        for elem, val in self.geometry.iteritems():
+        for elem, val in self.geometry.items():
             if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
                 self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)
@@ -240,7 +240,7 @@ class FlatOpticalElement(OpticalElement):
                 intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
             if intersect.sum() > 0:
                 outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, self.loc_coos_name + outcols.keys())
+                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
                 # Add ID number to ID col, if requested
                 if self.id_col is not None:
                     photons[self.id_col][intersect] = self.id_num
