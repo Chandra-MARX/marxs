@@ -39,9 +39,8 @@ The source flux can just be a number, giving the total counts / second (if no nu
      >>> from marxs.source import PointSource
      >>> star = PointSource(coords=(23., 45.), flux=5.)
      >>> photons = star.generate_photons(20)
-     >>> print photons['time'][:6]
-     time
-     ----
+     >>> photons['time'][:6]
+     <Column name='time' dtype='float64' length=6>
      0.0
      0.2
      0.4

@@ -32,7 +32,7 @@ env:
         - DEBUG=True
     matrix:
         # Make sure that egg_info works without dependencies
-        - SETUP_CMD='egg_info'
+        # - SETUP_CMD='egg_info'
         # Try all python versions with the latest numpy
         - SETUP_CMD='test'
 
@@ -100,10 +100,6 @@ matrix:
         # Try older numpy versions
         - python: 2.7
           env: NUMPY_VERSION=1.10
-        - python: 2.7
-          env: NUMPY_VERSION=1.9
-        - python: 2.7
-          env: NUMPY_VERSION=1.8
 
         # Try numpy pre-release
         - python: 3.5
@@ -117,4 +113,4 @@ after_success:
     # If coveralls.io is set up for this package, uncomment the line
     # below and replace "packagename" with the name of your package.
     # The coveragerc file may be customized as needed for your package.
-    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='marxs/tests/coveragerc'; fi
+    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='marxs/test/coveragerc'; fi
