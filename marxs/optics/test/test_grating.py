@@ -24,7 +24,7 @@ def test_zeros_order():
     photons['dir'][:, 1:] = 0
 
     p = photons.copy()
-    def mock_order(x, y):
+    def mock_order(x, y, z):
         return np.zeros_like(x, dtype=np.int), np.ones_like(x)
     g0 = FlatGrating(d=1./500.,
                      order_selector=mock_order,
@@ -95,7 +95,7 @@ def test_order_dependence():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    def mock_order(x, y):
+    def mock_order(x, y, z):
         return np.array([-2, -1, 0, 1, 2]), np.ones(5)
     g = FlatGrating(d=1./500, order_selector=mock_order)
     p = g.process_photons(photons)
@@ -122,6 +122,18 @@ def test_energy_dependence():
     lam = energy2wave / p['energy']
     theta = np.arctan2(p['dir'][:, 2], p['dir'][:, 0])
     assert np.allclose(1. * lam, 1./500. * np.sin(theta))
+
+def test_blaze_dependence():
+    '''Ensure that the blaze angle is passed to the order selector (regression test)'''
+    def order_selector(energy, polarization, blaze):
+        '''test function (unphysical)'''
+        return np.floor(blaze * 10), np.ones_like(energy)
+
+    photons = generate_test_photons(2)
+    photons['dir'][1, :] = [-1, 0, 1, 0]
+    g = FlatGrating(d=1., order_selector=order_selector, zoom=5)
+    p = g(photons)
+    assert np.allclose(p['order'], [0, 7])
 
 def test_groove_direction():
     '''Direction of grooves many not be parallel to y axis.'''

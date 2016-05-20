@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 import pytest
 
-from ..simulator import Sequence, SimulationSetupError, Parallel
+from ..simulator import Sequence, SimulationSetupError, Parallel, KeepCol
 from ..optics import ThinLens, FlatGrating, uniform_efficiency_factory
 
 def test_pre_post_process():
@@ -77,3 +77,14 @@ def test_list_elemargs():
                       )
     assert 'All elements in elem_pos must have the same number' in str(e.value)
 
+def test_keepcols():
+    '''Check keep cols fir very simple case.'''
+    t = Table({'a': [1,2]})
+    def double_a(t):
+        t['a'] *= 2
+        return t
+
+    keeper = KeepCol('a')
+    s = Sequence(sequence=[double_a, double_a], preprocess_steps=[keeper])
+    t = s(t)
+    assert np.all(np.hstack(keeper.data) == [1, 2, 2, 4])

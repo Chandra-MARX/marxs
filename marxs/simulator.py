@@ -4,6 +4,7 @@ from transforms3d.affines import decompose44
 from .math.utils import translation2aff, zoom2aff, mat2aff
 from .base import SimulationSequenceElement, _parse_position_keywords
 from .optics.base import OpticalElement
+from math.pluecker import h2e
 
 
 class SimulationSetupError(Exception):
@@ -302,3 +303,32 @@ class Parallel(OpticalElement):
 
     def intersect(self, photons):
         raise NotImplementedError
+
+
+class KeepCol(object):
+    '''Object that records the value of one column after each simulation step.
+
+    `KeepCol` is meant to be used with the preprocess_steps or postprocess_steps
+    parameters of `Sequence`. It will make a copy of one column in the photon table
+    before or after each processing step and keep this copy in its `data` attribute.
+
+    Parameters
+    ----------
+    colname : string
+        name of column
+
+    Attributes
+    ----------
+    data : list
+        List of saved data. This will be empty initially.
+    '''
+
+    def __init__(self, colname):
+        self.colname = colname
+        self.data = []
+
+    def __call__(self, photons):
+        if self.colname not in photons.colnames:
+            raise KeyError('photon list has no column {0}.'.format(self.colname))
+        else:
+            self.data.append(photons[self.colname].copy())

@@ -2,7 +2,51 @@
 '''
 import numpy as np
 
-from .base import FlatOpticalElement
+from .base import OpticalElement, FlatOpticalElement
+
+
+class GlobalEnergyFilter(OpticalElement):
+    '''Energy dependent filter that affects all photons.
+
+    This element is used on all photons in the list, there is no geometrical
+    position associated with it. Consequently, there is no update of the position
+    or direction for each photon.
+    Use this element for global filters, that are not directly associated with any particular
+    physical object, e.g. to apply a energy based mirror efficiency after
+    passing the photons through one of the perfect efficiency mirror models.
+
+    Parameters
+    ----------
+    filterfunc : callable
+        A function that calculates the probability for each photon to pass
+        through the filter based on the photon energy in keV. The function
+        signature should be ``p = func(en)``, where ``p, en`` are 1-d arrays
+        of floats with the same number of elements.
+
+    Example
+    -------
+    >>> from scipy.interpolate import interp1d
+    >>> from marxs.optics import GlobalEnergyFilter
+    >>> energygrid = [.1, .5, 1., 2., 5.]
+    >>> filtercurve = [.1, .5, .9, .9, .5]
+    >>> f = interp1d(energygrid, filtercurve)
+    >>> blockingfilter = GlobalEnergyFilter(filterfunc=f)
+
+    See also
+    --------
+    `EnergyFilter` describes a real optical element that
+    has a position in 4-d space.
+    '''
+    def __init__(self, **kwargs):
+        self.filterfunc = kwargs.pop('filterfunc')
+        super(GlobalEnergyFilter, self).__init__(**kwargs)
+
+    def process_photons(self, photons):
+        p =  self.filterfunc(photons['energy'])
+        if np.any(p < 0.) or np.any(p > 1.):
+            raise ValueError('Probabilities returned by filterfunc must be in interval [0, 1].')
+        photons['probability'] = p
+        return photons
 
 
 class EnergyFilter(FlatOpticalElement):
@@ -23,7 +67,12 @@ class EnergyFilter(FlatOpticalElement):
     >>> energygrid = [.1, .5, 1., 2., 5.]
     >>> filtercurve = [.1, .5, .9, .9, .5]
     >>> f = interp1d(energygrid, filtercurve)
-    >>> blockingfilter = EnergyFilter(filterfunc=f)
+    >>> blockingfilter = EnergyFilter(filterfunc=f, position=[4, 1, 0], zoom=4)
+
+    See also
+    --------
+    `GlobalEnergyFilter` describes filter that globally affects
+    all photons independent of their physical location.
     '''
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
