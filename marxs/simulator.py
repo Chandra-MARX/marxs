@@ -4,7 +4,7 @@ from transforms3d.affines import decompose44
 from .math.utils import translation2aff, zoom2aff, mat2aff
 from .base import SimulationSequenceElement, _parse_position_keywords
 from .optics.base import OpticalElement
-from math.pluecker import h2e
+from .math.pluecker import h2e
 
 
 class SimulationSetupError(Exception):
