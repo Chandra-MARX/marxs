@@ -16,7 +16,7 @@ marxlib = conf.get('MARX', 'libdir')
 
 sources = [('pfile', 'src', 'pfile.c'), ('marx', 'libsrc', 'mirror.c')]
 headers = [('pfile', 'src'), ('jdmath', 'src') , ('jdfits', 'src'),
-           ('marx', 'src',), ('marx', 'libsrc',)]
+           ('marx', 'src',), ('marx', 'libsrc',), ('src',), ('libsrc',)]
 
 ffi.set_source("_marx",
 '''
