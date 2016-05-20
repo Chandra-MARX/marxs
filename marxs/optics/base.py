@@ -40,7 +40,7 @@ class OpticalElement(SimulationSequenceElement):
         # attribute to an instance attribute
         self.geometry = copy(self.geometry)
 
-        for elem, val in self.geometry.iteritems():
+        for elem, val in self.geometry.items():
             if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
                 self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)

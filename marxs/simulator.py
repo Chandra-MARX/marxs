@@ -258,7 +258,7 @@ class Parallel(OpticalElement):
             elem_args = self.elem_args.copy()
             # check if elem_args is the same for every element
             specific_elem_args = {}
-            for k, v in elem_args.iteritems():
+            for k, v in elem_args.items():
                 if isinstance(v, list) and (len(v) == len(self.elem_pos)):
                     specific_elem_args[k] = v[i]
                 else:
