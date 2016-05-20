@@ -7,9 +7,9 @@ omit =
    {packagename}/setup_package*
    {packagename}/*/setup_package*
    {packagename}/*/*/setup_package*
-   {packagename}/test/*
-   {packagename}/*/test/*
-   {packagename}/*/*/test/*
+   {packagename}/tests/*
+   {packagename}/*/tests/*
+   {packagename}/*/*/tests/*
    {packagename}/version*
 
 [report]

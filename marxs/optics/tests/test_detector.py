@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 
 from ..detector import FlatDetector
-from ...test import closeornan
+from ...tests import closeornan
 
 def test_pixelnumbers():
     pos = np.array([[0, 0., -0.25, 1.],

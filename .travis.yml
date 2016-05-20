@@ -111,4 +111,4 @@ script:
 
 after_success:
     # The coveragerc file may be customized as needed for your package.
-    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='marxs/test/coveragerc'; fi
+    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='marxs/tests/coveragerc'; fi

@@ -3,6 +3,6 @@ def get_package_data():
     # to deal with a directory hierarchy of files, so just explicitly list.
     return {
         'marxs.missions.chandra': ['HESSdesign.rdb',
-                                  'test/sim_asol.fits',
+                                  'tests/sim_asol.fits',
                          ]
     }
