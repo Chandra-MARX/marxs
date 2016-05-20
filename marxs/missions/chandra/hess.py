@@ -1,7 +1,6 @@
-import os
-
 import numpy as np
-import astropy
+from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
 from transforms3d.affines import compose
 
 from ...optics import FlatGrating, uniform_efficiency_factory
@@ -12,8 +11,7 @@ class HETG(Parallel):
     id_col = 'facet'
 
     def __init__(self, **kwargs):
-        path = os.path.dirname(__file__)
-        self.hess = astropy.table.Table.read(os.path.join(path, 'HESSdesign.rdb'))
+        self.hess = Table.read(get_pkg_data_filename('HESSdesign.rdb'))
         '''The HESS datafile is commented very well inside the rdb file.
         Here, I just need to make a note about the relation of the coordinate systems:
         The vectors that define the facet edges are called x and y in the rdb file.

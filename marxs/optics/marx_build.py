@@ -10,7 +10,7 @@ ffi.cdef(cdeftxt)
 
 
 conf = ConfigParser()
-conf.read('setup.cfg')
+conf.read('../setup.cfg')
 marxscr = conf.get('MARX', 'srcdir')
 marxlib = conf.get('MARX', 'libdir')
 
