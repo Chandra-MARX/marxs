@@ -117,7 +117,7 @@ setup_args = {'name': PACKAGENAME,
               'zip_safe': False,
               'use_2to3': False,
               'entry_points': entry_points,
-              'setup_requires': [],  # not used by default in astropy setup.
+              'setup_requires': ['astropy'],  # We use six from astropy.extern
               }
 setup_args.update(package_info)
 
