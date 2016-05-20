@@ -112,8 +112,8 @@ try:
         setup_args['setup_requires'].append("cffi>=1.0.0")
         print('Using MARX C code at {0}\n and compiled libraries at {1}'.format(marxscr, marxlib))
     else:
-       print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+        print('MARX C code is not configured in setup.cfg - modules will be disabled.')
 except NoOptionError:
-   print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+    print('MARX C code is not configured in setup.cfg - modules will be disabled.')
 
 setup(**setup_args)
