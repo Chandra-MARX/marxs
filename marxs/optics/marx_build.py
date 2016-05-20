@@ -10,7 +10,10 @@ ffi.cdef(cdeftxt)
 
 
 conf = ConfigParser()
-conf.read('../setup.cfg')
+# When setup.py is run, then setup.cfg is in the current directory
+# However, when runngin this in pytest, it's in ../
+# So offer both options here (files not found are silently ignored).
+conf.read(['setup.cfg', '../setup.cfg'])
 marxscr = conf.get('MARX', 'srcdir')
 marxlib = conf.get('MARX', 'libdir')
 

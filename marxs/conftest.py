@@ -36,3 +36,7 @@ try:
     TESTED_VERSIONS[packagename] = version
 except NameError:   # Needed to support Astropy <= 1.0.0
     pass
+
+
+import matplotlib
+matplotlib.use("Agg")

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+from __future__ import print_function
+
 
 import glob
 import os
@@ -20,9 +22,12 @@ from astropy_helpers.setup_helpers import (register_commands, get_debug_option,
 from astropy_helpers.git_helpers import get_git_devstr
 from astropy_helpers.version_helpers import generate_version_py
 
+from astropy.extern.six.moves.configparser import ConfigParser, NoOptionError
+
 # Get some values from the setup.cfg
 from distutils import config
 conf = config.ConfigParser()
+
 conf.read(['setup.cfg'])
 metadata = dict(conf.items('metadata'))
 
@@ -98,19 +103,39 @@ package_info['package_data'][PACKAGENAME].extend(c_files)
 # ``setup``, since these are now deprecated. See this link for more details:
 # https://groups.google.com/forum/#!topic/astropy-dev/urYO8ckB2uM
 
-setup(name=PACKAGENAME,
-      version=VERSION,
-      description=DESCRIPTION,
-      scripts=scripts,
-      install_requires=['astropy'],
-      author=AUTHOR,
-      author_email=AUTHOR_EMAIL,
-      license=LICENSE,
-      url=URL,
-      long_description=LONG_DESCRIPTION,
-      cmdclass=cmdclassd,
-      zip_safe=False,
-      use_2to3=True,
-      entry_points=entry_points,
-      **package_info
-)
+setup_args = {'name': PACKAGENAME,
+              'version': VERSION,
+              'description': DESCRIPTION,
+              'scripts': scripts,
+              'install_requires': ['astropy'],
+              'author': AUTHOR,
+              'author_email': AUTHOR_EMAIL,
+              'license': LICENSE,
+              'url': URL,
+              'long_description': LONG_DESCRIPTION,
+              'cmdclass': cmdclassd,
+              'zip_safe': False,
+              'use_2to3': False,
+              'entry_points': entry_points,
+              'setup_requires': [],  # not used by default in astropy setup.
+              }
+setup_args.update(package_info)
+
+# check is MARX C code is configured in setup.py and if it is, add to
+# appropriate arguments to setup args
+conf = ConfigParser()
+conf.read('setup.cfg')
+try:
+    marxscr = conf.get('MARX', 'srcdir')
+    marxlib = conf.get('MARX', 'libdir')
+    if marxscr and marxlib:
+        setup_args['cffi_modules'] = ["marxs/optics/marx_build.py:ffi"]
+        setup_args['install_requires'].append("cffi>=1.0.0")
+        setup_args['setup_requires'].append("cffi>=1.0.0")
+        print('Using MARX C code at {0}\n and compiled libraries at {1}'.format(marxscr, marxlib))
+    else:
+        print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+except NoOptionError:
+    print('MARX C code is not configured in setup.cfg - modules will be disabled.')
+
+setup(**setup_args)
