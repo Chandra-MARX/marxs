@@ -58,8 +58,8 @@ class Sequence(SimulationSequenceElement):
 
     Now, let us check where the photons fall on the detector:
 
-    >>> set(photons_out['detpix_x'].round())
-    set([19.0, 20.0])
+    >>> set(photons_out['detpix_x'].round())  # doctest: +IGNORE_OUTPUT
+    {19.0, 20.0}
 
     As expected, they fall right around the center of the detector (row 19 and 20 of a
     40 * 40 pixel detector).
@@ -201,12 +201,15 @@ class Parallel(OpticalElement):
         elem_pos = kwargs.pop('elem_pos', None)
         if isinstance(elem_pos, dict):
             # Do some consistency checks to find the most common errors.
-            keys = elem_pos.keys()
+            keys = list(elem_pos.keys())
+            for i in range(len(keys) -1):
+                if ( not(hasattr(elem_pos[keys[i]], '__len__')) or
+                     not(hasattr(elem_pos[keys[i + 1]], '__len__')) or
+                     (len(elem_pos[keys[i]]) != len(elem_pos[keys[i + 1]]))):
+                    raise ValueError('All elements in elem_pos must have the same number of entries.')
+
             n = len(elem_pos[keys[0]])
             # Turn dictionary of lists into list of dicts and parse position keywords
-            for i in range(len(keys) -1):
-                if not(hasattr(elem_pos[keys[i+1]], '__len__')) or (n != len(elem_pos[keys[i+1]])):
-                    raise ValueError('All elements in elem_pos must have the same number of entries.')
             self.elem_pos = []
             for i in range(n):
                 elem_pos_dict = {}

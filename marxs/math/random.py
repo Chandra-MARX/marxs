@@ -55,7 +55,7 @@ class RandomArbitraryPdf(object):
     def __init__(self, x, pdf, randomize_in_bin=True, sort=True):
         if not len(x) == len(pdf):
             raise ValueError('x and pdf must have same number of elements.')
-        if not np.all(pdf >= 0):
+        if not np.all(np.array(pdf) >= 0):
             raise ValueError('pdf cannot have negative elements.')
 
         self.x = np.asarray(x)

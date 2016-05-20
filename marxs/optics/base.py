@@ -240,7 +240,7 @@ class FlatOpticalElement(OpticalElement):
                 intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
             if intersect.sum() > 0:
                 outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, self.loc_coos_name + outcols.keys())
+                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
                 # Add ID number to ID col, if requested
                 if self.id_col is not None:
                     photons[self.id_col][intersect] = self.id_num

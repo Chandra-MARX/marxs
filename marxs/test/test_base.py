@@ -1,9 +1,9 @@
 from ..base import DocMeta
+from astropy.extern.six import with_metaclass
 
 def test_docsting_inheritance():
-    class A(object):
+    class A(with_metaclass(DocMeta, object)):
         '''class doc here'''
-        __metaclass__ = DocMeta
 
         A = 5 # int: attribute A
 

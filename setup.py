@@ -107,7 +107,7 @@ setup_args = {'name': PACKAGENAME,
               'version': VERSION,
               'description': DESCRIPTION,
               'scripts': scripts,
-              'install_requires': ['astropy'],
+              'install_requires': ['astropy', 'transforms3d'],
               'author': AUTHOR,
               'author_email': AUTHOR_EMAIL,
               'license': LICENSE,
@@ -117,7 +117,7 @@ setup_args = {'name': PACKAGENAME,
               'zip_safe': False,
               'use_2to3': False,
               'entry_points': entry_points,
-              'setup_requires': ['astropy'],  # We use six from astropy.extern
+              'setup_requires': ['astropy', 'transforms3d'],  # We use six from astropy.extern
               }
 setup_args.update(package_info)
 

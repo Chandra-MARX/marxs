@@ -1,4 +1,4 @@
-from StringIO import StringIO
+from io import StringIO
 import numpy as np
 from numpy.random import random
 from astropy.table import Table
@@ -234,7 +234,7 @@ def test_EfficiencyFile():
 
     To simplify testing, simulate an inout file using StringIO.
     '''
-    data  = StringIO(".5 .1 .1 .1 .4\n1. .1 .1 .1 .5\n1.5 0. .1 .0 .5")
+    data  = StringIO(u".5 .1 .1 .1 .4\n1. .1 .1 .1 .5\n1.5 0. .1 .0 .5")
     eff = EfficiencyFile(data, [1, 0, -1, -2])
     testout = eff(np.array([.7, 1.1]), np.zeros(2))
     assert np.allclose(testout[1], np.array([.7, .8]))

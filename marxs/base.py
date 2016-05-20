@@ -5,6 +5,8 @@ import numpy as np
 from transforms3d import affines
 
 from astropy.table import Column
+from astropy.extern.six import with_metaclass
+
 
 class GeometryError(Exception):
     pass
@@ -42,7 +44,7 @@ class DocMeta(type):
         return type.__new__(mcs, name, bases, dict)
 
 
-class MarxsElement(object):
+class MarxsElement(with_metaclass(DocMeta,object)):
     '''Base class for all elements in a MARXS simulation.
 
     This includes elements that actually change photon properties such as grating and
