@@ -11,8 +11,8 @@ Multi-Architecture-Raytrace-Xraymission-Simulator
    :target: http://marxs.readthedocs.io/en/latest/
    :alt: Documentation Status
 
-.. image:: https://coveralls.io/repos/github/chandra-marx/marxs/badge.svg?branch=master
-   :target: https://coveralls.io/github/chandra-marx/marxs?branch=master
+.. image:: https://coveralls.io/repos/github/Chandra-MARX/marxs/badge.svg?branch=master 
+   :target: https://coveralls.io/github/Chandra-MARX/marxs?branch=master
    :alt: Fraction of code covered by tests
 
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
