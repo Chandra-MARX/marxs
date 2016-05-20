@@ -1,5 +1,5 @@
 from os import path
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 from cffi import FFI
 
 with open ("marxs/optics/cdef.txt", "r") as myfile:
