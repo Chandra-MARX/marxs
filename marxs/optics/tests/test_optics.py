@@ -119,13 +119,13 @@ def test_photonlocalcoords_decorator():
 def test_FlatStack():
     '''Run a stack of two elements and check that both are applied to the photons.'''
     fs = marxs.optics.FlatStack(position=[0, 5, 0], zoom=2,
-                                sequence=[marxs.optics.EnergyFilter, marxs.optics.FlatDetector],
+                                elements=[marxs.optics.EnergyFilter, marxs.optics.FlatDetector],
                                 keywords=[{'filterfunc': lambda x: 0.5},{}])
     # Check all layers are at the same position
     assert np.allclose(fs.geometry['center'], np.array([0, 5, 0, 1]))
-    assert np.allclose(fs.sequence[0].geometry['center'], np.array([0, 5, 0, 1]))
-    assert np.allclose(fs.sequence[1].geometry['center'], np.array([0, 5, 0, 1]))
-    assert np.allclose(fs.pos4d, fs.sequence[1].pos4d)
+    assert np.allclose(fs.elements[0].geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.elements[1].geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.pos4d, fs.elements[1].pos4d)
 
     p = generate_test_photons(5)
     # Photons 0, 1 miss the stack
