@@ -38,6 +38,7 @@ class FlatDetector(FlatOpticalElement):
     loc_coos_name = ['det_x', 'det_y']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
+    display = {'color': (1.0, 1.0, 0.)}
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize

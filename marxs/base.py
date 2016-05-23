@@ -11,6 +11,9 @@ from astropy.extern.six import with_metaclass
 class GeometryError(Exception):
     pass
 
+class VisualizationError(Exception):
+    pass
+
 class DocMeta(type):
     '''Metaclass to inherit docstrings when reqired.
 
@@ -51,7 +54,9 @@ class MarxsElement(with_metaclass(DocMeta,object)):
     mirrors, but also abstract concepts that do not have a direct hardware
     representation such as a "Rowland Torus".
     '''
-    __metaclass__ = DocMeta
+
+    display = {}
+    'Dictionary for display specifications, e.g. color'
 
     def __init__(self, **kwargs):
         '''Define a new MARXS element.'''
@@ -65,6 +70,12 @@ class MarxsElement(with_metaclass(DocMeta,object)):
 
     def describe(self):
         return OrderedDict(element=self.name)
+
+    def plot(self, format, **kwargs):
+        if hasattr(self, '_plot_' + format):
+            return getattr(self, '_plot_' + format)(**kwargs)
+        else:
+            raise VisualizationError('Element of type {0} has no plot method for {1}'.format(self.__class__, format))
 
 class SimulationSequenceElement(MarxsElement):
     '''Base class for all elements in a simulation sequence that processes photons.'''

@@ -3,9 +3,13 @@ from copy import copy
 
 import numpy as np
 from astropy.table import Table, Row
+from transforms3d.affines import decompose44
+
+from marxs.math.pluecker import h2e
 
 from ..math.pluecker import *
 from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..visualization.utils import get_color
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -257,6 +261,21 @@ class FlatOpticalElement(OpticalElement):
             return photons
         else:
             return super(FlatOpticalElement, self).process_photons(photons)
+
+    def _plot_mayavi(self, viewer=None):
+        from tvtk.tools import visual
+        trans, rot, zoom, shear = decompose44(self.pos4d)
+        # turn into valid color tuple
+        self.display['color'] = get_color(self.display)
+        # setting color here is more global than in the next line
+        # because this automatically changes the diffuse, ambient, etc. color, too.
+        b = visual.box(pos=trans, size=tuple(zoom * 2), axis=np.dot([1.,0.,0.], rot),
+                       color=self.display['color'], viewer=viewer)
+        # No safety net here like for color converting to a tuple.
+        # If the advnaced properties are set you are on your own.
+        for n in b.property.trait_names():
+            if n in self.display:
+                setattr(b.property, n, self.display(n))
 
 
 class FlatStack(FlatOpticalElement):

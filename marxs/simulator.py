@@ -37,6 +37,9 @@ class BaseContainer(SimulationSequenceElement):
     def intersect(self, photons, **kwargs):
         raise NotImplementedError
 
+    def plot(self, *args, **kwargs):
+        return [elem.plot(*args, **kwargs) for elem in self.elements]
+
 
 class Sequence(BaseContainer):
     '''A `Sequence` is a container that summarizes several optical elements.

@@ -16,6 +16,11 @@ class PerfectLens(FlatOpticalElement):
     function (e.g. random scatter by 1 arsec) to achieve a simple approximation to some
     mirror specification.
     '''
+
+    display = {'color': (0., 0.5, 0.),
+               'opacity': 0.5,
+    }
+
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')
         super(PerfectLens, self).__init__(**kwargs)
@@ -60,6 +65,12 @@ class ThinLens(FlatOpticalElement):
     >>> photons = mdet.process_photons(photons)
     >>> fig = plt.plot(photons['det_x'], photons['det_y'], 's')
     '''
+
+    display = {'color': (0., 0.5, 0.),
+               'opacity': 0.5,
+    }
+
+
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')
         super(ThinLens, self).__init__(**kwargs)

@@ -74,6 +74,10 @@ class EnergyFilter(FlatOpticalElement):
     `GlobalEnergyFilter` describes filter that globally affects
     all photons independent of their physical location.
     '''
+
+    display = {'color': (1.0, 0., 0.),
+               'opacity': 0.5,
+    }
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
         super(EnergyFilter, self).__init__(**kwargs)
