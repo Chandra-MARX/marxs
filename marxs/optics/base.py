@@ -264,6 +264,7 @@ class FlatOpticalElement(OpticalElement):
 
     def _plot_mayavi(self, viewer=None):
         from tvtk.tools import visual
+        visual.set_viewer(viewer)
         trans, rot, zoom, shear = decompose44(self.pos4d)
         # turn into valid color tuple
         self.display['color'] = get_color(self.display)
@@ -275,7 +276,7 @@ class FlatOpticalElement(OpticalElement):
         # If the advnaced properties are set you are on your own.
         for n in b.property.trait_names():
             if n in self.display:
-                setattr(b.property, n, self.display(n))
+                setattr(b.property, n, self.display[n])
 
 
 class FlatStack(FlatOpticalElement):

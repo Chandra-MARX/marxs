@@ -9,7 +9,8 @@ from ..math.pluecker import h2e
 class BaseAperture(object):
     '''Base Aperture class'''
 
-    display = {'color': (0.0, 0.75, 0.75)}
+    display = {'color': (0.0, 0.75, 0.75),
+               'opacity': 0.3}
 
     @staticmethod
     def add_colpos(photons):
@@ -66,10 +67,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
 
         r_out = self.display.get('outer_factor', 3)
         g = self.geometry
-        outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_x']) + h2e(g['v_y']),
-                                                      h2e(-g['v_x']) + h2e(g['v_y']),
-                                                      h2e(-g['v_x']) - h2e(g['v_y']),
-                                                      h2e( g['v_x']) - h2e(g['v_y'])
+        outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                                      h2e(-g['v_y']) + h2e(g['v_z']),
+                                                      h2e(-g['v_y']) - h2e(g['v_z']),
+                                                      h2e( g['v_y']) - h2e(g['v_z'])
         ])
         inner = self._plot_mayavi_inner_shape()
         xyz, triangles = plane_with_hole(outer, inner)
@@ -81,9 +82,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
         # No safety net here like for color converting to a tuple.
         # If the advanced properties are set you are on your own.
-        for n in b.property.trait_names():
+        prop = t.module_manager.children[0].actor.property
+        for n in prop.trait_names():
             if n in self.display:
-                setattr(t.module_manager.children[0].actor.property, n, self.display(n))
+                setattr(prop, n, self.display[n])
         return t
 
 
@@ -103,10 +105,10 @@ class RectangleAperture(FlatAperture):
 
     def _plot_mayavi_inner_shape(self):
         g = self.geometry
-        return h2e(g['center']) + np.vstack([h2e( g['v_x']) + h2e(g['v_y']),
-                                             h2e(-g['v_x']) + h2e(g['v_y']),
-                                             h2e(-g['v_x']) - h2e(g['v_y']),
-                                             h2e( g['v_x']) - h2e(g['v_y'])])
+        return h2e(g['center']) + np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) - h2e(g['v_z']),
+                                             h2e( g['v_y']) - h2e(g['v_z'])])
 
 
 class CircleAperture(FlatAperture):
@@ -136,11 +138,11 @@ class CircleAperture(FlatAperture):
 
     def _plot_mayavi_inner_shape(self):
         n = self.display.get('n_inner_vertices', 90)
-        phi = np.linspace(0, 2 * np.pi, n)
+        phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
         v_y = self.geometry['v_y']
         v_z = self.geometry['v_z']
 
-        x = np.sin(phi)
-        y = np.cos(phi)
+        x = np.cos(phi)
+        y = np.sin(phi)
 
         return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)

@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+
 import numpy as np
-from mayavi import mlab
+import mayavi.mlab
 
 from marxs.math.pluecker import h2e
 
-def plot_rays(data, scalar=None, figure=None,
+def plot_rays(data, scalar=None, viewer=None,
               kwargssurface={'colormap': 'Accent', 'line_width': 1, 'opacity': .4}):
     '''Plot lines for simulated rays.
 
@@ -17,7 +19,7 @@ def plot_rays(data, scalar=None, figure=None,
         color. If it has n elements, each ray will have exactly one color (e.g. color
         according to the energy of the ray), if it has n*N elements, rays will be
         multicolored.
-    figure : ``mayavi.core.scene.Scene instance``.
+    viewer : ``mayavi.core.scene.Scene instance``.
         If None, the source is not added
         to any figure, and will be added automatically by the modules or filters.
         If False, no figure will be created by modules or filters applied to the
@@ -49,16 +51,16 @@ def plot_rays(data, scalar=None, figure=None,
     connections = np.vstack([a,b]).T
 
     # Create the points
-    src = mlab.pipeline.scalar_scatter(x, y, z, s, figure=fig)
+    src = mayavi.mlab.pipeline.scalar_scatter(x, y, z, s, figure=viewer)
 
     # Connect them
     src.mlab_source.dataset.lines = connections
     src.update()
 
     # The stripper filter cleans up connected lines
-    lines = mlab.pipeline.stripper(src, figure=fig)
+    lines = mayavi.mlab.pipeline.stripper(src, figure=viewer)
 
     # Finally, display the set of lines
-    surface = mlab.pipeline.surface(lines, figure=fig, **kwargssurface)
+    surface = mayavi.mlab.pipeline.surface(lines, figure=viewer, **kwargssurface)
 
     return src, lines, surface
