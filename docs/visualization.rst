@@ -1,4 +1,4 @@
-.. module:: marxs.visualization
+.. currentmodule:: marxs.visualization
 
 .. _visualization:
 
@@ -41,4 +41,14 @@ mayavi
 
 :return value: Object (e.g. a ``mayavi.visual.Box`` instance)
 
-The primary information used for looks is ``display['color']`` which can be any RGB tuple or, if `matplotlib` is installed, any valid `matplotlib` color. In addtion the plotting routines attempt to find all calid OpenGL properties by name in the ``display`` distionary and set those.
+The primary information used for looks is ``display['color']`` which can be any
+RGB tuple or, if `matplotlib <http://matplotlib.org>`_ is installed, any valid
+`matplotlib.colors.ColorConverter` color. In addtion the plotting routines
+attempt to find all calid OpenGL properties by name in the ``display``
+dictionary and set those.
+
+
+Reference/API
+=============
+
+.. automodapi:: marxs.visualization

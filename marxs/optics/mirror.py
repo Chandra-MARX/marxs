@@ -46,8 +46,8 @@ class ThinLens(FlatOpticalElement):
     to the simulation, a thin lens might provide an approximation for
     X-ray focussing.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> import matplotlib.pyplot as plt
     >>> from marxs import source, optics

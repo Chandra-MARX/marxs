@@ -297,8 +297,8 @@ class FlatStack(FlatOpticalElement):
         Dictionaries specifying the properties of each layer (do not set the position
         of individual elements)
 
-    Example
-    -------
+    Examples
+    --------
     In this example, we will define a single flat CCD with a QE of 0.5 for all energies.
 
     >>> from marxs.optics import FlatStack, EnergyFilter, FlatDetector

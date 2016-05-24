@@ -324,8 +324,8 @@ class FixedPointing(PointingModel):
     roll : float
         ``roll = 0`` means: z axis points North (measured N -> E). Angle in degrees.
 
-    Note
-    ----
+    Notes
+    -----
     For :math:`\delta \pm 90^{\circ}` the :math:`\alpha` value is
     irrelevant for the pointing direction - any right ascension will
     lead to a pointing on the pole. A value for ``ra`` is still

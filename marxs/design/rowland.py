@@ -262,8 +262,8 @@ class GratingArrayStructure(Parallel, OpticalElement):
     After generation, individual facet positions can be adjusted by hand by
     editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for details.
 
-    After any of the :attribute:`elem_pos`, :attribute:`elem_uncertainty` or
-    :attribute:`uncertainty` is changed, :method:`generate_elements` needs to be
+    After any of the `elem_pos`, `elem_uncertainty` or
+    `uncertainty` is changed, `generate_elements` needs to be
     called to regenerate the facets on the GAS.
 
     Parameters
@@ -342,7 +342,7 @@ class GratingArrayStructure(Parallel, OpticalElement):
 
         The facets are distributed as evenly as possible over the arc.
 
-        ..note::
+        .. note::
 
           Contrary to `distribute_facets_on_radius`, facets never stretch beyond the limits set by the ``phi`` parameter
           of the GAS. If an arc segment is not wide enough to accommodate at least a single facet,

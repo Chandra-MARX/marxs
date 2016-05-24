@@ -1,4 +1,4 @@
-.. module:: marxs.source.source
+.. currentmodule:: marxs.source.source
 
 .. _sources:
 
@@ -64,8 +64,6 @@ Note that this simple implementation is incomplete (it can happen by chance that
 
     >>> from marxs.source.source import poisson_process
     >>> star = PointSource(coords=(11., 12.), flux=poisson_process(100.))
-
-.. autofunction:: poisson_process
 
 Energy
 ^^^^^^
@@ -137,7 +135,7 @@ Lastly, if polarization is a function, it will be called with time and energy as
 	
 .. _sect-source-radec:
 
-Speficy the position for an astrophysical source
+Specify the position for an astrophysical source
 ------------------------------------------------
 
 An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the sattellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
@@ -145,13 +143,12 @@ An astrophysical source in Marxs must be followed by a pointing model as first o
 
 The following astropysical sources are included in marxs:
 
-.. autoclass:: PointSource
-
-.. autoclass:: SymbolFSource
+- `marxs.source.PointSource`
+- `marxs.source.SymbolFSource`
 	       
 Sources can be used with the following pointing model:
 
-.. autoclass:: FixedPointing
+- `marxs.source.FixedPointing`
 
 .. _sect-source-lab:
 
@@ -162,13 +159,18 @@ Sources in the lab are specified in the same coordinate system used for all othe
 
 The following laboratory sources are provided:
 
-.. autoclass:: marxs.source.labSource.FarLabPointSource
-
-.. autoclass:: marxs.source.labSource.LabPointSource
+- `~marxs.source.FarLabPointSource`
+- `~marxs.source.LabPointSource`
 
 Design your own sources and pointing models
 -------------------------------------------
 
 The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 
-.. autoclass:: Source
+- `marxs.source.Source`
+
+
+Reference/API
+=============
+
+.. automodapi:: marxs.source

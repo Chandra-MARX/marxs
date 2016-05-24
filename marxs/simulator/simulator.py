@@ -1,9 +1,9 @@
 import numpy as np
 from transforms3d.affines import decompose44
 
-from .math.utils import translation2aff, zoom2aff, mat2aff
-from .base import SimulationSequenceElement, _parse_position_keywords
-from .math.pluecker import h2e
+from ..math.utils import translation2aff, zoom2aff, mat2aff
+from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..math.pluecker import h2e
 
 
 class SimulationSetupError(Exception):
@@ -62,8 +62,8 @@ class Sequence(BaseContainer):
          (*default*: ``[]``).
 
 
-    Example
-    -------
+    Examples
+    --------
     The following example shows a complete marxs simulation.
     First, we import the required modules:
 
@@ -174,8 +174,8 @@ class Parallel(BaseContainer):
         determine the position of their elements automatically. In this case, they should set
         ``elem_pos=None``.
 
-    Example
-    -------
+    Examples
+    --------
     In this example we build up a detector made up of four CCD. Each CCD is 10 mm * 10 mm
     large and has a pixel size of 0.01 mm. The CCDs are set in a square with small spaces
     in between.

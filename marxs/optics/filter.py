@@ -6,7 +6,7 @@ from .base import OpticalElement, FlatOpticalElement
 
 
 class GlobalEnergyFilter(OpticalElement):
-    '''Energy dependent filter that affects all photons.
+    '''Energy dependent filter that globally affects all photons.
 
     This element is used on all photons in the list, there is no geometrical
     position associated with it. Consequently, there is no update of the position
@@ -23,8 +23,8 @@ class GlobalEnergyFilter(OpticalElement):
         signature should be ``p = func(en)``, where ``p, en`` are 1-d arrays
         of floats with the same number of elements.
 
-    Example
-    -------
+    Examples
+    --------
     >>> from scipy.interpolate import interp1d
     >>> from marxs.optics import GlobalEnergyFilter
     >>> energygrid = [.1, .5, 1., 2., 5.]
@@ -32,10 +32,9 @@ class GlobalEnergyFilter(OpticalElement):
     >>> f = interp1d(energygrid, filtercurve)
     >>> blockingfilter = GlobalEnergyFilter(filterfunc=f)
 
-    See also
+    See Also
     --------
-    `EnergyFilter` describes a real optical element that
-    has a position in 4-d space.
+    marxs.optics.filter.EnergyFilter
     '''
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
@@ -50,7 +49,7 @@ class GlobalEnergyFilter(OpticalElement):
 
 
 class EnergyFilter(FlatOpticalElement):
-    '''Energy dependent filter.
+    '''Energy dependent filter with position, size etc.
 
     Parameters
     ----------
@@ -60,8 +59,8 @@ class EnergyFilter(FlatOpticalElement):
         signature should be ``p = func(en)``, where ``p, en`` are 1-d arrays
         of floats with the same number of elements.
 
-    Example
-    -------
+    Examples
+    --------
     >>> from scipy.interpolate import interp1d
     >>> from marxs.optics import EnergyFilter
     >>> energygrid = [.1, .5, 1., 2., 5.]
@@ -69,10 +68,9 @@ class EnergyFilter(FlatOpticalElement):
     >>> f = interp1d(energygrid, filtercurve)
     >>> blockingfilter = EnergyFilter(filterfunc=f, position=[4, 1, 0], zoom=4)
 
-    See also
+    See Also
     --------
-    `GlobalEnergyFilter` describes filter that globally affects
-    all photons independent of their physical location.
+    marxs.optics.filter.GlobalEnergyFilter
     '''
 
     display = {'color': (1.0, 0., 0.),

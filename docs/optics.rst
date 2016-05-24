@@ -1,8 +1,5 @@
-.. module:: marxs.optics
-
-
-Define the design of an instrument / mission
-============================================
+Optical elements that make up an instrument
+===========================================
 
 A simulation is defined by creating objects for all optical elements such as mirrors and gratings and
 sorting these optical elements in the order in which a photon encounters them. Marxs works under the
@@ -44,7 +41,7 @@ Optical elements are generated with the following keywords:
 List of optical elements provided by marxs
 ------------------------------------------
 Note that elements which generate photons (astropysical sources or lab sources) are not listed here. See :ref:`sources`.
-For convenience the following elements can be imported directly from ``marxs.optics`` such as:
+For convenience the following elements can be imported directly from `marxs.optics` such as:
 
     >>> from marxs.optics import Baffle
 
@@ -57,34 +54,27 @@ This short from is recommended over the long form:
 Entrance apertures
 ^^^^^^^^^^^^^^^^^^
 
-For astrophysical sources, we assume that the rays are parallel when they reach the experiement. The direction of the photons is given by the location of the source on the sky and the pointing model, but we still need to select which of the parallel rays we select for the simulation. This is done by an optical element that we call an "aperture" in Marxs. In the case of the `MarxMirror` this fuctionality is already included in the code that describes the mirror. For designs that do not use the `MarxMirror` the following entrace aperture is included in Marxs:
+For astrophysical sources, we assume that the rays are parallel when they reach the experiement. The direction of the photons is given by the location of the source on the sky and the pointing model, but we still need to select which of the parallel rays we select for the simulation. This is done by an optical element that we call an "aperture" in Marxs. In the case of the `~marxs.optics.MarxMirror` this fuctionality is already included in the code that describes the mirror. For designs that do not use the `~marxs.optics.MarxMirror` the following entrance apertures are included in Marxs:
 
-.. autosummary::
-   :toctree: API
-
-   aperture.RectangleAperture
-   aperture.CircleAperture
+- `marxs.optics.RectangleAperture`
+- `marxs.optics.CircleAperture`
 
 
 General optical elements
 ^^^^^^^^^^^^^^^^^^^^^^^^
+
    
-.. autosummary::
-   :toctree: API
-
-   baffle.Baffle
-   mirror.PerfectLens
-   mirror.ThinLens
-   marx.MarxMirror
-   scatter.RadialMirrorScatter
-   filter.GlobalEnergyFilter
-   filter.EnergyFilter
-   detector.FlatDetector
-   multiLayerMirror.MultiLayerMirror
+-   `marxs.optics.Baffle`
+-   `marxs.optics.PerfectLens`
+-   `marxs.optics.ThinLens`
+-   `marxs.optics.MarxMirror`
+-   `marxs.optics.RadialMirrorScatter`
+-   `marxs.optics.GlobalEnergyFilter`
+-   `marxs.optics.EnergyFilter`
+-   `marxs.optics.FlatDetector`
+-   `marxs.optics.MultiLayerMirror`
 
 
-
-.. module:: marxs.optics.grating
 
 Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
@@ -96,48 +86,34 @@ The gratings implemented in marxs solve the diffration equation, but not Maxwell
 
 The grating module contains different classes for gratings and also different pre-defined ``order_selector`` function. Use the code in those functions as a template to define your own ``order_selector``.
    
-.. autosummary::
-   :toctree: API
-
-   FlatGrating
-   CATGrating
-   constant_order_factory
-   uniform_efficiency_factory
-   EfficiencyFile
+- `marxs.optics.FlatGrating`
+- `marxs.optics.CATGrating`
+- `marxs.optics.constant_order_factory`
+- `marxs.optics.uniform_efficiency_factory`
+- `marxs.optics.EfficiencyFile`
 	       
-
-
-.. module:: marxs.simulator
 .. _complexgeometry:
 
 Complex designs
 ---------------
 
-Most optical elements only change rays that intersect them (`Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
+Most optical elements only change rays that intersect them (`~marxs.optics.Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
 
-Marxs offers three classes to make handling complext designs more comfortable: `Sequence` and `Parallel`.
-The class `Sequence` can be used to group several optical elements. There are two use cases:
+Marxs offers three classes to make handling complext designs more comfortable:
+`~marxs.simulator.Sequence`, `~marxs.simulator.Parallel`, and `~marxs.optics.FlatStack`:
+
+The class `~marxs.simulator.Sequence` can be used to group several optical elements. There are two use cases:
 
 - Group several optical elements that are passed by each photon in sequence.
 - Group several different parallel elements, e.g. a CCD detector and a proportional counter that are both mounted in the focal plane.
 
-In contrast, `Parallel` is meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
+In contrast, `~marxs.simulator.Parallel` is meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
   
-`FlatStack` is a special case of the `Sequence` where several flat optical elements are passed by the photons in sequence and all elements are so close to each other, that this can be treated as a single interaction. An example is contamination on a CCD detector, which can be modeled as a Sequence of an `EnergyFilter` and a `FlatDetector`.
+`~marxs.optics.FlatStack` is a special case of the `~marxs.simulator.Sequence` where several flat optical elements are passed by the photons in sequence and all elements are so close to each other, that this can be treated as a single interaction. An example is contamination on a CCD detector, which can be modeled as a Sequence of an `~marxs.optics.EnergyFilter` and a `~marxs.optics.FlatDetector`.
 
-.. autoclass:: Sequence
 
-.. autoclass:: marxs.optics.FlatStack
+Reference / API
+---------------
+.. automodapi:: marxs.optics
 
-.. autoclass:: KeepCol
-
-.. autoclass:: Parallel
-
-.. autosummary::
-   :toctree: API
-
-   Parallel.uncertainty
-   Parallel.elements
-   Parallel.calculate_elempos
-   Parallel.generate_elements
-
+.. automodapi:: marxs.simulator

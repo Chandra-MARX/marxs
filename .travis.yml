@@ -73,8 +73,6 @@ install:
     # section if they are needed before setting up conda) to install any
     # other dependencies.
 
-    # - pip install alabaster --upgrade
-
 matrix:
     include:
 
