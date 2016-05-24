@@ -168,6 +168,24 @@ class RowlandTorus(MarxsElement):
         gradient = np.vstack([dFdx, dFdy, dFdz]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
+    def _plot_mayavi(self, viwer=None):
+        from tvtk.tools import visual
+        trans, rot, zoom, shear = decompose44(self.pos4d)
+        # turn into valid color tuple
+        self.display['color'] = get_color(self.display)
+        # setting color here is more global than in the next line
+        # because this automatically changes the diffuse, ambient, etc. color, too.
+        b = visual.ring(pos=trans, radius=self.R, thickness=self.r,
+                        axis=np.dot([0.,0.,1.], rot),
+                       color=self.display['color'], viewer=viewer)
+        # No safety net here like for color converting to a tuple.
+        # If the advnaced properties are set you are on your own.
+        for n in b.property.trait_names():
+            if n in self.display:
+                setattr(b.property, n, self.display(n))
+        return b
+
+
 def design_tilted_torus(f, alpha, beta):
     '''Design a torus with specifications similar to Heilmann et al. 2010
 
