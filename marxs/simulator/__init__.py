@@ -1,4 +1,4 @@
-from simulator import (SimulationSetupError,
-                       BaseContainer, Sequence, Parallel,
-                       KeepCol,
-                       )
+from .simulator import (SimulationSetupError,
+                        BaseContainer, Sequence, Parallel,
+                        KeepCol,
+                        )
