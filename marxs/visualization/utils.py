@@ -98,5 +98,5 @@ def plane_with_hole(outer, inner):
             i_in += 1
         else:
             triangles[i, :] = [i_out, (i_out + 1) % n_out, n_out + (i_in % n_in)]
-            i_out += 1
+            i_out = (i_out + 1) % n_out
     return xyz, triangles
