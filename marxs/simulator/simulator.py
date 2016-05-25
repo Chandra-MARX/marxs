@@ -1,22 +1,52 @@
 import numpy as np
 from transforms3d.affines import decompose44
 
-from .math.utils import translation2aff, zoom2aff, mat2aff
-from .base import SimulationSequenceElement, _parse_position_keywords
-from .optics.base import OpticalElement
-from .math.pluecker import h2e
+from ..math.utils import translation2aff, zoom2aff, mat2aff
+from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..math.pluecker import h2e
 
 
 class SimulationSetupError(Exception):
     pass
 
 
-class Sequence(SimulationSequenceElement):
-    '''A Sequence is a container that summarizes several optical elements.
+class BaseContainer(SimulationSequenceElement):
+    '''Base class for containers that contain several `SimulationSequenceElement` objects.
+    '''
+
+    elements = []
+    '''List of elements that are contained in this container.'''
+
+    def __init__(self, **kwargs):
+        self.preprocess_steps = kwargs.pop('preprocess_steps', [])
+        self.postprocess_steps = kwargs.pop('postprocess_steps', [])
+        for elem in self.elements + self.preprocess_steps + self.postprocess_steps:
+            if not callable(elem):
+                raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
+        super(BaseContainer, self).__init__(**kwargs)
+
+    def process_photons(self, photons):
+        for elem in self.elements:
+            for p in self.preprocess_steps:
+                p(photons)
+            photons = elem(photons)
+            for p in self.postprocess_steps:
+                p(photons)
+        return photons
+
+    def intersect(self, photons, **kwargs):
+        raise NotImplementedError
+
+    def plot(self, *args, **kwargs):
+        return [elem.plot(*args, **kwargs) for elem in self.elements]
+
+
+class Sequence(BaseContainer):
+    '''A `Sequence` is a container that summarizes several optical elements.
 
     Parameters
     ----------
-    sequence : list
+    elements : list
         The elements of this list are all optical elements that process photons.
     preprocess_steps : list
         The elements of this list are functions or callable objects that accept a photon list as input
@@ -32,8 +62,8 @@ class Sequence(SimulationSequenceElement):
          (*default*: ``[]``).
 
 
-    Example
-    -------
+    Examples
+    --------
     The following example shows a complete marxs simulation.
     First, we import the required modules:
 
@@ -49,7 +79,7 @@ class Sequence(SimulationSequenceElement):
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])
     >>> ccd = optics.FlatDetector(pixsize=0.05)
     >>> sequence = [sky2mission, aper, mirr, ccd]
-    >>> my_instrument = Sequence(sequence=sequence)
+    >>> my_instrument = Sequence(elements=sequence)
 
     Finally, we run one set of photons through the instrument:
 
@@ -66,24 +96,11 @@ class Sequence(SimulationSequenceElement):
     '''
 
     def __init__(self, **kwargs):
-        self.sequence = kwargs.pop('sequence')
-        self.preprocess_steps = kwargs.pop('preprocess_steps', [])
-        self.postprocess_steps = kwargs.pop('postprocess_steps', [])
-        for elem in self.sequence + self.preprocess_steps + self.postprocess_steps:
-            if not callable(elem):
-                raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
+        self.elements = kwargs.pop('elements')
         super(Sequence, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
-        for elem in self.sequence:
-            for p in self.preprocess_steps:
-                p(photons)
-            photons = elem(photons)
-            for p in self.postprocess_steps:
-                p(photons)
-        return photons
 
-class Parallel(OpticalElement):
+class Parallel(BaseContainer):
     '''A container for several identical optical elements.
 
     This object describes a set of similar elements that operate in parallel,
@@ -157,8 +174,8 @@ class Parallel(OpticalElement):
         determine the position of their elements automatically. In this case, they should set
         ``elem_pos=None``.
 
-    Example
-    -------
+    Examples
+    --------
     In this example we build up a detector made up of four CCD. Each CCD is 10 mm * 10 mm
     large and has a pixel size of 0.01 mm. The CCDs are set in a square with small spaces
     in between.
@@ -185,14 +202,8 @@ class Parallel(OpticalElement):
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
     '''
-
-    elements = []
-    '''List of elements that make up the parallel structure.
-
-    Initially, this is an empty list, it will be filled by `generate_elements`.
-    '''
-
     def __init__(self, **kwargs):
+        self.pos4d = _parse_position_keywords(kwargs)
 
         self.elem_class = kwargs.pop('elem_class')
         # Need to operate on a copy here, to avoid changing elem_args of outer level
@@ -297,15 +308,6 @@ class Parallel(OpticalElement):
                 f_pos4d = np.dot(m, f_pos4d)
             self.elements.append(self.elem_class(pos4d = f_pos4d, id_num=i, **specific_elem_args))
 
-
-
-    def process_photons(self, photons):
-        for elem in self.elements:
-            photons = elem(photons)
-        return photons
-
-    def intersect(self, photons):
-        raise NotImplementedError
 
 
 class KeepCol(object):

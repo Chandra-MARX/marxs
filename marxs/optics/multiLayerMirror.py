@@ -38,6 +38,11 @@ class MultiLayerMirror(FlatOpticalElement):
         and fraction polarization for the light used to test the mirrors and create the
         reflectivity file
     '''
+
+    display = {'color': (0., 1., 0.),
+    }
+
+
     def __init__(self, reflFile, testedPolarization, **kwargs):
         self.fileName = reflFile
         self.polFile = testedPolarization

@@ -22,12 +22,12 @@ def test_pre_post_process():
     photons = Table({'energy': [1,1,1]})
     photons.meta['mean_en'] = []
 
-    seq_pre = Sequence(sequence=[set_energy2, set_energy3], preprocess_steps=[process])
+    seq_pre = Sequence(elements=[set_energy2, set_energy3], preprocess_steps=[process])
     tpre = seq_pre(photons.copy())
     assert np.all(tpre['energy'] == 3)
     assert np.all(tpre.meta['mean_en'] == [1, 2])
 
-    seq_post = Sequence(sequence=[set_energy2, set_energy3], postprocess_steps=[process])
+    seq_post = Sequence(elements=[set_energy2, set_energy3], postprocess_steps=[process])
     tpost = seq_post(photons.copy())
     assert np.all(tpost['energy'] == 3)
     assert np.all(tpost.meta['mean_en'] == [2, 3])
@@ -35,11 +35,11 @@ def test_pre_post_process():
 def test_badinput():
     '''Inputs must be callable.'''
     with pytest.raises(SimulationSetupError) as e:
-        seq = Sequence(sequence=[5])
+        seq = Sequence(elements=[5])
     assert "is not callable" in str(e.value)
 
     with pytest.raises(SimulationSetupError) as e:
-        seq = Sequence(sequence=[ThinLens], preprocess_steps=[5])
+        seq = Sequence(elements=[ThinLens], preprocess_steps=[5])
     assert "is not callable" in str(e.value)
 
 # Tests for Parallel could be here, but Parallel is a fairly general container.
@@ -86,6 +86,6 @@ def test_keepcols():
         return t
 
     keeper = KeepCol('a')
-    s = Sequence(sequence=[double_a, double_a], preprocess_steps=[keeper])
+    s = Sequence(elements=[double_a, double_a], preprocess_steps=[keeper])
     t = s(t)
     assert np.all(np.hstack(keeper.data) == [1, 2, 2, 4])

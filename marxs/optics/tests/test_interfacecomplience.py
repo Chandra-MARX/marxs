@@ -35,12 +35,12 @@ all_oe = [ThinLens(focallength=100),
                                            }),
           Baffle(),
           MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
-          Sequence(sequence=[]),
+          Sequence(elements=[]),
           HETG(),
           RadialMirrorScatter(inplanescatter=0.1),
           # not a useful filterfunc, but OK for testing with a few other dependencies
           EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
-          FlatStack(sequence=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
+          FlatStack(elements=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
           ]
 
 # Each elements will be used multiple times.

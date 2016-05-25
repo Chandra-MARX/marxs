@@ -3,10 +3,14 @@ from astropy.table import Column
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
-
+from ..visualization.utils import plane_with_hole, get_color
+from ..math.pluecker import h2e
 
 class BaseAperture(object):
     '''Base Aperture class'''
+
+    display = {'color': (0.0, 0.75, 0.75),
+               'opacity': 0.3}
 
     @staticmethod
     def add_colpos(photons):
@@ -55,6 +59,35 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
 
         return photons
 
+    def _plot_mayavi_inner_shape(self):
+        '''Return values in Eukledean space'''
+        raise NotImplementedError
+
+    def _plot_mayavi(self, viewer=None):
+
+        r_out = self.display.get('outer_factor', 3)
+        g = self.geometry
+        outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                                      h2e(-g['v_y']) + h2e(g['v_z']),
+                                                      h2e(-g['v_y']) - h2e(g['v_z']),
+                                                      h2e( g['v_y']) - h2e(g['v_z'])
+        ])
+        inner = self._plot_mayavi_inner_shape()
+        xyz, triangles = plane_with_hole(outer, inner)
+
+        from mayavi.mlab import triangular_mesh
+
+        # turn into valid color tuple
+        self.display['color'] = get_color(self.display)
+        t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
+        # No safety net here like for color converting to a tuple.
+        # If the advanced properties are set you are on your own.
+        prop = t.module_manager.children[0].actor.property
+        for n in prop.trait_names():
+            if n in self.display:
+                setattr(prop, n, self.display[n])
+        return t
+
 
 class RectangleAperture(FlatAperture):
     '''Select the position where a parallel ray from an astrophysical source starts the simulation.
@@ -69,6 +102,13 @@ class RectangleAperture(FlatAperture):
     def area(self):
         '''Area covered by the aperture'''
         return np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
+
+    def _plot_mayavi_inner_shape(self):
+        g = self.geometry
+        return h2e(g['center']) + np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) - h2e(g['v_z']),
+                                             h2e( g['v_y']) - h2e(g['v_z'])])
 
 
 class CircleAperture(FlatAperture):
@@ -95,3 +135,14 @@ class CircleAperture(FlatAperture):
     def area(self):
         '''Area covered by the aperture'''
         return 2. * np.pi * np.linalg.norm(self.geometry['v_y'])
+
+    def _plot_mayavi_inner_shape(self):
+        n = self.display.get('n_inner_vertices', 90)
+        phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
+        v_y = self.geometry['v_y']
+        v_z = self.geometry['v_z']
+
+        x = np.cos(phi)
+        y = np.sin(phi)
+
+        return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)

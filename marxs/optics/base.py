@@ -3,9 +3,13 @@ from copy import copy
 
 import numpy as np
 from astropy.table import Table, Row
+from transforms3d.affines import decompose44
+
+from marxs.math.pluecker import h2e
 
 from ..math.pluecker import *
 from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..visualization.utils import get_color
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -258,44 +262,60 @@ class FlatOpticalElement(OpticalElement):
         else:
             return super(FlatOpticalElement, self).process_photons(photons)
 
+    def _plot_mayavi(self, viewer=None):
+        from tvtk.tools import visual
+        visual.set_viewer(viewer)
+        trans, rot, zoom, shear = decompose44(self.pos4d)
+        # turn into valid color tuple
+        self.display['color'] = get_color(self.display)
+        # setting color here is more global than in the next line
+        # because this automatically changes the diffuse, ambient, etc. color, too.
+        b = visual.box(pos=trans, size=tuple(zoom * 2), axis=np.dot([1.,0.,0.], rot),
+                       color=self.display['color'], viewer=viewer)
+        # No safety net here like for color converting to a tuple.
+        # If the advnaced properties are set you are on your own.
+        for n in b.property.trait_names():
+            if n in self.display:
+                setattr(b.property, n, self.display[n])
+
 
 class FlatStack(FlatOpticalElement):
     '''Convenience class for several flat, stacked optical elements.
 
     This class is meant to simplify the specification of a single physical
     element, that fullfills several logical functions, e.g. a detector can be seen
-    as a a sequence of a contamination layer (which modified the probability of a photon
-    reching the CCD), a QE filter (which modifies the probability of detecting the photon),
+    as a a sequence of a contamination layer (which modifies the probability of a photon
+    reaching the CCD), a QE filter (which modifies the probability of detecting the photon),
     and the pixelated CCD (which sorts the photons in pixels). All these things can be
-    approximated as happening in the same physical spot, and thus it is convenient to
+    approximated as happening in the same physical spotlocation, and thus it is convenient to
     treat all three functions as one element.
 
     Parameters
     ----------
-    sequence : list of classes
+    elements : list of classes
         List of class names specifying the layers in the stack
     keywords : list of dicts
         Dictionaries specifying the properties of each layer (do not set the position
         of individual elements)
 
-    Example
-    -------
+    Examples
+    --------
     In this example, we will define a single flat CCD with a QE of 0.5 for all energies.
 
     >>> from marxs.optics import FlatStack, EnergyFilter, FlatDetector
     >>> myccd = FlatStack(position=[0, 2, 2], zoom=2,
-    ...     sequence=[EnergyFilter, FlatDetector],
+    ...     elements=[EnergyFilter, FlatDetector],
     ...     keywords=[{'filterfunc': lambda x: 0.5}, {'pixsize': 0.05}])
 
     '''
 
     def __init__(self, **kwargs):
-        sequence = kwargs.pop('sequence')
+        elements = kwargs.pop('elements')
         keywords = kwargs.pop('keywords')
         super(FlatStack, self).__init__(**kwargs)
-        self.sequence = []
-        for elem, k in zip(sequence, keywords):
-            self.sequence.append(elem(pos4d=self.pos4d, **k))
+        self.elements = []
+        for elem, k in zip(elements, keywords):
+            self.elements.append(elem(pos4d=self.pos4d, **k))
 
     def specific_process_photons(self, *args, **kwargs):
         return {}
@@ -318,10 +338,10 @@ class FlatStack(FlatOpticalElement):
             intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
         if intersect.sum() > 0:
             # This line calls FlatOpticalElement.process_photons to add ID cols and local coos
-            # is requested (this could also be done by any of the contained sequence elements,
+            # if requested (this could also be done by any of the contained sequence elements,
             # but we want the user to be able to specify that for either of them).
             photons = super(FlatStack, self).process_photons(photons, intersect, interpos, intercoos)
-            for e in self.sequence:
+            for e in self.elements:
                 photons = e.process_photons(photons, intersect, interpos, intercoos)
 
         return photons

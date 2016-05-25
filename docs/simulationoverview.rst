@@ -1,6 +1,6 @@
-==========================
+***********************
 Design an x-ray mission
-==========================
+***********************
 
 A ray-trace of a new X-ray mission or laboratory experiment is done in several steps:
 

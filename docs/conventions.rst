@@ -1,12 +1,12 @@
-=================================================
+*********************
 Coordinates and units
-=================================================
+*********************
 
 .. _coordsys:
 .. _pos4d:
 
 Coordinate system
------------------
+=================
 Marxs employs a cartesian coordinate system. All optical elements can be freely placed at any position
 and any angle in this space, but we recommend the following conventions for simplicity (examples and
 predefined missions in this pckage follow those conventions as far as possible):
@@ -82,7 +82,7 @@ There are two ways to specify that:
    quaternions and several other representations. This package is installed together with marxs.
   
 Physical units
---------------
+==============
 Most elements of ``marxs`` are scale free, and no specific unit is attached to by the code. However,
 some elements require an explicit scale (e.g. the grating dispersion depends on the grating constant
 and the photon energy), in this case the following conventions apply:
