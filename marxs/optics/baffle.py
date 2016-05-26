@@ -1,6 +1,8 @@
 import numpy as np
 
 from .base import FlatOpticalElement
+from ..math.pluecker import h2e
+from ..visualization.utils import get_color, plane_with_hole
 
 
 class Baffle(FlatOpticalElement):
@@ -47,7 +49,7 @@ class Baffle(FlatOpticalElement):
         t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
         # No safety net here like for color converting to a tuple.
         # If the advanced properties are set you are on your own.
-        for n in b.property.trait_names():
+        for n in t.property.trait_names():
             if n in self.display:
                 setattr(t.module_manager.children[0].actor.property, n, self.display(n))
         return t

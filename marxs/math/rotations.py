@@ -36,8 +36,6 @@ def ex2vec_fix(e1, efix):
     rot[:, 2] = np.cross(rot[:, 0], rot[:, 1])
     return rot
 
-import numpy as np
-
 
 def axangle2mat(axes, angles, is_normalized=False):
     ''' Rotation matrix for rotation angle `angle` around `axis`
