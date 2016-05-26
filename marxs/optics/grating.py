@@ -118,7 +118,7 @@ class FlatGrating(FlatOpticalElement):
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. (*Default*: ``True`` )
     groove_angle : float
-        Angle between the direction of the grooves and the local y axis in radian.
+        Angle between the direction of the grooves and the local z axis in radian.
         (*Default*: ``0.``)
 
     .. warning::
@@ -161,8 +161,8 @@ class FlatGrating(FlatOpticalElement):
         super(FlatGrating, self).__init__(**kwargs)
 
         self.groove4d = axangles.axangle2aff(self.geometry['e_x'][:3], self.groove_ang)
-        self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
-        self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_z'])
+        self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_z'])
+        self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
 
     def diffract_photons(self, photons, intersect):
         '''Vectorized implementation'''

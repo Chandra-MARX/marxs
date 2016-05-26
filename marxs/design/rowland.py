@@ -50,7 +50,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
 
 
 class RowlandTorus(MarxsElement):
-    '''Torus with z axis as symmetry axis.
+    '''Torus with y axis as symmetry axis.
 
     Note that the origin of the torus is the focal point, which is **may or may not**
     be the same as the center of the torus.
@@ -95,7 +95,7 @@ class RowlandTorus(MarxsElement):
         if transform:
             invpos4d = np.linalg.inv(self.pos4d)
             xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
-        return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., :2]**2).sum(axis=-1)
+        return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., [0,2]]**2).sum(axis=-1)
 
     def solve_quartic(self, x=None, y=None, z=None, interval=[0, 1], transform=True):
         '''Solve the quartic for points on the Rowland torus in Cartesian coordinates.
@@ -172,8 +172,9 @@ class RowlandTorus(MarxsElement):
             raise ValueError('Gradient vector field is only defined for points on torus surface.')
         factor = 4. * ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2)
         dFdx = factor * xyz[..., 0] - 8. * self.R**2 * xyz[..., 0]
-        dFdy = factor * xyz[..., 1] - 8. * self.R**2 * xyz[..., 1]
-        dFdz = factor * xyz[..., 2]
+        dFdy = factor * xyz[..., 1]
+        dFdz = factor * xyz[..., 2] - 8. * self.R**2 * xyz[..., 2]
+
         gradient = np.vstack([dFdx, dFdy, dFdz]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
@@ -185,7 +186,7 @@ class RowlandTorus(MarxsElement):
         # setting color here is more global than in the next line
         # because this automatically changes the diffuse, ambient, etc. color, too.
         b = visual.ring(pos=trans, radius=self.R, thickness=self.r,
-                        axis=np.dot([0.,0.,1.], rot),
+                        axis=np.dot([0.,1.,0.], rot),
                         color=self.display['color'], viewer=viewer)
         # No safety net here like for color converting to a tuple.
         # If the advnaced properties are set you are on your own.
@@ -252,8 +253,8 @@ def design_tilted_torus(f, alpha, beta):
     R = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha + gamma) - r
     FCt = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha)
     x_Ct = FCt * np.cos(alpha + gamma)
-    y_Ct = 0
-    z_Ct = FCt * np.sin(alpha + gamma)
+    z_Ct = 0
+    y_Ct = FCt * np.sin(alpha + gamma)
     orientation = transforms3d.axangles.axangle2mat([0,1,0], np.pi/2 - alpha - gamma)
     pos4d = transforms3d.affines.compose([x_Ct, y_Ct, z_Ct], orientation, np.ones(3))
     return R, r, pos4d

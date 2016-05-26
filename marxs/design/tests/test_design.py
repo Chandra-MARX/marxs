@@ -12,8 +12,8 @@ from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
 def parametrictorus(R, r, theta, phi):
     '''Just another way to specify a torus with z-axis as symmetry'''
     x = (R + r * np.cos(theta)) * np.cos(phi)
-    y = (R + r * np.cos(theta)) * np.sin(phi)
-    z = r * np.sin(theta)
+    z = (R + r * np.cos(theta)) * np.sin(phi)
+    y = r * np.sin(theta)
     return np.array([x, y, z]).T
 
 def test_radius_of_photon_shell():
@@ -51,9 +51,9 @@ def test_design_tilted_torus_negative_angles():
     assert R == Rn
     assert r == rn
     assert pos4d[0,3] == pos4dn[0, 3]
-    assert pos4d[1, 3] == 0 # torus in xz plane
-    assert pos4dn[1, 3] == 0
-    assert pos4d[2, 3] == - pos4dn[2, 3]
+    assert pos4d[2, 3] == 0 # torus in xy plane
+    assert pos4dn[2, 3] == 0
+    assert pos4d[1, 3] == - pos4dn[1, 3]
 
 def test_torus():
     '''Test the torus equation for a set of points.
