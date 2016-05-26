@@ -28,7 +28,7 @@ all_oe = [ThinLens(focallength=100),
           FlatDetector(pixsize=2., zoom=100.),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
-          GratingArrayStructure(mytorus, d_facet=0.1, x_range=[0.5, 1.], radius=[0,.5],
+          GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0,.5],
                                 elem_class=FlatGrating,
                                 elem_args={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
