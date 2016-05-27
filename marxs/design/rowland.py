@@ -363,14 +363,15 @@ class LinearCCDArray(Parallel, OpticalElement):
             Polar coordinates in a plane perpendicular to the optical axis (where the
             optical axis is parallel to the x-axis and goes through the origin of the
             `RowlandTorus`.
+            ``angle=0`` conicides with the local y-axis.
 
         Returns
         -------
         xyz : np.array of shape (n, 3)
             Eukledian coordinates in the global coordinate system.
         '''
-        y = radius * np.sin(angle)
-        z = radius * np.cos(angle)
+        y = radius * np.cos(angle)
+        z = radius * np.sin(angle)
         x = self.rowland.solve_quartic(y=y,z=z, interval=self.x_range,
                                        transform=False)
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T

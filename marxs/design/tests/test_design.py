@@ -188,8 +188,8 @@ def test_GratingArrayStructure():
     assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
     center = gas.calc_ideal_center()
-    assert center[1] == 0
-    assert center[2] == (300. + 600.) / 2.
+    assert center[2] == 0
+    assert center[1] == (300. + 600.) / 2.
     assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
@@ -299,6 +299,19 @@ def test_run_photons_through_gas():
         assert set(p[f]).issubset(allfacets)
 
 def test_LinearCCDArray():
+    '''Test an array in default position'''
+    myrowland = RowlandTorus(10000., 10000.)
+    class mock_facet(FlatOpticalElement):
+        pass
+    # Along the way we normally would orient the detector.
+    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                          radius=[-100., 100.], phi=0., elem_class=mock_facet)
+    assert len(ccds.elements) == 7
+    for e in ccds.elements:
+        assert np.allclose([0, 0, 1, 0], e.geometry['e_z'])
+        assert (e.pos4d[3, 0] > 0) and (e.pos4d[3, 0] < 20)
+
+def test_LinearCCDArray_rotatated():
     '''Test an array with different rotations.
 
     In this case, we rotate the Rowland torus by -30 deg and then look for
