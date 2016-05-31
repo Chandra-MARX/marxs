@@ -72,7 +72,7 @@ def test_angle_dependence():
     d = 0.001
     beta = np.deg2rad([0., 5., 10., 20.])
     dir = np.zeros((len(beta), 4))
-    dir[:, 2] = np.sin(beta)
+    dir[:, 1] = np.sin(beta)
     dir[:, 0] = -np.cos(beta)
     pos = np.ones((len(beta), 4))
     photons = Table({'pos': pos,
@@ -84,7 +84,7 @@ def test_angle_dependence():
     g = FlatGrating(d=0.001,  order_selector=constant_order_factory(1), zoom=20)
     p = g(photons)
     # compare sin alpha to expected value: sin(alpha) = sin(beta) + lambda/d
-    alpha = np.arctan2(p['dir'][:, 2], -p['dir'][:, 0])
+    alpha = np.arctan2(p['dir'][:, 1], -p['dir'][:, 0])
     assert np.allclose(np.sin(alpha), np.sin(beta) + 1.2398419292004202e-06/d)
 
 def test_order_dependence():
@@ -99,12 +99,12 @@ def test_order_dependence():
         return np.array([-2, -1, 0, 1, 2]), np.ones(5)
     g = FlatGrating(d=1./500, order_selector=mock_order)
     p = g.process_photons(photons)
-    # grooves run in y direction
-    assert np.allclose(p['dir'][:, 1], 0.)
+    # grooves run in z direction
+    assert np.allclose(p['dir'][:, 2], 0.)
     # positive and negative orders are mirrored
-    assert np.allclose(p['dir'][[0,1], 2], - p['dir'][[4,3], 2])
+    assert np.allclose(p['dir'][[0,1], 1], - p['dir'][[4,3], 1])
     # order 2 is twice as far as order 1 (for theta  small)
-    assert np.abs(p['dir'][4, 2] / p['dir'][3, 2] - 2 ) < 0.00001
+    assert np.abs(p['dir'][4, 1] / p['dir'][3, 1] - 2 ) < 0.00001
 
 def test_energy_dependence():
     '''The grating angle should depend on the photon wavelength <-> energy.'''
@@ -116,11 +116,11 @@ def test_energy_dependence():
                      })
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
     p = g.process_photons(photons)
-    # grooves run in y direction
-    assert np.allclose(p['dir'][:, 1], 0.)
+    # grooves run in z direction
+    assert np.allclose(p['dir'][:, 2], 0.)
     # n lambda = d sin(theta)
     lam = energy2wave / p['energy']
-    theta = np.arctan2(p['dir'][:, 2], p['dir'][:, 0])
+    theta = np.arctan2(p['dir'][:, 1], p['dir'][:, 0])
     assert np.allclose(1. * lam, 1./500. * np.sin(theta))
 
 def test_blaze_dependence():
@@ -130,13 +130,13 @@ def test_blaze_dependence():
         return np.floor(blaze * 10), np.ones_like(energy)
 
     photons = generate_test_photons(2)
-    photons['dir'][1, :] = [-1, 0, 1, 0]
+    photons['dir'][1, :] = [-1,1, 0, 0]
     g = FlatGrating(d=1., order_selector=order_selector, zoom=5)
     p = g(photons)
     assert np.allclose(p['order'], [0, 7])
 
 def test_groove_direction():
-    '''Direction of grooves many not be parallel to y axis.'''
+    '''Direction of grooves may not be parallel to z axis.'''
     photons = generate_test_photons(5)
 
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
@@ -206,10 +206,10 @@ def test_CAT_order_convention():
     m5 = gm.process_photons(photons.copy())
     for g in [gm, gp]:
         assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, 1, -1]))
-    assert p5['dir'][1, 2] > 0
-    assert p5['dir'][2, 2] < 0
-    assert m5['dir'][1, 2] < 0
-    assert m5['dir'][2, 2] > 0
+    assert p5['dir'][1, 1] > 0
+    assert p5['dir'][2, 1] < 0
+    assert m5['dir'][1, 1] < 0
+    assert m5['dir'][2, 1] > 0
 
 
 def test_uniform_efficiency_factory():

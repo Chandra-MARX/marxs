@@ -18,7 +18,7 @@ def test_uncertainty_generation():
     np.random.seed(10)
 
     rowland  = RowlandTorus(5e3, 5e3)
-    gas = GratingArrayStructure(rowland, d_facet=2., x_range=[9e3, 1.1e4],
+    gas = GratingArrayStructure(rowland, d_element=2., x_range=[9e3, 1.1e4],
                                 radius=[2, 15], phi=[0, np.pi],
                                 elem_class=FlatGrating,
                                 elem_args={'d': 2e-4,

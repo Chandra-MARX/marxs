@@ -3,16 +3,23 @@ from scipy.stats import kstest
 import transforms3d
 import pytest
 
-from ..rowland import RowlandTorus, GratingArrayStructure, find_radius_of_photon_shell, design_tilted_torus
-from ...optics.base import OpticalElement
+from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
+                       find_radius_of_photon_shell, design_tilted_torus,
+                       ElementPlacementError)
+from ...optics.base import FlatOpticalElement, OpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
+
+class mock_facet(FlatOpticalElement):
+    '''Lightweight class with no functionality for tests.'''
+    pass
+
 
 def parametrictorus(R, r, theta, phi):
     '''Just another way to specify a torus with z-axis as symmetry'''
     x = (R + r * np.cos(theta)) * np.cos(phi)
-    y = (R + r * np.cos(theta)) * np.sin(phi)
-    z = r * np.sin(theta)
+    z = (R + r * np.cos(theta)) * np.sin(phi)
+    y = r * np.sin(theta)
     return np.array([x, y, z]).T
 
 def test_radius_of_photon_shell():
@@ -50,9 +57,9 @@ def test_design_tilted_torus_negative_angles():
     assert R == Rn
     assert r == rn
     assert pos4d[0,3] == pos4dn[0, 3]
-    assert pos4d[1, 3] == 0 # torus in xz plane
-    assert pos4dn[1, 3] == 0
-    assert pos4d[2, 3] == - pos4dn[2, 3]
+    assert pos4d[2, 3] == 0 # torus in xy plane
+    assert pos4dn[2, 3] == 0
+    assert pos4d[1, 3] == - pos4dn[1, 3]
 
 def test_torus():
     '''Test the torus equation for a set of points.
@@ -176,19 +183,17 @@ def test_GratingArrayStructure():
     can be taken as known-good to prevent regressions later.
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], elem_class=mock_facet)
-    assert gas.max_facets_on_arc(300.) == 12
-    angles = gas.distribute_facets_on_arc(315.) % (2. * np.pi)
+    assert gas.max_elements_on_arc(300.) == 12
+    angles = gas.distribute_elements_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
     assert np.alltrue((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
-    assert gas.max_facets_on_radius() == 10
-    assert np.all(gas.distribute_facets_on_radius() == np.arange(315., 600., 30.))
+    assert gas.max_elements_on_radius() == 10
+    assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
     center = gas.calc_ideal_center()
-    assert center[1] == 0
-    assert center[2] == (300. + 600.) / 2.
+    assert center[2] == 0
+    assert center[1] == (300. + 600.) / 2.
     assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
@@ -207,35 +212,31 @@ def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], elem_class=mock_facet)
-    assert gas.max_facets_on_arc(300.) > 10
+    assert gas.max_elements_on_arc(300.) > 10
     n = len(gas.elem_pos)
     yz = np.empty((n, 2))
     for i, p in enumerate(gas.elem_pos):
         yz[i, :] = p[1:3, 3]
     phi = np.arctan2(yz[:, 1], yz[:, 0])
     ks, pvalue = kstest((phi + np.pi) / (2 * np.pi), 'uniform')
-    assert pvalue > 0.3  # It's not exactly uniform because of finite size of facets.
+    assert pvalue > 0.3  # It's not exactly uniform because of finite size of elements.
 
 def test_GAS_facets_on_radius():
-    '''test distribution of facets on radius for d_r is non-integer multiple of d_facet.'''
+    '''test distribution of elements on radius for d_r is non-integer multiple of d_element.'''
     myrowland = RowlandTorus(1000., 1000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
-    assert np.all(gas.distribute_facets_on_radius() == [320., 380.])
+    assert np.all(gas.distribute_elements_on_radius() == [320., 380.])
     gas.radius = [300., 340.]
-    assert gas.distribute_facets_on_radius() == [320.]
+    assert gas.distribute_elements_on_radius() == [320.]
 
 def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = uniform_efficiency_factory()
     mytorus = RowlandTorus(9e3/2, 9e3/2)
-    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+    mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
-    mygascat = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
+    mygascat = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
     assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.elements[0].geometry['e_x'][:3], mygascat.elements[0].geometry['e_x'][:3]))), 15.)
 
 def test_persistent_facetargs():
@@ -248,7 +249,7 @@ def test_persistent_facetargs():
     # id_col is automatically added in GAS is not present here.
     # So, pass in an id_col to make sure the comparison below will still work.
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff, 'id_col': 'facet'}
-    mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e4,1e5], radius=[5380., 5500.], elem_class=FlatGrating, elem_args=facet_args)
+    mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e4,1e5], radius=[5380., 5500.], elem_class=FlatGrating, elem_args=facet_args)
     assert mygas.elem_args == facet_args
 
 def test_run_photons_through_gas():
@@ -285,7 +286,7 @@ def test_run_photons_through_gas():
             f = 'uuu'
             kwargs = {'id_col': 'yyy'}
 
-        mygas = GratingArrayStructure(mytorus, d_facet=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args=facet_args, **kwargs)
+        mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args=facet_args, **kwargs)
 
         p = mygas(photons.copy())
         indorder = np.isfinite(p['order'])
@@ -296,3 +297,44 @@ def test_run_photons_through_gas():
         # -1 means no hit - passing between facets
         allfacets = set([-1]).union(set(np.arange(len(mygas.elements))))
         assert set(p[f]).issubset(allfacets)
+
+def test_LinearCCDArray():
+    '''Test an array in default position'''
+    myrowland = RowlandTorus(10000., 10000.)
+    # Along the way we normally would orient the detector.
+    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                          radius=[-100., 100.], phi=0., elem_class=mock_facet)
+    assert len(ccds.elements) == 7
+    for e in ccds.elements:
+        assert np.allclose([0, 0, 1, 0], e.geometry['e_z'])
+        assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
+
+    # center ccd is on the optical axis
+    assert np.allclose(ccds.elements[3].geometry['e_y'], [0, 1, 0, 0])
+
+def test_LinearCCDArray_rotatated():
+    '''Test an array with different rotations.
+
+    In this case, we rotate the Rowland torus by -30 deg and then look for
+    the linear array rotated by 30 deg with respect to that, so the position of
+    the CCDs should be parallel to the axis again (which is easy to check).
+    '''
+    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
+    myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
+    # Along the way we normally would orient the detector.
+    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                          radius=[-100., 100.], phi=0., elem_class=mock_facet)
+    assert len(ccds.elements) == 7
+    for e in ccds.elements:
+        assert np.isclose(np.dot([0, 0.8660254, -0.5], e.geometry['e_z'][:3]), 0)
+
+def test_impossible_LinearCCDArray():
+    '''The rotation is chosen such that all requested detector positions are
+    INSIDE the rowland torus
+    '''
+    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
+    myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
+    with pytest.raises(ElementPlacementError) as e:
+        ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                              radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
+    assert 'No intersection with Rowland' in str(e)

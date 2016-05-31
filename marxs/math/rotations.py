@@ -2,7 +2,13 @@ import numpy as np
 from transforms3d.utils import normalized_vector
 
 def ex2vec_fix(e1, efix):
-    '''Rotate x-axis to e1, keeping a vector that is coplanar with fix coplanar.
+    '''Rotate x-axis to e1, use efix to break rotation ambiguity.
+
+    This function calcalates the rotation matrix that rotates the x-axis to
+    ``e1``, i.e. it rotates the normal of the y,z-plane to a new plane where
+    ``e1`` is the normal. This still leaves the rotation angle of the plane
+    free. This function breaks the degeneracy by keeping a vector that is
+    coplanar with the normal and fix coplanar with fix and the new normal.
 
     The purpose of this function is best explained by an example:
     Imagine a plane in the y, z plane. We want to rotate the plane, such that ``e1``
@@ -35,8 +41,6 @@ def ex2vec_fix(e1, efix):
     rot[:, 1] = normalized_vector(efix - np.dot(efix, e1) * e1)
     rot[:, 2] = np.cross(rot[:, 0], rot[:, 1])
     return rot
-
-import numpy as np
 
 
 def axangle2mat(axes, angles, is_normalized=False):
