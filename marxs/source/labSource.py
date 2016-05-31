@@ -1,5 +1,7 @@
 import numpy as np
 from astropy.table import Table, Column
+import transforms3d
+
 
 from ..optics.base import FlatOpticalElement
 from .source import Source
@@ -105,3 +107,74 @@ class LabPointSource(Source):
         photons.add_column(Column(name='dir', data=dir.T))
         photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
         return photons
+
+class LabPointSourceCone(Source):
+    '''In-lab point source
+
+    - photons uniformly distributed in all directions
+    - photon start position is source position
+
+    Parameters
+    ----------
+    position: 3 element list
+        3D coordinates of photon source
+    direction: array
+        direciton is given by a vector [x,y,z]
+        This is the direction of the axis along which the beam travels.
+        It is sufficient to enter any vector that spans the beams axis.
+
+    delta: float 
+        This is half the openning angle of the cone
+
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
+    '''
+    def __init__(self, position, delta, direction=None,  **kwargs):
+
+        self.dir = direction / sqrt(np.dot(direction, direction)) #normalize direction
+        self.position = position
+        self.deltaphi = delta
+        super(LabPointSource, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        photons = super(LabPointSource, self).generate_photons(exposuretime)
+        n = len(photons)
+
+        # assign position to photons
+        pos = np.array([self.position[0] * np.ones(n),
+                        self.position[1] * np.ones(n),
+                        self.position[2] * np.ones(n),
+                        np.ones(n)])
+
+        # randomly choose direction - photons go in all directions from source.
+        #Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
+        #Angle from pole (z-axis = phi). Angle from x-axis is theta
+        #along the pole is the axis of interest.
+        theta = np.random.uniform(0, 2 * np.pi, n);
+        phi = np.random.uniform(-self.deltaphi, self.deltaphi, n)
+        dir = np.array([np.cos(theta) * np.sin(phi),
+                        np.sin(theta) * np.sin(phi),
+                        np.cos(phi),
+                        np.zeros(n)])
+
+
+        #now we have all directions for n photons in dir.
+        #now we rotate dir to align with direction self.dir
+
+        #to find axis of rotation: cross self.dir with z
+        axis = np.cross(self.dir, [0,0,1])
+
+        angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (math.sqrt(np.dot(self.dir, self.dir))*math.sqrt(np.dot([0,0,1],[0,0,1]))))
+
+        rotationMatrix = transforms3d.axangles.axangle2aff(axis, angle)
+
+        #the aligned directions are:
+        dir = np.dot(rotationMatrix,dir)
+
+
+        photons.add_column(Column(name='pos', data=pos.T))
+        photons.add_column(Column(name='dir', data=dir.T))
+        photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
+        return photons
+
