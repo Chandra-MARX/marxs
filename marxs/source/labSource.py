@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.table import Table, Column
 import transforms3d
+import math
 
 
 from ..optics.base import FlatOpticalElement
@@ -111,7 +112,7 @@ class LabPointSource(Source):
 class LabPointSourceCone(Source):
     '''In-lab point source
 
-    - photons uniformly distributed in all directions
+    - photons uniformly distributed in all directions in cone
     - photon start position is source position
 
     Parameters
@@ -132,13 +133,13 @@ class LabPointSourceCone(Source):
     '''
     def __init__(self, position, delta, direction=None,  **kwargs):
 
-        self.dir = direction / sqrt(np.dot(direction, direction)) #normalize direction
+        self.dir = direction / np.sqrt(np.dot(direction, direction)) #normalize direction
         self.position = position
         self.deltaphi = delta
-        super(LabPointSource, self).__init__(**kwargs)
+        super(LabPointSourceCone, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(LabPointSource, self).generate_photons(exposuretime)
+        photons = super(LabPointSourceCone, self).generate_photons(exposuretime)
         n = len(photons)
 
         # assign position to photons
