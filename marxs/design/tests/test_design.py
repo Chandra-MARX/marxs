@@ -4,10 +4,16 @@ import transforms3d
 import pytest
 
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
-                       find_radius_of_photon_shell, design_tilted_torus)
+                       find_radius_of_photon_shell, design_tilted_torus,
+                       ElementPlacementError)
 from ...optics.base import FlatOpticalElement, OpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
+
+class mock_facet(FlatOpticalElement):
+    '''Lightweight class with no functionality for tests.'''
+    pass
+
 
 def parametrictorus(R, r, theta, phi):
     '''Just another way to specify a torus with z-axis as symmetry'''
@@ -177,8 +183,6 @@ def test_GratingArrayStructure():
     can be taken as known-good to prevent regressions later.
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], elem_class=mock_facet)
     assert gas.max_elements_on_arc(300.) == 12
     angles = gas.distribute_elements_on_arc(315.) % (2. * np.pi)
@@ -208,8 +212,6 @@ def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], elem_class=mock_facet)
     assert gas.max_elements_on_arc(300.) > 10
     n = len(gas.elem_pos)
@@ -223,8 +225,6 @@ def test_GratingArrayStructure_2pi():
 def test_GAS_facets_on_radius():
     '''test distribution of elements on radius for d_r is non-integer multiple of d_element.'''
     myrowland = RowlandTorus(1000., 1000.)
-    class mock_facet(OpticalElement):
-        pass
     gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
     assert np.all(gas.distribute_elements_on_radius() == [320., 380.])
     gas.radius = [300., 340.]
@@ -301,15 +301,16 @@ def test_run_photons_through_gas():
 def test_LinearCCDArray():
     '''Test an array in default position'''
     myrowland = RowlandTorus(10000., 10000.)
-    class mock_facet(FlatOpticalElement):
-        pass
     # Along the way we normally would orient the detector.
     ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
         assert np.allclose([0, 0, 1, 0], e.geometry['e_z'])
-        assert (e.pos4d[3, 0] > 0) and (e.pos4d[3, 0] < 20)
+        assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
+
+    # center ccd is on the optical axis
+    assert np.allclose(ccds.elements[3].geometry['e_y'], [0, 1, 0, 0])
 
 def test_LinearCCDArray_rotatated():
     '''Test an array with different rotations.
@@ -318,10 +319,8 @@ def test_LinearCCDArray_rotatated():
     the linear array rotated by 30 deg with respect to that, so the position of
     the CCDs should be parallel to the axis again (which is easy to check).
     '''
-    pos4d = transforms3d.axangles.axangle2aff([1, 0,0], np.deg2rad(-30))
+    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
     myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
-    class mock_facet(FlatOpticalElement):
-        pass
     # Along the way we normally would orient the detector.
     ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
@@ -329,10 +328,13 @@ def test_LinearCCDArray_rotatated():
     for e in ccds.elements:
         assert np.isclose(np.dot([0, 0.8660254, -0.5], e.geometry['e_z'][:3]), 0)
 
-
-    # Test that it works in the rotated geometry, too.
-    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                          radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
-    assert len(ccds.elements) == 7
-    for e in ccds.elements:
-        assert np.isclose(np.dot([0., 0, 1], e.geometry['e_z'][:3]), 0)
+def test_impossible_LinearCCDArray():
+    '''The rotation is chosen such that all requested detector positions are
+    INSIDE the rowland torus
+    '''
+    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
+    myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
+    with pytest.raises(ElementPlacementError) as e:
+        ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                              radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
+    assert 'No intersection with Rowland' in str(e)

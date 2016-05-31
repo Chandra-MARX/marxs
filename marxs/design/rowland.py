@@ -5,6 +5,7 @@ from __future__ import division
 import numpy as np
 from scipy import optimize
 import transforms3d
+from transforms3d.utils import normalized_vector
 
 from ..optics.base import OpticalElement
 from ..base import _parse_position_keywords, MarxsElement
@@ -148,14 +149,25 @@ class RowlandTorus(MarxsElement):
         return val_out
 
 
-    def normal(self, xyz):
+    def normal(self, xyz, origin=np.array([-1., 0, 0])):
         '''Return the gradient vector field.
+
+        Following the usual concentions, the vector is pointing outwards
+        of the torus volume.
 
         Parameters
         ----------
         xyz : np.array of shape (N, 3) or (3)
             Coordinates of points in euklidean space. The quartic is calculated for
             those points. All points need to be on the surface of the torus.
+        origin : np.array or string
+            For a torus with ``r=R`` the normal at the center is ambiguous because it
+            is touched by all Rowland circles. When designing an X-ray telescope,
+            one usually considers the Rowland circle that points towards the optical
+            axis at this point. ``origin`` sets the normal to be returned for this point.
+            If ``origin="raise"`` it will raise an error instead if asked to
+            calculate an ambiguous normal.
+            This parameter has no effect to tori with ``r != R``.
 
         Returns
         -------
@@ -176,7 +188,46 @@ class RowlandTorus(MarxsElement):
         dFdz = factor * xyz[..., 2] - 8. * self.R**2 * xyz[..., 2]
 
         gradient = np.vstack([dFdx, dFdy, dFdz]).T
+        index = np.where(np.sum(np.abs(gradient), axis=1) == 0)[0]
+        if len(index) > 0:
+            if origin == "raise":
+                raise ValueError("Ambiguous normal at {0}".format(xyz[index, :]))
+            elif len(origin) == 3:
+                for i in index:
+                    gradient[i, :] = origin
+            else:
+                raise ValueError("'origin' must be 'raise' or Eukledian vector.")
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
+
+    def xyz_from_radiusangle(self, radius, angle, interval):
+        '''Get Cartesian coordiantes for radius, angle on the rowland circle.
+
+        y, z are calculated from the radius and angle of polar coordiantes in a plane;
+        then x is determined from the condition that the point lies on the Rowland circle.
+        The plane is perpendicual to the optical axis that defines the Rowland circle.
+
+        Parameters
+        ----------
+        radius, angle : float or np.array of shape (n,)
+            Polar coordinates in a plane perpendicular to the optical axis (where the
+            optical axis is parallel to the x-axis and goes through the origin of the
+            `RowlandTorus`.
+            ``angle=0`` conicides with the local y-axis.
+        interval : np.array
+            [min, max] for the search. The quartic can have up to for solutions because a
+            line can intersect a torus in four points and this interval must bracket one and only
+            one solution.
+
+        Returns
+        -------
+        xyz : np.array of shape (n, 3)
+            Eukledian coordinates in the global coordinate system.
+        '''
+        y = radius * np.cos(angle)
+        z = radius * np.sin(angle)
+        x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
+        xyz = np.vstack([x,y,z, np.ones_like(x)]).T
+        return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
 
     def _plot_mayavi(self, viewer=None):
         from tvtk.tools import visual
@@ -260,7 +311,7 @@ def design_tilted_torus(f, alpha, beta):
     return R, r, pos4d
 
 
-class FacetPlacementError(Exception):
+class ElementPlacementError(Exception):
     pass
 
 
@@ -351,31 +402,6 @@ class LinearCCDArray(Parallel, OpticalElement):
         n = self.max_elements_on_radius()
         return np.mean(self.radius) + np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element
 
-    def xyz_from_ra(self, radius, angle):
-        '''Get Cartesian coordiantes for radius, angle and the rowland circle.
-
-        y,z are calculated from the radius and angle of polar coordiantes in a plane;
-        then x is determined from the condition that the point lies on the Rowland circle.
-
-        Parameters
-        ----------
-        radius, angle : float or np.array of shape (n,)
-            Polar coordinates in a plane perpendicular to the optical axis (where the
-            optical axis is parallel to the x-axis and goes through the origin of the
-            `RowlandTorus`.
-            ``angle=0`` conicides with the local y-axis.
-
-        Returns
-        -------
-        xyz : np.array of shape (n, 3)
-            Eukledian coordinates in the global coordinate system.
-        '''
-        y = radius * np.cos(angle)
-        z = radius * np.sin(angle)
-        x = self.rowland.solve_quartic(y=y,z=z, interval=self.x_range,
-                                       transform=False)
-        xyz = np.vstack([x,y,z, np.ones_like(x)]).T
-        return h2e(np.einsum('...ij,...j', self.rowland.pos4d, xyz))
 
     def calculate_elempos(self):
         '''Calculate ideal element positions based on rowland geometry.
@@ -389,18 +415,28 @@ class LinearCCDArray(Parallel, OpticalElement):
         '''
         pos4d = []
         radii = self.distribute_elements_on_radius()
-        for r in radii:
-            facet_pos = self.xyz_from_ra(r, self.phi).flatten()
-            if self.tangent_to_torus:
-                facet_normal = np.array(self.rowland.normal(facet_pos))
+        # Line along which the detectors are placed
+        try:
+            line = self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range)
+            for r in radii:
+                facet_pos = self.rowland.xyz_from_radiusangle(r, self.phi, self.x_range).flatten()
+                if self.tangent_to_torus:
+                    facet_normal = self.rowland.normal(facet_pos)
+                else:
+                    facet_normal = facet_pos
+                # rotate such that one edge is parallel to the line
+                perp_edge = np.cross(line, facet_normal)
+                rot_mat = np.zeros((3,3))
+                rot_mat[:, 0] = facet_normal
+                rot_mat[:, 1] = normalized_vector(line)
+                rot_mat[:, 2] = normalized_vector(np.cross(rot_mat[:, 1], rot_mat[:, 0]))
+                pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
+        except ValueError as e:
+            if 'f(a) and f(b) must have different signs' in str(e):
+                raise ElementPlacementError('No intersection with Rowland torus in range {0}'.format(self.x_range))
             else:
-                facet_normal = facet_pos
-            # rotate such that one edge is parallel to the line
-            line = self.xyz_from_ra(1, self.phi).flatten() - self.xyz_from_ra(r, self.phi).flatten()
-            perp_edge = np.cross(line, facet_normal)
-            rot_mat = ex2vec_fix(facet_normal, np.array(perp_edge))
-
-            pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
+                # Something else went wrong
+                raise e
         return pos4d
 
 
@@ -465,7 +501,7 @@ class GratingArrayStructure(LinearCCDArray):
         anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
         a = (self.phi[0] + anglediff / 2 ) % (2. * np.pi)
         r = sum(self.radius) / 2
-        return self.xyz_from_ra(r, a).flatten()
+        return self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten()
 
     def anglediff(self):
         '''Angles range covered by elements, accounting for 2 pi properly'''
@@ -529,7 +565,7 @@ class GratingArrayStructure(LinearCCDArray):
         for r in radii:
             angles = self.distribute_elements_on_arc(r)
             for a in angles:
-                element_pos = self.xyz_from_ra(r, a).flatten()
+                element_pos = self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten()
                 if self.tangent_to_torus:
                     element_normal = np.array(self.rowland.normal(element_pos))
                 else:
