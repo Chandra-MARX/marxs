@@ -64,6 +64,11 @@ class RowlandTorus(MarxsElement):
     r : float
         Radius of Rowland circle
     '''
+
+    display = {'color': (0.8, 0.8, 0.),
+               'opacity': 0.2}
+
+
     def __init__(self, R, r, **kwargs):
         self.R = R
         self.r = r
@@ -148,6 +153,31 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
+    def parametric(self, theta, phi):
+        '''Parametric description of the torus.
+
+        This is just another way to obtain the shape of the torus, e.g.
+        for visualization.
+
+        Parameters
+        ----------
+        theta : np.array
+            Points on the Rowland circle (specified in rad, where 0 is on the
+            optical axis across from the focal point).
+        phi : np.array
+            ``phi`` rotates the Rowland circle to make up the Rowland torus.
+
+        Returns
+        -------
+        xyzw : np.array
+            Torus coordinates in global homogeneous coordinate system.
+        '''
+        x = (self.R + self.r * np.cos(theta)) * np.cos(phi)
+        z = (self.R + self.r * np.cos(theta)) * np.sin(phi)
+        y = self.r * np.sin(theta)
+        w = np.ones_like(z)
+        torus = np.array([x, y, z, w]).T
+        return np.einsum('...ij,...j', self.pos4d, torus)
 
     def normal(self, xyz, origin=np.array([-1., 0, 0])):
         '''Return the gradient vector field.
@@ -229,22 +259,26 @@ class RowlandTorus(MarxsElement):
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
 
-    def _plot_mayavi(self, viewer=None):
-        from tvtk.tools import visual
-        trans, rot, zoom, shear = transforms3d.affines.decompose44(self.pos4d)
+    def _plot_mayavi(self, theta, phi, viewer=None, *args, **kwargs):
+        from mayavi.mlab import mesh
+        if (theta.ndim != 2) or (theta.shape != phi.shape):
+            raise ValueError('"theta" and "phi" must have same 2-dim shape.')
+        xyz = h2e(self.parametric(theta.flatten(), phi.flatten()))
+        x = xyz[:, 0].reshape(theta.shape)
+        y = xyz[:, 1].reshape(theta.shape)
+        z = xyz[:, 2].reshape(theta.shape)
+
         # turn into valid color tuple
         self.display['color'] = get_color(self.display)
-        # setting color here is more global than in the next line
-        # because this automatically changes the diffuse, ambient, etc. color, too.
-        b = visual.ring(pos=trans, radius=self.R, thickness=self.r,
-                        axis=np.dot([0.,1.,0.], rot),
-                        color=self.display['color'], viewer=viewer)
+        m = mesh(x, y, z, figure=viewer, color=self.display['color'])
+
         # No safety net here like for color converting to a tuple.
-        # If the advnaced properties are set you are on your own.
-        for n in b.property.trait_names():
+        # If the advanced properties are set you are on your own.
+        prop = m.module_manager.children[0].actor.property
+        for n in prop.trait_names():
             if n in self.display:
-                setattr(b.property, n, self.display(n))
-        return b
+                setattr(prop, n, self.display[n])
+        return m
 
 
 def design_tilted_torus(f, alpha, beta):
@@ -306,7 +340,7 @@ def design_tilted_torus(f, alpha, beta):
     x_Ct = FCt * np.cos(alpha + gamma)
     z_Ct = 0
     y_Ct = FCt * np.sin(alpha + gamma)
-    orientation = transforms3d.axangles.axangle2mat([0,1,0], np.pi/2 - alpha - gamma)
+    orientation = transforms3d.axangles.axangle2mat([0, 0, -1], np.pi/2 - alpha - gamma)
     pos4d = transforms3d.affines.compose([x_Ct, y_Ct, z_Ct], orientation, np.ones(3))
     return R, r, pos4d
 

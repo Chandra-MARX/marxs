@@ -6,21 +6,14 @@ import pytest
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        find_radius_of_photon_shell, design_tilted_torus,
                        ElementPlacementError)
-from ...optics.base import FlatOpticalElement, OpticalElement
+from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
+from ...math.pluecker import h2e
 
 class mock_facet(FlatOpticalElement):
     '''Lightweight class with no functionality for tests.'''
     pass
-
-
-def parametrictorus(R, r, theta, phi):
-    '''Just another way to specify a torus with z-axis as symmetry'''
-    x = (R + r * np.cos(theta)) * np.cos(phi)
-    z = (R + r * np.cos(theta)) * np.sin(phi)
-    y = r * np.sin(theta)
-    return np.array([x, y, z]).T
 
 def test_radius_of_photon_shell():
     mysource = PointSource((30., 30.), flux=1., energy=1.)
@@ -49,6 +42,8 @@ def test_design_tilted_torus():
     assert r == 5.0068617299896054
     assert R == 4.9794336175561327
     assert pos4d[0,3] == 0.027390523158633273
+    # The z axis should be unchanged
+    assert np.allclose(pos4d[[0,1],2], 0)
 
 def test_design_tilted_torus_negative_angles():
     '''Tilt the torus the other way. Should be same geometry in general.'''
@@ -62,10 +57,7 @@ def test_design_tilted_torus_negative_angles():
     assert pos4d[1, 3] == - pos4dn[1, 3]
 
 def test_torus():
-    '''Test the torus equation for a set of points.
-
-    Importantly, we use a parametric description of the torus here, which is
-    different from the actual implementation.
+    '''Compare parametric equation of torus with non-parametric.
     '''
     R = 2.
     r = 1.
@@ -74,8 +66,10 @@ def test_torus():
     phi, theta = np.meshgrid(angle, angle)
     phi = phi.flatten()
     theta = theta.flatten()
-    xyz = parametrictorus(R, r, theta, phi)
     mytorus = RowlandTorus(R=R, r=r)
+
+    xyzw = mytorus.parametric(theta, phi)
+    xyz = h2e(xyzw)
 
     assert np.allclose(mytorus.quartic(xyz), 0.)
     # This torus has pos4d=eye(4), so the same results should come out with this shortcut
@@ -83,8 +77,10 @@ def test_torus():
 
 def test_torus_solve_quartic():
     '''solve_quartic helps to find point on the torus if two coordinates are fixed.'''
-    xyz = parametrictorus(2., 1., [.34, 1.23], [.4, 4.5])
     mytorus = RowlandTorus(2., 1.)
+    xyzw = mytorus.parametric([.34, 1.23], [.4, 4.5])
+    xyz = h2e(xyzw)
+
     for i in [0, 1]:
         for j in range(3):
             kwargs = {'x': xyz[i, 0], 'y': xyz[i, 1], 'z': xyz[i, 2],
@@ -108,6 +104,13 @@ def test_rotated_torus():
     Importantly, we use a parametric description of the torus here, which is
     different from the actual implementation.
     '''
+    def parametrictorus(R, r, theta, phi):
+        '''Just another way to specify a torus with y-axis as symmetry'''
+        x = (R + r * np.cos(theta)) * np.cos(phi)
+        z = (R + r * np.cos(theta)) * np.sin(phi)
+        y = r * np.sin(theta)
+        return np.array([x, y, z]).T
+
     angle = np.arange(0, 2 * np.pi, 0.1)
     phi, theta = np.meshgrid(angle, angle)
     phi = phi.flatten()
@@ -117,11 +120,14 @@ def test_rotated_torus():
     #   x -> z
     #   z -> -x
     rotatedxyz = np.zeros_like(xyz)
-    rotatedxyz[:, 0] = xyz[:, 2]
+    rotatedxyz[:, 0] = -xyz[:, 2]
     rotatedxyz[:, 1] = xyz[:, 1]
-    rotatedxyz[:, 2] = -xyz[:, 0]
+    rotatedxyz[:, 2] = xyz[:, 0]
     mytorus = RowlandTorus(R=2., r=1., orientation=transforms3d.axangles.axangle2mat([0,1,0], -np.pi/2))
+
     assert np.allclose(mytorus.quartic(rotatedxyz), 0.)
+
+    assert np.allclose(rotatedxyz, h2e(mytorus.parametric(theta, phi)))
 
 
 def test_torus_normal():
@@ -137,17 +143,18 @@ def test_torus_normal():
     phi, theta = np.meshgrid(angle, angle)
     phi = phi.flatten()
     theta = theta.flatten()
-    xyz = parametrictorus(R, r, theta, phi)
-    t1 = parametrictorus(R, r, theta + 0.001, phi)
-    p1 = parametrictorus(R, r, theta, phi + 0.001)
-    t0 = parametrictorus(R, r, theta - 0.001, phi)
-    p0 = parametrictorus(R, r, theta, phi + 0.001)
-
     mytorus = RowlandTorus(R=R, r=r)
-    vec_normal = mytorus.normal(xyz)
 
-    vec_delta_theta = t1 - t0
-    vec_delta_phi = p1 - p0
+    xyz = mytorus.parametric(theta, phi)
+    t1 = mytorus.parametric(theta + 0.001, phi)
+    p1 = mytorus.parametric(theta, phi + 0.001)
+    t0 = mytorus.parametric(theta - 0.001, phi)
+    p0 = mytorus.parametric(theta, phi + 0.001)
+
+    vec_normal = mytorus.normal(h2e(xyz))
+
+    vec_delta_theta = h2e(t1) - h2e(t0)
+    vec_delta_phi = h2e(p1) - h2e(p0)
 
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_phi), 0.)
