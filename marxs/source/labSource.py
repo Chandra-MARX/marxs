@@ -1,8 +1,6 @@
 import numpy as np
 from astropy.table import Table, Column
 import transforms3d
-import math
-
 
 from ..optics.base import FlatOpticalElement
 from .source import Source
@@ -66,6 +64,7 @@ class LabPointSource(Source):
         In many cases, it is sufficient to simulate photons for one hemisphere. In this case, the
         parameter ``direction`` can reduce the runtime by reducing the number of photons that are
         not relevant for the simulation.
+
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
@@ -112,21 +111,19 @@ class LabPointSource(Source):
 class LabPointSourceCone(Source):
     '''In-lab point source
 
-    - photons uniformly distributed in all directions in cone
-    - photon start position is source position
+    - Photons are uniformly distributed in all directions in cone (from the point). Cone is meant to refer to the volume swept out by a solid angle in a sphere.
+    - Photon start position is source position (center of the sphere = tip of cone)
 
     Parameters
     ----------
     position: 3 element list
         3D coordinates of photon source
     direction: array
-        direciton is given by a vector [x,y,z]
+        Direciton is given by a vector [x,y,z]
         This is the direction of the axis along which the beam travels.
         It is sufficient to enter any vector that spans the beams axis.
-
     delta: float 
-        This is half the openning angle of the cone
-
+        This is half the openning angle of the cone. It is given in steradians.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
@@ -150,10 +147,13 @@ class LabPointSourceCone(Source):
 
         # randomly choose direction - photons go in all directions from source.
         #Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
-        #Angle from pole (z-axis = phi). Angle from x-axis is theta
-        #along the pole is the axis of interest.
+        #Angle from pole (z-axis) = phi. Angle from x-axis is theta
+        #along the pole is the axis of interest i.e. beamline.
         theta = np.random.uniform(0, 2 * np.pi, n);
-        phi = np.random.uniform(-self.deltaphi, self.deltaphi, n)
+        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the surface area swept out by delta
+        v = np.random.uniform(0, fractionalArea, n)
+        phi = np.arccos(1 - 2 * v)
+        #for computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
         dir = np.array([np.cos(theta) * np.sin(phi),
                         np.sin(theta) * np.sin(phi),
                         np.cos(phi),
@@ -162,11 +162,11 @@ class LabPointSourceCone(Source):
 
         #now we have all directions for n photons in dir.
         #now we rotate dir to align with direction self.dir
-
         #to find axis of rotation: cross self.dir with z
-        axis = np.cross(self.dir, [0,0,1])
+        axis = np.cross(self.dir, [0, 0, 1])
 
-        angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (math.sqrt(np.dot(self.dir, self.dir))*math.sqrt(np.dot([0,0,1],[0,0,1]))))
+        #angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (np.sqrt(np.dot(self.dir, self.dir))*np.sqrt(np.dot([0,0,1],[0,0,1]))))
+        angle = np.arccos(self.dir[2]) #
 
         rotationMatrix = transforms3d.axangles.axangle2aff(axis, angle)
 
