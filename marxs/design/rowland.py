@@ -453,7 +453,7 @@ class LinearCCDArray(Parallel, OpticalElement):
         radii = self.distribute_elements_on_radius()
         # Line along which the detectors are placed
         try:
-            line = self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range)
+            line = normalized_vector(self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range))
             for r in radii:
                 facet_pos = self.rowland.xyz_from_radiusangle(r, self.phi, self.x_range).flatten()
                 if self.tangent_to_torus:
@@ -461,11 +461,11 @@ class LinearCCDArray(Parallel, OpticalElement):
                 else:
                     facet_normal = facet_pos
                 # rotate such that one edge is parallel to the line
-                perp_edge = np.cross(line, facet_normal)
                 rot_mat = np.zeros((3,3))
-                rot_mat[:, 0] = facet_normal
-                rot_mat[:, 1] = normalized_vector(line)
-                rot_mat[:, 2] = normalized_vector(np.cross(rot_mat[:, 1], rot_mat[:, 0]))
+                rot_mat[0, :] = - facet_normal
+                # Get the part of line that's orthogonal to facet_normal
+                rot_mat[1, :] = line - rot_mat[0, :] * np.dot(rot_mat[0, :], line)
+                rot_mat[2, :] = normalized_vector(np.cross(rot_mat[0, :], rot_mat[1, :]))
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
         except ValueError as e:
             if 'f(a) and f(b) must have different signs' in str(e):

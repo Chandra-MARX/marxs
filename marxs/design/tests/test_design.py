@@ -323,9 +323,9 @@ def test_LinearCCDArray():
 def test_LinearCCDArray_rotatated():
     '''Test an array with different rotations.
 
-    In this case, we rotate the Rowland torus by -30 deg and then look for
-    the linear array rotated by 30 deg with respect to that, so the position of
-    the CCDs should be parallel to the axis again (which is easy to check).
+    In this case, we rotate the Rowland torus by -30 deg and then
+    check that the e_z vector is rotated 30 deg with respect to the
+    coordinate system.
     '''
     pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
     myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
@@ -334,7 +334,7 @@ def test_LinearCCDArray_rotatated():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.isclose(np.dot([0, 0.8660254, -0.5], e.geometry['e_z'][:3]), 0)
+        assert np.isclose(np.dot([0, 0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
 
 def test_impossible_LinearCCDArray():
     '''The rotation is chosen such that all requested detector positions are
