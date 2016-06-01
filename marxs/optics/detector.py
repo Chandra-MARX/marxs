@@ -59,4 +59,4 @@ class FlatDetector(FlatOpticalElement):
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         detx = intercoos[intersect, 0] / self.pixsize + self.centerpix[0]
         dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
-        return {self.detpix_name[0]: detx, self.detpixname[1]: dety}
+        return {self.detpix_name[0]: detx, self.detpix_name[1]: dety}
