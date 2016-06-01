@@ -314,7 +314,8 @@ def test_LinearCCDArray():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.allclose([0, 0, 1, 0], e.geometry['e_z'])
+        # For this test we don't care if z and e_z are parallel or antiparallel
+        assert np.isclose(np.abs(np.dot([0, 0, 1, 0], e.geometry['e_z'])), 1.)
         assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
 
     # center ccd is on the optical axis
@@ -334,7 +335,7 @@ def test_LinearCCDArray_rotatated():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.isclose(np.dot([0, 0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
+        assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
 
 def test_impossible_LinearCCDArray():
     '''The rotation is chosen such that all requested detector positions are

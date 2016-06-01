@@ -65,7 +65,7 @@ class RowlandTorus(MarxsElement):
         Radius of Rowland circle
     '''
 
-    display = {'color': (0.8, 0.8, 0.),
+    display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2}
 
 
@@ -462,7 +462,7 @@ class LinearCCDArray(Parallel, OpticalElement):
                     facet_normal = facet_pos
                 # rotate such that one edge is parallel to the line
                 rot_mat = np.zeros((3,3))
-                rot_mat[0, :] = - facet_normal
+                rot_mat[0, :] = facet_normal
                 # Get the part of line that's orthogonal to facet_normal
                 rot_mat[1, :] = line - rot_mat[0, :] * np.dot(rot_mat[0, :], line)
                 rot_mat[2, :] = normalized_vector(np.cross(rot_mat[0, :], rot_mat[1, :]))
