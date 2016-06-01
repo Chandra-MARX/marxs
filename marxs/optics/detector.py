@@ -38,6 +38,9 @@ class FlatDetector(FlatOpticalElement):
     loc_coos_name = ['det_x', 'det_y']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
+    detpix_name = ['detpix_x', 'detpix_y']
+    '''name for output columns that contain this pixel number.'''
+
     display = {'color': (1.0, 1.0, 0.)}
 
     def __init__(self, pixsize=1, **kwargs):
@@ -56,4 +59,4 @@ class FlatDetector(FlatOpticalElement):
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         detx = intercoos[intersect, 0] / self.pixsize + self.centerpix[0]
         dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
-        return {'detpix_x': detx, 'detpix_y': dety}
+        return {self.detpix_name[0]: detx, self.detpixname[1]: dety}

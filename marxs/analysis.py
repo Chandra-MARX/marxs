@@ -53,7 +53,7 @@ def sigma_clipped_std(data, **kwargs):
 
 def find_best_detector_position(photons, col='det_y', objective_func=sigma_clipped_std,
                                 orientation=np.eye(3), **kwargs):
-    '''Numerically optimize the position of a detector to find the position of best focus/
+    '''Numerically optimize the position of a detector to find the position of best focus.
 
     This routine places detectors at different positions and calculates the width of the
     photon distribution for each position.
@@ -90,8 +90,14 @@ def find_best_detector_position(photons, col='det_y', objective_func=sigma_clipp
 
 
 def fwhm_per_order(gas, photons, orders=np.arange(-11,-1)):
-    '''loop over grating orders and calculate FWHM in every order.
+    '''Loop over grating orders and calculate FWHM in every order.
 
+    As input this function takes a Grating Array Structure (``gas``) and a list of photons
+    ready to hit the grating, i.e. the photons have already passed through aperture and
+    mirror in e.g. a Chandra-like design. The function will take the same input photons and
+    send them through the gas looping over the grating orders. In each step of the loop all
+    photons are send to the same order, thus the statistics uncertainty on the measured FWHM
+    is the same for every order and is set by the number of photons in the input list.
     For every order the detector position will be optimized numerically to give the smallest
     FWHM by moving it along the x-axis.
     As a side effect, the function that selects the grating orders for diffraction in ``gas``
