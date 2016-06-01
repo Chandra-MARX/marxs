@@ -12,6 +12,7 @@ from ..base import _parse_position_keywords, MarxsElement
 from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.pluecker import e2h, h2e
+from ..math.utils import anglediff
 from ..simulator import Parallel
 from ..visualization.utils import get_color
 
@@ -65,7 +66,7 @@ class RowlandTorus(MarxsElement):
         Radius of Rowland circle
     '''
 
-    display = {'color': (0.8, 0.8, 0.),
+    display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2}
 
 
@@ -227,6 +228,8 @@ class RowlandTorus(MarxsElement):
                     gradient[i, :] = origin
             else:
                 raise ValueError("'origin' must be 'raise' or Eukledian vector.")
+
+        gradient = gradient / np.linalg.norm(gradient, axis=1)[:, None]
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
     def xyz_from_radiusangle(self, radius, angle, interval):
@@ -451,7 +454,7 @@ class LinearCCDArray(Parallel, OpticalElement):
         radii = self.distribute_elements_on_radius()
         # Line along which the detectors are placed
         try:
-            line = self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range)
+            line = normalized_vector(self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range))
             for r in radii:
                 facet_pos = self.rowland.xyz_from_radiusangle(r, self.phi, self.x_range).flatten()
                 if self.tangent_to_torus:
@@ -459,11 +462,11 @@ class LinearCCDArray(Parallel, OpticalElement):
                 else:
                     facet_normal = facet_pos
                 # rotate such that one edge is parallel to the line
-                perp_edge = np.cross(line, facet_normal)
                 rot_mat = np.zeros((3,3))
-                rot_mat[:, 0] = facet_normal
-                rot_mat[:, 1] = normalized_vector(line)
-                rot_mat[:, 2] = normalized_vector(np.cross(rot_mat[:, 1], rot_mat[:, 0]))
+                rot_mat[0, :] = facet_normal
+                # Get the part of line that's orthogonal to facet_normal
+                rot_mat[1, :] = line - rot_mat[0, :] * np.dot(rot_mat[0, :], line)
+                rot_mat[2, :] = normalized_vector(np.cross(rot_mat[0, :], rot_mat[1, :]))
                 pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
         except ValueError as e:
             if 'f(a) and f(b) must have different signs' in str(e):
@@ -532,18 +535,9 @@ class GratingArrayStructure(LinearCCDArray):
 
     def calc_ideal_center(self):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
-        anglediff = (self.phi[1] - self.phi[0]) % (2. * np.pi)
-        a = (self.phi[0] + anglediff / 2 ) % (2. * np.pi)
+        a = (self.phi[0] + anglediff(self.phi) / 2 ) % (2. * np.pi)
         r = sum(self.radius) / 2
         return self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten()
-
-    def anglediff(self):
-        '''Angles range covered by elements, accounting for 2 pi properly'''
-        anglediff = (self.phi[1] - self.phi[0])
-        if (anglediff < 0.) or (anglediff > (2. * np.pi)):
-            # If anglediff == 2 pi exactly, presumably the user want to cover the full circle.
-            anglediff = anglediff % (2. * np.pi)
-        return anglediff
 
     def max_elements_on_arc(self, radius):
         '''Calculate maximal number of elements that can be placed at a certain radius.
@@ -553,7 +547,7 @@ class GratingArrayStructure(LinearCCDArray):
         radius : float
             Radius of circle where the centers of all elements will be placed.
         '''
-        return radius * self.anglediff() // self.d_element
+        return radius * anglediff(self.phi) // self.d_element
 
     def distribute_elements_on_arc(self, radius):
         '''Distribute elements on an arc.
@@ -580,7 +574,7 @@ class GratingArrayStructure(LinearCCDArray):
         n = self.max_elements_on_arc(radius - self.d_element / 2)
         element_angle = self.d_element / (2. * np.pi * radius)
         # thickness of space between elements, distributed equally
-        d_between = (self.anglediff() - n * element_angle) / (n + 1)
+        d_between = (anglediff(self.phi) - n * element_angle) / (n + 1)
         centerangles = d_between + 0.5 * element_angle + np.arange(n) * (d_between + element_angle)
         return (self.phi[0] + centerangles) % (2. * np.pi)
 

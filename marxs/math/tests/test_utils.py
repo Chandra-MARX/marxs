@@ -36,3 +36,8 @@ def test_normalize():
     for i in range(5):
         vecout[i, :] = vec[i, :] / np.linalg.norm(vec[i, :])
     assert np.allclose(vecout, utils.norm_vector(vec))
+
+def test_anglediff():
+    assert np.isclose(utils.anglediff([0, 3.]), 3.)
+    assert np.isclose(utils.anglediff([-1, 1]), 2.)
+    assert np.isclose(utils.anglediff([1., -1.]), 2 * np.pi - 2.)

@@ -5,6 +5,7 @@ from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..visualization.utils import plane_with_hole, get_color
 from ..math.pluecker import h2e
+from ..math.utils import anglediff
 
 class BaseAperture(object):
     '''Base Aperture class'''
@@ -118,10 +119,25 @@ class CircleAperture(FlatAperture):
     At this point, the aperture must have the same zoom in y and z direction; it cannot be used
     to simulate an entrance ellipse.
 
-
+    Parameters
+    ----------
+    phi : list of 2 floats
+        Bounding angles for a segment covered by the GSA. :math:`\phi=0`
+        is on the positive y axis. The segment fills the space from ``phi1`` to
+        ``phi2`` in the usual mathematical way (counterclockwise).
+        Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
+        the segment crosses the y axis.
+        (Default is the full circle.)
     '''
+    def __init__(self, **kwargs):
+        phi = kwargs.pop('phi', [0, 2. * np.pi])
+        if np.max(np.abs(phi)) > 10:
+            raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
+        self.phi = phi
+        super(CircleAperture, self).__init__(**kwargs)
+
     def generate_local_xy(self, n):
-        phi = np.random.random(n) * 2. * np.pi
+        phi = np.random.uniform(self.phi[0], self.phi[1], n)
         r = np.sqrt(np.random.random(n))
         if not np.isclose(np.linalg.norm(self.geometry['v_y']),
                         np.linalg.norm(self.geometry['v_z'])):
@@ -144,5 +160,12 @@ class CircleAperture(FlatAperture):
 
         x = np.cos(phi)
         y = np.sin(phi)
+        # phi could be less then full circle
+        # wrap phi at lower bound (which could be negative).
+        # For the default [0, 2 pi] this is a no-op
+        phi = (phi - self.phi[0]) % (2 * np.pi)
+        ind = phi < anglediff(self.phi)
+        x[~ind] = 0
+        y[~ind] = 0
 
         return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)

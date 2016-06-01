@@ -156,6 +156,7 @@ def test_torus_normal():
     vec_delta_theta = h2e(t1) - h2e(t0)
     vec_delta_phi = h2e(p1) - h2e(p0)
 
+    assert np.allclose(np.sqrt(np.sum(vec_normal * vec_normal, axis=1)), 1.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_phi), 0.)
 
@@ -313,7 +314,8 @@ def test_LinearCCDArray():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.allclose([0, 0, 1, 0], e.geometry['e_z'])
+        # For this test we don't care if z and e_z are parallel or antiparallel
+        assert np.isclose(np.abs(np.dot([0, 0, 1, 0], e.geometry['e_z'])), 1.)
         assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
 
     # center ccd is on the optical axis
@@ -322,9 +324,9 @@ def test_LinearCCDArray():
 def test_LinearCCDArray_rotatated():
     '''Test an array with different rotations.
 
-    In this case, we rotate the Rowland torus by -30 deg and then look for
-    the linear array rotated by 30 deg with respect to that, so the position of
-    the CCDs should be parallel to the axis again (which is easy to check).
+    In this case, we rotate the Rowland torus by -30 deg and then
+    check that the e_z vector is rotated 30 deg with respect to the
+    coordinate system.
     '''
     pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
     myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
@@ -333,7 +335,7 @@ def test_LinearCCDArray_rotatated():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.isclose(np.dot([0, 0.8660254, -0.5], e.geometry['e_z'][:3]), 0)
+        assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
 
 def test_impossible_LinearCCDArray():
     '''The rotation is chosen such that all requested detector positions are

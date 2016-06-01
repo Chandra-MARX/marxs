@@ -270,7 +270,7 @@ class FlatOpticalElement(OpticalElement):
         self.display['color'] = get_color(self.display)
         # setting color here is more global than in the next line
         # because this automatically changes the diffuse, ambient, etc. color, too.
-        b = visual.box(pos=trans, size=tuple(zoom * 2), axis=np.dot([1.,0.,0.], rot),
+        b = visual.box(pos=trans, size=tuple(np.abs(zoom) * 2), axis=np.dot([1.,0.,0.], rot),
                        color=self.display['color'], viewer=viewer)
         # No safety net here like for color converting to a tuple.
         # If the advnaced properties are set you are on your own.
