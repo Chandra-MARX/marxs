@@ -74,3 +74,17 @@ def norm_vector(vec):
     '''
     length2 = np.sum(vec * vec, axis=-1)
     return vec / np.sqrt(length2)[:, None]
+
+def anglediff(phi):
+    '''Angle range covered by phi, accounting for 2 pi properly
+
+    Parameters
+    ----------
+    phi : list of two float
+        Two angles in radian
+    '''
+    anglediff = phi[1] - phi[0]
+    if (anglediff < 0.) or (anglediff > (2. * np.pi)):
+        # If anglediff == 2 pi exactly, presumably the user want to cover the full circle.
+        anglediff = anglediff % (2. * np.pi)
+    return anglediff
