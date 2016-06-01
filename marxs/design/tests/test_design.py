@@ -156,6 +156,7 @@ def test_torus_normal():
     vec_delta_theta = h2e(t1) - h2e(t0)
     vec_delta_phi = h2e(p1) - h2e(p0)
 
+    assert np.allclose(np.sqrt(np.sum(vec_normal * vec_normal, axis=1)), 1.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_phi), 0.)
 

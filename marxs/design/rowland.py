@@ -227,6 +227,8 @@ class RowlandTorus(MarxsElement):
                     gradient[i, :] = origin
             else:
                 raise ValueError("'origin' must be 'raise' or Eukledian vector.")
+
+        gradient = gradient / np.linalg.norm(gradient, axis=1)[:, None]
         return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
 
     def xyz_from_radiusangle(self, radius, angle, interval):
