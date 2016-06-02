@@ -143,8 +143,8 @@ class CircleAperture(FlatAperture):
                         np.linalg.norm(self.geometry['v_z'])):
             raise GeometryError('Aperture does not have same size in y, z direction.')
 
-        x = r * np.sin(phi)
-        y = r * np.cos(phi)
+        x = r * np.cos(phi)
+        y = r * np.sin(phi)
         return x, y
 
     @property
