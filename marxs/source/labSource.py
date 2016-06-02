@@ -111,17 +111,17 @@ class LabPointSource(Source):
 class LabPointSourceCone(Source):
     '''In-lab point source
 
-    - Photons are uniformly distributed in all directions in cone (from the point). Cone is meant to refer to the volume swept out by a solid angle in a sphere.
-    - Photon start position is source position (center of the sphere = tip of cone)
+    - Photons are uniformly distributed in all directions in cone (from the point). Cone is meant to refer to the volume swept out by a solid angle in a unit sphere centered at the point source.
+    - Photon start position is source position (tip of cone)
 
     Parameters
     ----------
+    direction: 3 element list
+        Direction is given by a vector [x,y,z]
+        This is the direction of the center of the cone (axis about which cone size is measured in steradians).
+        It is sufficient to enter any vector that spans this axis (magnitude does not matter).
     position: 3 element list
         3D coordinates of photon source
-    direction: array
-        Direciton is given by a vector [x,y,z]
-        This is the direction of the axis along which the beam travels.
-        It is sufficient to enter any vector that spans the beams axis.
     delta: float 
         This is half the openning angle of the cone. It is given in steradians.
     kwargs : see `Source`
@@ -145,34 +145,32 @@ class LabPointSourceCone(Source):
                         self.position[2] * np.ones(n),
                         np.ones(n)])
 
-        # randomly choose direction - photons go in all directions from source.
-        #Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
-        #Angle from pole (z-axis) = phi. Angle from x-axis is theta
-        #along the pole is the axis of interest i.e. beamline.
+        # Randomly choose direction - photons directions randomly distributed inside cone.
+        # Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
+        # Angle from pole (z-axis) = phi. Angle from x-axis on x-y plane is theta
+        # This cone is temporarily centered about the z axis.
         theta = np.random.uniform(0, 2 * np.pi, n);
         fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
         v = np.random.uniform(0, fractionalArea, n)
         phi = np.arccos(1 - 2 * v)
-        #for computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
+        # For computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
         
         dir = np.array([np.cos(theta) * np.sin(phi),
                         np.sin(theta) * np.sin(phi),
                         np.cos(phi),
                         np.zeros(n)])
 
-
-        #now we have all directions for n photons in dir.
-        #now we rotate dir to align with direction self.dir
-        #to find axis of rotation: cross self.dir with z
+        # Now we have all directions for n photons in dir.
+        # Now we rotate dir to align with the given direction: self.dir
+        # To find axis of rotation: cross self.dir with z
         axis = np.cross(self.dir, [0, 0, 1])
 
-        #angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (np.sqrt(np.dot(self.dir, self.dir))*np.sqrt(np.dot([0,0,1],[0,0,1]))))
-        angle = np.arccos(self.dir[2]) #
-
+        # Law of Cosines: angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (np.sqrt(np.dot(self.dir, self.dir))*np.sqrt(np.dot([0,0,1],[0,0,1]))))
+        angle = np.arccos(self.dir[2]) # Simplified
 
         rotationMatrix = transforms3d.axangles.axangle2aff(axis, angle)
 
-        #the aligned directions are:
+        # The aligned directions are:
         dir = np.dot(rotationMatrix, dir)
 
 
