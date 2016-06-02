@@ -165,10 +165,9 @@ class LabPointSourceCone(Source):
         # To find axis of rotation: cross self.dir with z
         axis = np.cross(self.dir, [0, 0, 1])
 
-        # Law of Cosines: angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (np.sqrt(np.dot(self.dir, self.dir))*np.sqrt(np.dot([0,0,1],[0,0,1]))))
         angle = np.arccos(self.dir[2]) # Simplified
 
-        rotationMatrix = transforms3d.axangles.axangle2aff(axis, angle)
+        rotationMatrix = transforms3d.axangles.axangle2aff(axis, -angle)
 
         # The aligned directions are:
         dir = np.dot(rotationMatrix, dir)

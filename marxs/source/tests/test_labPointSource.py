@@ -29,8 +29,8 @@ def test_photon_direction():
 
 def test_directions_range_cone():
 	'''This tests that all of the photons in the returned table have directions within the given parameters.
-	- Currently ensures that all directions are normed
-	- TODO: finish checking the range of directions (in progress)
+	- Ensures that all direciton vectors are normed
+	- Ensures that all direction vectors are within specified range 
 
 	'''
 
@@ -43,6 +43,10 @@ def test_directions_range_cone():
 	# run simulation
 	source = LabPointSourceCone(pos, delta = delta, flux=rate, energy=5., direction = direction)
 	photons = source.generate_photons(1.)
+
+
+	# norm direction
+	direction = direction / np.sqrt(np.dot(direction, direction))
 
 	# if the photon direction has the correct magnitude, then it will be on the unit sphere. All that is left to assert, then, is that it is sufficiently close to the direction vector.
 	# take any orthogonal axis to direction. By symmetry it will be the same for any orthogonal axis.
@@ -58,14 +62,21 @@ def test_directions_range_cone():
 	# now we find a direction vector that is rotated the maximum distance from the beam direction
 	rotationMatrix = transforms3d.axangles.axangle2mat(axis, delta)
 	farVector = np.dot(rotationMatrix, direction)
-	displacement = direction - farVector
-	maxDistance = np.dot(displacement, displacement)
+	displacement = farVector - np.array(direction)
+	maxDistanceSquared = np.dot(displacement, displacement)
 
-	# assert (correct magnitude) and (sufficiently close)
-	direction = direction + [0]
-	directionMatrix = np.array(photons['dir'])
-	dotProducts = np.sum((directionMatrix * directionMatrix), axis = 1)
-	truthArray = [ (abs(1 - i) < 0.001) for i in dotProducts]
-	assert all(truthArray)  #and to add (sufficiently close) np.all( np.dot(direction - photons['dir'], direction - photons['dir']) <= maxDistance)
+	# Assert (correct magnitude) and (sufficiently close)
 
+	# Prepares assessment of vector length
+	directionMatrix = np.array(photons['dir']) # 2D array of photon directions
+	dotProducts = np.sum((directionMatrix * directionMatrix), axis = 1) # the magnitudes^2 of each vector in an array
+	correctSizes = [ (abs(1 - i) < 0.001) for i in dotProducts]
+
+	# Prepares assessment of direction
+	direction = np.array( np.append(direction, [0], axis = 0) )
+	photonDisplacements = directionMatrix - direction
+	displacementDistancesSquared = np.sum((photonDisplacements * photonDisplacements), axis = 1)
+	withinRange = [(maxDistanceSquared > i) for i in displacementDistancesSquared]
+
+	assert all(correctSizes) and all(withinRange)
 
