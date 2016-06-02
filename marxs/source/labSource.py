@@ -150,10 +150,11 @@ class LabPointSourceCone(Source):
         #Angle from pole (z-axis) = phi. Angle from x-axis is theta
         #along the pole is the axis of interest i.e. beamline.
         theta = np.random.uniform(0, 2 * np.pi, n);
-        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the surface area swept out by delta
+        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
         v = np.random.uniform(0, fractionalArea, n)
         phi = np.arccos(1 - 2 * v)
         #for computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
+        
         dir = np.array([np.cos(theta) * np.sin(phi),
                         np.sin(theta) * np.sin(phi),
                         np.cos(phi),
@@ -168,10 +169,11 @@ class LabPointSourceCone(Source):
         #angle = np.arccos(np.dot(self.dir ,[0,0,1]) / (np.sqrt(np.dot(self.dir, self.dir))*np.sqrt(np.dot([0,0,1],[0,0,1]))))
         angle = np.arccos(self.dir[2]) #
 
+
         rotationMatrix = transforms3d.axangles.axangle2aff(axis, angle)
 
         #the aligned directions are:
-        dir = np.dot(rotationMatrix,dir)
+        dir = np.dot(rotationMatrix, dir)
 
 
         photons.add_column(Column(name='pos', data=pos.T))
