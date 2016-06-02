@@ -51,7 +51,7 @@ def sigma_clipped_std(data, **kwargs):
     return std
 
 
-def find_best_detector_position(photons, col='det_y', objective_func=sigma_clipped_std,
+def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipped_std,
                                 orientation=np.eye(3), **kwargs):
     '''Numerically optimize the position of a detector to find the position of best focus.
 
@@ -136,7 +136,7 @@ def fwhm_per_order(gas, photons, orders=np.arange(-11,-1)):
         xbest = find_best_detector_position(pg, objective_func=measure_FWHM)
         fwhm[i] = xbest.fun
         det_x[i] = xbest.x
-        meanpos, medianpos, stdpos = sigma_clipped_stats(pg['det_y'])
+        meanpos, medianpos, stdpos = sigma_clipped_stats(pg['det_x'])
         res[i] = np.abs(meanpos / xbest.fun)
     return fwhm, det_x, res
 
