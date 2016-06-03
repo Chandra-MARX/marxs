@@ -1,5 +1,6 @@
 import numpy as np
 from astropy.table import Table, Column
+import transforms3d
 
 from ..optics.base import FlatOpticalElement
 from .source import Source
@@ -63,6 +64,7 @@ class LabPointSource(Source):
         In many cases, it is sufficient to simulate photons for one hemisphere. In this case, the
         parameter ``direction`` can reduce the runtime by reducing the number of photons that are
         not relevant for the simulation.
+
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
@@ -105,3 +107,74 @@ class LabPointSource(Source):
         photons.add_column(Column(name='dir', data=dir.T))
         photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
         return photons
+
+class LabPointSourceCone(Source):
+    '''In-lab point source
+
+    - Photons are uniformly distributed in all directions in cone (from the point). Cone is meant to refer to the volume swept out by a solid angle in a unit sphere centered at the point source.
+    - Photon start position is source position (tip of cone)
+
+    Parameters
+    ----------
+    direction: 3 element list
+        Direction is given by a vector [x,y,z]
+        This is the direction of the center of the cone (axis about which cone size is measured in steradians).
+        It is sufficient to enter any vector that spans this axis (magnitude does not matter).
+    position: 3 element list
+        3D coordinates of photon source
+    delta: float 
+        This is half the openning angle of the cone. It is given in steradians.
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
+    '''
+    def __init__(self, position, delta, direction=None,  **kwargs):
+
+        self.dir = direction / np.sqrt(np.dot(direction, direction)) #normalize direction
+        self.position = position
+        self.deltaphi = delta
+        super(LabPointSourceCone, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        photons = super(LabPointSourceCone, self).generate_photons(exposuretime)
+        n = len(photons)
+
+        # assign position to photons
+        pos = np.array([self.position[0] * np.ones(n),
+                        self.position[1] * np.ones(n),
+                        self.position[2] * np.ones(n),
+                        np.ones(n)])
+
+        # Randomly choose direction - photons directions randomly distributed inside cone.
+        # Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
+        # Angle from pole (z-axis) = phi. Angle from x-axis on x-y plane is theta
+        # This cone is temporarily centered about the z axis.
+        theta = np.random.uniform(0, 2 * np.pi, n);
+        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
+        v = np.random.uniform(0, fractionalArea, n)
+        phi = np.arccos(1 - 2 * v)
+        # For computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
+        
+        dir = np.array([np.cos(theta) * np.sin(phi),
+                        np.sin(theta) * np.sin(phi),
+                        np.cos(phi),
+                        np.zeros(n)])
+
+        # Now we have all directions for n photons in dir.
+        # Now we rotate dir to align with the given direction: self.dir
+        # To find axis of rotation: cross self.dir with z
+        axis = np.cross(self.dir, [0, 0, 1])
+
+        angle = np.arccos(self.dir[2]) # Simplified
+
+        rotationMatrix = transforms3d.axangles.axangle2aff(axis, -angle)
+
+        # The aligned directions are:
+        dir = np.dot(rotationMatrix, dir)
+
+
+        photons.add_column(Column(name='pos', data=pos.T))
+        photons.add_column(Column(name='dir', data=dir.T))
+        photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
+        return photons
+

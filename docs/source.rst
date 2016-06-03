@@ -161,6 +161,7 @@ The following laboratory sources are provided:
 
 - `~marxs.source.FarLabPointSource`
 - `~marxs.source.LabPointSource`
+- `~marxs.source.LabPointSourceCone`
 
 Design your own sources and pointing models
 -------------------------------------------
