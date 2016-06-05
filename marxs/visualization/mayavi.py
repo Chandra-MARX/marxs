@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import numpy as np
-import mayavi.mlab
 
 from marxs.math.pluecker import h2e
 
@@ -28,6 +27,7 @@ def plot_rays(data, scalar=None, viewer=None,
     kwargssurface : dict
         keyword arguments for ``mayavi.mlab.pipeline.surface``
     '''
+    import mayavi.mlab
     # The number of points per line
     N = data.shape[1]
     # number of lines
