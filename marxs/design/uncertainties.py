@@ -1,5 +1,5 @@
 import numpy as np
-import transforms3d
+from transforms3d import affines, euler
 
 def generate_facet_uncertainty(n, xyz, angle_xyz):
     '''Generate 4d matrices that represent facet misalignment.
@@ -26,5 +26,5 @@ def generate_facet_uncertainty(n, xyz, angle_xyz):
     '''
     translation = np.random.normal(size=(n, 3)) * np.asanyarray(xyz)[np.newaxis, :]
     rotation = np.random.normal(size=(n, 3)) * np.asanyarray(angle_xyz)[np.newaxis, :]
-    return [transforms3d.affines.compose(t, transforms3d.euler.euler2mat(a[0], a[1], a[2], 'sxyz'), np.ones(3))
+    return [affines.compose(t, euler.euler2mat(a[0], a[1], a[2], 'sxyz'), np.ones(3))
             for t, a in zip(translation, rotation)]
