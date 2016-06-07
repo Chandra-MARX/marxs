@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 
-from .. import (RectangleAperture, ThinLens, FlatDetector,
+from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
                 FlatGrating, uniform_efficiency_factory, constant_order_factory,
                 MarxMirror, CircleAperture)
 
@@ -26,6 +26,7 @@ all_oe = [ThinLens(focallength=100),
           RectangleAperture(),
           CircleAperture(),
           FlatDetector(pixsize=2., zoom=100.),
+          CircularDetector(),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0,.5],

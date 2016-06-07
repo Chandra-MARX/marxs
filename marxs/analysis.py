@@ -150,7 +150,7 @@ def weighted_per_order(data, orders, energy, gratingeff):
     contribute significantly to the observed signal.
 
     This method provides one way to summarize the data by calculating the weighted mean
-    of the resolution fir each energy, weighted by the probability of photons for be
+    of the resolution for each energy, weighted by the probability of photons for be
     diffracted into that order ( = the expected fraction).
 
     Parameters

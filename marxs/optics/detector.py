@@ -2,10 +2,10 @@ from __future__ import division
 import warnings
 
 import numpy as np
-from np.linalg import norm
 from transforms3d.affines import decompose44
 
 from .base import FlatOpticalElement, OpticalElement
+from ..math.pluecker import h2e
 
 class PixelSizeWarning(Warning):
     pass
@@ -72,6 +72,10 @@ class CircularDetector(OpticalElement):
     the resolution of a spectrograph without worrying about the details of the detector
     geometry.
 
+    The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
+    Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
+    an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
+
     Parameters
     ----------
 
@@ -83,9 +87,8 @@ class CircularDetector(OpticalElement):
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
-        self.r = kwargs.pop('r')
         self.phi_offset = kwargs.pop('phi_offset', 0.)
-        self._inwards = kwargs.pop('inwards', True)
+        self._inwards = kwargs.pop('inside', True)
         super(CircularDetector, self).__init__(**kwargs)
 
     @property
@@ -120,6 +123,10 @@ class CircularDetector(OpticalElement):
             If both intersection points are required, reset ``self.inner`` and call this
             function again.
         '''
+        # This could be moved to a general function
+        if not np.all(dir[:, 3] == 0):
+            raise ValueError('First input must be direction vectors.')
+        # Could test pos, too...
         if transform:
             invpos4d = np.linalg.inv(self.pos4d)
             dir = np.dot(invpos4d, dir.T).T
@@ -130,7 +137,7 @@ class CircularDetector(OpticalElement):
         # Solve quadratic equation in steps. a12 = (-xr +- sqrt(xr - r**2(x**2 - R**2)))
         xy = xyz[:, :2]
         r = dir[:, :2]
-        underroot = np.dot(xy, r) - np.dot(r, r) * (np.dot(xy, xy) - self.r**2)
+        underroot = (np.einsum('ij,ij->i', xy, r))**2 - np.sum(r**2, axis=1) * (np.sum(xy**2, axis=1) - 1.)
         intersect = (underroot >= 0)
         i = intersect  # just a shorthand because it's used so much below
 
@@ -140,35 +147,35 @@ class CircularDetector(OpticalElement):
         interpos[:] = np.nan
 
         if intersect.sum() > 0:
-            b = np.dot(xy[i], r[i])
-            denom = np.dor(r[i], r[i])
+            b = np.sum(xy[i] * r[i], axis=1)
+            denom = np.sum(r[i]**2, axis=1)
             a1 = (- b + np.sqrt(underroot[i])) / denom
             a2 = (- b - np.sqrt(underroot[i])) / denom
-            interpos = np.ones((4, intersect.sum()))
-            x1 = xy[i] + a1 * r[i]
-            apick = np.where(self.inwardsoutwards * np.dot(x1, r) >=0, a1, a2)
-            xy_p = xy + apick * r
-            interpos_local[intersect, 0] = np.arctan2(xy_p[:, 1], xy_p[:, 2]) + self.phi_offset
+            x1 = xy[i, :] + a1[:, np.newaxis] * r[i, :]
+            apick = np.where(self.inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
+            xy_p = xy[i, :] + apick[:, np.newaxis] * r[i, :]
+            interpos_local[i, 0] = np.arctan2(xy_p[:, 1], xy_p[:, 0]) + self.phi_offset
             # Those look like they hit in the xy plane.
             # Still possible to miss if z axis is too large.
             # Calculate z-coordiante at intersection
-            interpos_local[intersect, 1] = xyz[:, 2] + apick * dir[2, :]
-            interpos[intersect, :2] = xy_p
-            interpos[intersect, 2] = interpos_local[intersect, 1]
-            interpos[intersect, 3] = 1
+            interpos_local[intersect, 1] = xyz[i, 2] + apick * dir[i, 2]
+            interpos[i, :2] = xy_p
+            interpos[i, 2] = interpos_local[i, 1]
+            interpos[i, 3] = 1
             # set those elements on intersect that miss in z to False
             trans, rot, zoom, shear = decompose44(self.pos4d)
-            intersect[intersect.nonzero()[np.abs(z_p) > zoom[2]]] = False
+            z_p = interpos[intersect, 2]
+            intersect[intersect.nonzero()[0][np.abs(z_p) > zoom[2]]] = False
             # Now reset everything to nan that is not intersect
-            interpos_local[~intersect, :] = np.nan
-            interpos[~intersect, :] = np.nan
+            interpos_local[~i, :] = np.nan
+            interpos[~i, :] = np.nan
 
             interpos = np.dot(self.pos4d, interpos.T).T
 
         return intersect, interpos, interpos_local
 
     def process_photons(self, photons):
-        intersect, interpos, interpos_local = self.intersect(photons['dir'], photons['pos'])
+        intersect, interpos, inter_local = self.intersect(photons['dir'], photons['pos'])
 
         photons['pos'][intersect, :] = interpos[intersect, :]
         self.add_output_cols(photons, self.loc_coos_name + self.detpix_name)
@@ -177,9 +184,9 @@ class CircularDetector(OpticalElement):
             photons[self.id_col][intersect] = self.id_num
         # Set position in different coordinate systems
         photons['pos'][intersect] = interpos[intersect]
-        photons[self.loc_coos_name[0]][intersect] = interpos_local[intersect, 0]
-        photons[self.loc_coos_name[1]][intersect] = interpos_local[intersect, 1]
-        photons[self.detpix_name[0]][intersect] = intercoos[intersect, 0] * self.r / self.pixsize
-        photons[self.detpix_name[0]][intersect] = intercoos[intersect, 0] * self.r / self.pixsize
+        photons[self.loc_coos_name[0]][intersect] = inter_local[intersect, 0]
+        photons[self.loc_coos_name[1]][intersect] = inter_local[intersect, 1]
+        photons[self.detpix_name[0]][intersect] = inter_local[intersect, 0] * self.r / self.pixsize
+        photons[self.detpix_name[0]][intersect] = inter_local[intersect, 0] * self.r / self.pixsize
 
         return photons
