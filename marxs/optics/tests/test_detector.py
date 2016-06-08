@@ -94,3 +94,13 @@ def test_intersect_tube_2points():
     assert np.all(intersect == True)
     assert np.allclose(h2e(interpos), np.array([[1.4, 0., 0.],
                                                 [1.4, 0., 1.]]))
+
+def test_tube_parametric():
+    '''Generate points on surface using parametic. Then make rays for intersection
+    which should return those points as intersection points.'''
+    circ = CircularDetector(zoom=[2., 3., 4.])
+    parametric = circ.parametric(phi=[-.1, 0., 1.])
+    # select dir so that it's in the right direction to recover these points.
+    dir = np.tile([1, 0,0,0], (6, 1))
+    intersect, interpos, inter_local = circ.intersect(dir, parametric)
+    assert np.allclose(parametric, interpos)
