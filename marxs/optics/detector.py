@@ -81,6 +81,10 @@ class CircularDetector(OpticalElement):
         an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
     pixsize : float
         size of pixels in mm
+    phi_offset : float
+        This defines the center (pixel = 0) in radian. In other words:
+        The output ``det_phi`` column has its zero position at ``phi_offset`` and
+        values for ``phi`` are in the range [-pi, pi].
     '''
     loc_coos_name = ['det_phi', 'det_y']
 
@@ -113,7 +117,7 @@ class CircularDetector(OpticalElement):
         # Step 2: Transform to global coordinate system
         pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
         # Step 3: Make detector
-        return cls(pos4d=pos4d_circ)
+        return cls(pos4d=pos4d_circ, phi_offset=-np.pi)
 
     @property
     def _inwardsoutwards(self):
@@ -179,8 +183,10 @@ class CircularDetector(OpticalElement):
             x1 = xy[i, :] + a1[:, np.newaxis] * r[i, :]
             apick = np.where(self._inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
             xy_p = xy[i, :] + apick[:, np.newaxis] * r[i, :]
-            interpos_local[i, 0] = np.arctan2(xy_p[:, 1], xy_p[:, 0]) + self.phi_offset
-            # Those look like they hit in the xy plane.
+            phi = np.arctan2(xy_p[:, 1], xy_p[:, 0])
+            # Shift phi by offset, then wrap to that it is in range [-pi, pi]
+            interpos_local[i, 0] = (phi - self.phi_offset + np.pi) % (2 * np.pi) - np.pi
+             # Those look like they hit in the xy plane.
             # Still possible to miss if z axis is too large.
             # Calculate z-coordiante at intersection
             interpos_local[intersect, 1] = xyz[i, 2] + apick * dir[i, 2]
