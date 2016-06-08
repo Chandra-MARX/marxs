@@ -2,10 +2,11 @@ from __future__ import division
 import warnings
 
 import numpy as np
-from transforms3d.affines import decompose44
+from transforms3d.affines import decompose44, compose
 
 from .base import FlatOpticalElement, OpticalElement
 from ..math.pluecker import h2e
+from ..visualization.utils import get_color
 
 class PixelSizeWarning(Warning):
     pass
@@ -72,13 +73,14 @@ class CircularDetector(OpticalElement):
     the resolution of a spectrograph without worrying about the details of the detector
     geometry.
 
-    The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
-    Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
-    an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
-
     Parameters
     ----------
-
+    position, orientation, zoom, pos4d : see description of `pos4d`
+        The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
+        Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
+        an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
+    pixsize : float
+        size of pixels in mm
     '''
     loc_coos_name = ['det_phi', 'det_y']
 
@@ -91,12 +93,32 @@ class CircularDetector(OpticalElement):
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
         self.phi_offset = kwargs.pop('phi_offset', 0.)
-        self._inwards = kwargs.pop('inside', True)
+        self.inwards = kwargs.pop('inside', True)
         super(CircularDetector, self).__init__(**kwargs)
 
+    @classmethod
+    def from_rowland(cls, rowland, width):
+        '''Generate a `CircularDetector` from a `RowlandTorus`.
+
+        Parameters
+        ----------
+        rowland : `~marxs.design.RowlandTorus`
+            The circular detector is constructed to fit exactly into the
+            Rowland Circle defined by ``rowland``.
+        width : float
+            Half-width of the tube in the flat direction (z-axis) in mm
+        '''
+        # Step 1: Get position and size from Rowland torus
+        pos4d_circ = compose([rowland.R, 0, 0], np.eye(3), [rowland.r, rowland.r, width])
+        # Step 2: Transform to global coordinate system
+        pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
+        # Step 3: Make detector
+        return cls(pos4d=pos4d_circ)
+
     @property
-    def inwardsoutwards(self):
-        if self._inwards:
+    def _inwardsoutwards(self):
+        'Transform the self.inwards bool into [-1, +1]'
+        if self.inwards:
             return 1.
         else:
             return -1.
@@ -155,7 +177,7 @@ class CircularDetector(OpticalElement):
             a1 = (- b + np.sqrt(underroot[i])) / denom
             a2 = (- b - np.sqrt(underroot[i])) / denom
             x1 = xy[i, :] + a1[:, np.newaxis] * r[i, :]
-            apick = np.where(self.inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
+            apick = np.where(self._inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
             xy_p = xy[i, :] + apick[:, np.newaxis] * r[i, :]
             interpos_local[i, 0] = np.arctan2(xy_p[:, 1], xy_p[:, 0]) + self.phi_offset
             # Those look like they hit in the xy plane.
@@ -226,9 +248,9 @@ class CircularDetector(OpticalElement):
         if (phi.ndim != 1):
             raise ValueError('"phi" must have 1-dim shape.')
         xyz = h2e(self.parametric(phi))
-        x = xyz[:, 0].reshape(theta.shape)
-        y = xyz[:, 1].reshape(theta.shape)
-        z = xyz[:, 2].reshape(theta.shape)
+        x = xyz[:, 0].reshape((2, len(phi)))
+        y = xyz[:, 1].reshape(x.shape)
+        z = xyz[:, 2].reshape(x.shape)
 
         # turn into valid color tuple
         self.display['color'] = get_color(self.display)
