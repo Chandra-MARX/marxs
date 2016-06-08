@@ -72,15 +72,15 @@ def test_resolvingpower_consistency():
     res2 = resolvingpower_per_order(gas, p.copy(), orders=o, rowland=rowland)
 
     # FWHM is similar
-    assert np.isclose(res1[1][0], res2[1][0])
-    assert np.isclose(res1[1][1], res2[1][1], atol=.2)  # differs stronger here if fit not good
+    assert np.isclose(res1[1][0], res2[1][0], atol=0.1)
+    assert np.isclose(res1[1][1], res2[1][1], atol=0.2)  # differs stronger here if fit not good
     assert np.isclose(res2[1][0], 1.8, rtol=0.1, atol=0.1)
     # Resolution of 0th order is essentially 0
-    assert np.isclose(res1[0][0], 0, atol=0.05)
-    assert np.isclose(res2[0][0], 0, atol=0.05)
+    assert np.isclose(res1[0][0], 0, atol=0.5)
+    assert np.isclose(res2[0][0], 0, atol=0.5)
     # Resolution of higher orders is consistent and higher
     assert np.isclose(res1[0][1], res2[0][1], rtol=0.1)
     assert np.isclose(res1[0][2], res2[0][2], rtol=0.2)
     # Resolution is higher at higher orders (approximately linear for small angles)
-    assert np.isclose(res1[0][2], 2 * res1[0][1], rtol=0.1)
-    assert np.isclose(res2[0][2], 2 * res2[0][1], rtol=0.1)
+    assert np.isclose(res1[0][2], 2 * res1[0][1], rtol=0.2)
+    assert np.isclose(res2[0][2], 2 * res2[0][1], rtol=0.2)

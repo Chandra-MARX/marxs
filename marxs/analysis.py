@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 import scipy.optimize
 from astropy.modeling import models, fitting
@@ -30,7 +32,7 @@ def measure_FWHM(data):
     # Get an estimate of a sensible bin width for histogram
     mean, median, std = sigma_clipped_stats(data)
     n = len(data)
-    hist, bin_edges = np.histogram(data, range=mean + np.array([-3, 3]) * std, bins = n/10)
+    hist, bin_edges = np.histogram(data, range=mean + np.array([-3, 3]) * std, bins = int(n/10))
     g_init = models.Gaussian1D(amplitude=hist.max(), mean=mean, stddev=std)
     fit_g = fitting.LevMarLSQFitter()
     g = fit_g(g_init, (bin_edges[:-1] + bin_edges[1:]) / 2., hist)
