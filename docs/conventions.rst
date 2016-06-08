@@ -64,7 +64,7 @@ There are two ways to specify that:
 
 - Use the keywords ``orientation``, ``zoom``, and ``position``. The code will construct the ``pos4d``
   matrix from those keywords, by first scaling with ``zoom``, then applying the rotation matrix
-  ``orentation`` and lastly, moving the center of the optical element to ``position``.
+  ``orientation`` and lastly, moving the center of the optical element to ``position``.
   The same baffle as above can also be written as:
 
       >>> baf2 = Baffle(zoom=[1., 2., 2.], position=[5., 0., 0.])

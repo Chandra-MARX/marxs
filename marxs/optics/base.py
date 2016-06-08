@@ -207,7 +207,7 @@ class FlatOpticalElement(OpticalElement):
             ``True`` if an intersection point is found.
         interpos : `numpy.ndarray` of shape (N, 4)
             homogeneous coordinates of the intersection point. Values are set
-            to ``np.nan`` is no intersecton point is found.
+            to ``np.nan`` if no intersection point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
             y and z coordinates in the coordiante system of the active plane.
         '''
