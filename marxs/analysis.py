@@ -1,9 +1,11 @@
+from __future__ import division
+
 import numpy as np
 import scipy.optimize
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clipped_stats
 
-from .optics import FlatDetector, constant_order_factory
+from .optics import FlatDetector, CircularDetector, constant_order_factory
 
 def measure_FWHM(data):
     '''Obtain the FWHM of some quantity in an event list.
@@ -30,7 +32,7 @@ def measure_FWHM(data):
     # Get an estimate of a sensible bin width for histogram
     mean, median, std = sigma_clipped_stats(data)
     n = len(data)
-    hist, bin_edges = np.histogram(data, range=mean + np.array([-3, 3]) * std, bins = n/10)
+    hist, bin_edges = np.histogram(data, range=mean + np.array([-3, 3]) * std, bins = int(n/10))
     g_init = models.Gaussian1D(amplitude=hist.max(), mean=mean, stddev=std)
     fit_g = fitting.LevMarLSQFitter()
     g = fit_g(g_init, (bin_edges[:-1] + bin_edges[1:]) / 2., hist)
@@ -89,56 +91,75 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
                                    **kwargs)
 
 
-def fwhm_per_order(gas, photons, orders=np.arange(-11,-1)):
-    '''Loop over grating orders and calculate FWHM in every order.
+def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowland=None):
+    '''Loop over grating orders and calculate the resolving power in every order.
 
-    As input this function takes a Grating Array Structure (``gas``) and a list of photons
+    As input this function takes a Grating Array Structure (``gratings``) and a list of photons
     ready to hit the grating, i.e. the photons have already passed through aperture and
     mirror in e.g. a Chandra-like design. The function will take the same input photons and
     send them through the gas looping over the grating orders. In each step of the loop all
-    photons are send to the same order, thus the statistics uncertainty on the measured FWHM
+    photons are send to the same order, thus the statistical uncertainty on the measured
+    spectral resolving power (calculated as ``pos_x / FWHM_x``)
     is the same for every order and is set by the number of photons in the input list.
-    For every order the detector position will be optimized numerically to give the smallest
-    FWHM by moving it along the x-axis.
+
     As a side effect, the function that selects the grating orders for diffraction in ``gas``
     will be changed. Pass a deep copy of the GAS if this could affect consecutive computations.
 
     Parameters
     ----------
-    gas : `marxs.design.rowland.GratingArrayStructure`
+    gratings : `marxs.simulator.Parallel`
+        Structure that holds individual grating elements,
+        e.g. `marxs.design.GratingArrayStructure`
     photons : `astropy.table.Table`
         Photon list to be processed for every order
     orders : np.array of type int
         Order numbers
+    rowland : `marxs.design.RowlandTorus` or ``None``.
+        Photons are projected onto a detector. If ``rowland`` is given, the detector
+        will be placed on the Rowland torus appropriately; if it is ``None``
+        the best detector position is determined numerically assuming that the
+        detector should be parallel to the yz plane.
 
     Returns
     -------
-    fwhm : np.array
-        FWHM for each order
-    det_x : np.array
-        Detector x position which gives minimal FWHM.
     res : np.array
         Resolution defined as FWHM / position for each order.
+    fwhm : np.array
+        FWHM for each order
+    info : dict
+        Dictionary with more information, e.g. fit results
     '''
     res = np.zeros_like(orders, dtype=float)
     fwhm = np.zeros_like(orders, dtype=float)
-    det_x = np.zeros_like(orders, dtype=float)
+    info = {}
+
+    if rowland is not None:
+        det = CircularDetector.from_rowland(rowland, width=1e5)
+        info['method'] = 'Circular detector on Rowland circle'
+        col = 'detpix_x' # 0 at center
+    else:
+        info['method'] = 'Detector position numerically optimized'
+        info['fit_results'] = []
+        col = 'det_x' # 0 at center, detpix_x is 0 in corner.
 
     for i, order in enumerate(orders):
         gratingeff = constant_order_factory(order)
-        gas.elem_args['order_selector'] = gratingeff
-        for facet in gas.elements:
-            facet.order_selector = gratingeff
+        gratings.elem_args['order_selector'] = gratingeff
+        for elem in gratings.elements:
+            elem.order_selector = gratingeff
 
         pg = photons.copy()
-        pg = gas.process_photons(pg)
+        pg = gratings.process_photons(pg)
         pg = pg[pg['order'] == order]  # Remove photons that slip between the gratings
-        xbest = find_best_detector_position(pg, objective_func=measure_FWHM)
-        fwhm[i] = xbest.fun
-        det_x[i] = xbest.x
-        meanpos, medianpos, stdpos = sigma_clipped_stats(pg['det_x'])
-        res[i] = np.abs(meanpos / xbest.fun)
-    return fwhm, det_x, res
+        if rowland is None:
+            xbest = find_best_detector_position(pg, objective_func=measure_FWHM)
+            info['fit_results'].append(xbest)
+            det = FlatDetector(position=np.array([xbest.x, 0, 0]), zoom=1e5)
+        pg = det(pg)
+        meanpos, medianpos, stdpos = sigma_clipped_stats(pg[col])
+        fwhm[i] = 2.3548 * stdpos
+        res[i] = np.abs(meanpos / fwhm[i])
+    return res, fwhm, info
 
 
 def weighted_per_order(data, orders, energy, gratingeff):
