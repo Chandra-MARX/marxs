@@ -190,26 +190,27 @@ def test_order_convention():
 
 
 def test_CAT_order_convention():
-    dirs = np.zeros((3, 4))
-    dirs[:, 0] = -1.
-    dirs[1, 2]= 0.01
-    dirs[2, 2]= -0.01
-    photons = Table({'pos': np.ones((3, 4)),
+    dirs = np.array([[-1, 0., 0., 0],
+                     [-1, 0.01, -0.01, 0],
+                     [-1, 0.01, 0.01, 0],
+                     [-1, -0.01, 0.01, 0],
+                     [-1, -0.01, -0.01, 0]])
+    photons = Table({'pos': np.ones((5, 4)),
                      'dir': dirs,
-                     'energy': np.ones(3),
-                     'polarization': np.ones(3),
-                     'probability': np.ones(3),
+                     'energy': np.ones(5),
+                     'polarization': np.ones(5),
+                     'probability': np.ones(5),
                      })
     gp = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
     p5 = gp.process_photons(photons.copy())
     gm = CATGrating(d=1./5000, order_selector=constant_order_factory(-5), zoom=2)
     m5 = gm.process_photons(photons.copy())
     for g in [gm, gp]:
-        assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, 1, -1]))
-    assert p5['dir'][1, 1] > 0
-    assert p5['dir'][2, 1] < 0
-    assert m5['dir'][1, 1] < 0
-    assert m5['dir'][2, 1] > 0
+        assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, -1, -1, 1, 1]))
+    assert np.all(p5['dir'][1:3, 1] > 0)
+    assert np.all(p5['dir'][3:, 1] < 0)
+    assert np.all(m5['dir'][1:3, 1] < 0)
+    assert np.all(m5['dir'][3:, 1] > 0)
 
 
 def test_uniform_efficiency_factory():

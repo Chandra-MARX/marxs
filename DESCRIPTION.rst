@@ -29,4 +29,4 @@ Developer time is more valuable than CPU time.
 
 Order of optical elements is known.
   MARXS assumes that the order in which photons hit (or miss)
-  optical elements in know a-priory, e.g. entrance aperture to mirror to grating to detector.
+  optical elements is known, e.g. entrance aperture to mirror to grating to detector.
