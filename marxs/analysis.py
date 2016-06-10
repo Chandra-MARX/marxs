@@ -208,7 +208,7 @@ def weighted_per_order(data, orders, energy, gratingeff):
         if len(ind_o) != 1:
             raise KeyError('No data for order {0} in gratingeff'.format(o))
         en_sort = np.argsort(gratingeff.energy)
-        weights[o, :] = np.interp(energy, gratingeff.energy[en_sort],
+        weights[i, :] = np.interp(energy, gratingeff.energy[en_sort],
                                   gratingeff.prob[:, ind_o[0]][en_sort])
 
     return np.ma.average(data, axis=0, weights=weights)
