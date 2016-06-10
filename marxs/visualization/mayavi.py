@@ -40,7 +40,7 @@ def plot_rays(data, scalar=None, viewer=None,
     elif scalar.shape == (n, N):
         s = scalar
     else:
-        raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})',format(n, N))
+        raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})'.format(n, N))
 
     x = data[:,:, 0].flatten()
     y = data[:,:, 1].flatten()
