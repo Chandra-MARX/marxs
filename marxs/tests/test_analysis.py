@@ -51,7 +51,7 @@ def test_resolvingpower_consistency():
     # are defined the same way for all gratings in the GAS.
     blazeang = 1.91
     rowland = RowlandTorus(6000., 6000.)
-    blazemat = transforms3d.axangles.axangle2mat(np.array([0, 1, 0]), np.deg2rad(blazeang))
+    blazemat = transforms3d.axangles.axangle2mat(np.array([0, 0, 1]), np.deg2rad(blazeang))
     gas = GratingArrayStructure(rowland=rowland, d_element=30.,
                                 x_range=[1e4, 1.4e4],
                                 radius=[50, 100],

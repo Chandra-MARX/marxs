@@ -148,7 +148,9 @@ class FlatGrating(FlatOpticalElement):
         p : np.array
             Array of Eucleadian direction vectors
         '''
-        return 1
+        # -1 because n, l, d should be right-handed coordinate system
+        # while n = e_x, l = e_x, and d = e_y would be left-handed.
+        return -1
 
     def __init__(self, **kwargs):
         self.order_selector = kwargs.pop('order_selector')
@@ -169,7 +171,8 @@ class FlatGrating(FlatOpticalElement):
         p = norm_vector(h2e(photons['dir'].data[intersect]))
         n = self.geometry['plane'][:3]
         l = h2e(self.geometry['e_groove'])
-        d = h2e(self.geometry['e_perp_groove'])
+        # Minus sign here because we want n, l, d to be a right-handed coordinate system
+        d = -h2e(self.geometry['e_perp_groove'])
 
         wave = energy2wave / photons['energy'].data[intersect]
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
@@ -218,7 +221,8 @@ class CATGrating(FlatGrating):
         Blazing happens on the side of the negative orders. Obviously, this
         convention is only meaningful if the photons do not arrive perpendicular to the grating.
         '''
-        d = h2e(self.geometry['e_z'])
+        # Minus sign here because we want n, l, d to be a right-handed coordinate system
+        d = -h2e(self.geometry['e_perp_groove'])
         dotproduct = np.dot(p, d)
         sign = np.sign(dotproduct)
         sign[sign == 0] = 1
