@@ -136,11 +136,17 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
     if rowland is not None:
         det = CircularDetector.from_rowland(rowland, width=1e5)
         info['method'] = 'Circular detector on Rowland circle'
-        col = 'detpix_x' # 0 at center
+        col = 'detpix_x'
+        # Find position of order 0.
+        # if Rowland torus is tilted, might not be at phi=0.
+        pg = photons.copy()
+        pg = det(pg)
+        zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
     else:
         info['method'] = 'Detector position numerically optimized'
         info['fit_results'] = []
         col = 'det_x' # 0 at center, detpix_x is 0 in corner.
+        zeropos = 0.
 
     for i, order in enumerate(orders):
         gratingeff = constant_order_factory(order)
@@ -158,7 +164,7 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
         pg = det(pg)
         meanpos, medianpos, stdpos = sigma_clipped_stats(pg[col])
         fwhm[i] = 2.3548 * stdpos
-        res[i] = np.abs(meanpos / fwhm[i])
+        res[i] = np.abs((meanpos - zeropos) / fwhm[i])
     return res, fwhm, info
 
 
