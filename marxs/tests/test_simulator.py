@@ -66,8 +66,8 @@ def test_list_elemargs():
         assert len(p.elements) == 2
         for e in p.elements:
             assert np.linalg.norm(e.geometry['v_y']) == 3
-        assert p.elements[0].d == 0.001
-        assert p.elements[1].d == 0.002
+        assert p.elements[0]._d == 0.001
+        assert p.elements[1]._d == 0.002
 
     # but this does not work: in elem_pos all entries have to be lists
     with pytest.raises(ValueError) as e:

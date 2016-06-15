@@ -104,8 +104,13 @@ class FlatGrating(FlatOpticalElement):
 
     Parameters
     ----------
-    d : float
-        grating constant
+    d : float or callable
+        grating constant in mm. If ``d`` is callable, then it will be called as
+        ``d(intercoos)``, where ``intercoos`` is a (N, 2) array holding the
+        positions where photons hit the gratings in the local coordinate system.
+        This can be used to simulate manufacturing uncertainties or intentional
+        grating period variation. The callable has to return a vector of lengths N
+        that contains the grating constant for each photon in mm.
     order_selector : callable
         A function or callable object that accepts arrays of photon energy, polarization
         and the blaze angle
@@ -157,7 +162,7 @@ class FlatGrating(FlatOpticalElement):
         self.transmission = kwargs.pop('transmission', True)
         if 'd' not in kwargs:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
-        self.d = kwargs.pop('d')
+        self._d = kwargs.pop('d')
         self.groove_ang = kwargs.pop('groove_angle', 0.)
 
         super(FlatGrating, self).__init__(**kwargs)
@@ -166,7 +171,20 @@ class FlatGrating(FlatOpticalElement):
         self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_z'])
         self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
 
-    def diffract_photons(self, photons, intersect):
+    def d(self, intercoos):
+        '''Method that returns the grating constant at given positions.
+
+        For a grating with constant grating constant, this will just return the
+        number input as ``d`` when the element was initialized. For gratings
+        where the grating constant varies with position on the facet, this
+        calculates the appropriate number for every position.
+        '''
+        if not callable(self._d):
+            return self._d
+        else:
+            return self._d(intercoos)
+
+    def diffract_photons(self, photons, intersect, interpos, intercoos):
         '''Vectorized implementation'''
         p = norm_vector(h2e(photons['dir'].data[intersect]))
         n = self.geometry['plane'][:3]
@@ -188,7 +206,7 @@ class FlatGrating(FlatOpticalElement):
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         sign = self.order_sign_convention(p)
-        p_d = np.dot(p, d) + sign * m * wave / self.d
+        p_d = np.dot(p, d) + sign * m * wave / self.d(intercoos[intersect, :])
         p_l = np.dot(p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = np.sqrt(1. - p_d**2 - p_l**2)
@@ -201,7 +219,7 @@ class FlatGrating(FlatOpticalElement):
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
 
-        dir, m, p, blaze = self.diffract_photons(photons, intersect)
+        dir, m, p, blaze = self.diffract_photons(photons, intersect, interpos, intercoos)
         return {'dir': dir, 'probability': p, 'order': m, 'blaze': blaze}
 
 class CATGrating(FlatGrating):

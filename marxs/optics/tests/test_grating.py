@@ -256,3 +256,20 @@ def test_CATGRating_misses():
     p = cat(photons)
     assert np.all(np.isnan(p['order'][3:]))
     assert np.all(np.isnan(p['grat_y'][3:]))
+
+
+def test_grating_d_callable():
+    '''d can be a function.'''
+    photons = generate_test_photons(5)
+    photons['pos'][0, 1] = 1.
+    photons['pos'][1, 1] = -1.
+
+    def dfunc(intercoos):
+        darr = np.ones(intercoos.shape[0]) * 2e-4
+        d = np.where(intercoos[:, 0]>=0, darr, darr / 2.)
+        return d
+
+    grat = FlatGrating(order_selector=constant_order_factory(1), zoom=2, d=dfunc)
+    p = grat(photons)
+    # negative one has half the grating constant and thus twice the angle
+    assert np.abs(p['dir'][1, 1] / p['dir'][0, 1] - 2 ) < 0.00001
