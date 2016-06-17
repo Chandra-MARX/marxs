@@ -186,7 +186,7 @@ class CircularDetector(OpticalElement):
             phi = np.arctan2(xy_p[:, 1], xy_p[:, 0])
             # Shift phi by offset, then wrap to that it is in range [-pi, pi]
             interpos_local[i, 0] = (phi - self.phi_offset + np.pi) % (2 * np.pi) - np.pi
-             # Those look like they hit in the xy plane.
+            # Those look like they hit in the xy plane.
             # Still possible to miss if z axis is too large.
             # Calculate z-coordiante at intersection
             interpos_local[intersect, 1] = xyz[i, 2] + apick * dir[i, 2]
@@ -195,10 +195,14 @@ class CircularDetector(OpticalElement):
             interpos[i, 3] = 1
             # set those elements on intersect that miss in z to False
             trans, rot, zoom, shear = decompose44(self.pos4d)
-            z_p = interpos[intersect, 2]
-            intersect[intersect.nonzero()[0][np.abs(z_p) > zoom[2]]] = False
-            # Now reset everything to nan that is not intersect
+            z_p = interpos[i, 2]
+            intersect[i.nonzero()[0][np.abs(z_p) > 1]] = False
+            # Now reset everything to nan that does not intersect
             interpos_local[~i, :] = np.nan
+            # interpos_local in z direction is in local coordinates, i.e.
+            # the x coordiante is 0..1, but we want that in units of the
+            # global coordinate system.
+            interpos_local[:, 1] = interpos_local[:, 1] * zoom[2]
             interpos[~i, :] = np.nan
 
             interpos = np.dot(self.pos4d, interpos.T).T

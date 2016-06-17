@@ -64,6 +64,21 @@ def test_intersect_tube_miss():
     assert np.all(np.isnan(interpos))
     assert np.all(np.isnan(inter_local))
 
+def test_intersect_tube_hitmiss_zoomed():
+    '''Rays that hit a one tube, but miss a shorter one'''
+    dir = np.array([[-.1, 0., 0., 0], [1., 0, -0.2, 0.]])
+    pos = np.array([[20., 0., 0.8, 1.], [2., .0, 0.4, 1.]])
+
+    circ = CircularDetector(zoom=[1, 1, 1])
+    intersect, interpos, inter_local = circ.intersect(dir, pos)
+    assert np.all(intersect == True)
+
+    circ = CircularDetector(zoom=[1, 1, .5])
+    intersect, interpos, inter_local = circ.intersect(dir, pos)
+    assert np.all(intersect == False)
+    assert np.all(np.isnan(interpos))
+    assert np.all(np.isnan(inter_local))
+
 def test_intersect_tube_2points():
     dir = np.array([[-.1, 0., 0., 0], [-0.5, 0, 0., 0.], [-1., 0., 0., 0.]])
     pos = np.array([[50., 0., 0., 1.], [10., .5, 0., 1.], [2, 0, .3, 1.]])
@@ -76,7 +91,26 @@ def test_intersect_tube_2points():
                                                 [-1, 0., .3]]))
     assert np.allclose(inter_local, np.array([[0., -np.arcsin(0.5), 0.],
                                               [0., 0., 0.3]]).T)
-    # now hit the outside. Looks very similar, if we remove the phi_offset, too.
+
+def test_intersect_tube_2points_zoomed():
+    '''inter_local should be the same if we make the tube longer in z'''
+    dir = np.array([[-.1, 0., 0., 0], [-0.5, 0, 0., 0.], [-1., 0., 0., 0.]])
+    pos = np.array([[50., 0., 0., 1.], [10., .5, 0., 1.], [2, 0, .3, 1.]])
+
+    circ = CircularDetector(phi_offset=-np.pi, zoom=[1, 1., 5.])
+    intersect, interpos, inter_local = circ.intersect(dir, pos)
+    assert np.all(intersect == True)
+    assert np.allclose(h2e(interpos), np.array([[-1., 0., 0.],
+                                                [-np.sqrt(0.75), 0.5, 0.],
+                                                [-1, 0., .3]]))
+    assert np.allclose(inter_local, np.array([[0., -np.arcsin(0.5), 0.],
+                                              [0., 0., 0.3]]).T)
+
+def test_intersect_tube_2points_outside():
+    '''Now hit the outside. Looks very similar, if we remove the phi_offset, too.'''
+    dir = np.array([[-.1, 0., 0., 0], [-0.5, 0, 0., 0.], [-1., 0., 0., 0.]])
+    pos = np.array([[50., 0., 0., 1.], [10., .5, 0., 1.], [2, 0, .3, 1.]])
+
     circ = CircularDetector(inside=False)
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
@@ -86,8 +120,10 @@ def test_intersect_tube_2points():
     assert np.allclose(inter_local, np.array([[0., np.arcsin(0.5), 0.],
                                               [0., 0., 0.3]]).T)
 
-    # Repeat with a tube that's moved and zoomed to make sure we did not mess up local and
-    # global coordinates in the implementation
+def test_intersect_tube_2points_translation():
+    '''Repeat with a tube that's moved and zoomed to make sure we
+    did not mess up local and global coordinates in the implementation
+    '''
     circ = CircularDetector(position=[0.8, 0.8, 1.2], zoom=[1, 1, 2])
     intersect, interpos, inter_local = circ.intersect(np.array([[1., 0., .0, 0],
                                                                 [1., 0., 0., 0.]]),
