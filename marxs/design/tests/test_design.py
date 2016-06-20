@@ -196,7 +196,7 @@ def test_GratingArrayStructure():
     angles = gas.distribute_elements_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
     assert np.alltrue((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
-    assert gas.max_elements_on_radius() == 10
+    assert gas.max_elements_on_radius(gas.radius) == 10
     assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
     center = gas.calc_ideal_center()
@@ -215,6 +215,19 @@ def test_GratingArrayStructure():
     # Check that initially all uncertainties are 0
     for i in range(len(gas.elem_pos)):
         assert np.allclose(gas.elem_pos[i], gas.elements[i].pos4d)
+
+def test_GAS_multipleradii():
+    '''Radius can be a list of many pairs.'''
+    myrowland = RowlandTorus(1000., 1000.)
+    gas1 = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
+    gas2 = GratingArrayStructure(myrowland, 60., [1000., 2000.], [500., 540.], elem_class=mock_facet)
+    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400., 500., 540.], elem_class=mock_facet)
+
+    r1 = gas1.distribute_elements_on_radius()
+    r2 = gas2.distribute_elements_on_radius()
+    r = gas.distribute_elements_on_radius()
+    assert np.all(np.in1d(r, np.union1d(r1, r2)))
+
 
 def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
