@@ -378,12 +378,16 @@ class LinearCCDArray(Parallel, OpticalElement):
         Minimum and maximum of the x coordinate that is searched for an intersection
         with the torus. A line can intersect a torus in up to four points. ``x_range``
         specififes the range for the numerical search for the intersection point.
-    radius : list of 2 floats
+    radius : list of floats
         Inner and outer radius as measured in the yz-plane from the center of the
         `LinearCCDArray`. Can be negative to place elements on both sides of the center
         of the `LinearCCDArray`. Elements will be placed ``d_element`` apart; if a
         non-integer number of elements is needed to cover the ``radius``, elements will
         reach beyond the given numbers.
+        For a continuous array of detectors, this is just a list with two elements
+        ``[r_inner, r_outer]``. However, it is also possible to list more than one range
+        in a flat list, to e.g. set one detector in the focus to detect the zeroth
+        order and offset others: ``[r_inner_1, r_outer_1, r_inner_2, r_outer_2, ...]``.
     phi : floats
         Direction of line through the centers of all elements. :math:`\phi=0`
         is on the positive y axis. Angles are given in radian.
@@ -399,7 +403,10 @@ class LinearCCDArray(Parallel, OpticalElement):
 
     def __init__(self, rowland, d_element, x_range, radius, phi, **kwargs):
         self.rowland = rowland
-        if not (radius[1] > radius[0]):
+        if not len(radius) % 2 == 0:
+            raise ValueError('radius must be a list of [inner_1, outer_1, inner_2, outer_2, ...].')
+        radarray = np.array(radius)
+        if not np.all(radarray[1::2] > radarray[::2]):
             raise ValueError('Outer radius must be larger than inner radius.')
         self.radius = radius
 
@@ -411,8 +418,13 @@ class LinearCCDArray(Parallel, OpticalElement):
 
         super(LinearCCDArray, self).__init__(**kwargs)
 
-    def max_elements_on_radius(self):
+    def max_elements_on_radius(self, radius):
         '''Distribute elements on a radius.
+
+        Parameters
+        ----------
+        radius : list of two floats
+            inner and outer radius that should be covered by elements
 
         Returns
         -------
@@ -421,7 +433,7 @@ class LinearCCDArray(Parallel, OpticalElement):
             Elements might reach beyond the radius limits if the difference between
             inner and outer radius is not an integer multiple of the element size.
         '''
-        return int(np.ceil((self.radius[1] - self.radius[0]) / self.d_element))
+        return int(np.ceil((radius[1] - radius[0]) / self.d_element))
 
     def distribute_elements_on_radius(self):
         '''Distributes elements as evenly as possible along a radius.
@@ -436,9 +448,13 @@ class LinearCCDArray(Parallel, OpticalElement):
         radii : np.ndarray
             Radii of the element *center* positions.
         '''
-        n = self.max_elements_on_radius()
-        return np.mean(self.radius) + np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element
-
+        radii = []
+        for i in range(len(self.radius) // 2):
+            radiusbracket = self.radius[2 * i: 2 * i + 2]
+            n = self.max_elements_on_radius(radiusbracket)
+            radii.append(np.mean(radiusbracket) +
+                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
+        return np.hstack(radii)
 
     def calculate_elempos(self):
         '''Calculate ideal element positions based on rowland geometry.
