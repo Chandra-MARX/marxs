@@ -40,6 +40,30 @@ def get_color(d):
             import matplotlib.colors
             return matplotlib.colors.colorConverter.to_rgb(c)
 
+def color_tuple_to_hex(color):
+    '''Convert color tuple to hex string.
+
+    Parameters
+    ----------
+    color : tuple
+        tuple has three elements (rgb) that are floats betwen 0 and 1
+        or ints between 0 and 255.
+
+    Returns
+    -------
+    hexstring : string
+        string encoding that number as hex
+    '''
+    if all([isinstance(a, float) for a in color]):
+        if any(i < 0. for i in color) or any(i > 1. for i in color):
+            raise ValueError('Float values in color tuple must be between 0 and 1.')
+        return hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
+    elif all([isinstance(a, int) for a in color]):
+        if any(i < 0 for i in color) or any(i > 255 for i in color):
+            raise ValueError('Int values in color tuple must be between 0 and 255.')
+        return hex(color[0] * 256**2 + color[1] * 256 + color[2])
+    else:
+        raise ValueError('Input tuple must be all float or all int.')
 
 def plane_with_hole(outer, inner):
     '''Triangulation of a plane with an inner hole
