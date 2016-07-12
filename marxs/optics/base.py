@@ -9,7 +9,7 @@ from marxs.math.pluecker import h2e
 
 from ..math.pluecker import *
 from ..base import SimulationSequenceElement, _parse_position_keywords
-from ..visualization.utils import get_color
+from ..visualization.utils import get_color, color_tuple_to_hex
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -273,10 +273,23 @@ class FlatOpticalElement(OpticalElement):
         b = visual.box(pos=trans, size=tuple(np.abs(zoom) * 2), axis=np.dot([1.,0.,0.], rot),
                        color=self.display['color'], viewer=viewer)
         # No safety net here like for color converting to a tuple.
-        # If the advnaced properties are set you are on your own.
+        # If the advanced properties are set you are on your own.
         for n in b.property.trait_names():
             if n in self.display:
                 setattr(b.property, n, self.display[n])
+
+    def _plot_threejs(self, outfile):
+        from ..visualization import threejs
+        matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
+        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
+        outfile.write('''
+        var geometry = new THREE.BoxGeometry( 2, 2, 2 );
+	var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
+	var mesh = new THREE.Mesh( geometry, material );
+	mesh.matrixAutoUpdate = false;
+	mesh.matrix.set({matrix});
+	scene.add( mesh );'''.format(materialspec=materialspec,
+                                     matrix=matrixstring))
 
 
 class FlatStack(FlatOpticalElement):
