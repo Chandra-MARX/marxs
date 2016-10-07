@@ -58,6 +58,7 @@ For astrophysical sources, we assume that the rays are parallel when they reach 
 
 - `marxs.optics.RectangleAperture`
 - `marxs.optics.CircleAperture`
+- `marxs.optics.MultiAperture`
 
 
 General optical elements

@@ -1,12 +1,12 @@
 import numpy as np
-from astropy.table import Column
+from astropy.table import Column, vstack
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..visualization.utils import plane_with_hole, get_color
 from ..math.pluecker import h2e
 from ..math.utils import anglediff
-from ..simulator import Parallel
+from ..simulator import BaseContainer
 
 class BaseAperture(object):
     '''Base Aperture class'''
@@ -146,7 +146,7 @@ class RectangleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
+        return 4 * np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
 
     def inner_shape(self):
         g = self.geometry
@@ -213,3 +213,60 @@ class CircleAperture(FlatAperture):
         y[~ind] = 0
 
         return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+
+
+class MultiAperture(BaseAperture, BaseContainer):
+    '''Group several apertures into one class.
+
+    Sometimes a single intrument has several physical openings where photons from an
+    astrophysical source can enter, an example is XMM-Newton that operates three telescopes
+    in parallel. While it is often more efficient to simulate these as entirely separate by
+    running separate simulations, that is not always true.
+    This class groups several apertures together.
+
+    .. warning::
+
+       Apertures cannot overlap. There is currently no code checking for this, but
+       overlapping apertures will produce unphysical results.
+
+
+    Parameters
+    ----------
+    elements : list
+        The elements of this list are all optical elements that process photons.
+    preprocess_steps : list
+        The elements of this list are functions or callable objects that accept a photon list as input
+        and return no output (*default*: ``[]``). All ``preprocess_steps`` are run before
+        *every* aperture on just the photons that pass this aperture.
+    postprocess_steps : list
+        See ``preprocess_steps`` except that the steps are run *after* each aperture
+         (*default*: ``[]``) on just the photons that passed that aperture.
+    '''
+    def __init__(self, **kwargs):
+        self.elements = kwargs.pop('elements')
+        self.id_col = kwargs.pop('id_col', 'aperture')
+        super(MultiAperture, self).__init__(**kwargs)
+
+    @property
+    def area(self):
+        '''Area covered by the aperture'''
+        return np.sum([e.area for e in self.elements])
+
+    def process_photons(self, photons):
+        areas = np.array([e.area for e in self.elements])
+        aperid = np.digitize(np.random.rand(len(photons)), np.cumsum(areas) / self.area)
+
+        # Add ID number to ID col, if requested
+        if self.id_col is not None:
+            photons[self.id_col] = aperid
+        outs = []
+        for i, elem in enumerate(self.elements):
+            thisphot = photons[aperid == i]
+            for p in self.preprocess_steps:
+                p(thisphot)
+            thisphot = elem(thisphot)
+            for p in self.postprocess_steps:
+                p(thisphot)
+            outs.append(thisphot)
+        photons = vstack(outs)
+        return photons
