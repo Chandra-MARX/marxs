@@ -6,6 +6,7 @@ from ..base import GeometryError
 from ..visualization.utils import plane_with_hole, get_color
 from ..math.pluecker import h2e
 from ..math.utils import anglediff
+from ..simulator import Parallel
 
 class BaseAperture(object):
     '''Base Aperture class'''
@@ -20,6 +21,7 @@ class BaseAperture(object):
         photons.add_column(photoncoords)
         photons['pos'][:, 3] = 1
 
+    @property
     def area(self):
         '''Area of the aperture.
 
@@ -67,7 +69,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
     def triangulate_inner_outer(self):
         '''Return a triangulation of the aperture hole embedded in a squqre.
 
-        The size of the outer square is determined bt the ``'outer_factor'`` element
+        The size of the outer square is determined by the ``'outer_factor'`` element
         in ``self.display``.
 
         Returns
@@ -126,11 +128,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         geometry.setIndex(new THREE.BufferAttribute( faces, 1 ) );
         ''')
 
-	outfile.write('''var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
-	var mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
+        outfile.write('''var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+        var mesh = new THREE.Mesh( geometry, material );
+        scene.add( mesh );
         '''.format(materialspec=materialspec))
-
 
 
 class RectangleAperture(FlatAperture):
