@@ -304,13 +304,18 @@ class RowlandTorus(MarxsElement):
                                                                           theta0,
                                                                           phiarc,
                                                                           phi0)
+        rot = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1.]])
+        matrixstring = ', '.join([str(i) for i in np.dot(self.pos4d, rot).flatten()])
+
         outfile.write('''
         var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
 	var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
 	var mesh = new THREE.Mesh( geometry, material );
+	mesh.matrixAutoUpdate = false;
+	mesh.matrix.set({matrix});
 	scene.add( mesh );'''.format(materialspec=materialspec,
-                                     torusparameters=torusparameters))
-
+                                     torusparameters=torusparameters,
+                                     matrix=matrixstring))
 
 
 def design_tilted_torus(f, alpha, beta):
