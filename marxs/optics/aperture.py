@@ -1,11 +1,12 @@
 import numpy as np
-from astropy.table import Column
+from astropy.table import Column, vstack
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..visualization.utils import plane_with_hole, get_color
 from ..math.pluecker import h2e
 from ..math.utils import anglediff
+from ..simulator import BaseContainer
 
 class BaseAperture(object):
     '''Base Aperture class'''
@@ -20,6 +21,7 @@ class BaseAperture(object):
         photons.add_column(photoncoords)
         photons['pos'][:, 3] = 1
 
+    @property
     def area(self):
         '''Area of the aperture.
 
@@ -60,12 +62,23 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
 
         return photons
 
-    def _plot_mayavi_inner_shape(self):
+    def inner_shape(self):
         '''Return values in Eukledean space'''
         raise NotImplementedError
 
-    def _plot_mayavi(self, viewer=None):
+    def triangulate_inner_outer(self):
+        '''Return a triangulation of the aperture hole embedded in a squqre.
 
+        The size of the outer square is determined by the ``'outer_factor'`` element
+        in ``self.display``.
+
+        Returns
+        -------
+        xyz : np.array
+            Numpy array of vertex positions in Eukeldian space
+        triangles : np.array
+            Array of index numbers that define triangles
+        '''
         r_out = self.display.get('outer_factor', 3)
         g = self.geometry
         outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
@@ -73,8 +86,12 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
                                                       h2e(-g['v_y']) - h2e(g['v_z']),
                                                       h2e( g['v_y']) - h2e(g['v_z'])
         ])
-        inner = self._plot_mayavi_inner_shape()
-        xyz, triangles = plane_with_hole(outer, inner)
+        inner = self.inner_shape()
+        return plane_with_hole(outer, inner)
+
+    def _plot_mayavi(self, viewer=None):
+
+        xyz, triangles = self.triangulate_inner_outer()
 
         from mayavi.mlab import triangular_mesh
 
@@ -89,6 +106,33 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
                 setattr(prop, n, self.display[n])
         return t
 
+    def _plot_threejs(self, outfile):
+        xyz, triangles = self.triangulate_inner_outer()
+
+        from ..visualization import threejs
+        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
+        outfile.write('// APERTURE\n')
+        outfile.write('var geometry = new THREE.BufferGeometry(); \n')
+        outfile.write('var vertices = new Float32Array([')
+        for row in xyz:
+            outfile.write('{0}, {1}, {2},'.format(row[0], row[1], row[2]))
+        outfile.write(''']);
+        // itemSize = 3 because there are 3 values (components) per vertex
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+        ''')
+        outfile.write('var faces = new Uint16Array([')
+        for row in triangles:
+            outfile.write('{0}, {1}, {2}, '.format(row[0], row[1], row[2]))
+        outfile.write(''']);
+        // itemSize = 3 because there are 3 values (components) per triangle
+        geometry.setIndex(new THREE.BufferAttribute( faces, 1 ) );
+        ''')
+
+        outfile.write('''var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+        var mesh = new THREE.Mesh( geometry, material );
+        scene.add( mesh );
+        '''.format(materialspec=materialspec))
+
 
 class RectangleAperture(FlatAperture):
     '''Select the position where a parallel ray from an astrophysical source starts the simulation.
@@ -102,9 +146,9 @@ class RectangleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
+        return 4 * np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
 
-    def _plot_mayavi_inner_shape(self):
+    def inner_shape(self):
         g = self.geometry
         return h2e(g['center']) + np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
                                              h2e(-g['v_y']) + h2e(g['v_z']),
@@ -152,7 +196,7 @@ class CircleAperture(FlatAperture):
         '''Area covered by the aperture'''
         return 2. * np.pi * np.linalg.norm(self.geometry['v_y'])
 
-    def _plot_mayavi_inner_shape(self):
+    def inner_shape(self):
         n = self.display.get('n_inner_vertices', 90)
         phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
         v_y = self.geometry['v_y']
@@ -169,3 +213,60 @@ class CircleAperture(FlatAperture):
         y[~ind] = 0
 
         return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+
+
+class MultiAperture(BaseAperture, BaseContainer):
+    '''Group several apertures into one class.
+
+    Sometimes a single intrument has several physical openings where photons from an
+    astrophysical source can enter, an example is XMM-Newton that operates three telescopes
+    in parallel. While it is often more efficient to simulate these as entirely separate by
+    running separate simulations, that is not always true.
+    This class groups several apertures together.
+
+    .. warning::
+
+       Apertures cannot overlap. There is currently no code checking for this, but
+       overlapping apertures will produce unphysical results.
+
+
+    Parameters
+    ----------
+    elements : list
+        The elements of this list are all optical elements that process photons.
+    preprocess_steps : list
+        The elements of this list are functions or callable objects that accept a photon list as input
+        and return no output (*default*: ``[]``). All ``preprocess_steps`` are run before
+        *every* aperture on just the photons that pass this aperture.
+    postprocess_steps : list
+        See ``preprocess_steps`` except that the steps are run *after* each aperture
+         (*default*: ``[]``) on just the photons that passed that aperture.
+    '''
+    def __init__(self, **kwargs):
+        self.elements = kwargs.pop('elements')
+        self.id_col = kwargs.pop('id_col', 'aperture')
+        super(MultiAperture, self).__init__(**kwargs)
+
+    @property
+    def area(self):
+        '''Area covered by the aperture'''
+        return np.sum([e.area for e in self.elements])
+
+    def process_photons(self, photons):
+        areas = np.array([e.area for e in self.elements])
+        aperid = np.digitize(np.random.rand(len(photons)), np.cumsum(areas) / self.area)
+
+        # Add ID number to ID col, if requested
+        if self.id_col is not None:
+            photons[self.id_col] = aperid
+        outs = []
+        for i, elem in enumerate(self.elements):
+            thisphot = photons[aperid == i]
+            for p in self.preprocess_steps:
+                p(thisphot)
+            thisphot = elem(thisphot)
+            for p in self.postprocess_steps:
+                p(thisphot)
+            outs.append(thisphot)
+        photons = vstack(outs)
+        return photons

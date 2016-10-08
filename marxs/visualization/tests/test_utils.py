@@ -1,6 +1,7 @@
 import numpy as np
+import pytest
 
-from ..utils import plane_with_hole
+from ..utils import plane_with_hole, get_color, color_tuple_to_hex
 
 def test_hole_round():
     '''Ensure that plane around the inner hole closes properly at the last point.'''
@@ -24,3 +25,31 @@ def test_hole_round():
         assert set(tri[:, 1]) == set(np.arange(4 + n))
         # Check last point is always on inner rim
         assert set(tri[:, 2]) == set(np.arange(4, 4 + n))
+
+def test_color_roundtrip():
+    '''Test that the different color convertes are consistent.'''
+    colortup = get_color({'color': 'white'})
+    assert colortup == (1.0, 1.0, 1.0)
+    hexstr = color_tuple_to_hex(colortup)
+    assert hexstr == '0xffffff'
+    assert get_color({'color': '#ffffff'}) == (1.0, 1.0, 1.0)
+    # repeat with a second color that has different values for rgb
+    colortup = get_color({'color': '#ff013a'})
+    # Note that matplotlib expects hex strings with '#' while python uses '0x'
+    assert color_tuple_to_hex(colortup) == '0xff013a'
+
+    # Int input
+    assert color_tuple_to_hex((255, 255, 255)) == '0xffffff'
+
+def test_color_to_hex_bad_input():
+    with pytest.raises(ValueError) as e:
+        out = color_tuple_to_hex('white')
+    assert 'Input tuple must be all' in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        out = color_tuple_to_hex((-1, 0, 234))
+    assert 'Int values in color tuple' in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        out = color_tuple_to_hex((1., 3., 0.3))
+    assert 'Float values in color tuple' in str(e.value)

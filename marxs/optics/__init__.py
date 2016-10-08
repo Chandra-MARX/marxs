@@ -1,4 +1,4 @@
-from .aperture import RectangleAperture, CircleAperture
+from .aperture import RectangleAperture, CircleAperture, MultiAperture
 from .detector import FlatDetector, CircularDetector
 from .marx import MarxMirror
 from .grating import FlatGrating, CATGrating, uniform_efficiency_factory, constant_order_factory, EfficiencyFile

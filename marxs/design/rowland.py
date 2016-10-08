@@ -263,6 +263,17 @@ class RowlandTorus(MarxsElement):
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
 
     def _plot_mayavi(self, theta, phi, viewer=None, *args, **kwargs):
+        '''
+        Parameters
+        ----------
+        theta : np.array
+            2-d array of theta values to be plotted.
+            The mesh is constructed using the points defined by the theta and phi
+            arrays as vertices. Thus, both the coverege (full torus or only a segment)
+            and the resolution are defined through these arrays.
+        phi : np.array
+            2-d array of phi values to be plotted.
+        '''
         from mayavi.mlab import mesh
         if (theta.ndim != 2) or (theta.shape != phi.shape):
             raise ValueError('"theta" and "phi" must have same 2-dim shape.')
@@ -282,6 +293,29 @@ class RowlandTorus(MarxsElement):
             if n in self.display:
                 setattr(prop, n, self.display[n])
         return m
+
+    def _plot_threejs(self, outfile, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
+        from ..visualization import threejs
+        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
+        torusparameters = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(self.R, self.r,
+                                                                          int(np.rad2deg(thetaarc)),
+                                                                          int(np.rad2deg(phiarc)),
+                                                                          thetaarc,
+                                                                          theta0,
+                                                                          phiarc,
+                                                                          phi0)
+        rot = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1.]])
+        matrixstring = ', '.join([str(i) for i in np.dot(self.pos4d, rot).flatten()])
+
+        outfile.write('''
+        var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
+	var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+	var mesh = new THREE.Mesh( geometry, material );
+	mesh.matrixAutoUpdate = false;
+	mesh.matrix.set({matrix});
+	scene.add( mesh );'''.format(materialspec=materialspec,
+                                     torusparameters=torusparameters,
+                                     matrix=matrixstring))
 
 
 def design_tilted_torus(f, alpha, beta):
