@@ -167,7 +167,7 @@ class Parallel(BaseContainer):
     elem_pos : list of arrays or dictionary of lists
         Gives the position of the individual elements. This can either be a list of
         (4,4) np.arrays or a dictionary with entries of ``pos4d`` or ``position``,
-        ``orientation`` and ``zoom`` as explained in `pos4d` where each entry in the
+        ``orientation`` and ``zoom`` as explained in :ref:`pos4d` where each entry in the
         dictionary is a list of values
         ((3,3) matrices for ``orientation``, (3,) vectors for ``position`` etc.).
         Sub-classes of `Parallel` can implement a method `calculate_elempos` to

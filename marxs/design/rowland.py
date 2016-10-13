@@ -387,7 +387,7 @@ class ElementPlacementError(Exception):
 
 
 class LinearCCDArray(Parallel, OpticalElement):
-    '''A 1D collection of element (e.g. CCDs) arranged on a Rowland circle.
+    '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
     When a `LinearCCDArray` is initialized, it places a number of elements on the
     Rowland circle. These elements could be any optical element, but the most
@@ -399,7 +399,7 @@ class LinearCCDArray(Parallel, OpticalElement):
 
     After any of the `elem_pos`, `elem_uncertainty` or
     `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the final CCD positions..
+    called to regenerate the final CCD positions.
 
     Parameters
     ----------

@@ -8,7 +8,8 @@ from ..math.pluecker import e2h
 from ..source import PointSource, FixedPointing
 from ..simulator import Sequence
 from ..optics import (CATGrating,
-                      CircleAperture, PerfectLens, RadialMirrorScatter)
+                      CircleAperture, PerfectLens, RadialMirrorScatter,
+                      FlatDetector)
 from ..design import RowlandTorus, GratingArrayStructure
 
 
@@ -68,8 +69,9 @@ def test_resolvingpower_consistency():
 
     o = np.array([0, -3, -6])
 
-    res1 = resolvingpower_per_order(gas, p.copy(), orders=o, rowland=None)
-    res2 = resolvingpower_per_order(gas, p.copy(), orders=o, rowland=rowland)
+    res1 = resolvingpower_per_order(gas, p.copy(), orders=o, detector=None)
+    res2 = resolvingpower_per_order(gas, p.copy(), orders=o, detector=rowland)
+    res3 = resolvingpower_per_order(gas, p.copy(), orders=o, detector=FlatDetector(zoom=1000))
 
     # FWHM is similar
     assert np.isclose(res1[1][0], res2[1][0], atol=0.1)
@@ -78,9 +80,12 @@ def test_resolvingpower_consistency():
     # Resolution of 0th order is essentially 0
     assert np.isclose(res1[0][0], 0, atol=0.5)
     assert np.isclose(res2[0][0], 0, atol=0.5)
+    assert np.isclose(res3[0][0], 0, atol=0.5)
     # Resolution of higher orders is consistent and higher
     assert np.isclose(res1[0][1], res2[0][1], rtol=0.1)
     assert np.isclose(res1[0][2], res2[0][2], rtol=0.2)
+    assert np.isclose(res1[0][1], res3[0][1], rtol=0.1)
     # Resolution is higher at higher orders (approximately linear for small angles)
     assert np.isclose(res1[0][2], 2 * res1[0][1], rtol=0.2)
     assert np.isclose(res2[0][2], 2 * res2[0][1], rtol=0.2)
+    # No test for res3 here, since that does not follow Rowland circle.
