@@ -5,7 +5,8 @@ import scipy.optimize
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clipped_stats
 
-from .optics import FlatDetector, CircularDetector, constant_order_factory
+from ..optics import FlatDetector, CircularDetector, constant_order_factory
+from ..design import RowlandTorus
 
 def measure_FWHM(data):
     '''Obtain the FWHM of some quantity in an event list.
@@ -91,7 +92,7 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
                                    **kwargs)
 
 
-def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowland=None):
+def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), detector=None, colname='det_x'):
     '''Loop over grating orders and calculate the resolving power in every order.
 
     As input this function takes a Grating Array Structure (``gratings``) and a list of photons
@@ -114,11 +115,18 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
         Photon list to be processed for every order
     orders : np.array of type int
         Order numbers
-    rowland : `marxs.design.RowlandTorus` or ``None``.
-        Photons are projected onto a detector. If ``rowland`` is given, the detector
-        will be placed on the Rowland torus appropriately; if it is ``None``
-        the best detector position is determined numerically assuming that the
-        detector should be parallel to the yz plane.
+    detector : marxs optical element or `marxs.design.RowlandTorus` or ``None``.
+        Photons are projected onto a detector. There are three ways to define this detector:
+
+        - Pass in an instance of an optical element (e.g. a `marxs.optics.FlatDetector`).
+        - Pass in a `marxs.design.RowlandTorus`. This function will generate a detector that
+          follows the Rowland circle.
+        - ``None``. A flat detector in the yz plane is used, but the x position for this
+          detector is numerically optimized in each step.
+
+    colname : string
+        Name of the column the labels the dispersion direction. This is only used if a detector
+        instance is passed in explicitly.
 
     Returns
     -------
@@ -133,8 +141,13 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
     fwhm = np.zeros_like(orders, dtype=float)
     info = {}
 
-    if rowland is not None:
-        det = CircularDetector.from_rowland(rowland, width=1e5)
+    if detector is None:
+        info['method'] = 'Detector position numerically optimized'
+        info['fit_results'] = []
+        col = 'det_x' # 0 at center, detpix_x is 0 in corner.
+        zeropos = 0.
+    elif isinstance(detector, RowlandTorus):
+        det = CircularDetector.from_rowland(detector, width=1e5)
         info['method'] = 'Circular detector on Rowland circle'
         col = 'detpix_x'
         # Find position of order 0.
@@ -143,10 +156,13 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
         pg = det(pg)
         zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
     else:
-        info['method'] = 'Detector position numerically optimized'
-        info['fit_results'] = []
-        col = 'det_x' # 0 at center, detpix_x is 0 in corner.
-        zeropos = 0.
+        det = detector
+        info['method'] = 'User defined detector'
+        col = colname
+        # Find position of order 0.
+        pg = photons.copy()
+        pg = det(pg)
+        zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
 
     for i, order in enumerate(orders):
         gratingeff = constant_order_factory(order)
@@ -157,7 +173,7 @@ def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), rowlan
         pg = photons.copy()
         pg = gratings.process_photons(pg)
         pg = pg[pg['order'] == order]  # Remove photons that slip between the gratings
-        if rowland is None:
+        if detector is None:
             xbest = find_best_detector_position(pg, objective_func=measure_FWHM)
             info['fit_results'].append(xbest)
             det = FlatDetector(position=np.array([xbest.x, 0, 0]), zoom=1e5)
