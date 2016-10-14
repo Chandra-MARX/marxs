@@ -13,7 +13,7 @@ from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.pluecker import e2h, h2e
 from ..math.utils import anglediff
-from ..simulator import Parallel
+from ..simulator import ParallelCalculated
 from ..visualization.utils import get_color
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
@@ -120,7 +120,7 @@ class RowlandTorus(MarxsElement):
             coordinate set to ``None``.
             x, y, z are defined in the global coordinate system.
         interval : np.array
-            [min, max] for the search. The quartic can have up to for solutions because a
+            [min, max] for the search. The quartic can have up to four solutions because a
             line can intersect a torus in four points and this interval must bracket one and only
             one solution.
         transform : bool
@@ -386,7 +386,7 @@ class ElementPlacementError(Exception):
     pass
 
 
-class LinearCCDArray(Parallel, OpticalElement):
+class LinearCCDArray(ParallelCalculated, OpticalElement):
     '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
     When a `LinearCCDArray` is initialized, it places a number of elements on the
@@ -427,12 +427,6 @@ class LinearCCDArray(Parallel, OpticalElement):
         is on the positive y axis. Angles are given in radian.
     '''
 
-    tangent_to_torus = True
-    '''If ``True`` the default orientation (before applying blaze, uncertainties etc.) of facets is
-    such that they are tangents to the torus in the center of the facet.
-    If ``False`` they are perpendicular to perfectly focussed rays.
-    '''
-
     id_col = 'CCD_ID'
 
     def __init__(self, rowland, d_element, x_range, radius, phi, **kwargs):
@@ -449,8 +443,21 @@ class LinearCCDArray(Parallel, OpticalElement):
         self.phi = phi
         self.x_range = x_range
         self.d_element = d_element
+        kwargs['normal_spec'] = self.rowland_normal
+        radii = self.distribute_elements_on_radius()
+        kwargs['parallel_spec'] =  e2h(normalized_vector(self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range)), 0)
+        kwargs['pos_spec'] = self.xyzwpos
 
         super(LinearCCDArray, self).__init__(**kwargs)
+
+    def rowland_normal(self, xyzw):
+        return self.rowland.normal(h2e(xyzw))
+
+    def xyzwpos(self):
+        radii = self.distribute_elements_on_radius()
+        facet_pos = np.array([self.rowland.xyz_from_radiusangle(r, self.phi, self.x_range).flatten() for r in radii])
+        return e2h(facet_pos, 1)
+
 
     def max_elements_on_radius(self, radius):
         '''Distribute elements on a radius.
@@ -489,42 +496,6 @@ class LinearCCDArray(Parallel, OpticalElement):
             radii.append(np.mean(radiusbracket) +
                          np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
         return np.hstack(radii)
-
-    def calculate_elempos(self):
-        '''Calculate ideal element positions based on rowland geometry.
-
-        Returns
-        -------
-        pos4d : list of arrays
-            List of affine transformations that bring an optical element centered
-            on the origin of the coordinate system with the active plane in the
-            yz-plane to the required facet position on the Rowland torus.
-        '''
-        pos4d = []
-        radii = self.distribute_elements_on_radius()
-        # Line along which the detectors are placed
-        try:
-            line = normalized_vector(self.rowland.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.rowland.xyz_from_radiusangle(radii[0], self.phi, self.x_range))
-            for r in radii:
-                facet_pos = self.rowland.xyz_from_radiusangle(r, self.phi, self.x_range).flatten()
-                if self.tangent_to_torus:
-                    facet_normal = self.rowland.normal(facet_pos)
-                else:
-                    facet_normal = facet_pos
-                # rotate such that one edge is parallel to the line
-                rot_mat = np.zeros((3,3))
-                rot_mat[0, :] = facet_normal
-                # Get the part of line that's orthogonal to facet_normal
-                rot_mat[1, :] = line - rot_mat[0, :] * np.dot(rot_mat[0, :], line)
-                rot_mat[2, :] = normalized_vector(np.cross(rot_mat[0, :], rot_mat[1, :]))
-                pos4d.append(transforms3d.affines.compose(facet_pos, rot_mat, np.ones(3)))
-        except ValueError as e:
-            if 'f(a) and f(b) must have different signs' in str(e):
-                raise ElementPlacementError('No intersection with Rowland torus in range {0}'.format(self.x_range))
-            else:
-                # Something else went wrong
-                raise e
-        return pos4d
 
 
 class GratingArrayStructure(LinearCCDArray):
@@ -653,4 +624,67 @@ class GratingArrayStructure(LinearCCDArray):
                 rot_mat = ex2vec_fix(element_normal, np.array([0., 1., 0.]))
 
                 pos4d.append(transforms3d.affines.compose(element_pos, rot_mat, np.ones(3)))
+        return pos4d
+
+
+class RectangularGrid(ParallelCalculated, OpticalElement):
+    id_col = 'facet'
+
+    def __init__(self, **kwargs):
+        self.x_range = kwargs.pop('x_range')
+        self.y_range = kwargs.pop('y_range')
+        self.z_range = kwargs.pop('z_range')
+        self.rowland = kwargs.pop('rowland')
+        self.d_element = kwargs.pop('d_element')
+        kwargs['pos_spec'] = self.elempos
+        if 'normal_spec' not in kwargs.keys():
+            kwargs['normal_spec'] = np.array([0., 0., 0., 1.])
+        if 'parallel_spec' not in kwargs.keys():
+            kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
+
+        super(RectangularGrid, self).__init__(**kwargs)
+
+    def elempos(self):
+
+        n_y =  int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
+        n_z =  int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
+
+        ypos = np.mean(self.y_range) + np.arange(- n_y / 2 + 0.5, n_y / 2 + 0.5) * self.d_element
+        zpos = np.mean(self.z_range) + np.arange(- n_z / 2 + 0.5, n_z / 2 + 0.5) * self.d_element
+        ypos, zpos = np.meshgrid(ypos, zpos)
+
+        xpos = []
+        for y, z in zip(ypos.flatten(), zpos.flatten()):
+            xpos.append(self.rowland.solve_quartic(y=y, z=z, interval=self.x_range))
+
+        return np.vstack([np.array(xpos), ypos.flatten(), zpos.flatten(), np.ones_like(xpos)]).T
+
+    def calculate_elempos(self):
+        '''Calculate the position of elements based on some algorithm.
+
+        Classes derived from `Parallel` can overwrite this method if they want to
+        provide a way to calculate the pos4d matrices for the elements that make up this
+        `Parallel` element.
+        This function is called in the intialization if ``elem_pos is None``.
+
+        Returns
+        -------
+        pos4d : list of arrays
+            List of affine transformations that bring an optical element centered
+            on the origin of the coordinate system with the active plane in the
+            yz-plane to the required facet position on the Rowland torus.
+        '''
+        pos4d = []
+
+        xyzw = self.elempos()
+        normals = self.get_spec('normal_spec', xyzw)
+        parallels = self.get_spec('parallel_spec', xyzw, normals)
+
+        for i in range(xyzw.shape[0]):
+
+            # Find the rotation between [1, 0, 0] and the new normal
+            # Keep grooves (along e_y) parallel to e_y
+            rot_mat = ex2vec_fix(normals[i, :], parallels[i, :])
+
+            pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
