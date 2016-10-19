@@ -530,10 +530,16 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
         self.phi = phi
         self.x_range = x_range
         self.d_element = d_element
-        kwargs['normal_spec'] = self.rowland_normal
-        radii = self.distribute_elements_on_radius()
-        kwargs['parallel_spec'] =  e2h(normalized_vector(self.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.xyz_from_radiusangle(radii[0], self.phi, self.x_range)), 0)
-        kwargs['pos_spec'] = self.xyzwpos
+
+        if 'normal_spec' not in kwargs.keys():
+            kwargs['normal_spec'] = self.rowland_normal
+
+        if 'parallel_spec' not in kwargs.keys():
+            radii = self.distribute_elements_on_radius()
+            kwargs['parallel_spec'] =  e2h(normalized_vector(self.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.xyz_from_radiusangle(radii[0], self.phi, self.x_range)), 0)
+
+        if 'pos_spec' not in kwargs.keys():
+            kwargs['pos_spec'] = self.xyzwpos
 
         super(LinearCCDArray, self).__init__(**kwargs)
 
@@ -651,6 +657,7 @@ class GratingArrayStructure(LinearCCDArray):
                  parallel_spec=np.array([0., 1., 0., 0.]), **kwargs):
         if np.min(radius) < 0:
             raise ValueError('Radius must be positive.')
+        kwargs['parallel_spec'] = parallel_spec
         kwargs['pos_spec'] = self.xyzwpos
 
         super(GratingArrayStructure, self).__init__(rowland, d_element, x_range, radius, phi, **kwargs)
@@ -700,7 +707,7 @@ class GratingArrayStructure(LinearCCDArray):
         centerangles = d_between + 0.5 * element_angle + np.arange(n) * (d_between + element_angle)
         return (self.phi[0] + centerangles) % (2. * np.pi)
 
-    def xyzwpos(self):
+    def getelem_xyzw(self):
         pos = []
         radii = self.distribute_elements_on_radius()
         for r in radii:
@@ -721,7 +728,7 @@ class GratingArrayStructure(LinearCCDArray):
         '''
         pos4d = []
 
-        xyzw = self.elempos()
+        xyzw = self.getelem_xyzw()
         normals = self.get_spec('normal_spec', xyzw)
         parallels = self.get_spec('parallel_spec', xyzw, normals)
 
