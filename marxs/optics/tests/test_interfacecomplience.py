@@ -80,7 +80,7 @@ class TestOpticalElementInterface:
 
     At the same time, these tests guarantee that the modules work at all
     (e.g. the can be initialized etc.). Not as good as checking for correctness
-    (that has to happen in individual tests, but it's a start.
+    (that has to happen in individual tests), but it's a start.
     '''
     def test_one_vs_many_in_call_signature(self, photons, elem):
         '''processing a single photon should give same result as photon list'''

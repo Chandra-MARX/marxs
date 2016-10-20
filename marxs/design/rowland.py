@@ -16,6 +16,12 @@ from ..math.utils import anglediff
 from ..simulator import ParallelCalculated
 from ..visualization.utils import get_color
 
+# Python 2 vs 3 (basestring does not exist in Python 3)
+try:
+    basestring
+except NameError:
+    basestring = str
+
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     '''Find the radius the photons coming from a single mirror shell have.
 
