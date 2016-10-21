@@ -4,6 +4,9 @@ from transforms3d.affines import decompose44
 from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..base import SimulationSequenceElement, _parse_position_keywords
 from ..math.pluecker import h2e
+import transforms3d
+from transforms3d.utils import normalized_vector
+
 
 
 class SimulationSetupError(Exception):
@@ -209,7 +212,7 @@ class Parallel(BaseContainer):
         # Need to operate on a copy here, to avoid changing elem_args of outer level
         self.elem_args = kwargs.pop('elem_args', {}).copy()
 
-        elem_pos = kwargs.pop('elem_pos', None)
+        elem_pos = kwargs.pop('elem_pos')
         if isinstance(elem_pos, dict):
             # Do some consistency checks to find the most common errors.
             keys = list(elem_pos.keys())
@@ -234,23 +237,9 @@ class Parallel(BaseContainer):
 
         if 'id_col' not in self.elem_args:
             self.elem_args['id_col'] = self.id_col
-        if self.elem_pos is None:
-            try:
-                self.elem_pos = self.calculate_elempos()
-            except NotImplementedError:
-                raise ValueError('"elem_pos" must be specified as argument')
         self.elem_uncertainty = [np.eye(4)] * len(self.elem_pos)
         self.generate_elements()
 
-    def calculate_elempos(self):
-        '''Calculate the position of elements based on some algorithm.
-
-        Classes derived from `Parallel` can overwrite this method if they want to
-        provide a way to calculate the pos4d matrices for the elements that make up this
-        `Parallel` element.
-        This function is called in the intialization if ``elem_pos is None``.
-        '''
-        raise NotImplementedError
 
     def generate_elements(self):
         '''Initialize all optical elements.
@@ -308,6 +297,65 @@ class Parallel(BaseContainer):
                 f_pos4d = np.dot(m, f_pos4d)
             self.elements.append(self.elem_class(pos4d = f_pos4d, id_num=i, **specific_elem_args))
 
+
+class ParallelCalculated(Parallel):
+
+    def __init__(self, **kwargs):
+        self.pos_spec = kwargs.pop('pos_spec')
+        self.normal_spec = kwargs.pop('normal_spec')
+        self.parallel_spec = kwargs.pop('parallel_spec')
+        kwargs['elem_pos'] = self.calculate_elempos()
+        super(ParallelCalculated, self).__init__(**kwargs)
+
+    def calculate_elempos(self):
+        '''Calculate the position of elements based on some algorithm.
+
+        Classes derived from `Parallel` can overwrite this method if they want to
+        provide a way to calculate the pos4d matrices for the elements that make up this
+        `Parallel` element.
+        This function is called in the intialization if ``elem_pos is None``.
+
+        Returns
+        -------
+        pos4d : list of arrays
+            List of affine transformations that bring an optical element centered
+            on the origin of the coordinate system with the active plane in the
+            yz-plane to the required facet position on the Rowland torus.
+        '''
+        pos4d = []
+
+        xyzw = self.get_elemxyzw()
+        normals = self.get_spec('normal_spec', xyzw)
+        parallels = self.get_spec('parallel_spec', xyzw, normals)
+
+        for i in range(xyzw.shape[0]):
+            rot_mat = np.zeros((3,3))
+            rot_mat[0, :] = normalized_vector(normals[i, :])
+            rot_mat[1, :] = normalized_vector(parallels[i, :] - rot_mat[0, :] * np.dot(rot_mat[0, :], parallels[i, :]))
+            rot_mat[2, :] = normalized_vector(np.cross(rot_mat[0, :], rot_mat[1, :]))
+            pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
+        return pos4d
+
+    def get_elemxyzw(self):
+        if callable(self.pos_spec):
+            return self.pos_spec()
+        else:
+            return self.pos_spec
+
+    def get_spec(self, specname, xyzw, *args, **kwargs):
+        spec = getattr(self, specname)
+        # function
+        if callable(spec):
+            return spec(xyzw, *args, **kwargs)
+        elif len(spec) == 4:
+            # vector in homogeneous coordinates
+            if spec[3] == 0:
+                return np.tile(spec[:3], (xyzw.shape[0], 1))
+            # position in homogeneous coordinates
+            else:
+                return h2e(xyzw) - h2e(spec)[None, :]
+        else:
+            raise ValueError(specname + 'must be callable of homogeneous coordinate.')
 
 
 class KeepCol(object):

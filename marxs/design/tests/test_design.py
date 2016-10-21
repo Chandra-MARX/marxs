@@ -4,6 +4,7 @@ import transforms3d
 import pytest
 
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
+                       RowlandCircleArray,
                        find_radius_of_photon_shell, design_tilted_torus,
                        ElementPlacementError)
 from ...optics.base import FlatOpticalElement
@@ -360,3 +361,33 @@ def test_impossible_LinearCCDArray():
         ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
                               radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
     assert 'No intersection with Rowland' in str(e)
+
+def test_RowlandCircleArrayone():
+    '''Test an array of one element in default position'''
+    myrowland = RowlandTorus(10000., 10000.)
+    # Along the way we normally would orient the detector.
+    ccds = RowlandCircleArray(myrowland, d_element=300., theta=[np.pi - 0.0001, np.pi + 0.0001],
+                              elem_class=mock_facet)
+    assert len(ccds.elements) == 1
+    # multiply because of pointing inward vs. outward
+    assert np.allclose(ccds.elements[0].pos4d, np.eye(4) * np.array([-1,-1,1,1]))
+
+def test_compareRowlandCircle2LinearCCD_rotatated():
+    '''Test an array with different rotations.
+
+    The RowlandCircleArray and the LinearCCDArray should be very similar
+    for phi = 0.
+    '''
+    myrowland = RowlandTorus(10000., 10000.)
+    ccd1 = RowlandCircleArray(myrowland, d_element=30., theta=[np.pi - 0.03, np.pi],
+                              elem_class=mock_facet)
+    ccd2 = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
+                          radius=[0., 10000. * np.sin(0.03)], phi=0., elem_class=mock_facet)
+    # reversed because the one element orders it differently then the other.
+    # Should really compare sets here or standardize order in some way, I guess.
+    for e1, e2 in zip(ccd1.elements, reversed(ccd2.elements)):
+        t1, r1, z1, s1 = transforms3d.affines.decompose44(e1.pos4d)
+        t2, r2, z2, s2 = transforms3d.affines.decompose44(e2.pos4d)
+        assert np.allclose(t1, t2, rtol=1e-3, atol=0.01)
+        # orientation is not too important, so allow some -1 factors
+        assert np.allclose(np.abs(r1), np.abs(r2), rtol=1e-3, atol=0.01)

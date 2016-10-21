@@ -133,7 +133,7 @@ read-out streaks,
                                     0,
                                     kwargs.pop(['DetOffsetY'], 0)])
         # Now the ACIS specific case
-        kwargs['elem_pos'] = None
+        kwargs['elem_pos'] = self.calculate_elempos()
         kwargs['elem_class'] = ACISChip
         # Use 0.024 because that's more consistent with 1024 pix
         kwargs['elem_args'] = {'pixsize': 0.024 } # {'pixsize': 0.023985 }

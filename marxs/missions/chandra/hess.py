@@ -20,7 +20,7 @@ class HETG(Parallel):
 
         Datafile from: http://space.mit.edu/HETG/hess/basic.html
         '''
-        kwargs['elem_pos'] = None
+        kwargs['elem_pos'] = self.calculate_elempos()
         kwargs['elem_class'] = FlatGrating
         # Gratings are defined in order MEG, then HEG
         d = [4001.95 * 1e-7] * 192 + [2000.81 * 1e-7] * 144
