@@ -10,9 +10,10 @@ def test_energydependentfilter(filterclass):
     # Useless filter function, but good for testing
     f = filterclass(filterfunc=lambda x: 1./x)
     photons = generate_test_photons(5)
+    photons['probability'] = 0.8
     photons['energy'] = np.arange(1., 6.)
     photons = f(photons)
-    assert np.allclose(photons['probability'] , 1./np.arange(1., 6.))
+    assert np.allclose(photons['probability'] , 0.8 / np.arange(1., 6.))
 
 @pytest.mark.parametrize("filterclass", [EnergyFilter, GlobalEnergyFilter])
 def test_energyfilter_error(filterclass):

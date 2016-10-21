@@ -10,7 +10,8 @@ from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
 from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
 from ..base import _parse_position_keywords, FlatStack
-from ...design import RowlandTorus, GratingArrayStructure
+from ...design import (RowlandTorus, GratingArrayStructure,
+                       LinearCCDArray, RowlandCircleArray)
 from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
@@ -34,6 +35,15 @@ all_oe = [ThinLens(focallength=100),
                                 elem_args={'zoom':0.05, 'd':0.002,
                                            'order_selector': constant_order_factory(1)
                                            }),
+          LinearCCDArray(mytorus, d_element=0.05, x_range=[0., 0.5],
+                          radius=[0., 0.5], phi=0., elem_class=FlatGrating,
+                         elem_args={'zoom': 0.05, 'd':0.002,
+                                    'order_selector': constant_order_factory(2)
+                                }),
+          RowlandCircleArray(rowland=mytorus, elem_class=FlatGrating,
+                             elem_args={'zoom': 0.04, 'd': 1e-3,
+                                        'order_selector': constant_order_factory(1)},
+                             d_element=0.1,theta=[np.pi - 0.2, np.pi + 0.1]),
           Baffle(),
           MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
           Sequence(elements=[]),
@@ -123,6 +133,18 @@ class TestOpticalElementInterface:
         des = elem.describe()
         assert isinstance(des, OrderedDict)
         assert len(des) > 0
+
+    def test_prob(self, photons, elem):
+        '''For every type of element, the value for 'probability' can only go down.'''
+        if isinstance(elem, MultiLayerMirror):
+            pytest.xfail("#22")
+
+        if isinstance(elem, BaseAperture):
+            photons.remove_column('pos')
+
+        photons['probability'] = 1e-4
+        photons = elem(photons)
+        assert np.all(photons['probability'] <= 1e-4)
 
 def test_parse_position_keywords_zoom_dimension():
     '''test proper error messages for zoom keyword'''
