@@ -189,12 +189,19 @@ class MarxMirror(OpticalElement, BaseAperture):
             raise MarxError('Error in marx_mirror_reflect.')
         return self._c2table(c_photon_list)
 
-    def process_photons(self, photons, verbose=0):
-        self.add_colpos(photons)
-        new_photons = self._process_photons_in_c(photons, verbose)
-        photons = join(new_photons, photons, keys='tag',
+    def process_photons(self, photons_in, verbose=0):
+        self.add_colpos(photons_in)
+        new_photons = self._process_photons_in_c(photons_in, verbose)
+        photons = join(new_photons, photons_in, keys='tag',
                        uniq_col_name='{col_name}{table_name}',
                        table_names=['', '_beforemirror'])
+        # Probability column needs special treatment, because the probability
+        # is not just replaced with the new number, it's multiplicative.
+        # First, match tag in to tag after join (which may have fewer photons)
+        insorted = np.argsort(photons_in['tag'])
+        ypos = np.searchsorted(photons_in['tag'][insorted], photons['tag'])
+        indices = insorted[ypos]
+        photons['probability'] *= photons_in['probability'][indices]
         photons['probability'][photons['unreflected'] | photons['mirror_vblocked']] = 0
         return photons
 
