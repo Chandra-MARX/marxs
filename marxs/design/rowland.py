@@ -771,8 +771,12 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
         n_y =  int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
         n_z =  int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
 
-        ypos = np.mean(self.y_range) + np.arange(- n_y / 2 + 0.5, n_y / 2 + 0.5) * self.d_element
-        zpos = np.mean(self.z_range) + np.arange(- n_z / 2 + 0.5, n_z / 2 + 0.5) * self.d_element
+        # n_y and n_z are rounded up, so they cover a slighty larger range than y/z_range
+        width_y = n_y * self.d_element
+        width_z = n_z * self.d_element
+
+        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element), self.y_range[1], self.d_element)
+        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element), self.z_range[1], self.d_element)
         ypos, zpos = np.meshgrid(ypos, zpos)
 
         xpos = []
