@@ -176,6 +176,8 @@ class Parallel(BaseContainer):
         Sub-classes of `Parallel` can implement a method `calculate_elempos` to
         determine the position of their elements automatically. In this case, they should set
         ``elem_pos=None``.
+    id_num_offset : int
+        ID numbers of generated elements start at this number.
 
     Examples
     --------
@@ -207,7 +209,7 @@ class Parallel(BaseContainer):
     '''
     def __init__(self, **kwargs):
         self.pos4d = _parse_position_keywords(kwargs)
-
+        self.id_num_offset = kwargs.pop('id_num_offset', 0)
         self.elem_class = kwargs.pop('elem_class')
         # Need to operate on a copy here, to avoid changing elem_args of outer level
         self.elem_args = kwargs.pop('elem_args', {}).copy()
@@ -295,7 +297,9 @@ class Parallel(BaseContainer):
                               ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
-            self.elements.append(self.elem_class(pos4d = f_pos4d, id_num=i, **specific_elem_args))
+            self.elements.append(self.elem_class(pos4d = f_pos4d,
+                                                 id_num=self.id_num_offset + i,
+                                                 **specific_elem_args))
 
 
 class ParallelCalculated(Parallel):
