@@ -15,8 +15,8 @@ class ProjectOntoPlane(FlatOpticalElement):
 
     Example
     -------
-    Project some points onto a plane. If not orientation is given to the
-    ``ProjectionOntoPlane`` object, the default is to place it in the yzplane.
+    Project some points onto a plane. If no orientation is given to the
+    ``ProjectionOntoPlane`` object, the default is to place it in the yz-plane.
 
     >>> from astropy.table import Table
     >>> import numpy as np
@@ -27,6 +27,8 @@ class ProjectOntoPlane(FlatOpticalElement):
     >>> photons = yzplane(photons)
     >>> photons['proj_x'].data
     array([ 3., -1.])
+    >>> photons['proj_y'].data
+    array([ 3., 0.])
     '''
 
     loc_coos_name = ['proj_x', 'proj_y']
