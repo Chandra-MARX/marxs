@@ -181,7 +181,7 @@ class Parallel(BaseContainer):
 
     Examples
     --------
-    In this example we build up a detector made up of four CCD. Each CCD is 10 mm * 10 mm
+    In this example we build up a detector made up of four CCDs. Each CCD is 10 mm * 10 mm
     large and has a pixel size of 0.01 mm. The CCDs are set in a square with small spaces
     in between.
 

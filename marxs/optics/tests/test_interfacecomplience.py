@@ -1,11 +1,12 @@
 from collections import OrderedDict
+import copy
 
 import numpy as np
 import pytest
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
                 FlatGrating, uniform_efficiency_factory, constant_order_factory,
-                MarxMirror, CircleAperture)
+                MarxMirror, CircleAperture, MultiAperture)
 
 from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
@@ -26,6 +27,8 @@ mytorus = RowlandTorus(0.5, 0.5)
 all_oe = [ThinLens(focallength=100),
           RectangleAperture(),
           CircleAperture(),
+          MultiAperture(elements=[RectangleAperture(),
+                                  CircleAperture(position=[0, 200, 0])]),
           FlatDetector(pixsize=2., zoom=100.),
           CircularDetector(),
           FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
@@ -145,6 +148,23 @@ class TestOpticalElementInterface:
         photons['probability'] = 1e-4
         photons = elem(photons)
         assert np.all(photons['probability'] <= 1e-4)
+
+    def test_metadata_evolution(self, photons, elem):
+        '''In almost all cases, the metadata passed into an element should
+        be returned unchanged. New keys can be added all the time, but it is
+        extremely rare that an element changes and existing meta-data value.
+        (Those cases need to be marked xfail by hand here or be listed in an
+        exclusion list when they come up.)
+
+        Regression test for #88.
+        '''
+        if isinstance(elem, MultiLayerMirror):
+            pytest.xfail("#22")
+        meta_in = copy.deepcopy(photons.meta)
+        if isinstance(elem, BaseAperture):
+            photons.remove_column('pos')
+        p = elem.process_photons(photons)
+        assert all(item in p.meta.items() for item in meta_in.items())
 
 def test_parse_position_keywords_zoom_dimension():
     '''test proper error messages for zoom keyword'''
