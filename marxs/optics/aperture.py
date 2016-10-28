@@ -1,5 +1,6 @@
 import numpy as np
-from astropy.table import Column, vstack
+from astropy import table
+from astropy.utils.metadata import enable_merge_strategies
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
@@ -7,6 +8,7 @@ from ..visualization.utils import plane_with_hole, get_color
 from ..math.pluecker import h2e
 from ..math.utils import anglediff
 from ..simulator import BaseContainer
+from .. import utils
 
 class BaseAperture(object):
     '''Base Aperture class'''
@@ -17,7 +19,7 @@ class BaseAperture(object):
     @staticmethod
     def add_colpos(photons):
         '''add columns ['pos'] to photon array'''
-        photoncoords = Column(name='pos', length=len(photons), shape=(4,))
+        photoncoords = table.Column(name='pos', length=len(photons), shape=(4,))
         photons.add_column(photoncoords)
         photons['pos'][:, 3] = 1
 
@@ -268,5 +270,7 @@ class MultiAperture(BaseAperture, BaseContainer):
             for p in self.postprocess_steps:
                 p(thisphot)
             outs.append(thisphot)
-        photons = vstack(outs)
+        with enable_merge_strategies(utils.MergeIdentical):
+            photons = table.vstack(outs)
+
         return photons

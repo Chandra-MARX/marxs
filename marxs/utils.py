@@ -1,5 +1,6 @@
 import numpy as np
 from astropy.table import Table
+from astropy.utils.metadata import MergeStrategy
 
 def generate_test_photons(n=1):
     '''Generate a photon structure for testing.
@@ -33,3 +34,22 @@ def generate_test_photons(n=1):
                      'probability': np.ones(n),
                      })
     return photons
+
+
+class MergeIdentical(MergeStrategy):
+    '''Merge metadata in astropy table
+
+    In some cases, a table of photons is split up, e.g. when half of
+    the photons passes through one aperture and the other half through
+    a second aperture. When merging those tables back together, they
+    have the same metadata, but the default `astropy.utils.metadata.MergePlus`
+    would lead to doubled entries.
+    '''
+    types = [(list, list), (tuple, tuple)]
+
+    @classmethod
+    def merge(cls, left, right):
+        if left == right:
+            return left
+        else:
+            return left + right
