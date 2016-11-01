@@ -60,7 +60,7 @@ This will generate 5 counts per second for 20 seconds with an absolutely constan
     ...     return times[times < exposuretime]
     >>> star = PointSource(coords=(0,0), flux=poisson_rate)
 
-Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). Marxs provides a better implementation called `poisson_process` which will generate the appropriate function automatically given the expected rate:
+Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). Marxs provides a better implementation called `~marxs.source.source.poisson_process` which will generate the appropriate function automatically given the expected rate:
 
     >>> from marxs.source.source import poisson_process
     >>> star = PointSource(coords=(11., 12.), flux=poisson_process(100.))
@@ -80,7 +80,7 @@ Similarly to the flux, the input for ``energy`` can just be a number, which spec
        6.7
        6.7
 
-We can also specify a spectrum, by giving binned energy and flux density values. The energy values are taken as the *upper* egde of the bin; the first value of the flux density array is ignored since the lower bound for this bin is undefined. The spectrum can either be in the form of a (2, N) `numpy.ndarray` or it can be some type of table, e.g. an `astropy.table.Table` or a `dict <dict>` with columns named "energy" and "flux" (meaning: "flux density" in counts/s/unit area/keV). In the following exmaple, we specify the same spectrum in three differect ways (the plot looks a little different, because photon energies are randomly drawn from the spectrum, so there is a Poisson uncertainty):
+We can also specify a spectrum, by giving binned energy and flux density values. The energy values are taken as the *upper* egde of the bin; the first value of the flux density array is ignored since the lower bound for this bin is undefined. The spectrum can either be in the form of a (2, N) `numpy.ndarray` or it can be some type of table, e.g. an `astropy.table.Table` or a `dict <dict>` with columns named "energy" and "flux" (meaning: "flux density" in counts/s/unit area/keV). In the following exmaple, we specify the same spectrum in three differect ways (the plots look a little different because photon energies are randomly drawn from the spectrum, so there is a Poisson uncertainty):
 
 .. plot:: pyplots/sourcespectrum.py
    :include-source:

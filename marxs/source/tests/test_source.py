@@ -36,7 +36,7 @@ def test_flux_input():
     assert '`flux` must be' in str(e.value)
 
 def test_energy_input():
-    '''Many differnet options ...'''
+    '''Many different options ...'''
     # 1. contant energy
     s = Source(energy=2.)
     photons = s.generate_photons(5)

@@ -6,6 +6,8 @@ from transforms3d.euler import euler2mat
 from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
+from ..math.rotations import axangle2mat
+from ..math.pluecker import h2e, e2h
 
 
 def poisson_process(rate):
@@ -398,3 +400,31 @@ class FixedPointing(PointingModel):
         photons.meta['ROLL_NOM'] = (self.roll, '[deg] Nominal Pointing Roll')
 
         return photons
+
+
+class JitterPointing(FixedPointing):
+    '''Transform spacecraft to fixed sky system.
+
+    This extends `marxs.sourcs.FixedPointing` by adding a random jitter coordinate.
+    In this simple implementation the jitter angles applied to two consecutive
+    photons are entirely uncorrelated, even if these two photons arrive at the
+    same time.
+
+    Parameters
+    ----------
+    jitter : float
+        Gaussian sigma of jitter angle in radian
+    '''
+    def __init__(self, **kwargs):
+        self.jitter = kwargs.pop('jitter')
+        super(JitterPointing, self).__init__(**kwargs)
+
+    def photons_dir(self, ra, dec, time):
+        photons_dir = super(JitterPointing, self).photons_dir(ra, dec, time)
+        # Get random jitter direction
+        randang = np.random.rand(len(ra)) * 2. * np.pi
+        ax = np.vstack([np.zeros_like(ra), np.sin(randang), np.cos(randang)]).T
+        jitterang = np.random.normal(scale=self.jitter, size=len(ra))
+        jitterrot = axangle2mat(ax, jitterang)
+        photons_dir = np.einsum('...ij,...i->...j', jitterrot, h2e(photons_dir))
+        return e2h(photons_dir, 0)
