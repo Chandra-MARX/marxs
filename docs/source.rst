@@ -146,9 +146,10 @@ The following astropysical sources are included in marxs:
 - `marxs.source.PointSource`
 - `marxs.source.SymbolFSource`
 	       
-Sources can be used with the following pointing model:
+Sources can be used with the following pointing models:
 
 - `marxs.source.FixedPointing`
+- `marxs.source.JitterPointing`
 
 .. _sect-source-lab:
 
