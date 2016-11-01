@@ -1,4 +1,4 @@
-from .source import (Source, PointSource, FixedPointing,
+from .source import (Source, PointSource, FixedPointing, JitterPointing,
                      SymbolFSource,
                      poisson_process,
                      )
