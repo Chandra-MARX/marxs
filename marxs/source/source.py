@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 from scipy.stats import expon
 from astropy.table import Table, Column
@@ -8,6 +10,7 @@ from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 from ..math.rotations import axangle2mat
 from ..math.pluecker import h2e, e2h
+from ..utils import SimulationSetupWarning
 
 
 def poisson_process(rate):
@@ -417,6 +420,8 @@ class JitterPointing(FixedPointing):
     '''
     def __init__(self, **kwargs):
         self.jitter = kwargs.pop('jitter')
+        if self.jitter > 1e-4:
+            warn('Jitter is {0} which seems large [jitter is expected in radian, not arcsec].'.format(self.jitter), SimulationSetupWarning)
         super(JitterPointing, self).__init__(**kwargs)
 
     def photons_dir(self, ra, dec, time):
