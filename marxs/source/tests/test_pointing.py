@@ -44,3 +44,8 @@ def test_jitter():
     coeff, p = pearsonr(p_fixed['dir'][:, 1] - p_jitter['dir'][:, 1],
                         p_fixed['dir'][:, 2] - p_jitter['dir'][:, 2])
     assert abs(coeff) < 0.01
+
+def test_arcsecinsteadofradianrwarning(recwarn):
+    jittered = JitterPointing(coords = (25., -10.), jitter=1./3600.)
+    w = recwarn.pop()
+    assert 'jitter is expected in radian' in str(w.message)

@@ -1,6 +1,13 @@
 import numpy as np
 from astropy.table import Table
 from astropy.utils.metadata import MergeStrategy
+import warnings
+
+class SimulationSetupWarning(Warning):
+    pass
+
+warnings.filterwarnings("always", ".*", SimulationSetupWarning)
+
 
 def generate_test_photons(n=1):
     '''Generate a photon structure for testing.

@@ -7,11 +7,8 @@ from transforms3d.affines import decompose44, compose
 from .base import FlatOpticalElement, OpticalElement
 from ..math.pluecker import h2e
 from ..visualization.utils import get_color
+from ..utils import SimulationSetupWarning
 
-class PixelSizeWarning(Warning):
-    pass
-
-warnings.filterwarnings("always", ".*", PixelSizeWarning)
 
 class FlatDetector(FlatOpticalElement):
     '''Flat detector with square pixels
@@ -55,7 +52,7 @@ class FlatDetector(FlatOpticalElement):
             z  = zoom[i + 1]
             self.npix[i] = int(np.round(2. * z / self.pixsize))
             if np.abs(2. * z / self.pixsize - self.npix[i]) > 1e-2:
-                warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), PixelSizeWarning)
+                warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), SimulationSetupWarning)
             self.centerpix[i] = (self.npix[i] - 1) / 2
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
