@@ -40,9 +40,10 @@ class DocMeta(type):
             # for items that have a docstring (i.e. methods) that is empty
             if hasattr(dict[k], '__doc__') and dict[k].__doc__ is None:
                 for b in mro:
-                    # look if has defines the method
+                    # look if this b defines the method
                     # (it might not in case of multiple inheritance)
-                    if hasattr(b, k):
+                    if hasattr(b, k) and (getattr(b, k).__doc__ is not None):
+                        # copy docstring if super method has one
                         dict[k].__doc__ = getattr(b, k).__doc__
                         break
 

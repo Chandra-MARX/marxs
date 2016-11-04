@@ -395,13 +395,14 @@ class ElementPlacementError(Exception):
 class RowlandCircleArray(ParallelCalculated, OpticalElement):
     '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
-    When a `LinearCCDArray` is initialized, it places a number of elements on the
+    When a `RowlandCircleArray` is initialized, it places a number of elements on the
     Rowland circle. These elements could be any optical element, but the most
     common use for this structure is an array of CCDs capturing a spread-out
     grating spectrum like ACIS-S in Chandra.
 
     After generation, individual positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for details.
+    editing the attributes `elem_pos` or `elem_uncertainty`.
+    See `marxs.simulator.Parallel` for details.
 
     After any of the `elem_pos`, `elem_uncertainty` or
     `uncertainty` is changed, `generate_elements` needs to be
