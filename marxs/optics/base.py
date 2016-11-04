@@ -263,20 +263,25 @@ class FlatOpticalElement(OpticalElement):
             return super(FlatOpticalElement, self).process_photons(photons)
 
     def _plot_mayavi(self, viewer=None):
-        from tvtk.tools import visual
-        visual.set_viewer(viewer)
-        trans, rot, zoom, shear = decompose44(self.pos4d)
+        from mayavi.mlab import triangular_mesh
         # turn into valid color tuple
         self.display['color'] = get_color(self.display)
-        # setting color here is more global than in the next line
-        # because this automatically changes the diffuse, ambient, etc. color, too.
-        b = visual.box(pos=trans, size=tuple(np.abs(zoom) * 2), axis=np.dot([1.,0.,0.], rot),
-                       color=self.display['color'], viewer=viewer)
+        corners = np.array([[-1, -1, -1], [-1,+1, -1],
+                            [-1, -1,  1], [-1, 1,  1],
+                            [ 1, -1, -1], [ 1, 1, -1],
+                            [ 1, -1, +1], [ 1, 1, +1]])
+        triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
+                     (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
+        corners = np.einsum('ij,...j->...i', self.pos4d, e2h(corners, 1))
+        b = triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
+                            color=self.display['color'])
+
         # No safety net here like for color converting to a tuple.
         # If the advanced properties are set you are on your own.
-        for n in b.property.trait_names():
+        prop = b.module_manager.children[0].actor.property
+        for n in prop.trait_names():
             if n in self.display:
-                setattr(b.property, n, self.display[n])
+                setattr(prop, n, self.display[n])
 
     def _plot_threejs(self, outfile):
         from ..visualization import threejs
