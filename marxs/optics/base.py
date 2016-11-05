@@ -281,6 +281,8 @@ class FlatOpticalElement(OpticalElement):
     def _plot_threejs(self, outfile):
         from ..visualization import threejs
         matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
+        if not ('side' in self.display):
+            self.display['side'] = 'THREE.DoubleSide'
         materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
         outfile.write('''
         var geometry = new THREE.BoxGeometry( 2, 2, 2 );

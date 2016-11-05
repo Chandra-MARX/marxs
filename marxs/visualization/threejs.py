@@ -22,6 +22,10 @@ listofproperties = {'Material': ['id', 'name', 'opacity', 'transparent', 'blendi
                                            'fog'],
                     }
 
+def array2string(array):
+    '''Flatten array and return string representation for insertion into js.'''
+    return np.array2string(array.flatten(), max_line_width=1000, separator=',',
+                           formatter={'float_kind': '{0:.1f}'.format})
 
 def materialspec(display, material):
     '''Construct a string that can be pasted into a javascript template to describe a three.js material.
@@ -49,8 +53,6 @@ def materialspec(display, material):
                 spec.append('{0} : {1}'.format(k, display[k]))
     if ('opacity' in display) and not ('transparent' in display):
         spec.append('transparent : true')
-    if not ('side' in display):
-        spec.append('side : THREE.DoubleSide')
     return ', '.join(spec)
 
 
@@ -79,9 +81,9 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
     n = data.shape[0]
 
     if scalar is None:
-        s = np.zeros(n * N)
+        s = np.zeros((n,  N))
     elif scalar.shape == (n, ):
-        s = np.repeat(scalar, N)
+        s = np.tile(scalar, (N, 1)).T
     elif scalar.shape == (n, N):
         s = scalar
     else:
@@ -89,20 +91,23 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
 
     import matplotlib.pyplot as plt
     cmap = plt.get_cmap(cmap)
-    s_rgb = cmap(s)
+    normalizer = plt.Normalize()
+    s_rgb = cmap(normalizer(s))
 
-    materialspec = materialspec(prop, 'LineBasicMaterial')
+    if 'vertexColors' not in prop:
+        prop['vertexColors'] = 'THREE.VertexColors'
+    material = materialspec(prop, 'LineBasicMaterial')
 
     for i in range(n):
-        positions = ', '.join(np.asarray(data[i, :, :], dtype=str).flatten())
-        colors = ', '.join(np.asarray(s_rgb[i, :, :], dtype=str).flatten())
+        positions = array2string(data[i, :, :])
+        colors = array2string(s_rgb[i, :, :3])
         outfile.write('''
         var geometry = new THREE.BufferGeometry();
-	var material = new THREE.LineBasicMaterial({{ {materialspec} }});
-	var positions = new Float32Array([{positions}]);
-	var colors = new Float32Array([{colors}]);
+	var material = new THREE.LineBasicMaterial({{ {material} }});
+	var positions = new Float32Array({positions});
+	var colors = new Float32Array({colors});
 	geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
 	geometry.computeBoundingSphere();
 	mesh = new THREE.Line( geometry, material );
-	scene.add( mesh );'''.format(positions=positions, colors=colors, materialspec=materialspec))
+	scene.add( mesh );'''.format(positions=positions, colors=colors, material=material))

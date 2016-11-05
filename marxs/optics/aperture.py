@@ -14,7 +14,8 @@ class BaseAperture(object):
     '''Base Aperture class'''
 
     display = {'color': (0.0, 0.75, 0.75),
-               'opacity': 0.3}
+               'opacity': 0.3,
+               'side': 'THREE.DoubleSide'}
 
     @staticmethod
     def add_colpos(photons):
