@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from marxs.math.pluecker import h2e
+from ..math.pluecker import h2e
+from .utils import format_saved_positions
 
 def plot_rays(data, scalar=None, viewer=None,
               kwargssurface={'colormap': 'Accent', 'line_width': 1, 'opacity': .4}):
@@ -10,7 +11,7 @@ def plot_rays(data, scalar=None, viewer=None,
 
     Parameters
     ----------
-    data : np.array of shape(n, N, 3)
+    data : np.array of shape(n, N, 3) or `marxs.simulator.KeepCol` object
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Eukledian position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
@@ -27,6 +28,9 @@ def plot_rays(data, scalar=None, viewer=None,
     kwargssurface : dict
         keyword arguments for ``mayavi.mlab.pipeline.surface``
     '''
+    if hasattr(data, 'data') and isinstance(data.data, list):
+        data = format_saved_positions(data)
+
     import mayavi.mlab
     # The number of points per line
     N = data.shape[1]
