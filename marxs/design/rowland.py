@@ -186,7 +186,68 @@ class RowlandTorus(MarxsElement):
         torus = np.array([x, y, z, w]).T
         return np.einsum('...ij,...j', self.pos4d, torus)
 
-    def normal(self, xyz, origin=np.array([-1., 0, 0])):
+    def xyzw2parametric(self, xyzw, transform=True):
+        '''Calculate (theta, phi) coordinates for point on torus surface.
+
+        Parameters
+        ----------
+        xyzw : np.array of shape (N, 4)
+            Coordinates of points on the torus surface in homogeneous coordiantes.
+
+        transform : bool
+            If ``True`` transform ``xyz`` from the global coordinate system into the
+            local coordinate system of the torus. If this transformation is done in the
+            calling function already, set to ``False``.
+
+        Returns
+        -------
+        theta, phi: np.array
+            Parametric representation for all points on the torus.
+        '''
+        if transform:
+            invpos4d = np.linalg.inv(self.pos4d)
+            xyzw = np.einsum('...ij,...j', invpos4d, xyzw)
+
+        xyz = h2e(xyzw)
+
+        if not np.allclose(self.quartic(xyz, transform=False) / self.R**4., 0.):
+            raise ValueError('Parametric representation is only defined for points on torus surface.')
+        # There are two branches and we can use the sign to distinguish between them
+        s = np.sign(np.sqrt(xyz[:,0]**2 + xyz[:, 2]**2) - self.R)
+        theta = np.arcsin(s * xyz[:, 1] / self.r) + (s < 0) * np.pi
+
+        phi = np.arctan2(xyz[:, 2], xyz[:, 0])
+
+        return theta, phi
+
+    def normal_parametric(self, theta, phi):
+        '''Return the gradient vector field.
+
+        Following the usual concentions, the vector is pointing outwards
+        of the torus volume.
+
+        Parameters
+        ----------
+        theta, phi : 1-d np.arrays
+            Theta and phi coordinates for points on the torus surface.
+
+        Returns
+        -------
+        gradient : np.array
+            Gradient vector field in euklidean coordinates. One vector corresponds to each
+            input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
+        '''
+        if not ((theta.ndim == 1) and (phi.ndim == 1)):
+            raise ValueError('theta and phi must be 1-d arrays.')
+        normal = np.empty((len(theta), 3))
+        normal[:, 0] = np.cos(theta) * np.cos(phi)
+        normal[:, 1] = np.sin(theta)
+        normal[:, 2] = np.cos(theta) * np.sin(phi)
+
+        return h2e(np.einsum('...ij,...j', self.pos4d, e2h(normal, 0)))
+
+
+    def normal(self, xyz):
         '''Return the gradient vector field.
 
         Following the usual concentions, the vector is pointing outwards
@@ -197,14 +258,6 @@ class RowlandTorus(MarxsElement):
         xyz : np.array of shape (N, 3) or (3)
             Coordinates of points in euklidean space. The quartic is calculated for
             those points. All points need to be on the surface of the torus.
-        origin : np.array or string
-            For a torus with ``r=R`` the normal at the center is ambiguous because it
-            is touched by all Rowland circles. When designing an X-ray telescope,
-            one usually considers the Rowland circle that points towards the optical
-            axis at this point. ``origin`` sets the normal to be returned for this point.
-            If ``origin="raise"`` it will raise an error instead if asked to
-            calculate an ambiguous normal.
-            This parameter has no effect to tori with ``r != R``.
 
         Returns
         -------
@@ -212,38 +265,15 @@ class RowlandTorus(MarxsElement):
             Gradient vector field in euklidean coordinates. One vector corresponds to each
             input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
         '''
-        # For r,R  >> 1 even marginal differences lead to large
-        # numbers on the quartic because of R**4 -> normalize
-        invpos4d = np.linalg.inv(self.pos4d)
-        xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
-
-        if not np.allclose(self.quartic(xyz, transform=False) / self.R**4., 0.):
-            raise ValueError('Gradient vector field is only defined for points on torus surface.')
-        factor = 4. * ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2)
-        dFdx = factor * xyz[..., 0] - 8. * self.R**2 * xyz[..., 0]
-        dFdy = factor * xyz[..., 1]
-        dFdz = factor * xyz[..., 2] - 8. * self.R**2 * xyz[..., 2]
-
-        gradient = np.vstack([dFdx, dFdy, dFdz]).T
-        index = np.where(np.sum(np.abs(gradient), axis=1) == 0)[0]
-        if len(index) > 0:
-            if isinstance(origin, basestring) and (origin == "raise"):
-                raise ValueError("Ambiguous normal at {0}".format(xyz[index, :]))
-            elif len(origin) == 3:
-                for i in index:
-                    gradient[i, :] = origin
-            else:
-                raise ValueError("'origin' must be 'raise' or Eukledian vector.")
-
-        gradient = gradient / np.linalg.norm(gradient, axis=1)[:, None]
-        return h2e(np.einsum('...ij,...j', self.pos4d, e2h(gradient, 0)))
+        theta, phi = self.xyzw2parametric(e2h(xyz, 1))
+        return self.normal_parametric(theta, phi)
 
     def xyz_from_radiusangle(self, radius, angle, interval):
         '''Get Cartesian coordiantes for radius, angle on the rowland circle.
 
         y, z are calculated from the radius and angle of polar coordiantes in a plane;
         then x is determined from the condition that the point lies on the Rowland circle.
-        The plane is perpendicual to the optical axis that defines the Rowland circle.
+        The plane is perpendicular to the optical axis that defines the Rowland circle.
 
         Parameters
         ----------
@@ -253,7 +283,7 @@ class RowlandTorus(MarxsElement):
             `RowlandTorus`.
             ``angle=0`` conicides with the local y-axis.
         interval : np.array
-            [min, max] for the search. The quartic can have up to for solutions because a
+            [min, max] for the search. The quartic can have up to four solutions because a
             line can intersect a torus in four points and this interval must bracket one and only
             one solution.
 
