@@ -53,7 +53,7 @@ def materialspec(display, material):
                 spec.append('{0} : {1}'.format(k, display[k]))
     if ('opacity' in display) and not ('transparent' in display):
         spec.append('transparent : true')
-    return ', '.join(spec)
+    return spec
 
 
 def plot_rays(data, outfile, scalar=None, cmap=None,
@@ -115,3 +115,5 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
 	geometry.computeBoundingSphere();
 	mesh = new THREE.Line( geometry, material );
 	scene.add( mesh );'''.format(positions=positions, colors=colors, material=material))
+
+     vertexColors : THREE.VertexColors

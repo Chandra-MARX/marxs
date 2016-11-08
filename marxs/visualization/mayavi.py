@@ -14,6 +14,7 @@ def plot_rays(data, scalar=None, viewer=None,
     data : np.array of shape(n, N, 3) or `marxs.simulator.KeepCol` object
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Eukledian position vector.
+        This can also be a ``KeepCol('pos')`` object.
     scalar : None or nd.array of shape (n,) or (n, N)
         This quantity is used to color the rays. If ``None`` all rays will have the same
         color. If it has n elements, each ray will have exactly one color (e.g. color

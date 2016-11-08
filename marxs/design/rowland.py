@@ -324,6 +324,21 @@ class RowlandTorus(MarxsElement):
                                      torusparameters=torusparameters,
                                      matrix=matrixstring))
 
+    def _plot_threejsjson(self):
+        from ..visualization import threejs
+        out = {}
+        out['n'] = 1
+        out['name'] = self.name
+        out['material'] = 'MeshStandardMaterial'
+        out['materialproperties'] = threejs.materialspec(self.display, out['material'])
+        out['geometry'] = 'ModifiedTorusBufferGeometry'
+        out['geometrypars'] = (self.R, self.r, int(np.rad2deg(thetaarc)), int(np.rad2deg(phiarc)),
+                               thetaarc, theta0, phiarc, phi0)
+        out['pos4d'] = [self.pos4d.flatten()]
+
+        return out
+
+
 
 def design_tilted_torus(f, alpha, beta):
     '''Design a torus with specifications similar to Heilmann et al. 2010
