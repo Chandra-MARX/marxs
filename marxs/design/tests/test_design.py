@@ -169,7 +169,7 @@ def test_torus_normal():
     t0 = mytorus.parametric(theta - 0.00001, phi)
     p0 = mytorus.parametric(theta, phi - 0.00001)
 
-    vec_normal = mytorus.normal(h2e(xyz))
+    vec_normal = h2e(mytorus.normal(xyz))
 
     vec_delta_theta = h2e(t1) - h2e(t0)
     vec_delta_theta = vec_delta_theta  / np.linalg.norm(vec_delta_theta, axis=1)[:, None]

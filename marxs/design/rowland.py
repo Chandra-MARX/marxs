@@ -234,7 +234,7 @@ class RowlandTorus(MarxsElement):
         Returns
         -------
         gradient : np.array
-            Gradient vector field in euklidean coordinates. One vector corresponds to each
+            Gradient vector field in homogeneous coordinates. One vector corresponds to each
             input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
         '''
         if not ((theta.ndim == 1) and (phi.ndim == 1)):
@@ -244,10 +244,10 @@ class RowlandTorus(MarxsElement):
         normal[:, 1] = np.sin(theta)
         normal[:, 2] = np.cos(theta) * np.sin(phi)
 
-        return h2e(np.einsum('...ij,...j', self.pos4d, e2h(normal, 0)))
+        return np.einsum('...ij,...j', self.pos4d, e2h(normal, 0))
 
 
-    def normal(self, xyz):
+    def normal(self, xyzw):
         '''Return the gradient vector field.
 
         Following the usual concentions, the vector is pointing outwards
@@ -255,7 +255,7 @@ class RowlandTorus(MarxsElement):
 
         Parameters
         ----------
-        xyz : np.array of shape (N, 3) or (3)
+        xyzw : np.array of shape (N, 4) or (4)
             Coordinates of points in euklidean space. The quartic is calculated for
             those points. All points need to be on the surface of the torus.
 
@@ -265,7 +265,7 @@ class RowlandTorus(MarxsElement):
             Gradient vector field in euklidean coordinates. One vector corresponds to each
             input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
         '''
-        theta, phi = self.xyzw2parametric(e2h(xyz, 1))
+        theta, phi = self.xyzw2parametric(xyzw, 1)
         return self.normal_parametric(theta, phi)
 
     def xyz_from_radiusangle(self, radius, angle, interval):
@@ -470,7 +470,7 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
         super(RowlandCircleArray, self).__init__(**kwargs)
 
     def rowland_normal(self, xyzw):
-        return self.rowland.normal(h2e(xyzw))
+        return self.rowland.normal(xyzw)
 
     def xyzwpos(self):
         radii = self.distribute_elements_on_arc()
@@ -581,7 +581,7 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
         super(LinearCCDArray, self).__init__(**kwargs)
 
     def rowland_normal(self, xyzw):
-        return self.rowland.normal(h2e(xyzw))
+        return self.rowland.normal(xyzw)
 
     def xyz_from_radiusangle(self, r, phi, x_range):
         '''Wrap `marxs.design.RowlandTorus.xyz_from_radiusangle` for better error message'''
@@ -773,7 +773,7 @@ class GratingArrayStructure(LinearCCDArray):
 
             # Find the rotation between [1, 0, 0] and the new normal
             # Keep grooves (along e_y) parallel to e_y
-            rot_mat = ex2vec_fix(normals[i, :], parallels[i, :])
+            rot_mat = ex2vec_fix(h2e(normals[i, :]), h2e(parallels[i, :]))
 
             pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
