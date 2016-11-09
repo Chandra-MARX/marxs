@@ -2,6 +2,7 @@
 
 from __future__ import division
 
+import warnings
 import numpy as np
 from scipy import optimize
 import transforms3d
@@ -186,7 +187,7 @@ class RowlandTorus(MarxsElement):
         torus = np.array([x, y, z, w]).T
         return np.einsum('...ij,...j', self.pos4d, torus)
 
-    def xyzw2parametric(self, xyzw, transform=True):
+    def xyzw2parametric(self, xyzw, transform=True, intersectvalid=True):
         '''Calculate (theta, phi) coordinates for point on torus surface.
 
         Parameters
@@ -198,6 +199,12 @@ class RowlandTorus(MarxsElement):
             If ``True`` transform ``xyz`` from the global coordinate system into the
             local coordinate system of the torus. If this transformation is done in the
             calling function already, set to ``False``.
+
+        intersectvalid : bool
+            When ``r >=R`` the torus can intersect with itself. At these points,
+            phi is not unique. If ``intersectvalid`` is true, those points will
+            be filled with on arbitrarily chosen valid value (0.), otherwise
+            they will be nan.
 
         Returns
         -------
@@ -216,7 +223,10 @@ class RowlandTorus(MarxsElement):
         s = np.sign(np.sqrt(xyz[:,0]**2 + xyz[:, 2]**2) - self.R)
         theta = np.arcsin(s * xyz[:, 1] / self.r) + (s < 0) * np.pi
 
-        phi = np.arctan2(xyz[:, 2], xyz[:, 0])
+        factor = self.R + self.r * np.cos(theta)
+        with warnings.catch_warnings():
+            phi = np.arctan2(xyz[:, 2] / factor, xyz[:, 0] / factor)
+        phi[factor == 0] = 0 if intersectvalid else np.nan
 
         return theta, phi
 
