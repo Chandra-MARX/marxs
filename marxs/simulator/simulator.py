@@ -3,7 +3,7 @@ from transforms3d.affines import decompose44
 
 from ..math.utils import translation2aff, zoom2aff, mat2aff
 from ..base import SimulationSequenceElement, _parse_position_keywords
-from ..math.pluecker import h2e
+from ..math.pluecker import h2e, e2h
 import transforms3d
 from transforms3d.utils import normalized_vector
 
@@ -331,6 +331,8 @@ class ParallelCalculated(Parallel):
         xyzw = self.get_elemxyzw()
         normals = self.get_spec('normal_spec', xyzw)
         parallels = self.get_spec('parallel_spec', xyzw, normals)
+        normals = h2e(normals)
+        parallels = h2e(parallels)
 
         for i in range(xyzw.shape[0]):
             rot_mat = np.zeros((3,3))
@@ -354,10 +356,10 @@ class ParallelCalculated(Parallel):
         elif len(spec) == 4:
             # vector in homogeneous coordinates
             if spec[3] == 0:
-                return np.tile(spec[:3], (xyzw.shape[0], 1))
+                return np.tile(spec, (xyzw.shape[0], 1))
             # position in homogeneous coordinates
             else:
-                return h2e(xyzw) - h2e(spec)[None, :]
+                return e2h(h2e(xyzw) - h2e(spec)[None, :], 1)
         else:
             raise ValueError(specname + 'must be callable of homogeneous coordinate.')
 

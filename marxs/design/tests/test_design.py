@@ -131,6 +131,23 @@ def test_rotated_torus():
     assert np.allclose(rotatedxyz, h2e(mytorus.parametric(theta, phi)))
 
 
+def test_torus_xyzw2parametric():
+    '''Theta, phi coordinates for torus should round-trip to xyz'''
+    R = 2.
+    r = 1.
+
+    angle = np.arange(0, 2 * np.pi, 0.1)
+    phi, theta = np.meshgrid(angle, angle)
+    phi = phi.flatten()
+    theta = theta.flatten()
+    mytorus = RowlandTorus(R=R, r=r)
+
+    xyzw = mytorus.parametric(theta, phi)
+    t, p = mytorus.xyzw2parametric(xyzw)
+    assert np.allclose(np.mod(theta, 2. * np.pi), np.mod(t, 2. * np.pi))
+    assert np.allclose(np.mod(phi, 2. * np.pi), np.mod(p, 2. * np.pi))
+
+
 def test_torus_normal():
     '''Compare the analytic normal with a numeric result.
 
@@ -147,15 +164,17 @@ def test_torus_normal():
     mytorus = RowlandTorus(R=R, r=r)
 
     xyz = mytorus.parametric(theta, phi)
-    t1 = mytorus.parametric(theta + 0.001, phi)
-    p1 = mytorus.parametric(theta, phi + 0.001)
-    t0 = mytorus.parametric(theta - 0.001, phi)
-    p0 = mytorus.parametric(theta, phi + 0.001)
+    t1 = mytorus.parametric(theta + 0.00001, phi)
+    p1 = mytorus.parametric(theta, phi + 0.00001)
+    t0 = mytorus.parametric(theta - 0.00001, phi)
+    p0 = mytorus.parametric(theta, phi - 0.00001)
 
-    vec_normal = mytorus.normal(h2e(xyz))
+    vec_normal = h2e(mytorus.normal(xyz))
 
     vec_delta_theta = h2e(t1) - h2e(t0)
+    vec_delta_theta = vec_delta_theta  / np.linalg.norm(vec_delta_theta, axis=1)[:, None]
     vec_delta_phi = h2e(p1) - h2e(p0)
+    vec_delta_phi = vec_delta_phi  / np.linalg.norm(vec_delta_phi, axis=1)[:, None]
 
     assert np.allclose(np.sqrt(np.sum(vec_normal * vec_normal, axis=1)), 1.)
     assert np.allclose(np.einsum('ij,ij->i', vec_normal, vec_delta_theta), 0.)
@@ -391,3 +410,17 @@ def test_compareRowlandCircle2LinearCCD_rotatated():
         assert np.allclose(t1, t2, rtol=1e-3, atol=0.01)
         # orientation is not too important, so allow some -1 factors
         assert np.allclose(np.abs(r1), np.abs(r2), rtol=1e-3, atol=0.01)
+
+def test_nojumpsinCCDorientation():
+    '''Regression test: CCD orientation should change smoothly along the circle.'''
+    R, r, pos4d = design_tilted_torus(12e3, 0.07, 0.15)
+    rowland = RowlandTorus(R, r, pos4d=pos4d)
+    det = RowlandCircleArray(rowland=rowland,
+                             elem_class=mock_facet,
+                             d_element=49.652, #theta=[np.pi - 0.2, np.pi + 0.5])
+                             theta=[np.pi - 0.2, np.pi - 0.1])
+
+    # If all is right, this will vary very smoothly along the circle.
+    xcomponent = np.array([e.geometry['e_y'][0] for e in det.elements])
+    xcompdiff = np.diff(xcomponent)
+    assert (np.max(np.abs(xcompdiff)) / np.median(np.abs(xcompdiff))) < 1.1
