@@ -27,6 +27,35 @@ def array2string(array):
     return np.array2string(array.flatten(), max_line_width=1000, separator=',',
                            formatter={'float_kind': '{0:.1f}'.format})
 
+def materialdict(display, material):
+    '''Construct a string that can be pasted into a javascript template to describe a three.js material.
+
+    Parameters
+    ----------
+    display : dict
+        Dictionary of properties. All properties that have a same name as the property of
+        the relevant material in javascript are included, all others are ignored.
+    material : string
+        Name of the material in three.js (Only materials used currently in marxs are supported).
+
+    Returns
+    -------
+    spec : dict
+        material specification
+    '''
+    spec = {}
+    for k in display:
+        if (k in listofproperties['Material']) or (k in listofproperties[material]):
+            # now special cases that need to be transformed in some way
+            if k == 'color':
+                spec['color'] = color_tuple_to_hex(display[k])
+            else:
+                spec[k] = display[k]
+    if ('opacity' in display) and not ('transparent' in display):
+        spec['transparent'] = 'true'
+    return spec
+
+
 def materialspec(display, material):
     '''Construct a string that can be pasted into a javascript template to describe a three.js material.
 
@@ -43,17 +72,9 @@ def materialspec(display, material):
     spec : string
         String that can be pasted into javasript files.
     '''
-    spec = []
-    for k in display:
-        if (k in listofproperties['Material']) or (k in listofproperties[material]):
-            # now special cases that need to be transformed in some way
-            if k == 'color':
-                spec.append('{0} : {1}'.format(k, color_tuple_to_hex(display[k])))
-            else:
-                spec.append('{0} : {1}'.format(k, display[k]))
-    if ('opacity' in display) and not ('transparent' in display):
-        spec.append('transparent : true')
-    return spec
+    matdict = materialdict(display, material)
+    spec = ['{0} : {1}'.format(k, matdict[v]) for k in matdict]
+    return ', '.join(spec)
 
 
 def plot_rays(data, outfile, scalar=None, cmap=None,
@@ -107,13 +128,11 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
         colors = array2string(s_rgb[i, :, :3])
         outfile.write('''
         var geometry = new THREE.BufferGeometry();
-	var material = new THREE.LineBasicMaterial({{ {material} }});
-	var positions = new Float32Array({positions});
-	var colors = new Float32Array({colors});
-	geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
-	geometry.computeBoundingSphere();
-	mesh = new THREE.Line( geometry, material );
-	scene.add( mesh );'''.format(positions=positions, colors=colors, material=material))
-
-     vertexColors : THREE.VertexColors
+        var material = new THREE.LineBasicMaterial({{ {material} }});
+        var positions = new Float32Array({positions});
+        var colors = new Float32Array({colors});
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+        geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+        geometry.computeBoundingSphere();
+        mesh = new THREE.Line( geometry, material );
+        scene.add( mesh );'''.format(positions=positions, colors=colors, material=material))

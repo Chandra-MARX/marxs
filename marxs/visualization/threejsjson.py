@@ -1,11 +1,13 @@
 import json
+import datetime
 import numpy as np
 
-from marxs.math.pluecker import h2e
-from .utils import color_tuple_to_hex
-from .threejs import listofproperties
+from ..version import version
+from . import threejs
+from .utils import format_saved_positions
 
-def plot_rays(data scalar=None, cmap=None, prop={}):
+
+def plot_rays(data, scalar=None, cmap=None, prop={}, name='Photon list'):
     '''Plot lines for simulated rays.
 
     Parameters
@@ -23,6 +25,9 @@ def plot_rays(data scalar=None, cmap=None, prop={}):
         Output javascript code is written to this file.
     prop : dict
         keyword arguments for line material.
+    name : string
+        Identifier "name" for three.js objects. This only matters if your website
+        identifies elements by name for interactive features.
     '''
     if hasattr(data, 'data') and isinstance(data.data, list):
         data = format_saved_positions(data)
@@ -48,24 +53,41 @@ def plot_rays(data scalar=None, cmap=None, prop={}):
 
     if 'vertexColors' not in prop:
         prop['vertexColors'] = 'THREE.VertexColors'
-    material = materialspec(prop, 'LineBasicMaterial')
 
     out = {}
     out['n'] = n
-    out['name'] = self.name
+    out['name'] = name
     out['material'] = 'LineBasicMaterial'
-    out['materialproperties'] = threejs.materialspec(self.display, out['material'])
+    out['materialproperties'] = threejs.materialdict(prop, out['material'])
     out['geometry'] = 'BufferGeometry'
     out['pos'] = data.reshape((n, -1)).tolist()
     out['color'] = s_rgb.reshape((n, -1)).tolist()
     return out
 
-def write(filename, data, photons=None):
 
-    jdata = {'meta':, {'version': 1,
-                       'origin': 'MARXS:threejsjson output',
+def write(fileobject, data, photons=None):
+    '''Add metadata and write json for three.js to disk
+
+    Parameters
+    ----------
+    fileobject : writeable file-like object
+    data : list of dict or single dict
+        Output of ``xxx.plot(format='threejsjson')`` calls. This can either
+        be a list of dictionaries or a single dictionary.
+    photons : `astropy.table.Table` or None
+        Some metadata is copied from a photon list, if available.
+    '''
+    if not isinstance(data, list):
+        data = [data]
+    date = datetime.datetime.now()
+    jdata = {'meta': {'format_version': 1,
+                      'origin': 'MARXS:threejsjson output',
+                      'date': str(date.date()),
+                      'time': str(date.time()),
+                      'marxs_version': version},
              'elements': data}
+
     if photons is not None:
-             jdata['run'] = photons.meta()
-    with open(filename, 'w' as f}:
-        json.dump(jdata, f)
+        data['runinfo'] = photons.meta()
+
+    json.dump(jdata, fileobject)

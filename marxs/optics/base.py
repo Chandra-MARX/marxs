@@ -286,23 +286,23 @@ class FlatOpticalElement(OpticalElement):
         materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
         outfile.write('''
         var geometry = new THREE.BoxGeometry( 2, 2, 2 );
-	var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
-	var mesh = new THREE.Mesh( geometry, material );
-	mesh.matrixAutoUpdate = false;
-	mesh.matrix.set({matrix});
-	scene.add( mesh );'''.format(materialspec=', '.join(materialspec),
+        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.set({matrix});
+        scene.add( mesh );'''.format(materialspec=materialspec,
                                      matrix=matrixstring))
 
     def _plot_threejsjson(self):
         from ..visualization import threejs
         out = {}
         out['n'] = 1
-        out['name'] = self.name
+        out['name'] = str(self.name)
         out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialspec(self.display, out['material'])
+        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
         out['geometry'] = 'BoxGeometry'
         out['geometrypars'] = (2, 2, 2)
-        out['pos4d'] = [self.pos4d.flatten()]
+        out['pos4d'] = [self.pos4d.flatten().tolist()]
         if not ('side' in self.display):
             out['materialproperties']['side'] = 'THREE.DoubleSide'
 
