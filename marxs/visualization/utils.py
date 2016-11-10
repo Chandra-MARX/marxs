@@ -58,13 +58,15 @@ def color_tuple_to_hex(color):
     if all([isinstance(a, float) for a in color]):
         if any(i < 0. for i in color) or any(i > 1. for i in color):
             raise ValueError('Float values in color tuple must be between 0 and 1.')
-        return hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
+        out = hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
     elif all([isinstance(a, int) for a in color]):
         if any(i < 0 for i in color) or any(i > 255 for i in color):
             raise ValueError('Int values in color tuple must be between 0 and 255.')
-        return hex(color[0] * 256**2 + color[1] * 256 + color[2])
+        out = hex(color[0] * 256**2 + color[1] * 256 + color[2])
     else:
         raise ValueError('Input tuple must be all float or all int.')
+    # Now pad with zeros if required
+    return out[:2] + out[2:].zfill(6)
 
 def plane_with_hole(outer, inner):
     '''Triangulation of a plane with an inner hole
