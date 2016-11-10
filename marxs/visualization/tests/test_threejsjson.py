@@ -14,7 +14,7 @@ def test_box():
     out_expected = {'geometry': 'BoxGeometry',
                     'geometrypars': (2, 2, 2),
                     'material': 'MeshStandardMaterial',
-                    'materialproperties': {'color': '0xffff00',
+                    'materialproperties': {'color': '#ffff00',
                                            'opacity': 0.1,
                                            'side': 'THREE.DoubleSide',
                                            'transparent': 'true'},
@@ -35,7 +35,7 @@ def test_rowland():
     out = rowland.plot(format='threejsjson')
     out_expected = {'geometry': 'ModifiedTorusBufferGeometry',
                     'material': 'MeshStandardMaterial',
-                    'materialproperties': {'color': '0xff4ccc',
+                    'materialproperties': {'color': '#ff4ccc',
                                            'opacity': 0.2,
                                            'side': 'THREE.DoubleSide',
                                            'transparent': 'true'},
@@ -46,7 +46,7 @@ def test_rowland():
     for k in out_expected:
         assert out[k] == out_expected[k]
 
-    assert out['pos4d'] == np.eye(4).flatten().tolist()
+    assert out['pos4d'] == [np.eye(4).flatten().tolist()]
 
 
 def test_rays():

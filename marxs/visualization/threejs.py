@@ -48,7 +48,7 @@ def materialdict(display, material):
         if (k in listofproperties['Material']) or (k in listofproperties[material]):
             # now special cases that need to be transformed in some way
             if k == 'color':
-                spec['color'] = color_tuple_to_hex(display[k])
+                spec['color'] = color_tuple_to_hex(display[k]).replace('0x', '#')
             else:
                 spec[k] = display[k]
     if ('opacity' in display) and not ('transparent' in display):
