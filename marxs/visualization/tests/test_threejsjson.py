@@ -70,7 +70,7 @@ def test_aperture():
     OK to test just one of them.'''
     det = RectangleAperture(zoom=5)
     det.display = det.display
-    det.display['opacity'] = 0.1
+    det.display['opacity'] = 0.3
     out = det.plot(format='threejsjson')
     out_expected = {'faces': [[0, 4, 5, 0, 1, 5, 1, 5, 6, 1, 2, 6, 2, 6, 7, 2, 3, 7,
                                3, 7, 4, 3, 0, 4]],
