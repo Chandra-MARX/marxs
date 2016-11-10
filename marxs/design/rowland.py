@@ -74,7 +74,7 @@ class RowlandTorus(MarxsElement):
 
     display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2,
-               'side': 'THREE.DoubleSide'}
+               'side': 2} # =THREE.DoubleSide
 
 
     def __init__(self, R, r, **kwargs):

@@ -304,7 +304,7 @@ class FlatOpticalElement(OpticalElement):
         out['geometrypars'] = (2, 2, 2)
         out['pos4d'] = [self.pos4d.flatten().tolist()]
         if not ('side' in self.display):
-            out['materialproperties']['side'] = 'THREE.DoubleSide'
+            out['materialproperties']['side'] = 2
 
         return out
 

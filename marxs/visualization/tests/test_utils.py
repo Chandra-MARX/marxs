@@ -41,6 +41,10 @@ def test_color_roundtrip():
     # Int input
     assert color_tuple_to_hex((255, 255, 255)) == '0xffffff'
 
+def test_color_hex_pad():
+    '''Regression test: We want to color hexstring with leading zeroths'''
+    assert color_tuple_to_hex((0., 1., .5)) == '0x00ff7f'
+
 def test_color_to_hex_bad_input():
     with pytest.raises(ValueError) as e:
         out = color_tuple_to_hex('white')

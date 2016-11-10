@@ -15,7 +15,7 @@ class BaseAperture(object):
 
     display = {'color': (0.0, 0.75, 0.75),
                'opacity': 0.3,
-               'side': 'THREE.DoubleSide'}
+               'side': 2} # = THREE>DoubleSide in theee.js
 
     @staticmethod
     def add_colpos(photons):
@@ -135,6 +135,25 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         var mesh = new THREE.Mesh( geometry, material );
         scene.add( mesh );
         '''.format(materialspec=materialspec))
+
+
+    def _plot_threejsjson(self):
+        xyz, triangles = self.triangulate_inner_outer()
+        from ..visualization import threejs
+        out = {}
+        out['n'] = 1
+        out['name'] = str(self.name)
+        out['material'] = 'MeshStandardMaterial'
+        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
+        out['geometry'] = 'BufferGeometry'
+        out['geometrytype'] = 'Mesh'
+        out['pos'] = [xyz.flatten().tolist()]
+        out['faces'] = [triangles.flatten().tolist()]
+
+        if not ('side' in self.display):
+            out['materialproperties']['side'] = 2
+
+        return out
 
 
 class RectangleAperture(FlatAperture):

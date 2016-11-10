@@ -52,7 +52,7 @@ def plot_rays(data, scalar=None, cmap=None, prop={}, name='Photon list'):
     s_rgb = cmap(normalizer(s))
 
     if 'vertexColors' not in prop:
-        prop['vertexColors'] = 'THREE.VertexColors'
+        prop['vertexColors'] = 2 # 'THREE.VertexColors'
 
     out = {}
     out['n'] = n
@@ -60,6 +60,7 @@ def plot_rays(data, scalar=None, cmap=None, prop={}, name='Photon list'):
     out['material'] = 'LineBasicMaterial'
     out['materialproperties'] = threejs.materialdict(prop, out['material'])
     out['geometry'] = 'BufferGeometry'
+    out['geometrytype'] = 'Line'
     out['pos'] = data.reshape((n, -1)).tolist()
     out['color'] = s_rgb.reshape((n, -1)).tolist()
     return out

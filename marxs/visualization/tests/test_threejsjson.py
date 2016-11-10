@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...optics import FlatDetector
+from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
 from ..threejsjson import plot_rays
 
@@ -16,7 +16,7 @@ def test_box():
                     'material': 'MeshStandardMaterial',
                     'materialproperties': {'color': '#ffff00',
                                            'opacity': 0.1,
-                                           'side': 'THREE.DoubleSide',
+                                           'side': 2,
                                            'transparent': 'true'},
                     'n': 1,
                     'name': "<class 'marxs.optics.detector.FlatDetector'>",
@@ -37,7 +37,7 @@ def test_rowland():
                     'material': 'MeshStandardMaterial',
                     'materialproperties': {'color': '#ff4ccc',
                                            'opacity': 0.2,
-                                           'side': 'THREE.DoubleSide',
+                                           'side': 2,
                                            'transparent': 'true'},
                     'n': 1,
                     'name': "<class 'marxs.design.rowland.RowlandTorus'>",
@@ -55,11 +55,38 @@ def test_rays():
     out_expected = {'color': [[0.0, 0.0, 0.5, 1.0, 0.0, 0.0, 0.5, 1.0],
                               [0.0, 0.0, 0.5, 1.0, 0.0, 0.0, 0.5, 1.0]],
                     'geometry': 'BufferGeometry',
+                    'geometrytype': 'Line',
                     'material': 'LineBasicMaterial',
-                    'materialproperties': {'vertexColors': 'THREE.VertexColors'},
+                    'materialproperties': {'vertexColors': 2},
                     'n': 2,
                     'name': 'Photon list',
                     'pos': [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]}
 
     for k in out_expected:
         assert rays[k] == out_expected[k]
+
+def test_aperture():
+    '''Any box shaped element has the same representation so it's
+    OK to test just one of them.'''
+    det = RectangleAperture(zoom=5)
+    det.display = det.display
+    det.display['opacity'] = 0.1
+    out = det.plot(format='threejsjson')
+    out_expected = {'faces': [[0, 4, 5, 0, 1, 5, 1, 5, 6, 1, 2, 6, 2, 6, 7, 2, 3, 7,
+                               3, 7, 4, 3, 0, 4]],
+                    'geometry': 'BufferGeometry',
+                    'geometrytype': 'Mesh',
+                    'material': 'MeshStandardMaterial',
+                    'materialproperties': {'color': '#00bfff',
+                                           'opacity': 0.3,
+                                           'side': 2,
+                                           'transparent': 'true'},
+                    'n': 1,
+                    'name': "<class 'marxs.optics.aperture.RectangleAperture'>",
+                    'pos': [[0.0, 15.0, 15.0, 0.0, -15.0, 15.0, 0.0, -15.0, -15.0,
+                             0.0, 15.0, -15.0, 0.0, 5.0, 5.0, 0.0, -5.0, 5.0, 0.0,
+                             -5.0, -5.0, 0.0, 5.0, -5.0]]}
+
+    # out_expected is only a subset
+    for k in out_expected:
+        assert out[k] == out_expected[k]

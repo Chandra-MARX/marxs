@@ -82,11 +82,19 @@ THREE.MARXSLoader = function( manager ) {
 	    var geometry = new THREE.BufferGeometry();
 	    var material = new THREE[element.material]( element.materialproperties);
 	    var positions = new Float32Array(element.pos[i]);
-	    var colors = new Float32Array(element.color[i]);
 	    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	    geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+	    if (element.color != undefined){
+		var colors = new Float32Array(element.color[i]);
+		geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+	    }
+	    if (element.faces != undefined){
+		var faces = new Uint16Array(element.faces[i]);
+		// itemSize = 3 because there are 3 values (components) per triangle
+		geometry.setIndex(new THREE.BufferAttribute( faces, 1 ) );
+	    }
+	    
 	    geometry.computeBoundingSphere();
-	    obj = new THREE.Line( geometry, material );
+	    obj = new THREE[element.geometrytype]( geometry, material );
 	    obj.name = element.name
 	    meshes[i] = obj
 	};
