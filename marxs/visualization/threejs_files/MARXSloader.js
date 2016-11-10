@@ -1,5 +1,28 @@
 
+/* wrapper factory
 
+The current version of javascript for not have an equivalent of python unpacking
+where an array of arguments can be used to pass independent arguments to a function.
+In normal functions "apply" can do that, but not in constructors (with "new").
+This is a work-around that I found on stackoverflow.
+*/
+function construct(constructor, args) {
+    function F() {
+        return constructor.apply(this, args);
+    }
+    F.prototype = constructor.prototype;
+    return new F();
+}
+
+/*
+author: Moritz Guenther (github.com/hamogu)
+
+Loader for THREE.js that reads MARXS json output
+Ray-tracing simulations with MARXS can have hundreds of optical elements such as
+gratings, CCD detectors etc. 
+MARXS can write the specifications to plot this up in three.js to json file.
+This loader parses the json file and constructs the appropriate three.js objects.
+*/
 THREE.MARXSLoader = function( manager ) {
 
     this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
@@ -23,24 +46,28 @@ THREE.MARXSLoader = function( manager ) {
     this.parse =  function ( json) {
 	objects = []
 
-	for (elem in json.elements)
+	for (e in json.elements){
+	    elem = json.elements[e]
 	    if (elem.geometry == "BufferGeometry"){
 		objects.push(parseBuffer(elem));
 	    } else {
 		objects.push(parsegeneral(elem));
 	    }
-	return objects;
+        }
+	return {'objects': objects, 'json': json};
     }
     
 
     function parsegeneral(element){
 	var meshes = []
-	for ( i = 1; i<element.n; i++){
-	    var geometry = new THREE[element.geometry]( element.geometrypars );
+	for ( i = 0; i<element.n; i++){
+	    var geometry = construct(THREE[element.geometry], element.geometrypars );
 	    var material = new THREE[element.material]( element.materialproperties );
 	    var mesh = new THREE.Mesh( geometry, material );
 	    mesh.matrixAutoUpdate = false;
-	    mesh.matrix.set(element.pos4d[i]);
+	    var typedpos4d = new Float32Array(element.pos4d[i]);
+	    mesh.matrix.elements = typedpos4d;
+	    mesh.updateMatrix();
 	    mesh.name = element.name;
 	    meshes[i] = mesh;
 	}

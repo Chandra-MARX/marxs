@@ -3,7 +3,7 @@
  * @author hamogu  / https://github.com/hamogu
  */
 
-THREE.ModifiedTorusBufferGeometry = function ( radius, tube, radialSegments, tubularSegments, arc ) {
+THREE.ModifiedTorusBufferGeometry = function ( radius, tube, radialSegments, tubularSegments, arc, arcstart, radialarc, radialstart ) {
 
 	THREE.BufferGeometry.call( this );
 

@@ -20,7 +20,6 @@
     <script src="js/Detector.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/ModifiedTorusBufferGeometry.js"></script>
-    <script src="js/TorusBufferGeometry.js"></script>
     <script src="js/MARXSloader.js"></script>
     
     <script>
@@ -47,18 +46,19 @@
           scene.add( new THREE.AmbientLight( 0x202020, 5) );
           // White directional light at half intensity shining from the top.
           var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
-          directionalLight.position.set( 30000, 0, 0 );
+          directionalLight.position.set( 30, 0, 0 );
           scene.add( directionalLight );
 
           var loader = new THREE.MARXSLoader();
-          var objects = loader.load('MARXS_out.json')
-      
-          for (group in objects){
-              for (element in group){
-                  scene.add(element)
+          loader.load('MARXS_out.json', function(parsed){
+              objects = parsed.objects;
+              for (i in objects){
+                   group = objects[i];
+                  for (e in group){
+                      scene.add(group[e]);
+                  }
               }
-          }
-						
+          })
           renderer = new THREE.WebGLRenderer( { antialias: true } );
           renderer.setPixelRatio( window.devicePixelRatio );
           renderer.setSize( window.innerWidth, window.innerHeight );
