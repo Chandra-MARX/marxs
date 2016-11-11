@@ -74,7 +74,8 @@ class RowlandTorus(MarxsElement):
     '''
 
     display = {'color': (1., 0.3, 0.3),
-               'opacity': 0.2}
+               'opacity': 0.2,
+               'side': 2} # =THREE.DoubleSide
 
 
     def __init__(self, R, r, **kwargs):
@@ -355,13 +356,28 @@ class RowlandTorus(MarxsElement):
 
         outfile.write('''
         var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
-	var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
-	var mesh = new THREE.Mesh( geometry, material );
-	mesh.matrixAutoUpdate = false;
-	mesh.matrix.set({matrix});
-	scene.add( mesh );'''.format(materialspec=materialspec,
+        var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.set({matrix});
+        scene.add( mesh );'''.format(materialspec=materialspec,
                                      torusparameters=torusparameters,
                                      matrix=matrixstring))
+
+    def _plot_threejsjson(self, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
+        from ..visualization import threejs
+        out = {}
+        out['n'] = 1
+        out['name'] = str(self.name)
+        out['material'] = 'MeshStandardMaterial'
+        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
+        out['geometry'] = 'ModifiedTorusBufferGeometry'
+        out['geometrypars'] = (self.R, self.r, int(np.rad2deg(thetaarc)), int(np.rad2deg(phiarc)),
+                               thetaarc, theta0, phiarc, phi0)
+        out['pos4d'] = [self.pos4d.flatten().tolist()]
+
+        return out
+
 
 
 def design_tilted_torus(f, alpha, beta):

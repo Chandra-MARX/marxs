@@ -33,7 +33,7 @@ Routines to display rays are collected in `marxs.visualization`, e.g. for displa
 Display optical elements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Elements that make up a marxs model have a ``display`` method, e.g. `marxs.optics.grating.FlatGrating.plot`. This method accepts a ``format`` string to specify the backend, e.g. ``format="mayavi"``. Further keyword arguments and return values depend on the backend and are listed in the following. Each optical element also has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.
+Elements that make up a marxs model have a ``plot`` method, e.g. `marxs.optics.grating.FlatGrating.plot`. This method accepts a ``format`` string to specify the backend, e.g. ``format="mayavi"``. Further keyword arguments and return values depend on the backend and are listed in the following. Each optical element also has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.
 
 mayavi
 ++++++
@@ -46,6 +46,27 @@ RGB tuple or, if `matplotlib <http://matplotlib.org>`_ is installed, any valid
 `matplotlib.colors.ColorConverter` color. In addtion the plotting routines
 attempt to find all calid OpenGL properties by name in the ``display``
 dictionary and set those.
+
+threejs
++++++++
+:outfile: writable file object
+
+threejsjson
++++++++++++
+
+metadata (jsonversion, writer, etc...)
+objects: list of lists
+where list
+{n: number of objects in list (convenience and cross-check. Could go without, but it easier with it: number,
+name: string or list,
+material: string
+materialpropterties: dict
+geometry: type
+if geometry = Buffer Geometry
+lines = pos, color
+else:
+other: pos4d: list of lists of 16 numbers
+geometrypars: list (meaning depends on geometry}
 
 
 Reference/API

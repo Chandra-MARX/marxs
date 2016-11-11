@@ -2,6 +2,7 @@ from __future__ import division
 
 import numpy as np
 
+from ..math.pluecker import h2e
 
 def get_color(d):
     '''Look for color information in dictionary.
@@ -57,13 +58,15 @@ def color_tuple_to_hex(color):
     if all([isinstance(a, float) for a in color]):
         if any(i < 0. for i in color) or any(i > 1. for i in color):
             raise ValueError('Float values in color tuple must be between 0 and 1.')
-        return hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
+        out = hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
     elif all([isinstance(a, int) for a in color]):
         if any(i < 0 for i in color) or any(i > 255 for i in color):
             raise ValueError('Int values in color tuple must be between 0 and 255.')
-        return hex(color[0] * 256**2 + color[1] * 256 + color[2])
+        out = hex(color[0] * 256**2 + color[1] * 256 + color[2])
     else:
         raise ValueError('Input tuple must be all float or all int.')
+    # Now pad with zeros if required
+    return out[:2] + out[2:].zfill(6)
 
 def plane_with_hole(outer, inner):
     '''Triangulation of a plane with an inner hole
@@ -124,3 +127,40 @@ def plane_with_hole(outer, inner):
             triangles[i, :] = [i_out, (i_out + 1) % n_out, n_out + (i_in % n_in)]
             i_out = (i_out + 1) % n_out
     return xyz, triangles
+
+
+def format_saved_positions(keepcol, atol=1e-2):
+    '''Format saved position columns as a single array.
+
+    `marxs.simulator.KeepCol` objects keep the value of a column (e.g. the photon
+    position) at every step of the simulation. This function reformats that list of
+    columns for use graphical display programs.
+
+    Parameters
+    ----------
+    keepcol : `marxs.simulator.KeepCol`
+        The keepcol object saves a list of all photon positions
+        for all time steps.
+    atol : float
+        Sometimes several consequtive elements record identical photon positions in
+        `keepcol`. Those are removed from the output to speed up rendering in 3D programs.
+        ``atol`` sets the limit up to which two positions are considered *identical*.
+        See `np.allclose` for a detailed description of ``atol``.
+
+    Returns
+    -------
+    pos : np.array
+        Array of shape (N, n, 3), where N is the number of photons and n the number of
+        unique photon positions in eukledian coordinates.
+    '''
+    if len(keepcol.data) == 0:
+        raise ValueError('KeepCol object contains no data.')
+    d = np.dstack(keepcol.data)
+    d = np.swapaxes(d, 1, 2)
+    d = h2e(d)
+    ind = [0]
+    i = 1
+    for i in range(1, d.shape[1]):
+        if not np.allclose(d[:, ind[-1], :], d[:, i, :], atol=atol, equal_nan=True):
+            ind.append(i)
+    return d[:, ind, :]

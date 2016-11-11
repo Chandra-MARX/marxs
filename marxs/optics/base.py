@@ -286,15 +286,32 @@ class FlatOpticalElement(OpticalElement):
     def _plot_threejs(self, outfile):
         from ..visualization import threejs
         matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
+        if not ('side' in self.display):
+            self.display['side'] = 'THREE.DoubleSide'
         materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
         outfile.write('''
         var geometry = new THREE.BoxGeometry( 2, 2, 2 );
-	var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
-	var mesh = new THREE.Mesh( geometry, material );
-	mesh.matrixAutoUpdate = false;
-	mesh.matrix.set({matrix});
-	scene.add( mesh );'''.format(materialspec=materialspec,
+        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.set({matrix});
+        scene.add( mesh );'''.format(materialspec=materialspec,
                                      matrix=matrixstring))
+
+    def _plot_threejsjson(self):
+        from ..visualization import threejs
+        out = {}
+        out['n'] = 1
+        out['name'] = str(self.name)
+        out['material'] = 'MeshStandardMaterial'
+        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
+        out['geometry'] = 'BoxGeometry'
+        out['geometrypars'] = (2, 2, 2)
+        out['pos4d'] = [self.pos4d.flatten().tolist()]
+        if not ('side' in self.display):
+            out['materialproperties']['side'] = 2
+
+        return out
 
 
 class FlatStack(FlatOpticalElement):
