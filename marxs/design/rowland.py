@@ -862,7 +862,7 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
 
             # Find the rotation between [1, 0, 0] and the new normal
             # Keep grooves (along e_y) parallel to e_y
-            rot_mat = ex2vec_fix(normals[i, :], parallels[i, :])
+            rot_mat = ex2vec_fix(h2e(normals[i, :]), h2e(parallels[i, :]))
 
             pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
