@@ -5,7 +5,7 @@ See `ASC FITS File Designers' Guide ASC-FITS-2.1.0 <cxc.harvard.edu/contrib/arot
 from astropy import time
 import astropy.units as u
 
-from ..._version import get_versions
+from ... import __version__
 from .data import TLMINMAX, PIXSIZE, NOMINAL_FOCALLENGTH, ODET
 
 def update_header(header, h):
@@ -17,7 +17,7 @@ def complete_CC(header, content, hduclass):
     '''Configuration Control Component'''
     h = [
         ('ORIGIN', 'ASC'),
-        ('CREATOR', 'MARXS - Version {0}'.format(get_versions()['version'])),
+        ('CREATOR', 'MARXS - Version {0}'.format(__version__)),
         ("HDUDOC", "ASC-FITS-2.0: Rots, McDowell: ASC FITS File Designers Guide"),
         ("CONTENT", content),
         ("HDUNAME", header['EXTNAME']),
