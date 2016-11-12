@@ -11,7 +11,6 @@ from scipy.stats import ks_2samp
 
 import marxs
 import marxs.source
-import marxs.source.source
 import marxs.optics.marx
 
 def test_noexplicettimedependence():
@@ -21,7 +20,7 @@ def test_noexplicettimedependence():
     '''
     mysource = marxs.source.source.PointSource((30., 30.), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
-    mypointing = marxs.source.source.FixedPointing(coords=(30, 30.))
+    mypointing = marxs.source.FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)
 
     marxm = marxs.optics.marx.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))

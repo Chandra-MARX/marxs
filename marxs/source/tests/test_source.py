@@ -2,7 +2,9 @@ import numpy as np
 import pytest
 from astropy.table import Table
 
-from ..source import Source, SourceSpecificationError, poisson_process
+from ...source import Source, poisson_process
+from ...optics import RectangleAperture
+from ..source import SourceSpecificationError
 
 def test_energy_input_default():
     '''For convenience and testing, defaults for time, energy and pol are set.'''
@@ -22,7 +24,7 @@ def test_flux_input():
     assert np.allclose(delta_t, delta_t[0]) # constante rate
 
     # 2. function
-    def f(t):
+    def f(t, a):
         return np.logspace(1, np.log10(t))
 
     s = Source(flux=f)
@@ -127,6 +129,13 @@ def test_poisson_process():
     scipy version.
     '''
     p = poisson_process(20.)
-    times = p(100.)
+    times = p(100., 1.)
     assert (len(times) > 1500) and (len(times) < 2500)
     assert (times[-1] > 99.) and (times[-1] < 100.)
+
+def test_Aeff():
+    '''Check that a higher effective area leads to more counts.'''
+    a = RectangleAperture(zoom=2)
+    s = Source(flux=.5, geomarea=a.area)
+    photons = s.generate_photons(5.)
+    assert len(photons) == 40
