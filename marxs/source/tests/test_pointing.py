@@ -2,7 +2,28 @@ import numpy as np
 from astropy.table import Table
 from scipy.stats import pearsonr
 
-from ..source import FixedPointing, JitterPointing
+from ...source import FixedPointing, JitterPointing
+
+
+def test_geomarea_projection():
+    '''When a ray sees the aperture under an angle the projected aperture size
+    is smaller. This is accounted for by reducing the probability of this photon.'''
+    photons = Table()
+    photons['ra'] = [0., 45., 90., 135., 315.]
+    photons['dec'] = np.zeros(5)
+    photons['probability'] = np.ones(5)
+    photons['time'] = np.arange(5)
+    photons['polangle'] = np.zeros(5)
+
+    fp = FixedPointing(coords=(0., 0.))
+    p = fp(photons.copy())
+
+    assert np.allclose(p['probability'], [1., 1./np.sqrt(2), 0, 0, 1./np.sqrt(2)])
+
+    fp = FixedPointing(coords=(0., 0.), geomarea_reference=[0., -2., 0., 0.])
+    p = fp(photons.copy())
+
+    assert np.allclose(p['probability'], [ 0, 1./np.sqrt(2), 1., 1./np.sqrt(2), 0.])
 
 
 def test_jitter():
@@ -15,7 +36,9 @@ def test_jitter():
     dec = (np.random.rand(n) * 2. - 1.) / 2. * np.pi
     time = np.arange(n)
     pol = np.ones_like(ra)
-    photons = Table([ra, dec, time, pol], names=['ra', 'dec', 'time', 'polangle'])
+    prob = np.ones_like(ra)
+    photons = Table([ra, dec, time, pol, prob],
+                    names=['ra', 'dec', 'time', 'polangle', 'probability'])
     fixed = FixedPointing(coords = (25., -10.))
     jittered = JitterPointing(coords = (25., -10.), jitter=np.deg2rad(1./3600.))
     p_fixed = fixed(photons.copy())
