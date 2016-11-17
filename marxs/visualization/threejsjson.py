@@ -7,7 +7,7 @@ from . import threejs
 from .utils import format_saved_positions
 
 
-def plot_rays(data, scalar=None, cmap=None, prop={}, name='Photon list'):
+def plot_rays(data, scalar=None, prop={}, name='Photon list', cmap=None):
     '''Plot lines for simulated rays.
 
     Parameters
@@ -21,38 +21,18 @@ def plot_rays(data, scalar=None, cmap=None, prop={}, name='Photon list'):
         color. If it has n elements, each ray will have exactly one color (e.g. color
         according to the energy of the ray), if it has n*N elements, rays will be
         multicolored.
-    outfile : file object
-        Output javascript code is written to this file.
     prop : dict
         keyword arguments for line material.
     name : string
         Identifier "name" for three.js objects. This only matters if your website
         identifies elements by name for interactive features.
+    cmap : `matplotlib.colors.Colormap` instance or string or None
+        `matplotlib` color maps are used to convert ``scalar`` values to rgb colors.
+        If ``None`` the default matplotlib colormap will be used, otherwise the colormap
+        can be specified in this keyword.
     '''
-    if hasattr(data, 'data') and isinstance(data.data, list):
-        data = format_saved_positions(data)
+    data, s_rgb, prob, n = threejs._format_plot_rays_input(data, scalar, cmap, prop)
 
-    # The number of points per line
-    N = data.shape[1]
-    # number of lines
-    n = data.shape[0]
-
-    if scalar is None:
-        s = np.zeros((n,  N))
-    elif scalar.shape == (n, ):
-        s = np.tile(scalar, (N, 1)).T
-    elif scalar.shape == (n, N):
-        s = scalar
-    else:
-        raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})'.format(n, N))
-
-    import matplotlib.pyplot as plt
-    cmap = plt.get_cmap(cmap)
-    normalizer = plt.Normalize()
-    s_rgb = cmap(normalizer(s))
-
-    if 'vertexColors' not in prop:
-        prop['vertexColors'] = 2 # 'THREE.VertexColors'
 
     out = {}
     out['n'] = n
