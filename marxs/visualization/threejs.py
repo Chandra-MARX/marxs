@@ -1,7 +1,7 @@
 import numpy as np
 
 from marxs.math.pluecker import h2e
-from .utils import color_tuple_to_hex
+from .utils import color_tuple_to_hex, format_saved_positions
 
 listofproperties = {'Material': ['id', 'name', 'opacity', 'transparent', 'blending', 'blendSrc',
                                  'blendDst', 'BlendEquation', 'depthTest', 'depthWrite',
@@ -76,27 +76,7 @@ def materialspec(display, material):
     spec = ['{0} : {1}'.format(k, matdict[v]) for k in matdict]
     return ', '.join(spec)
 
-
-def plot_rays(data, outfile, scalar=None, cmap=None,
-              prop={}):
-    '''Plot lines for simulated rays.
-
-    Parameters
-    ----------
-    data : np.array of shape(n, N, 3) or `marxs.simulator.KeepCol` object
-        where n is the number of rays, N the number of positions per ray and
-        the last dimension is the (x,y,z) of an Eukledian position vector.
-        This can also be a ``KeepCol('pos')`` object.
-    scalar : None or nd.array of shape (n,) or (n, N)
-        This quantity is used to color the rays. If ``None`` all rays will have the same
-        color. If it has n elements, each ray will have exactly one color (e.g. color
-        according to the energy of the ray), if it has n*N elements, rays will be
-        multicolored.
-    outfile : file object
-        Output javascript code is written to this file.
-    prop : dict
-        keyword arguments for line material.
-    '''
+def _format_plot_rays_input(data, scalar, cmap, prop):
     if hasattr(data, 'data') and isinstance(data.data, list):
         data = format_saved_positions(data)
 
@@ -120,7 +100,35 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
     s_rgb = cmap(normalizer(s))
 
     if 'vertexColors' not in prop:
-        prop['vertexColors'] = 'THREE.VertexColors'
+        prop['vertexColors'] = 2 # 2 = 'THREE.VertexColors'
+
+    return data, s_rgb, prop, n
+
+def plot_rays(data, outfile, scalar=None, cmap=None,
+              prop={}):
+    '''Plot lines for simulated rays.
+
+    Parameters
+    ----------
+    data : np.array of shape(n, N, 3) or `marxs.simulator.KeepCol` object
+        where n is the number of rays, N the number of positions per ray and
+        the last dimension is the (x,y,z) of an Eukledian position vector.
+        This can also be a ``KeepCol('pos')`` object.
+    scalar : None or nd.array of shape (n,) or (n, N)
+        This quantity is used to color the rays. If ``None`` all rays will have the same
+        color. If it has n elements, each ray will have exactly one color (e.g. color
+        according to the energy of the ray), if it has n*N elements, rays will be
+        multicolored.
+    outfile : file object
+        Output javascript code is written to this file.
+    prop : dict
+        keyword arguments for line material.
+    cmap : `matplotlib.colors.Colormap` instance or string or None
+        `matplotlib` color maps are used to convert ``scalar`` values to rgb colors.
+        If ``None`` the default matplotlib colormap will be used, otherwise the colormap
+        can be specified in this keyword.
+    '''
+    data, s_rgb, prop, n = _format_plot_rays_input(data, scalar, cmap, prob)
     material = materialspec(prop, 'LineBasicMaterial')
 
     for i in range(n):
