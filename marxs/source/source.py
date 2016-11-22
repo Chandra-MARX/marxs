@@ -1,3 +1,6 @@
+import os
+from datetime import datetime
+
 import numpy as np
 from scipy.stats import expon
 from astropy.table import Table
@@ -5,6 +8,7 @@ from astropy.table import Table
 from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
+from .. import __version__ as marxsversion
 
 
 def poisson_process(rate):
@@ -216,6 +220,16 @@ class Source(SimulationSequenceElement):
         photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
 
         #photons.meta['DATE-OBS'] =
+        photons.meta['CREATOR'] = 'MARXS - Version {0}'.format(marxsversion)
+        photons.meta["LONGSTRN"] = ("OGIP 1.0", "The OGIP long string convention may be used.")
+        photons.meta['MARXSVER'] = (marxsversion, 'MARXS version')
+        now = datetime.now()
+        photons.meta['SIMDATE'] = (str(now.date()), 'Date simulation was run')
+        photons.meta['SIMTIME'] = (str(now.time())[:10], 'Time simulation was started')
+        photons.meta['SIMUSER'] = (os.environ.get('USER', 'unknown user'),
+                                   'User running simulation')
+        photons.meta['SIMHOST'] = (os.environ.get('HOST', 'unknown host'),
+                                   'Host system running simulation')
         return photons
 
 
@@ -259,10 +273,10 @@ class SymbolFSource(Source):
     def __init__(self, coords, size=1, **kwargs):
         self.coords = coords
         self.size = size
-        super(PointSource, self).__init__(**kwargs)
+        super(SymbolFSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
-        photons = super(PointSource, self).generate_photons(exposuretime)
+        photons = super(SymbolFSource, self).generate_photons(exposuretime)
         n = len(photons)
         elem = np.random.choice(3, size=n)
 

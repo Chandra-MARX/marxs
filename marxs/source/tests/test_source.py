@@ -2,9 +2,21 @@ import numpy as np
 import pytest
 from astropy.table import Table
 
-from ...source import Source, poisson_process
+from ...source import SymbolFSource, Source, poisson_process
 from ...optics import RectangleAperture
 from ..source import SourceSpecificationError
+
+
+def test_photons_header():
+    '''All generated photons should have some common keywords.
+
+    Just test that some of the keywords are there. It's unlikely
+    that I need a full list here.
+    '''
+    s = SymbolFSource((-123., -43.), 1.)
+    photons = s.generate_photons(5.)
+    for n in ['EXPOSURE', 'CREATOR', 'MARXSVER', 'SIMTIME', 'SIMUSER']:
+        assert n in photons.meta
 
 def test_energy_input_default():
     '''For convenience and testing, defaults for time, energy and pol are set.'''
