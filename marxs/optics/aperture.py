@@ -61,7 +61,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         if self.loc_coos_name is not None:
             photons[self.loc_coos_name[0]] = x
             photons[self.loc_coos_name[1]] = y
-        photons['pos'] = self.geometry['center'] + x.reshape((-1, 1)) * self.geometry['v_y'] + y.reshape((-1, 1)) * self.geometry['v_z']
+        photons['pos'] = self.geometry('center') + x.reshape((-1, 1)) * self.geometry('v_y') + y.reshape((-1, 1)) * self.geometry('v_z')
 
         return photons
 
@@ -84,10 +84,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         '''
         r_out = self.display.get('outer_factor', 3)
         g = self.geometry
-        outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
-                                                      h2e(-g['v_y']) + h2e(g['v_z']),
-                                                      h2e(-g['v_y']) - h2e(g['v_z']),
-                                                      h2e( g['v_y']) - h2e(g['v_z'])
+        outer = h2e(g('center')) + r_out * np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
+                                                      h2e(-g('v_y')) + h2e(g('v_z')),
+                                                      h2e(-g('v_y')) - h2e(g('v_z')),
+                                                      h2e( g('v_y')) - h2e(g('v_z'))
         ])
         inner = self.inner_shape()
         return plane_with_hole(outer, inner)
@@ -168,14 +168,14 @@ class RectangleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return 4 * np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z'])
+        return 4 * np.linalg.norm(self.geometry('v_y')) * np.linalg.norm(self.geometry('v_z'))
 
     def inner_shape(self):
         g = self.geometry
-        return h2e(g['center']) + np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
-                                             h2e(-g['v_y']) + h2e(g['v_z']),
-                                             h2e(-g['v_y']) - h2e(g['v_z']),
-                                             h2e( g['v_y']) - h2e(g['v_z'])])
+        return h2e(g('center')) + np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
+                                             h2e(-g('v_y')) + h2e(g('v_z')),
+                                             h2e(-g('v_y')) - h2e(g('v_z')),
+                                             h2e( g('v_y')) - h2e(g('v_z'))])
 
 
 class CircleAperture(FlatAperture):
@@ -205,8 +205,8 @@ class CircleAperture(FlatAperture):
     def generate_local_xy(self, n):
         phi = np.random.uniform(self.phi[0], self.phi[1], n)
         r = np.sqrt(np.random.random(n))
-        if not np.isclose(np.linalg.norm(self.geometry['v_y']),
-                        np.linalg.norm(self.geometry['v_z'])):
+        if not np.isclose(np.linalg.norm(self.geometry('v_y')),
+                          np.linalg.norm(self.geometry('v_z'))):
             raise GeometryError('Aperture does not have same size in y, z direction.')
 
         x = r * np.cos(phi)
@@ -216,13 +216,13 @@ class CircleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return 2. * np.pi * np.linalg.norm(self.geometry['v_y'])
+        return 2. * np.pi * np.linalg.norm(self.geometry('v_y'))
 
     def inner_shape(self):
         n = self.display.get('n_inner_vertices', 90)
         phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
-        v_y = self.geometry['v_y']
-        v_z = self.geometry['v_z']
+        v_y = self.geometry('v_y')
+        v_z = self.geometry('v_z')
 
         x = np.cos(phi)
         y = np.sin(phi)
@@ -234,7 +234,7 @@ class CircleAperture(FlatAperture):
         x[~ind] = 0
         y[~ind] = 0
 
-        return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+        return h2e(self.geometry('center') + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
 
 
 class MultiAperture(BaseAperture, BaseContainer):

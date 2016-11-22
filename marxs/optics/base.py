@@ -1,15 +1,12 @@
 from functools import wraps
-from copy import copy
 
 import numpy as np
 from astropy.table import Table, Row
-from transforms3d.affines import decompose44
 
-from marxs.math.pluecker import h2e
-
-from ..math.pluecker import *
+from ..math.pluecker import (e2h, h2e, point_dir2plane, dir_point2line,
+                             intersect_line_plane)
 from ..base import SimulationSequenceElement, _parse_position_keywords
-from ..visualization.utils import get_color, color_tuple_to_hex
+from ..visualization.utils import get_color
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -26,27 +23,61 @@ class OpticalElement(SimulationSequenceElement):
     loop over all photons in the array and call `process_photon` on each of them.
     '''
 
-    geometry = {}
-    '''A dictionary of geometric properties.
+    def geometry(self, key):
+        '''This function wraps access to the pos4d matrix.
 
-    Any entry in this dictionary that contains a 4-d array will be automatically transformed
-    with the `pos4d` matrix when the object is initialized.
+        This is mostly a convenience method that gives access to vectors from the
+        ``pos4d`` matrix in familiar terms with string labels:
 
-    For example, we might set ``geometry['center_of_mirror']=np.array([0, 0, 0, 1])``. When the user
-    initializes an object of this type with the keyword ``position=[2,0,0]`` then the center
-    of the new mirror object will be set to [2, 0, 0, 1].
-    '''
+        - ``center``: The ``center`` is the origin of the local coordiante system
+          of the optical elemement. Typically, if will be the center of the
+          active plane, e.g. the center of the mirror surface.
+        - :math:`\hat v_{y,z}`: The box stretches in the y and z direction for
+          :math:`\pm \hat v_y` and :math:`\pm \hat v_z`. In optics, the relevant
+          interaction often happens on a surface, e.g. the surface of a mirror or
+          of a reflection grating. In the defaul configuration, this surface is in
+          the yz-plane.
+        - :math:`\hat v_x`: The thickness of the box is not as important in many
+          cases,
+          but is useful to e.g. render the geometry or to test if elements collide.
+          The box reaches from the yz-plane down to :math:`- \hat v_x`. Note, that
+          this definition means the size parallel to the y and z axis is
+          :math:`2 |\hat v_{y,z}|`, but only :math:`1 |\hat v_{x}|`.
+        - :math:`\hat e_{x,y,z}`: When an object is initialized, it automatically
+          adds unit vectors in the
+          direction of :math:`\hat v_{x,y,z}` called :math:`\hat e_{x,y,z}`.
+        - ``plane``: It also adds the homogeneous coordinates of the active plane
+          as ``plane``.
+        - Other labels get looked up in ``self._geometry`` and if the resulting
+          value is a 4-d vector, it gets transformed with ``pos4d``.
+
+        Not all these labels make sense for every optical element (e.g. a curved
+        mirror does not really have a "plane").
+        Access through this method is slower than direct indexing of ``self.pos4d``.
+        '''
+
+        if key == 'center':
+            return self.pos4d[:, 3]
+        elif key in ['v_x', 'e_x']:
+            val = self.pos4d[:, 0]
+        elif key in ['v_y', 'e_y']:
+            val = self.pos4d[:, 1]
+        elif key in ['v_z', 'e_z']:
+            val = self.pos4d[:, 2]
+        elif key == 'plane':
+            normal = e2h(np.cross(h2e(self.geometry('e_y')), h2e(self.geometry('e_z'))), 0)
+            return point_dir2plane(self.geometry('center'), normal)
+        else:
+            val = self._geometry[key]
+            if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
+                val = np.dot(self.pos4d, val)
+        if key[:2] == 'e_':
+            return val / np.linalg.norm(val)
+        else:
+            return val
 
     def __init__(self, **kwargs):
         self.pos4d = _parse_position_keywords(kwargs)
-
-        # Before we change any numbers, we need to copy geometry from the class
-        # attribute to an instance attribute
-        self.geometry = copy(self.geometry)
-
-        for elem, val in self.geometry.items():
-            if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
-                self.geometry[elem] = np.dot(self.pos4d, val)
         super(OpticalElement, self).__init__(**kwargs)
 
     def process_photon(self, dir, pos, energy, polarization):
@@ -140,56 +171,10 @@ class FlatOpticalElement(OpticalElement):
     will be multiplied with the previous probabilities of each photon automatically.
     '''
 
-    geometry = {'center': np.array([0, 0, 0, 1.]),
-                'v_y': np.array([0, 1., 0, 0]),
-                'v_z': np.array([0, 0, 1., 0]),
-                'v_x': np.array([1., 0, 0, 0]),
-                'shape': 'box',
-                }
-    '''
-    Each flat optical element contains a dictionary called ``geometry`` that
-    describes its geometrical properties. This dictionary has the following
-    entries:
-
-    - ``shape``: The default geometry has the ``shape`` of a box.
-    - ``center``: The ``center`` is the origin of the local coordiante system
-      of the optical elemement. Typically, if will be the center of the
-      active plane, e.g. the center of the mirror surface. Initially, the
-      ``center`` of the element is at the origin of the global coordiante
-      system.
-    - :math:`\hat v_{y,z}`: The box stretches in the y and z direction for
-      :math:`\pm \hat v_y` and :math:`\pm \hat v_z`. In optics, the relevant
-      interaction often happens on a surface, e.g. the surface of a mirror or
-      of a reflection grating. In the defaul configuration, this surface is in
-      the yz-plane.
-    - :math:`\hat v_x`: The thickness of the box is not as important in many
-      cases,
-      but is useful to e.g. render the geometry or to test if elements collide.
-      The box reaches from the yz-plane down to :math:`- \hat v_x`. Note, that
-      this definition means the size parallel to the y and z axis is
-      :math:`2 |\hat v_{y,z}|`, but only :math:`1 |\hat v_{x}|`.
-    - :math:`\hat e_{x,y,z}`: When an object is initialized, it automatically
-      adds unit vectors in the
-      direction of :math:`\hat v_{x,y,z}` called :math:`\hat e_{x,y,z}`.
-    - ``plane``: It also adds the homogeneous coordinates of the active plane
-      as ``plane``.
-
-    When an object is initialized, all the above entries are transformed with
-    its 4-dim transformation matrix, that can either be passed directly as
-    `pos4d` or in separate transformations (``position``, ``rotation``,
-    ``zoom``).
-    '''
+    _geometry = {'shape': 'box'}
 
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
-
-    def __init__(self, **kwargs):
-        super(FlatOpticalElement, self).__init__(**kwargs)
-        for c in 'xyz':
-            self.geometry['e_' + c] = self.geometry['v_' + c] / np.linalg.norm(self.geometry['v_' + c])
-        normal = e2h(np.cross(h2e(self.geometry['e_y']), h2e(self.geometry['e_z'])), 0)
-        self.geometry['plane'] = point_dir2plane(self.geometry['center'],
-                                                 normal)
 
     def intersect(self, dir, pos):
         '''Calculate the intersection point between a ray and the element
@@ -212,12 +197,12 @@ class FlatOpticalElement(OpticalElement):
             y and z coordinates in the coordiante system of the active plane.
         '''
         plucker = dir_point2line(h2e(dir), h2e(pos))
-        interpos =  intersect_line_plane(plucker, self.geometry['plane'])
-        vec_center_inter = - h2e(self.geometry['center']) + h2e(interpos)
-        ey = np.dot(vec_center_inter, h2e(self.geometry['e_y']))
-        ez = np.dot(vec_center_inter, h2e(self.geometry['e_z']))
-        intersect = ((np.abs(ey) <= np.linalg.norm(self.geometry['v_y'])) &
-                     (np.abs(ez) <= np.linalg.norm(self.geometry['v_z'])))
+        interpos =  intersect_line_plane(plucker, self.geometry('plane'))
+        vec_center_inter = - h2e(self.geometry('center')) + h2e(interpos)
+        ey = np.dot(vec_center_inter, h2e(self.geometry('e_y')))
+        ez = np.dot(vec_center_inter, h2e(self.geometry('e_z')))
+        intersect = ((np.abs(ey) <= np.linalg.norm(self.geometry('v_y'))) &
+                     (np.abs(ez) <= np.linalg.norm(self.geometry('v_z'))))
         if dir.ndim == 2:
             interpos[~intersect, :3] = np.nan
         # input of single photon.

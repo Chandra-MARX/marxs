@@ -3,7 +3,7 @@ import numpy as np
 from transforms3d.axangles import axangle2mat
 
 from .base import FlatOpticalElement
-from ..math.pluecker import *
+from ..math.pluecker import h2e, e2h, distance_point_point
 from ..math.utils import norm_vector
 
 class PerfectLens(FlatOpticalElement):
@@ -28,7 +28,7 @@ class PerfectLens(FlatOpticalElement):
     def process_photons(self, photons):
         # A ray through the center is not broken.
         # So, find out where a central ray would go.
-        focuspoints = h2e(self.geometry['center']) + self.focallength * norm_vector(h2e(photons['dir']))
+        focuspoints = h2e(self.geometry('center')) + self.focallength * norm_vector(h2e(photons['dir']))
         photons['dir'] = e2h(focuspoints - h2e(photons['pos']), 0)
         return photons
 
@@ -78,7 +78,7 @@ class ThinLens(FlatOpticalElement):
     def process_photon(self, dir, pos, energy, polerization):
         intersect, h_intersect, loc_inter = self.intersect(dir, pos)
         distance = distance_point_point(h_intersect,
-                                        self.geometry['center'][np.newaxis, :])
+                                        self.geometry('center')[np.newaxis, :])
         if distance == 0.:
             # No change of direction for rays through the origin.
             # Need to special case this, because rotation axis is not defined
@@ -86,7 +86,7 @@ class ThinLens(FlatOpticalElement):
             new_ray_dir = h2e(dir)
         else:
             delta_angle = distance / self.focallength
-            e_rotation_axis = np.cross(dir[:3], (h_intersect - self.geometry['center'])[:3])
+            e_rotation_axis = np.cross(dir[:3], (h_intersect - self.geometry('center'))[:3])
             # This is the first step that cannot be done on a stack of photons
             # Could have a for "i in photons", but might come up with better way
             rot = axangle2mat(e_rotation_axis, delta_angle)
