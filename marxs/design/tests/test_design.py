@@ -278,7 +278,7 @@ def test_facet_rotation_via_facetargs():
     mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
     mygascat = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
-    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.elements[0].geometry['e_x'][:3], mygascat.elements[0].geometry['e_x'][:3]))), 15.)
+    assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.elements[0].geometry('e_x')[:3], mygascat.elements[0].geometry('e_x')[:3]))), 15.)
 
 def test_persistent_facetargs():
     '''Make sure that facet_args is still intact after generating facets.
@@ -348,11 +348,11 @@ def test_LinearCCDArray():
     assert len(ccds.elements) == 7
     for e in ccds.elements:
         # For this test we don't care if z and e_z are parallel or antiparallel
-        assert np.isclose(np.abs(np.dot([0, 0, 1, 0], e.geometry['e_z'])), 1.)
+        assert np.isclose(np.abs(np.dot([0, 0, 1, 0], e.geometry('e_z'))), 1.)
         assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
 
     # center ccd is on the optical axis
-    assert np.allclose(ccds.elements[3].geometry['e_y'], [0, 1, 0, 0])
+    assert np.allclose(ccds.elements[3].geometry('e_y'), [0, 1, 0, 0])
 
 def test_LinearCCDArray_rotatated():
     '''Test an array with different rotations.
@@ -368,7 +368,7 @@ def test_LinearCCDArray_rotatated():
                           radius=[-100., 100.], phi=0., elem_class=mock_facet)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
-        assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
+        assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry('e_z')[:3]), 0, atol=1e-4)
 
 def test_impossible_LinearCCDArray():
     '''The rotation is chosen such that all requested detector positions are
@@ -421,6 +421,6 @@ def test_nojumpsinCCDorientation():
                              theta=[np.pi - 0.2, np.pi - 0.1])
 
     # If all is right, this will vary very smoothly along the circle.
-    xcomponent = np.array([e.geometry['e_y'][0] for e in det.elements])
+    xcomponent = np.array([e.geometry('e_y')[0] for e in det.elements])
     xcompdiff = np.diff(xcomponent)
     assert (np.max(np.abs(xcompdiff)) / np.median(np.abs(xcompdiff))) < 1.1

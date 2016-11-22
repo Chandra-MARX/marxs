@@ -2,7 +2,7 @@ from io import StringIO
 import numpy as np
 from numpy.random import random
 from astropy.table import Table
-from transforms3d import axangles
+from transforms3d import axangles, affines
 
 from ..grating import (FlatGrating, CATGrating,
                        constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
@@ -43,7 +43,7 @@ def test_zeros_order():
     assert np.allclose(np.cross(h2e(photons['pos']) - h2e(p['pos']), h2e(p['dir'])), 0)
 
 def test_translation_invariance():
-    '''For homogeneous gratings, the diffrection eqn does not care where the ray hits.'''
+    '''For homogeneous gratings, the diffraction eqn does not care where the ray hits.'''
     photons = generate_test_photons(2)
     photons['dir'] = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
     pos = np.tile(np.array([1., 0., 0., 1.]), (2, 1))
@@ -140,7 +140,7 @@ def test_groove_direction():
     photons = generate_test_photons(5)
 
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
-    assert np.allclose(np.dot(g.geometry['e_groove'], g.geometry['e_perp_groove']), 0.)
+    assert np.allclose(np.dot(g.geometry('e_groove'), g.geometry('e_perp_groove')), 0.)
     p = g.process_photons(photons.copy())
 
     g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
@@ -273,3 +273,23 @@ def test_grating_d_callable():
     p = grat(photons)
     # negative one has half the grating constant and thus twice the angle
     assert np.abs(p['dir'][1, 1] / p['dir'][0, 1] - 2 ) < 0.00001
+
+def test_change_position_after_init():
+    '''Regression: In MARXS 0.1 the geometry could not be changed after init
+    because a lot of stuff was pre-calculated in __init__. That should no
+    longer be the case. This test is here to check that for gratings.'''
+    photons = generate_test_photons(5)
+
+    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
+    p1 = g1.process_photons(photons.copy())
+
+    pos3d = axangles.axangle2mat([1,0,0], .3)
+    trans = np.array([0., -.3, .5])
+    # Make grating at some point
+    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), position=trans)
+    # then move it so that pos and groove direction match g1
+    g2.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
+    p2 = g2.process_photons(photons.copy())
+
+    assert np.allclose(p1['dir'], p2['dir'])
+    assert np.allclose(p1['pos'], p2['pos'])

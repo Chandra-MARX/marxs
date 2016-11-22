@@ -1,9 +1,8 @@
 '''Gratings and efficiency files'''
-
+import math
 import numpy as np
-from transforms3d import axangles
 
-from ..math.pluecker import *
+from ..math.pluecker import h2e, e2h
 from ..math.utils import norm_vector
 from .. import energy2wave
 from .base import FlatOpticalElement
@@ -123,7 +122,7 @@ class FlatGrating(FlatOpticalElement):
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. (*Default*: ``True`` )
     groove_angle : float
-        Angle between the direction of the grooves and the local z axis in radian.
+        Angle between the local z axis and the direction of the grooves in radian.
         (*Default*: ``0.``)
 
     .. warning::
@@ -163,13 +162,12 @@ class FlatGrating(FlatOpticalElement):
         if 'd' not in kwargs:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
         self._d = kwargs.pop('d')
-        self.groove_ang = kwargs.pop('groove_angle', 0.)
+        groove = kwargs.pop('groove_angle', 0.)
 
         super(FlatGrating, self).__init__(**kwargs)
 
-        self.groove4d = axangles.axangle2aff(self.geometry['e_x'][:3], self.groove_ang)
-        self.geometry['e_groove'] = np.dot(self.groove4d, self.geometry['e_z'])
-        self.geometry['e_perp_groove'] = np.dot(self.groove4d, self.geometry['e_y'])
+        self._geometry['e_groove'] = np.array([0., math.sin(-groove), math.cos(-groove), 0.])
+        self._geometry['e_perp_groove'] = np.array([0., math.cos(-groove), -math.sin(-groove), 0.])
 
     def d(self, intercoos):
         '''Method that returns the grating constant at given positions.
@@ -187,10 +185,10 @@ class FlatGrating(FlatOpticalElement):
     def diffract_photons(self, photons, intersect, interpos, intercoos):
         '''Vectorized implementation'''
         p = norm_vector(h2e(photons['dir'].data[intersect]))
-        n = self.geometry['plane'][:3]
-        l = h2e(self.geometry['e_groove'])
+        n = self.geometry('plane')[:3]
+        l = h2e(self.geometry('e_groove'))
         # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry['e_perp_groove'])
+        d = -h2e(self.geometry('e_perp_groove'))
 
         wave = energy2wave / photons['energy'].data[intersect]
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
@@ -240,7 +238,7 @@ class CATGrating(FlatGrating):
         convention is only meaningful if the photons do not arrive perpendicular to the grating.
         '''
         # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry['e_perp_groove'])
+        d = -h2e(self.geometry('e_perp_groove'))
         dotproduct = np.dot(p, d)
         sign = np.sign(dotproduct)
         sign[sign == 0] = 1

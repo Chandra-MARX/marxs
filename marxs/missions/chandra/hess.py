@@ -72,5 +72,5 @@ class HETG(Parallel):
         for i in range(len(self.elements)):
             # No need to calculate those from groove angle
             # They are already in the input table.
-            self.elements[i].geometry['e_groove'][:3] = ul[:, i]
-            self.elements[i].geometry['e_perp_groove'][:3] = ud[:, i]
+            self.elements[i].geometry('e_groove')[:3] = ul[:, i]
+            self.elements[i].geometry('e_perp_groove')[:3] = ud[:, i]

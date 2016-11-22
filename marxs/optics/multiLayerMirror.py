@@ -73,7 +73,7 @@ class MultiLayerMirror(FlatOpticalElement):
 
         # split polarization into s and p components
         # v_1 is s polarization (perpendicular to plane of incidence), v_2 is p polarization (in the plane of incidence)
-        v_1 = np.cross(beam_dir, self.geometry['e_x'][0:3])
+        v_1 = np.cross(beam_dir, self.geometry('e_x')[0:3])
         v_1 /= np.linalg.norm(v_1, axis=1)[:, np.newaxis]
         v_2 = np.cross(beam_dir, v_1)
         # find polarization component in each direction, v1 and v2
@@ -102,7 +102,7 @@ class MultiLayerMirror(FlatOpticalElement):
         # find probability of being reflected due to position
         # put the photon positions and the position values from the reflection file into local coordinates
         local_intersection = h2e((np.dot(pos4d_inv, intersection.T)).T)
-        local_coords_in_file = reflectFile['X(mm)'] / np.linalg.norm(self.geometry['v_y']) - 1
+        local_coords_in_file = reflectFile['X(mm)'] / np.linalg.norm(self.geometry('v_y')) - 1
         # interpolate 'Peak lambda', 'Peak' [reflectivity], and 'FWHM(nm)' to the actual photon positions
         peak_wavelength = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['Peak lambda'])
         max_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['Peak']) / tested_polarized_fraction
