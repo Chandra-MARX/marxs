@@ -266,7 +266,7 @@ class RowlandTorus(MarxsElement):
 
         Parameters
         ----------
-        xyzw : np.array of shape (N, 4) or (4)
+        xyzw : np.array of shape (N, 4)
             Coordinates of points in euklidean space. The quartic is calculated for
             those points. All points need to be on the surface of the torus.
 
@@ -276,6 +276,8 @@ class RowlandTorus(MarxsElement):
             Gradient vector field in euklidean coordinates. One vector corresponds to each
             input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
         '''
+        if not len(xyzw.shape) == 2:
+            raise ValueError('Shape of input array must be (N, 4).')
         theta, phi = self.xyzw2parametric(xyzw, 1)
         return self.normal_parametric(theta, phi)
 
