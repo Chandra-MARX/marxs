@@ -17,11 +17,9 @@ def complete_CC(header, content, hduclass):
     '''Configuration Control Component'''
     h = [
         ('ORIGIN', 'ASC'),
-        ('CREATOR', 'MARXS - Version {0}'.format(__version__)),
         ("HDUDOC", "ASC-FITS-2.0: Rots, McDowell: ASC FITS File Designers Guide"),
         ("CONTENT", content),
         ("HDUNAME", header['EXTNAME']),
-        ("LONGSTRN", ("OGIP 1.0", "The OGIP long string convention may be used.")),
         ]
     for a, b in zip(['HDUCLASS', 'HDUCLAS1', 'HDUCLAS2', 'HDUCLAS3'], hduclass):
         h += [(a, b)]
