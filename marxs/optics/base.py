@@ -292,7 +292,7 @@ class FlatOpticalElement(OpticalElement):
         out['materialproperties'] = threejs.materialdict(self.display, out['material'])
         out['geometry'] = 'BoxGeometry'
         out['geometrypars'] = (2, 2, 2)
-        out['pos4d'] = [self.pos4d.flatten().tolist()]
+        out['pos4d'] = [self.pos4d.T.flatten().tolist()]
         if not ('side' in self.display):
             out['materialproperties']['side'] = 2
 
