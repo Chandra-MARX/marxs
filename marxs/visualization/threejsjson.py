@@ -42,7 +42,7 @@ def plot_rays(data, scalar=None, prop={}, name='Photon list', cmap=None):
     out['geometry'] = 'BufferGeometry'
     out['geometrytype'] = 'Line'
     out['pos'] = data.reshape((n, -1)).tolist()
-    out['color'] = s_rgb.reshape((n, -1)).tolist()
+    out['color'] = s_rgb[:, :, :3].reshape((n, -1)).tolist()
     return out
 
 
