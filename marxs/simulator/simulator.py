@@ -58,11 +58,11 @@ class BaseContainer(SimulationSequenceElement):
 
     def _plot_threejs(self, *args, **kwargs):
         for elem in self.elements:
-            elem.plot(*args, **kwargs)
+            elem.plot(format='threejs', *args, **kwargs)
 
     def _plot_mayavi(self, *args, **kwargs):
         '''No need to construct deep nested lists on None.'''
-        out = [elem.plot(*args, **kwargs) for elem in self.elements]
+        out = [elem.plot(format='mayavi', *args, **kwargs) for elem in self.elements]
         if all([elem is None for elem in out]):
             return None
         else:
