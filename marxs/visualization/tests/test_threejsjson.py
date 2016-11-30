@@ -76,12 +76,12 @@ def test_rays():
 
     # See that it validates correctly
     if HAS_JSONSCHEMA:
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile('w') as f:
             write(f, rays)
 
     else:
         with pytest.warns(UserWarning) as warns:
-            with tempfile.TemporaryFile() as f:
+            with tempfile.TemporaryFile('w') as f:
                 write(f, rays)
         assert "without further" in warns[0].message.args[0]
 
@@ -118,12 +118,12 @@ def test_write():
     out = det.plot(format='threejsjson')
 
     if HAS_JSONSCHEMA:
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile('w') as f:
             write(f, out)
 
     else:
         with pytest.warns(UserWarning) as warns:
-            with tempfile.TemporaryFile() as f:
+            with tempfile.TemporaryFile('w') as f:
                 write(f, out)
         assert "without further" in warns[0].message.args[0]
 
@@ -135,12 +135,12 @@ def test_writelist():
     out1 = det.plot(format='threejsjson')
 
     if HAS_JSONSCHEMA:
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile('w') as f:
             write(f, [out, out1])
 
     else:
         with pytest.warns(UserWarning) as warns:
-            with tempfile.TemporaryFile() as f:
+            with tempfile.TemporaryFile('w') as f:
                 write(f, [out, out1])
         assert "without further" in warns[0].message.args[0]
 
@@ -152,5 +152,5 @@ def test_write_invalid():
     jsonschema = pytest.importorskip("jsonschema")
 
     with pytest.raises(jsonschema.ValidationError):
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile('w') as f:
                 write(f, [[out]])
