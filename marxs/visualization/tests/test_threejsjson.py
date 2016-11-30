@@ -1,8 +1,17 @@
+import tempfile
 import numpy as np
+import pytest
 
 from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
-from ..threejsjson import plot_rays
+from ..threejsjson import plot_rays, write
+
+try:
+    import jsonschema
+    HAS_JSONSCHEMA = True
+except ImportError:
+    HAS_JSONSCHEMA = False
+
 
 def test_box():
     '''Any box shaped element has the same representation so it's
@@ -20,8 +29,8 @@ def test_box():
                                            'transparent': 'true'},
                     'n': 1,
                     'name': "<class 'marxs.optics.detector.FlatDetector'>",
-                    'pos4d': [[ 2.,  0.,  0.,  2.,  0.,  2.,  0.,  3.,
-                                      0.,  0.,  2.,  4.,  0., 0.,  0.,  1.]]
+                    'pos4d': [[ 2.,  0.,  0.,  0.,  0.,  2.,  0.,  0.,
+                                      0.,  0.,  2.,  0.,  2., 3.,  4.,  1.]]
     }
 
     # out_expected is only a subset
@@ -52,8 +61,8 @@ def test_rowland():
 def test_rays():
     '''Just two rays to make sure the format is right.'''
     rays = plot_rays(np.arange(12).reshape(2,2,3), cmap='jet')
-    out_expected = {'color': [[0.0, 0.0, 0.5, 1.0, 0.0, 0.0, 0.5, 1.0],
-                              [0.0, 0.0, 0.5, 1.0, 0.0, 0.0, 0.5, 1.0]],
+    out_expected = {'color': [[0.0, 0.0, 0.5, 0.0, 0.0, 0.5],
+                              [0.0, 0.0, 0.5, 0.0, 0.0, 0.5]],
                     'geometry': 'BufferGeometry',
                     'geometrytype': 'Line',
                     'material': 'LineBasicMaterial',
@@ -64,6 +73,18 @@ def test_rays():
 
     for k in out_expected:
         assert rays[k] == out_expected[k]
+
+    # See that it validates correctly
+    if HAS_JSONSCHEMA:
+        with tempfile.TemporaryFile() as f:
+            write(f, rays)
+
+    else:
+        with pytest.warns(UserWarning) as warns:
+            with tempfile.TemporaryFile() as f:
+                write(f, rays)
+        assert "without further" in warns[0].message.args[0]
+
 
 def test_aperture():
     '''Any box shaped element has the same representation so it's
@@ -90,3 +111,46 @@ def test_aperture():
     # out_expected is only a subset
     for k in out_expected:
         assert out[k] == out_expected[k]
+
+def test_write():
+    '''Write anything to disk.'''
+    det = RectangleAperture(zoom=5)
+    out = det.plot(format='threejsjson')
+
+    if HAS_JSONSCHEMA:
+        with tempfile.TemporaryFile() as f:
+            write(f, out)
+
+    else:
+        with pytest.warns(UserWarning) as warns:
+            with tempfile.TemporaryFile() as f:
+                write(f, out)
+        assert "without further" in warns[0].message.args[0]
+
+def test_writelist():
+    '''write a list of things to disk.'''
+    aper = RectangleAperture(zoom=5)
+    det = FlatDetector(zoom=2, position=[2., 3., 4.])
+    out = aper.plot(format='threejsjson')
+    out1 = det.plot(format='threejsjson')
+
+    if HAS_JSONSCHEMA:
+        with tempfile.TemporaryFile() as f:
+            write(f, [out, out1])
+
+    else:
+        with pytest.warns(UserWarning) as warns:
+            with tempfile.TemporaryFile() as f:
+                write(f, [out, out1])
+        assert "without further" in warns[0].message.args[0]
+
+def test_write_invalid():
+    '''Check that an Exception is raised when trying to write a json that
+    is too nested (works only if jsonschema is available).'''
+    det = RectangleAperture(zoom=5)
+    out = det.plot(format='threejsjson')
+    jsonschema = pytest.importorskip("jsonschema")
+
+    with pytest.raises(jsonschema.ValidationError):
+        with tempfile.TemporaryFile() as f:
+                write(f, [[out]])

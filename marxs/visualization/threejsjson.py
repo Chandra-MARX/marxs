@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 import numpy as np
@@ -5,6 +6,12 @@ import numpy as np
 from ..version import version
 from . import threejs
 from .utils import format_saved_positions
+
+try:
+    import jsonschema
+    HAS_JSONSCHEMA = True
+except ImportError:
+    HAS_JSONSCHEMA = False
 
 
 def plot_rays(data, scalar=None, prop={}, name='Photon list', cmap=None):
@@ -70,5 +77,15 @@ def write(fileobject, data, photons=None):
 
     if photons is not None:
         data['runinfo'] = photons.meta()
+
+    if HAS_JSONSCHEMA:
+        path =  os.path.abspath(os.path.dirname(__file__))
+        schemafile = os.path.join(path, 'threejs_files', 'jsonschema.json')
+        with open(schemafile) as f:
+            schema = json.load(f)
+        jsonschema.validate(jdata, schema)
+
+    else:
+        warnings.warn('Module jsonschema not installed. json file will be written without further verification.')
 
     json.dump(jdata, fileobject)
