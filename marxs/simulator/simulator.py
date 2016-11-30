@@ -40,8 +40,33 @@ class BaseContainer(SimulationSequenceElement):
     def intersect(self, photons, **kwargs):
         raise NotImplementedError
 
-    def plot(self, *args, **kwargs):
-        return [elem.plot(*args, **kwargs) for elem in self.elements]
+    def _plot_threejsjson(self, **kwargs):
+        '''Output of each element can be a dict (if it is a leaf) or a list
+        (if it is a container). We need to flatten the list here to avoid
+        arbitrarily deep recursion.
+        '''
+        out = []
+        for elem in self.elements:
+            elemout = elem.plot(format="threejsjson", **kwargs)
+            if isinstance(elemout, list):
+                out.extend(elemout)
+            elif (elemout is None):
+                pass
+            else:
+                out.append(elemout)
+        return out
+
+    def _plot_threejs(self, *args, **kwargs):
+        for elem in self.elements:
+            elem.plot(format='threejs', *args, **kwargs)
+
+    def _plot_mayavi(self, *args, **kwargs):
+        '''No need to construct deep nested lists on None.'''
+        out = [elem.plot(format='mayavi', *args, **kwargs) for elem in self.elements]
+        if all([elem is None for elem in out]):
+            return None
+        else:
+            return out
 
 
 class Sequence(BaseContainer):

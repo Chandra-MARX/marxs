@@ -67,7 +67,7 @@ THREE.MARXSLoader = function( manager ) {
 	    mesh.matrixAutoUpdate = false;
 	    var typedpos4d = new Float32Array(element.pos4d[i]);
 	    mesh.matrix.elements = typedpos4d;
-	    mesh.updateMatrix();
+	    //mesh.updateMatrix();
 	    mesh.name = element.name;
 	    meshes[i] = mesh;
 	}
