@@ -4,6 +4,8 @@ from datetime import datetime
 import numpy as np
 from scipy.stats import expon
 from astropy.table import Table
+import astropy.units as u
+from astropy.coordinates import SkyCoord, SkyOffsetFrame
 
 from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
@@ -254,6 +256,43 @@ class PointSource(Source):
         photons['dec'] = np.ones(len(photons)) * self.coords[1]
 
         return photons
+
+class DiskSource(Source):
+    '''Astrophysical source with the shape of a circle or ring.
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkyCoord`
+        Position of the center of the disk
+    a_inner, a_outer : `astropy.coordinates.Angle`
+        Inner and outer angle of the ring (e.g. in arcsec).
+        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+    '''
+    def __init__(self, coords, **kwargs):
+        self.coords = coords
+        self.a_inner = kwargs.pop('a_inner', 0. * u.rad)
+        self.a_outer = kwargs.pop('a_outer')
+        super(DiskSource, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        '''Photon positions are generated in a frame that is centered on the
+        coordinates set in ``coords``, then they get transformed into the global sky
+        system.
+        '''
+        photons = super(DiskSource, self).generate_photons(exposuretime)
+
+        relative_frame = SkyOffsetFrame(origin=self.coords)
+        n = len(photons)
+        d_ra = np.random.rand(n) * 2. * np.pi * u.rad
+        d_dec = np.arcsin(np.cos(self.a_inner) +
+                          np.random.rand(n) * (np.cos(self.a_outer) - np.cos(self.a_inner)))
+        relatice_coords = SkyCoord(d_ra, d_dec, frame=relative_frame)
+        abs_coords = relative_coords.transform_to(self.coords)
+        photons['ra'] = abs_coords.ra.deg
+        photons['dec'] = abs_coords.dec.deg
+
+        return photons
+
 
 class SymbolFSource(Source):
     '''Source shaped like the letter F.
