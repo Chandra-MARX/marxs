@@ -257,22 +257,15 @@ class PointSource(Source):
 
         return photons
 
-class DiskSource(Source):
-    '''Astrophysical source with the shape of a circle or ring.
 
-    Parameters
-    ----------
-    coords : `astropy.coordinates.SkyCoord`
-        Position of the center of the disk
-    a_inner, a_outer : `astropy.coordinates.Angle`
-        Inner and outer angle of the ring (e.g. in arcsec).
-        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+class RadialDistributionSource(Source):
     '''
-    def __init__(self, coords, **kwargs):
+    '''
+    def __init__(self, coords, radial_distribution, **kwargs):
         self.coords = coords
-        self.a_inner = kwargs.pop('a_inner', 0. * u.rad)
-        self.a_outer = kwargs.pop('a_outer')
-        super(DiskSource, self).__init__(**kwargs)
+
+        self.func = radial_distribution
+        super(RadialDistributionSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
         '''Photon positions are generated in a frame that is centered on the
@@ -284,8 +277,7 @@ class DiskSource(Source):
         relative_frame = SkyOffsetFrame(origin=self.coords)
         n = len(photons)
         d_ra = np.random.rand(n) * 2. * np.pi * u.rad
-        d_dec = np.arcsin(np.cos(self.a_inner) +
-                          np.random.rand(n) * (np.cos(self.a_outer) - np.cos(self.a_inner)))
+        d_dec = self.func(n)
         relatice_coords = SkyCoord(d_ra, d_dec, frame=relative_frame)
         abs_coords = relative_coords.transform_to(self.coords)
         photons['ra'] = abs_coords.ra.deg
@@ -293,6 +285,69 @@ class DiskSource(Source):
 
         return photons
 
+class SphericalDiskSource(RadialDistributionSource):
+    '''Astrophysical source with the shape of a circle or ring.
+
+    The `DiskSource` makes a small angle approximation. In contrast, this source
+    implements the full spherical geometry at the cost of running slower.
+    For radii less than a few degrees the difference is negligible and we recommend
+    use of the faster `DiskSource`.
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkyCoord`
+        Position of the center of the disk
+    a_inner, a_outer : `astropy.coordinates.Angle`
+        Inner and outer angle of the ring (e.g. in arcsec).
+        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = [kwargs.pop('a_outer'),
+                              kwargs.pop('a_inner', 0. * u.rad)]
+        kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(self.func_par[1]) +
+                          np.random.rand(n) * (np.cos(self.func_par[0]) - np.cos(self.func_par[1])))
+        super(DiskSource, self).__init__(**kwargs)
+
+class DiskSource(RadialDistributionSource):
+    '''Astrophysical source with the shape of a circle or ring.
+
+    This source uses a small angle approximation which is valid for radii less than
+    a few degrees and runs much faster. See ``SphericalDiskSource`` for an
+    implementation using full spherical geometry.
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkyCoord`
+        Position of the center of the disk
+    a_inner, a_outer : `astropy.coordinates.Angle`
+        Inner and outer angle of the ring (e.g. in arcsec).
+        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = [kwargs.pop('a_outer'),
+                              kwargs.pop('a_inner', 0. * u.rad)]
+        kwargs['radial_distribution'] = lambda n: np.sqrt(self.func_par[1]**2 +
+                          np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
+        super(DiskSource, self).__init__(**kwargs)
+
+class GaussSource(RadialDistributionSource):
+    '''Astrophysical source with a Gaussian brightness profile.
+
+    This source uses a small angle approximation which is valid for radii less than
+    a few degrees.
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkyCoord`
+        Position of the center of the disk
+    sigma : `astropy.coordinates.Angle`
+        Gaussian sigma setting the width of the distribution
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = kwargs.pop('sigma')
+        # Note: rand is in interavall [0..1[, so 1-rand is the same except for edges
+        kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
+        super(DiskSource, self).__init__(**kwargs)
 
 class SymbolFSource(Source):
     '''Source shaped like the letter F.
