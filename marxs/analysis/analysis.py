@@ -2,43 +2,9 @@ from __future__ import division
 
 import numpy as np
 import scipy.optimize
-from astropy.modeling import models, fitting
 from astropy.stats import sigma_clipped_stats
 
-from ..optics import FlatDetector, CircularDetector, constant_order_factory
-from ..design import RowlandTorus
-
-def measure_FWHM(data):
-    '''Obtain the FWHM of some quantity in an event list.
-
-    This function provides a robust measure of the FWHM of a quantity.
-    It ignores outliers by first sigma clipping the input data, then it
-    fits a Gaussian to the histogram of the sigma-clipped data.
-
-    Even if the data is not Gaussian distributed, this should provide a good
-    estimate of the real FWHM and it is a lot more stable then calculating the "raw" FWHM
-    of the histrogram, which can depend sensitively on the bin size, if the max value is
-    driven by noise.
-
-    Parameters
-    ----------
-    data : np.array
-        unbinned input data
-
-    Results
-    -------
-    FWHM : float
-        robust estimate for FWHM
-    '''
-    # Get an estimate of a sensible bin width for histogram
-    mean, median, std = sigma_clipped_stats(data)
-    n = len(data)
-    hist, bin_edges = np.histogram(data, range=mean + np.array([-3, 3]) * std, bins = int(n/10))
-    g_init = models.Gaussian1D(amplitude=hist.max(), mean=mean, stddev=std)
-    fit_g = fitting.LevMarLSQFitter()
-    g = fit_g(g_init, (bin_edges[:-1] + bin_edges[1:]) / 2., hist)
-    return 2.3548 * g.stddev
-
+from ..optics import FlatDetector
 
 def sigma_clipped_std(data, **kwargs):
     '''Return stddev of sigma-clipped data.
@@ -70,7 +36,8 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
     col : string
         Column name of the photon distribution to be minimized.
         The default is set for detectors that look for a grating signal
-        (which is dispersed in ``det_y`` direction).
+        (which is dispersed in ``det_y
+    `` direction).
     objective_func : function
         Function that accepts a np.array as input and return the width.
     rotation : np.array of shape (3,3)
@@ -92,139 +59,37 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
                                    **kwargs)
 
 
-def resolvingpower_per_order(gratings, photons, orders=np.arange(-11,-1), detector=None, colname='det_x'):
-    '''Loop over grating orders and calculate the resolving power in every order.
 
-    As input this function takes a Grating Array Structure (``gratings``) and a list of photons
-    ready to hit the grating, i.e. the photons have already passed through aperture and
-    mirror in e.g. a Chandra-like design. The function will take the same input photons and
-    send them through the gas looping over the grating orders. In each step of the loop all
-    photons are send to the same order, thus the statistical uncertainty on the measured
-    spectral resolving power (calculated as ``pos_x / FWHM_x``)
-    is the same for every order and is set by the number of photons in the input list.
+def detected_fraction(photons, labels, filterfunc=None, col='order'):
+    '''Calculate the fraction of photons detected for some integer label
 
-    As a side effect, the function that selects the grating orders for diffraction in ``gas``
-    will be changed. Pass a deep copy of the GAS if this could affect consecutive computations.
+    While written for calculating Aeff per order, this can be used with any discrete
+    quantity, e.g. Aeff per CCD.
 
     Parameters
     ----------
-    gratings : `marxs.simulator.Parallel`
-        Structure that holds individual grating elements,
-        e.g. `marxs.design.GratingArrayStructure`
     photons : `astropy.table.Table`
-        Photon list to be processed for every order
-    orders : np.array of type int
-        Order numbers
-    detector : marxs optical element or `marxs.design.RowlandTorus` or ``None``.
-        Photons are projected onto a detector. There are three ways to define this detector:
-
-        - Pass in an instance of an optical element (e.g. a `marxs.optics.FlatDetector`).
-        - Pass in a `marxs.design.RowlandTorus`. This function will generate a detector that
-          follows the Rowland circle.
-        - ``None``. A flat detector in the yz plane is used, but the x position for this
-          detector is numerically optimized in each step.
-
-    colname : string
-        Name of the column the labels the dispersion direction. This is only used if a detector
-        instance is passed in explicitly.
+        Photon event list
+    labels : np.array
+        Numeric (integer) labels that are found in column ``col``. When, e.g.,
+        the effective area per order is calculated, this array should contain the
+        order numbers for which the calculation will be done.
+    filterfunc : callable or ``None``
+        If not ``None``, a function that takes the photon table and returns an
+        index array. This can be used, e.g. filter out photons that hit particular CCDs or
+        hot columns.
+    col : string
+        Column name for the order column.
 
     Returns
     -------
-    res : np.array
-        Resolution defined as FWHM / position for each order.
-    fwhm : np.array
-        FWHM for each order
-    info : dict
-        Dictionary with more information, e.g. fit results
+    prop : np.array
+        Probability for a photon in a specific order to be detected.
     '''
-    res = np.zeros_like(orders, dtype=float)
-    fwhm = np.zeros_like(orders, dtype=float)
-    info = {}
-
-    if detector is None:
-        info['method'] = 'Detector position numerically optimized'
-        info['fit_results'] = []
-        col = 'det_x' # 0 at center, detpix_x is 0 in corner.
-        zeropos = 0.
-    elif isinstance(detector, RowlandTorus):
-        det = CircularDetector.from_rowland(detector, width=1e5)
-        info['method'] = 'Circular detector on Rowland circle'
-        col = 'detpix_x'
-        # Find position of order 0.
-        # if Rowland torus is tilted, might not be at phi=0.
-        pg = photons.copy()
-        pg = det(pg)
-        zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
-    else:
-        det = detector
-        info['method'] = 'User defined detector'
-        col = colname
-        # Find position of order 0.
-        pg = photons.copy()
-        pg = det(pg)
-        zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
-
-    for i, order in enumerate(orders):
-        gratingeff = constant_order_factory(order)
-        gratings.elem_args['order_selector'] = gratingeff
-        for elem in gratings.elements:
-            elem.order_selector = gratingeff
-
-        pg = photons.copy()
-        pg = gratings.process_photons(pg)
-        pg = pg[pg['order'] == order]  # Remove photons that slip between the gratings
-        if detector is None:
-            xbest = find_best_detector_position(pg, objective_func=measure_FWHM)
-            info['fit_results'].append(xbest)
-            det = FlatDetector(position=np.array([xbest.x, 0, 0]), zoom=1e5)
-        pg = det(pg)
-        meanpos, medianpos, stdpos = sigma_clipped_stats(pg[col])
-        fwhm[i] = 2.3548 * stdpos
-        res[i] = np.abs((meanpos - zeropos) / fwhm[i])
-    return res, fwhm, info
-
-
-def weighted_per_order(data, orders, energy, gratingeff):
-    '''Summarize a per-order table of a quantity such as spectral resolution.
-
-    `marxs.analysis.fwhm_per_order` produces a set of data for each grating order,
-    most notably the spectral resolution achieved in every spectral order for every energy.
-    In practice, however, most orders see only a very small number of photons and will not
-    contribute significantly to the observed signal.
-
-    This method provides one way to summarize the data by calculating the weighted mean
-    of the resolution for each energy, weighted by the probability of photons for be
-    diffracted into that order ( = the expected fraction).
-
-    Parameters
-    ----------
-    data : (N, M) np.array
-        Array with data for N orders and M energies, e.g. spectral resolution
-    orders : np.array of length N of type int
-        Order numbers
-    energy : np.array for length M of type float
-        Energies for each entry in resolution
-    gratingeff : `marxs.optics.gratings.EfficiencyFile`
-        Object that holds the probability that a photon on a certain energy is
-        diffracted to a specific order.
-
-    Returns
-    -------
-    weighted_res : np.array of length M
-        Weighted resolution for each energy
-    '''
-    if len(orders) != data.shape[0]:
-        raise ValueError('First dimension of "data" must match length of "orders".')
-    if len(energy) != data.shape[1]:
-        raise ValueError('Second dimension of "data" must match length of "energy".')
-
-    weights = np.zeros_like(data)
-    for i, o in enumerate(orders):
-        ind_o = (gratingeff.orders == o).nonzero()[0]
-        if len(ind_o) != 1:
-            raise KeyError('No data for order {0} in gratingeff'.format(o))
-        en_sort = np.argsort(gratingeff.energy)
-        weights[i, :] = np.interp(energy, gratingeff.energy[en_sort],
-                                  gratingeff.prob[:, ind_o[0]][en_sort])
-
-    return np.ma.average(data, axis=0, weights=weights)
+    prob = np.zeros_like(labels, dtype=float)
+    for i, o in enumerate(labels):
+        ind = (photons[col] == o)
+        if filterfunc is not None:
+            ind = ind & filterfunc(photons)
+        prob[i] = np.sum(photons['probability'][ind]) / len(photons)
+    return prob
