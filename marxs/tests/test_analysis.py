@@ -2,7 +2,7 @@ import numpy as np
 import transforms3d
 from astropy.table import Table
 
-from ..analysis import (measure_FWHM, find_best_detector_position,
+from ..analysis import (find_best_detector_position,
                         resolvingpower_per_order)
 from ..math.pluecker import e2h
 from ..source import PointSource, FixedPointing
@@ -12,13 +12,6 @@ from ..optics import (CATGrating,
                       FlatDetector)
 from ..design import RowlandTorus, GratingArrayStructure
 
-
-def test_FWHM():
-    '''For a Gaussian distributed variable the real stddev is close
-    to the results from measure_FWHM.'''
-    d = np.random.normal(size=1000)
-    rel_diff = measure_FWHM(d) / (np.std(d) * 2*np.sqrt(2*np.log(2))) - 1.
-    assert np.abs(rel_diff) < 0.05
 
 def test_detector_position():
     '''Check that the optimal detector position is found at the convergent point.'''
