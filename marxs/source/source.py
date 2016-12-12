@@ -240,8 +240,8 @@ class PointSource(Source):
 
     Parameters
     ----------
-    coords : Tuple of 2 elements
-        Ra and Dec in decimal degrees.
+    coords : `astropy.coordinates.SkySoord`
+        Position of the source on the sky
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
@@ -252,8 +252,8 @@ class PointSource(Source):
 
     def generate_photons(self, exposuretime):
         photons = super(PointSource, self).generate_photons(exposuretime)
-        photons['ra'] = np.ones(len(photons)) * self.coords[0]
-        photons['dec'] = np.ones(len(photons)) * self.coords[1]
+        photons['ra'] = np.ones(len(photons)) * self.coords.ra.deg
+        photons['dec'] = np.ones(len(photons)) * self.coords.dec.deg
 
         return photons
 
@@ -263,8 +263,8 @@ class RadialDistributionSource(Source):
 
     Parameters
     ----------
-    coords : Tuple of 2 elements
-        Ra and Dec in decimal degrees.
+    coords :  `astropy.coordinates.SkySoord`
+        Position of the source on the sky
     radial_distribution : callable
         A function that takes an interger as input, which specifies the number
         of photons to produce. The output must be an `astropy.units.Quantity`` object
@@ -371,10 +371,10 @@ class SymbolFSource(Source):
 
     Parameters
     ----------
-    coords : tuple of 2 elements
-        Ra and Dec in decimal degrees.
-    size : float
-        size scale in degrees
+    coords :  `astropy.coordinates.SkySoord`
+        Position of the source on the sky
+    size : `astropy.units.quantity'
+        angular size
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
@@ -389,17 +389,15 @@ class SymbolFSource(Source):
         n = len(photons)
         elem = np.random.choice(3, size=n)
 
-        ra = np.empty(n)
-        ra[:] = self.coords[0]
-        dec = np.empty(n)
-        dec[:] = self.coords[1]
+        ra = np.ones(n) * self.coords.ra
+        dec = np.ones(n) * self.coords.dec
         ra[elem == 0] += self.size * np.random.random(np.sum(elem == 0))
         ra[elem == 1] += self.size
         dec[elem == 1] += 0.5 * self.size * np.random.random(np.sum(elem == 1))
         ra[elem == 2] += 0.8 * self.size
         dec[elem == 2] += 0.3 * self.size * np.random.random(np.sum(elem == 2))
 
-        photons['ra'] = ra
-        photons['dec'] = dec
+        photons['ra'] = ra.deg
+        photons['dec'] = dec.deg
 
         return photons

@@ -2,10 +2,11 @@ import numpy as np
 import pytest
 from scipy.stats import normaltest
 from astropy.table import Table
-from astropy.coordiantes import SkyCoord
+from astropy.coordinates import SkyCoord
 import astropy.units as u
 
 from ...source import (SymbolFSource, Source, poisson_process,
+                       PointSource,
                        DiskSource, SphericalDiskSource, GaussSource)
 from ...optics import RectangleAperture
 from ..source import SourceSpecificationError
@@ -17,7 +18,7 @@ def test_photons_header():
     Just test that some of the keywords are there. It's unlikely
     that I need a full list here.
     '''
-    s = SymbolFSource((-123., -43.), 1.)
+    s = SymbolFSource(SkyCoord(-123., -43., unit='u.deg'), 1.)
     photons = s.generate_photons(5.)
     for n in ['EXPOSURE', 'CREATOR', 'MARXSVER', 'SIMTIME', 'SIMUSER']:
         assert n in photons.meta
@@ -56,7 +57,7 @@ def test_flux_input():
 def test_energy_input():
     '''Many different options ...'''
     # 1. contant energy
-    s = Source(energy=2.)
+    s = PointSource(coords=SkyCoord("1h12m43.2s +1d12m43s"), energy=2.)
     photons = s.generate_photons(5)
     assert np.all(photons['energy'] == 2.)
 
@@ -158,7 +159,7 @@ def test_Aeff():
 
 def test_disk_radius():
     pos = SkyCoord(12. * u.degree, -23.*u.degree)
-    s = DiskSource(coords=(12., -23.), a_inner=50.* u.arcsec,
+    s = DiskSource(pos, a_inner=50.* u.arcsec,
                    a_outer=10. * u.arcmin)
 
     photons = s.generate_photons(1e4)
@@ -176,7 +177,7 @@ def test_disk_distribution():
     fairly loose.
     '''
 
-    s = DiskSource(coords=(213., -10.), a_outer=30. * u.arcmin)
+    s = DiskSource(coords=SkyCoord(213., -10., unit=u.deg), a_outer=30. * u.arcmin)
     photons = s.generate_photons(3.6e6)
     pos = SkyCoord(s['RA']*u.degree, s['DEC'] * u.degree)
 
