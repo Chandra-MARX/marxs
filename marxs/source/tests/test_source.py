@@ -1,8 +1,12 @@
 import numpy as np
 import pytest
+from scipy.stats import normaltest
 from astropy.table import Table
+from astropy.coordiantes import SkyCoord
+import astropy.units as u
 
-from ...source import SymbolFSource, Source, poisson_process
+from ...source import (SymbolFSource, Source, poisson_process,
+                       DiskSource, SphericalDiskSource, GaussSource)
 from ...optics import RectangleAperture
 from ..source import SourceSpecificationError
 
@@ -151,3 +155,39 @@ def test_Aeff():
     s = Source(flux=.5, geomarea=a.area)
     photons = s.generate_photons(5.)
     assert len(photons) == 40
+
+def test_disk_radius():
+    pos = SkyCoord(12. * u.degree, -23.*u.degree)
+    s = DiskSource(coords=(12., -23.), a_inner=50.* u.arcsec,
+                   a_outer=10. * u.arcmin)
+
+    photons = s.generate_photons(1e4)
+    d = pos.separation(SkyCoord(s['RA']*u.degree, s['DEC'] * u.degree))
+    assert np.max(d.arcmin <= 10.)
+    assert np.min(d.arcmin >= 0.8)
+
+def test_disk_distribution():
+    '''This is a separate test from test_disk_radius, because it's a simpler
+    to write if we don't have to worry about the inner hole.
+
+    For the test itself: The results should be poisson distributed (or, for large
+    numbers this will be almost normal).
+    That makes testing it a little awkard in a short run time, thus the limits are
+    fairly loose.
+    '''
+
+    s = DiskSource(coords=(213., -10.), a_outer=30. * u.arcmin)
+    photons = s.generate_photons(3.6e6)
+    pos = SkyCoord(s['RA']*u.degree, s['DEC'] * u.degree)
+
+    for i in range(10):
+        circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
+                       (- 10. + np.random.uniform(-0.1, 1.))*u.degree)
+        d = circ.separation(pos)
+        n = (d < 5. * u.arcmin).sum()
+    s, p = normaltest(numbers)
+    assert p > .9
+
+def test_homogeneity_disk():
+    '''
+    '''

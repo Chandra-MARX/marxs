@@ -259,12 +259,27 @@ class PointSource(Source):
 
 
 class RadialDistributionSource(Source):
-    '''
+    ''' Base class for sources where photons follow some radial distribution on the sky
+
+    Parameters
+    ----------
+    coords : Tuple of 2 elements
+        Ra and Dec in decimal degrees.
+    radial_distribution : callable
+        A function that takes an interger as input, which specifies the number
+        of photons to produce. The output must be an `astropy.units.Quantity`` object
+        with n angles in it.
+    func_par : object
+        ``radial_distribution`` has access to ``self.func_par`` to hold function
+        parameters. This could be, e.g. a tuple with coeffications.
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
     '''
     def __init__(self, coords, radial_distribution, **kwargs):
         self.coords = coords
-
         self.func = radial_distribution
+        self.func_par = kwargs.pop('func_par', None)
         super(RadialDistributionSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
@@ -272,7 +287,7 @@ class RadialDistributionSource(Source):
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
         '''
-        photons = super(DiskSource, self).generate_photons(exposuretime)
+        photons = super(RadialDistributionSource, self).generate_photons(exposuretime)
 
         relative_frame = SkyOffsetFrame(origin=self.coords)
         n = len(photons)
@@ -306,7 +321,7 @@ class SphericalDiskSource(RadialDistributionSource):
                               kwargs.pop('a_inner', 0. * u.rad)]
         kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(self.func_par[1]) +
                           np.random.rand(n) * (np.cos(self.func_par[0]) - np.cos(self.func_par[1])))
-        super(DiskSource, self).__init__(**kwargs)
+        super(SphericalDiskSource, self).__init__(**kwargs)
 
 class DiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
@@ -347,7 +362,7 @@ class GaussSource(RadialDistributionSource):
         kwargs['func_par'] = kwargs.pop('sigma')
         # Note: rand is in interavall [0..1[, so 1-rand is the same except for edges
         kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
-        super(DiskSource, self).__init__(**kwargs)
+        super(GaussSource, self).__init__(**kwargs)
 
 class SymbolFSource(Source):
     '''Source shaped like the letter F.

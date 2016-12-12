@@ -1,4 +1,8 @@
 from .source import (Source, PointSource,
+                     RadialDistributionSource,
+                     SphericalDiskSource,
+                     DiskSource,
+                     GaussSource,
                      SymbolFSource,
                      poisson_process,
                      )
