@@ -95,13 +95,14 @@ class Sequence(BaseContainer):
     The following example shows a complete marxs simulation.
     First, we import the required modules:
 
+    >>> from astropy.coordinates import SkyCoord
     >>> from marxs import source, optics
     >>> from marxs.simulator import Sequence
 
     Then, we build up the parts of the simulation, source, pointing model and hardware
     of our instrument:
 
-    >>> mysource = source.PointSource(coords=(30., 30.), flux=1e-3, energy=2.)
+    >>> mysource = source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1e-3, energy=2.)
     >>> sky2mission = source.FixedPointing(coords=(30., 30.))
     >>> aper = optics.RectangleAperture(position=[50., 0., 0.])
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])

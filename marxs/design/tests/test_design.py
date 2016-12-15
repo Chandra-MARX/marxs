@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import kstest
 import transforms3d
 import pytest
+from astropy.coordinates import SkyCoord
 
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        RowlandCircleArray,
@@ -17,7 +18,7 @@ class mock_facet(FlatOpticalElement):
     pass
 
 def test_radius_of_photon_shell():
-    mysource = PointSource((30., 30.), flux=1., energy=1.)
+    mysource = PointSource(SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)
@@ -299,7 +300,7 @@ def test_run_photons_through_gas():
     No need to check here that the grating equation works - that's part of the grating tests/
     '''
     # Setup only.
-    mysource = PointSource((30., 30.), flux=1., energy=1.)
+    mysource = PointSource(SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)

@@ -1,6 +1,7 @@
 import numpy as np
 import transforms3d
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
 
 from ..analysis import (measure_FWHM, find_best_detector_position,
                         resolvingpower_per_order)
@@ -61,7 +62,7 @@ def test_resolvingpower_consistency():
                                            'orientation': blazemat,
                                            'order_selector': None},
                             )
-    star = PointSource(coords=(23., 45.), flux=5.)
+    star = PointSource(coords=SkyCoord(23., 45., unit="degree"), flux=5.)
     pointing = FixedPointing(coords=(23., 45.))
     photons = star.generate_photons(exposuretime=200)
     p = pointing(photons)

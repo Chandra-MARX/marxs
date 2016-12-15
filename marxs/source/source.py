@@ -291,9 +291,9 @@ class RadialDistributionSource(Source):
 
         relative_frame = SkyOffsetFrame(origin=self.coords)
         n = len(photons)
-        d_ra = np.random.rand(n) * 2. * np.pi * u.rad
-        d_dec = self.func(n)
-        relatice_coords = SkyCoord(d_ra, d_dec, frame=relative_frame)
+        phi = np.random.rand(n) * 2. * np.pi * u.rad
+        d = self.func(n)
+        relative_coords = SkyCoord(d * np.sin(phi), d * np.cos(phi), frame=relative_frame)
         abs_coords = relative_coords.transform_to(self.coords)
         photons['ra'] = abs_coords.ra.deg
         photons['dec'] = abs_coords.dec.deg
@@ -391,11 +391,12 @@ class SymbolFSource(Source):
 
         ra = np.ones(n) * self.coords.ra
         dec = np.ones(n) * self.coords.dec
-        ra[elem == 0] += self.size * np.random.random(np.sum(elem == 0))
-        ra[elem == 1] += self.size
-        dec[elem == 1] += 0.5 * self.size * np.random.random(np.sum(elem == 1))
-        ra[elem == 2] += 0.8 * self.size
-        dec[elem == 2] += 0.3 * self.size * np.random.random(np.sum(elem == 2))
+        size = self.size
+        ra[elem == 0] += size * np.random.random(np.sum(elem == 0))
+        ra[elem == 1] += size
+        dec[elem == 1] += 0.5 * size * np.random.random(np.sum(elem == 1))
+        ra[elem == 2] += 0.8 * size
+        dec[elem == 2] += 0.3 * size * np.random.random(np.sum(elem == 2))
 
         photons['ra'] = ra.deg
         photons['dec'] = dec.deg

@@ -18,7 +18,7 @@ def test_photons_header():
     Just test that some of the keywords are there. It's unlikely
     that I need a full list here.
     '''
-    s = SymbolFSource(SkyCoord(-123., -43., unit='u.deg'), 1.)
+    s = SymbolFSource(SkyCoord(-123., -43., unit=u.deg), 1.*u.deg)
     photons = s.generate_photons(5.)
     for n in ['EXPOSURE', 'CREATOR', 'MARXSVER', 'SIMTIME', 'SIMUSER']:
         assert n in photons.meta
@@ -159,11 +159,11 @@ def test_Aeff():
 
 def test_disk_radius():
     pos = SkyCoord(12. * u.degree, -23.*u.degree)
-    s = DiskSource(pos, a_inner=50.* u.arcsec,
+    s = DiskSource(coords=pos, a_inner=50.* u.arcsec,
                    a_outer=10. * u.arcmin)
 
     photons = s.generate_photons(1e4)
-    d = pos.separation(SkyCoord(s['RA']*u.degree, s['DEC'] * u.degree))
+    d = pos.separation(SkyCoord(photons['ra']*u.degree, photons['dec'] * u.degree))
     assert np.max(d.arcmin <= 10.)
     assert np.min(d.arcmin >= 0.8)
 
@@ -179,14 +179,15 @@ def test_disk_distribution():
 
     s = DiskSource(coords=SkyCoord(213., -10., unit=u.deg), a_outer=30. * u.arcmin)
     photons = s.generate_photons(3.6e6)
-    pos = SkyCoord(s['RA']*u.degree, s['DEC'] * u.degree)
+    pos = SkyCoord(photons['ra']*u.degree, photons['dec'] * u.degree)
 
-    for i in range(10):
+    n = np.empty(10)
+    for i in range(len(n)):
         circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
                        (- 10. + np.random.uniform(-0.1, 1.))*u.degree)
         d = circ.separation(pos)
-        n = (d < 5. * u.arcmin).sum()
-    s, p = normaltest(numbers)
+        n[i] = (d < 5. * u.arcmin).sum()
+    s, p = normaltest(n)
     assert p > .9
 
 def test_homogeneity_disk():
