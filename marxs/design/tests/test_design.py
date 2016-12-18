@@ -18,7 +18,7 @@ class mock_facet(FlatOpticalElement):
     pass
 
 def test_radius_of_photon_shell():
-    mysource = PointSource(SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)
@@ -300,7 +300,7 @@ def test_run_photons_through_gas():
     No need to check here that the grating equation works - that's part of the grating tests/
     '''
     # Setup only.
-    mysource = PointSource(SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = FixedPointing(coords=(30, 30.))
     photons = mypointing.process_photons(photons)

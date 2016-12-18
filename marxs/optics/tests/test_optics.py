@@ -17,7 +17,7 @@ from marxs.utils import generate_test_photons
 @pytest.fixture(autouse=True)
 def photons1000():
     '''Make a list of photons parallel to optical axis'''
-    mysource = marxs.source.PointSource(SkyCoord(30., 30., unit="deg"), energy=1., flux=300.)
+    mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"), energy=1., flux=300.)
     np.random.seed(0)
     p = mysource.generate_photons(1000)
     mypointing = marxs.source.FixedPointing(coords=(30., 30.))

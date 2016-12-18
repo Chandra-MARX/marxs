@@ -74,7 +74,7 @@ all_oe = [ThinLens(focallength=100),
 # Make a test photon list
 # Some of this should be separate tests, e.g. source position vs. pointing.
 # Can I vary energy for e.g. grating?
-mysource = PointSource(SkyCoord(30., 30., unit='deg'), energy=1., flux=300.)
+mysource = PointSource(coords=SkyCoord(30., 30., unit='deg'), energy=1., flux=300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=(30., 30.))
 masterphotons = mypointing.process_photons(masterphotons)

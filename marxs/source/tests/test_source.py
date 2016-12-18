@@ -18,7 +18,7 @@ def test_photons_header():
     Just test that some of the keywords are there. It's unlikely
     that I need a full list here.
     '''
-    s = SymbolFSource(SkyCoord(-123., -43., unit=u.deg), 1.*u.deg)
+    s = SymbolFSource(coords=SkyCoord(-123., -43., unit=u.deg), size=1.*u.deg)
     photons = s.generate_photons(5.)
     for n in ['EXPOSURE', 'CREATOR', 'MARXSVER', 'SIMTIME', 'SIMUSER']:
         assert n in photons.meta

@@ -30,16 +30,12 @@ The source flux, the energy and the polarization of sources are specified in the
 
 Flux
 ^^^^
-.. todo::
-
-   Currently, all fluxes are given assuming that the effective area of the instrument is 1 mm^2 and there is no mechanism to set the effective area to a different value.
-
-The source flux can just be a number, giving the total counts / second (if no number is given, the default is ``flux=1``).
+The source flux can just be a number, giving the total counts / second / mm^2 (if no number is given, the default is ``flux=1``).
 
      >>> from __future__ import print_function
      >>> from marxs.source import PointSource
      >>> from astropy.coordinates import SkyCoord
-     >>> star = PointSource(SkyCoord("23h12m2.3s -3d4m12.3s"), flux=5.)
+     >>> star = PointSource(coords="23h12m2.3s -3d4m12.3s", flux=5.)
      >>> photons = star.generate_photons(20)
      >>> print(photons['time'][:6])
      time

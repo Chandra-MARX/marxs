@@ -235,19 +235,38 @@ class Source(SimulationSequenceElement):
         return photons
 
 
-class PointSource(Source):
+class AstroSource(Source):
+    '''Astrophysical source with a sky position
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkySoord` (preferred)
+        Position of the source on the sky. If ``coords`` is not a
+        `~astropy.coordinates.SkyCoord` object itself, it is used to
+        initialize such an object. See `~astropy.coordinates.SkyCoord`
+        for a description of allowed input values.
+    '''
+    def __init__(self, **kwargs):
+        coords = kwargs.pop('coords')
+        if isinstance(coords, SkyCoord):
+            self.coords = coords
+        else:
+            self.coords = SkyCoord(coords)
+
+        if not self.coords.isscalar:
+            raise ValueError("Coordinate must be scalar, not array.")
+        super(AstroSource, self).__init__(**kwargs)
+
+class PointSource(AstroSource):
     '''Astrophysical point source.
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkySoord`
-        Position of the source on the sky
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, coords, **kwargs):
-        self.coords = coords
+    def __init__(self, **kwargs):
         super(PointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
@@ -258,13 +277,11 @@ class PointSource(Source):
         return photons
 
 
-class RadialDistributionSource(Source):
+class RadialDistributionSource(AstroSource):
     ''' Base class for sources where photons follow some radial distribution on the sky
 
     Parameters
     ----------
-    coords :  `astropy.coordinates.SkySoord`
-        Position of the source on the sky
     radial_distribution : callable
         A function that takes an interger as input, which specifies the number
         of photons to produce. The output must be an `astropy.units.Quantity`` object
@@ -276,9 +293,8 @@ class RadialDistributionSource(Source):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, coords, radial_distribution, **kwargs):
-        self.coords = coords
-        self.func = radial_distribution
+    def __init__(self, **kwargs):
+        self.func = kwargs.pop('radial_distribution')
         self.func_par = kwargs.pop('func_par', None)
         super(RadialDistributionSource, self).__init__(**kwargs)
 
@@ -310,8 +326,6 @@ class SphericalDiskSource(RadialDistributionSource):
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkyCoord`
-        Position of the center of the disk
     a_inner, a_outer : `astropy.coordinates.Angle`
         Inner and outer angle of the ring (e.g. in arcsec).
         The default is a disk with no inner hole (``a_inner`` is set to zero.)
@@ -332,8 +346,6 @@ class DiskSource(RadialDistributionSource):
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkyCoord`
-        Position of the center of the disk
     a_inner, a_outer : `astropy.coordinates.Angle`
         Inner and outer angle of the ring (e.g. in arcsec).
         The default is a disk with no inner hole (``a_inner`` is set to zero.)
@@ -353,8 +365,6 @@ class GaussSource(RadialDistributionSource):
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkyCoord`
-        Position of the center of the disk
     sigma : `astropy.coordinates.Angle`
         Gaussian sigma setting the width of the distribution
     '''
@@ -364,24 +374,21 @@ class GaussSource(RadialDistributionSource):
         kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
         super(GaussSource, self).__init__(**kwargs)
 
-class SymbolFSource(Source):
+class SymbolFSource(AstroSource):
     '''Source shaped like the letter F.
 
     This source provides a non-symmetric source for testing purposes.
 
     Parameters
     ----------
-    coords :  `astropy.coordinates.SkySoord`
-        Position of the source on the sky
     size : `astropy.units.quantity'
         angular size
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, coords, size=1, **kwargs):
-        self.coords = coords
-        self.size = size
+    def __init__(self, **kwargs):
+        self.size = kwargs.pop('size', 1. * u.degree)
         super(SymbolFSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
