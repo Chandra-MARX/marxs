@@ -7,7 +7,7 @@ from ... import source, optics
 @pytest.mark.parametrize("ra", [0., 30., -60.])
 def test_PerfectLens(ra):
     mysource = source.PointSource(coords=SkyCoord(0., ra, unit="deg"))
-    mypointing = source.FixedPointing(coords=(0., 0.))
+    mypointing = source.FixedPointing(coords=SkyCoord(0., 0., unit='deg'))
     myslit = optics.RectangleAperture(zoom=2)
     f = 1000
     lens = optics.PerfectLens(focallength=f, zoom=40)

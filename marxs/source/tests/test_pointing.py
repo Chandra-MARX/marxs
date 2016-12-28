@@ -1,5 +1,7 @@
 import numpy as np
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 from scipy.stats import pearsonr
 
 from ...source import FixedPointing, JitterPointing
@@ -11,16 +13,17 @@ def test_geomarea_projection():
     photons = Table()
     photons['ra'] = [0., 45., 90., 135., 315.]
     photons['dec'] = np.zeros(5)
+    photons['origin_coord'] = SkyCoord(photons['ra'], photons['dec'], unit='deg')
     photons['probability'] = np.ones(5)
     photons['time'] = np.arange(5)
     photons['polangle'] = np.zeros(5)
 
-    fp = FixedPointing(coords=(0., 0.))
+    fp = FixedPointing(coords=SkyCoord(0., 0., unit='deg'))
     p = fp(photons.copy())
 
     assert np.allclose(p['probability'], [1., 1./np.sqrt(2), 0, 0, 1./np.sqrt(2)])
 
-    fp = FixedPointing(coords=(0., 0.), geomarea_reference=[0., -2., 0., 0.])
+    fp = FixedPointing(coords=SkyCoord(0., 0., unit='deg'), geomarea_reference=[0., -2., 0., 0.])
     p = fp(photons.copy())
 
     assert np.allclose(p['probability'], [ 0, 1./np.sqrt(2), 1., 1./np.sqrt(2), 0.])
@@ -39,8 +42,9 @@ def test_jitter():
     prob = np.ones_like(ra)
     photons = Table([ra, dec, time, pol, prob],
                     names=['ra', 'dec', 'time', 'polangle', 'probability'])
-    fixed = FixedPointing(coords = (25., -10.))
-    jittered = JitterPointing(coords = (25., -10.), jitter=np.deg2rad(1./3600.))
+    fixed = FixedPointing(coords = SkyCoord(25., -10., unit='deg'))
+    jittered = JitterPointing(coords = SkyCoord(25., -10., unit='deg'),
+                              jitter=1. * u.arcsec)
     p_fixed = fixed(photons.copy())
     p_jitter = jittered(photons)
 
@@ -67,8 +71,3 @@ def test_jitter():
     coeff, p = pearsonr(p_fixed['dir'][:, 1] - p_jitter['dir'][:, 1],
                         p_fixed['dir'][:, 2] - p_jitter['dir'][:, 2])
     assert abs(coeff) < 0.01
-
-def test_arcsecinsteadofradianrwarning(recwarn):
-    jittered = JitterPointing(coords = (25., -10.), jitter=1./3600.)
-    w = recwarn.pop()
-    assert 'jitter is expected in radian' in str(w.message)

@@ -103,7 +103,7 @@ class Sequence(BaseContainer):
     of our instrument:
 
     >>> mysource = source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1e-3, energy=2.)
-    >>> sky2mission = source.FixedPointing(coords=(30., 30.))
+    >>> sky2mission = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
     >>> aper = optics.RectangleAperture(position=[50., 0., 0.])
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])
     >>> ccd = optics.FlatDetector(pixsize=0.05)

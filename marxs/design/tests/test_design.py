@@ -20,7 +20,7 @@ class mock_facet(FlatOpticalElement):
 def test_radius_of_photon_shell():
     mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
-    mypointing = FixedPointing(coords=(30, 30.))
+    mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
     photons = marxm.process_photons(photons)
@@ -302,7 +302,7 @@ def test_run_photons_through_gas():
     # Setup only.
     mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
-    mypointing = FixedPointing(coords=(30, 30.))
+    mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
     photons = marxm.process_photons(photons)

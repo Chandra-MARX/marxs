@@ -21,7 +21,7 @@ def test_noexplicettimedependence():
     '''
     mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
-    mypointing = marxs.source.FixedPointing(coords=(30, 30.))
+    mypointing = marxs.source.FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
 
     marxm = marxs.optics.marx.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))

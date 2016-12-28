@@ -163,7 +163,7 @@ def test_disk_radius():
                    a_outer=10. * u.arcmin)
 
     photons = s.generate_photons(1e4)
-    d = pos.separation(SkyCoord(photons['ra']*u.degree, photons['dec'] * u.degree))
+    d = pos.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
     assert np.max(d.arcmin <= 10.)
     assert np.min(d.arcmin >= 0.8)
 
@@ -179,13 +179,12 @@ def test_disk_distribution():
 
     s = DiskSource(coords=SkyCoord(213., -10., unit=u.deg), a_outer=30. * u.arcmin)
     photons = s.generate_photons(3.6e6)
-    pos = SkyCoord(photons['ra']*u.degree, photons['dec'] * u.degree)
 
     n = np.empty(10)
     for i in range(len(n)):
         circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
                        (- 10. + np.random.uniform(-0.1, 1.))*u.degree)
-        d = circ.separation(pos)
+        d = circ.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
         n[i] = (d < 5. * u.arcmin).sum()
     s, p = normaltest(n)
     assert p > .9

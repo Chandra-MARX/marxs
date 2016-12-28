@@ -1,3 +1,11 @@
+'''
+Sources generate photons with all photon properties: energy, direction, time, polarization.
+
+For objects of type `AstroSource`, the coordinates of the photon origin on the sky are added to the photon list. `astropy.coords.SkyCoord` is an object well suited for this task. These objects can be added to photon tables through the mechanims of `mixin columns <http://docs.astropy.org/en/latest/table/index.html#mixin-columns>`). However, mix-in columns don't (yet) support saving to all table formats or tables operations such as stacking. Thus, it is much better to include the coordinates as two columns of floats with names ``ra`` and ``dec`` into the table.
+
+Sources take a `~astropy.coordinates.SkyCoord` from the user to avoid any ambiguity about the coordinate systme used, but convert this into plain floats used in the photon table.
+'''
+
 import os
 from datetime import datetime
 
@@ -232,6 +240,9 @@ class Source(SimulationSequenceElement):
                                    'User running simulation')
         photons.meta['SIMHOST'] = (os.environ.get('HOST', 'unknown host'),
                                    'Host system running simulation')
+        photons['time'].unit = u.s
+        photons['energy'].unit = u.keV
+        photons['polangle'].unit = u.degree
         return photons
 
 
@@ -257,6 +268,31 @@ class AstroSource(Source):
             raise ValueError("Coordinate must be scalar, not array.")
         super(AstroSource, self).__init__(**kwargs)
 
+    def set_pos(self, photons, coo):
+        '''Set Ra, Dec of photons in table
+
+        This function write Ra, Dec to a table. It is defined here to make the way
+        `astropy.coordinates.SkyCoord` objects are stored more uniform.
+        Currently, mixin columns in tables have some disadvantages, e.g. they
+        cause errors on writing and on stacking. Thus, we store the coordinates
+        as plain numbers. Since that format is not unique (e.g. units could be deg or rad),
+        system could be ICRS, FK4, FK5 or other this conversion is done here for all
+        astrononimcal sources.
+        This also makes it easier to change that design in the future.
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Photon table. Columns ``ra`` and ``dec`` will be added or overwritten.
+        coo : `astropy.coords.SkyCoord`
+            Photon coordinates
+        '''
+        photons['ra'] = coo.icrs.ra.deg
+        photons['dec'] = coo.icrs.dec.deg
+        photons['ra'].unit = u.degree
+        photons['dec'].unit = u.degree
+        photons.meta['COORDSYS'] = ('ICRS', 'Type of coordinate system')
+
 class PointSource(AstroSource):
     '''Astrophysical point source.
 
@@ -271,9 +307,7 @@ class PointSource(AstroSource):
 
     def generate_photons(self, exposuretime):
         photons = super(PointSource, self).generate_photons(exposuretime)
-        photons['ra'] = np.ones(len(photons)) * self.coords.ra.deg
-        photons['dec'] = np.ones(len(photons)) * self.coords.dec.deg
-
+        self.set_pos(photons, self.coords)
         return photons
 
 
@@ -310,9 +344,8 @@ class RadialDistributionSource(AstroSource):
         phi = np.random.rand(n) * 2. * np.pi * u.rad
         d = self.func(n)
         relative_coords = SkyCoord(d * np.sin(phi), d * np.cos(phi), frame=relative_frame)
-        abs_coords = relative_coords.transform_to(self.coords)
-        photons['ra'] = abs_coords.ra.deg
-        photons['dec'] = abs_coords.dec.deg
+        origin_coord = relative_coords.transform_to(self.coords)
+        self.set_pos(photons, origin_coord)
 
         return photons
 
@@ -396,8 +429,8 @@ class SymbolFSource(AstroSource):
         n = len(photons)
         elem = np.random.choice(3, size=n)
 
-        ra = np.ones(n) * self.coords.ra
-        dec = np.ones(n) * self.coords.dec
+        ra = np.ones(n) * self.coords.icrs.ra
+        dec = np.ones(n) * self.coords.icrs.dec
         size = self.size
         ra[elem == 0] += size * np.random.random(np.sum(elem == 0))
         ra[elem == 1] += size
@@ -405,7 +438,6 @@ class SymbolFSource(AstroSource):
         ra[elem == 2] += 0.8 * size
         dec[elem == 2] += 0.3 * size * np.random.random(np.sum(elem == 2))
 
-        photons['ra'] = ra.deg
-        photons['dec'] = dec.deg
+        self.set_pos(photons, SkyCoord(ra, dec, frame=self.coords))
 
         return photons

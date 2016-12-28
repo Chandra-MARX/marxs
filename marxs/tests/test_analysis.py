@@ -63,7 +63,7 @@ def test_resolvingpower_consistency():
                                            'order_selector': None},
                             )
     star = PointSource(coords=SkyCoord(23., 45., unit="degree"), flux=5.)
-    pointing = FixedPointing(coords=(23., 45.))
+    pointing = FixedPointing(coords=SkyCoord(23., 45., unit='deg'))
     photons = star.generate_photons(exposuretime=200)
     p = pointing(photons)
     p = uptomirror(p)

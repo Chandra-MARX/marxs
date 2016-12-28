@@ -39,13 +39,14 @@ The source flux can just be a number, giving the total counts / second / mm^2 (i
      >>> photons = star.generate_photons(20)
      >>> print(photons['time'][:6])
      time
+      s
      ----
-     0.0
-     0.2
-     0.4
-     0.6
-     0.8
-     1.0
+      0.0
+      0.2
+      0.4
+      0.6
+      0.8
+      1.0
 
 This will generate 5 counts per second for 20 seconds with an absolutely constant (no Poisson) rate, so the photons list will contain 100 photons.
 
@@ -70,6 +71,7 @@ Similarly to the flux, the input for ``energy`` can just be a number, which spec
     >>> photons = FeKalphaline.generate_photons(5)
     >>> print(photons['energy'])
     energy
+     keV
     ------
        6.7
        6.7
@@ -102,6 +104,7 @@ Lastly, "energy" can be a function that assigns energy values based on the timin
     >>> photons = mysource.generate_photons(7)
     >>> print(photons['time', 'energy'])
     time energy
+     s    keV
     ---- ------
      0.0    0.5
      1.0    0.5

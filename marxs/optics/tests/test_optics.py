@@ -20,7 +20,7 @@ def photons1000():
     mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"), energy=1., flux=300.)
     np.random.seed(0)
     p = mysource.generate_photons(1000)
-    mypointing = marxs.source.FixedPointing(coords=(30., 30.))
+    mypointing = marxs.source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
     return mypointing.process_photons(p)
 
 

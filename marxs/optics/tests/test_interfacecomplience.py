@@ -76,7 +76,7 @@ all_oe = [ThinLens(focallength=100),
 # Can I vary energy for e.g. grating?
 mysource = PointSource(coords=SkyCoord(30., 30., unit='deg'), energy=1., flux=300.)
 masterphotons = mysource.generate_photons(11)
-mypointing = FixedPointing(coords=(30., 30.))
+mypointing = FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
 masterphotons = mypointing.process_photons(masterphotons)
 myslit = RectangleAperture()
 masterphotons = myslit.process_photons(masterphotons)
