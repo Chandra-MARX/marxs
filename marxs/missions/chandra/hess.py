@@ -24,8 +24,14 @@ class HETG(Parallel):
         kwargs['elem_class'] = FlatGrating
         # Gratings are defined in order MEG, then HEG
         d = [4001.95 * 1e-7] * 192 + [2000.81 * 1e-7] * 144
+        ul = np.vstack([self.hess[s+'ul'].data for s in 'xyz'])
+        uyf = np.vstack([self.hess[s + 'uyf'].data for s in 'xyz'])
+        uxf = np.vstack([self.hess[s + 'uxf'].data for s in 'xyz'])
+        groove_ang = -np.arctan2(np.einsum('i...,i...->...', ul, uxf),
+                                 np.einsum('i...,i...->...', ul, uyf))
         kwargs['elem_args'] = {'order_selector': uniform_efficiency_factory(),
-                               'd': d, 'name' : list(self.hess['hessloc'])}
+                               'd': d, 'name': list(self.hess['hessloc']),
+                               'groove_angle': groove_ang.tolist()}
         super(HETG, self).__init__(**kwargs)
 
     def calculate_elempos(self):
@@ -40,12 +46,12 @@ class HETG(Parallel):
         hess = self.hess
 
         cen = np.vstack([hess[s+'c'].data for s in 'xyz'])
-        cen[0,:] +=(339.909-1.7)*25.4
+        cen[0, :] += (339.909 - 1.7) * 25.4
 
         # All those vectors are already normalized
-        facnorm = np.vstack([hess[s+'u'].data for s in 'xyz'])
-        uxf = np.vstack([hess[s+'uxf'].data for s in 'xyz'])
-        uyf = np.vstack([hess[s+'uyf'].data for s in 'xyz'])
+        facnorm = np.vstack([hess[s + 'u'].data for s in 'xyz'])
+        uxf = np.vstack([hess[s + 'uxf'].data for s in 'xyz'])
+        uyf = np.vstack([hess[s + 'uyf'].data for s in 'xyz'])
 
         pos4ds = []
         for i in range(facnorm.shape[1]):
@@ -63,14 +69,3 @@ class HETG(Parallel):
             pos4d = compose(cen[:, i], rot, zoom)
             pos4ds.append(pos4d)
         return pos4ds
-
-    def generate_elements(self):
-        '''generate elements as usual, set groove direction from table afterwards.'''
-        super(HETG, self).generate_elements()
-        ul = np.vstack([self.hess[s+'ul'].data for s in 'xyz'])
-        ud = np.vstack([self.hess[s+'ud'].data for s in 'xyz'])
-        for i in range(len(self.elements)):
-            # No need to calculate those from groove angle
-            # They are already in the input table.
-            self.elements[i].geometry('e_groove')[:3] = ul[:, i]
-            self.elements[i].geometry('e_perp_groove')[:3] = ud[:, i]

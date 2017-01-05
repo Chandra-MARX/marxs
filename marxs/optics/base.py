@@ -1,4 +1,5 @@
 from functools import wraps
+from copy import copy
 
 import numpy as np
 from astropy.table import Table, Row
@@ -175,6 +176,11 @@ class FlatOpticalElement(OpticalElement):
 
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
+
+    def __init__(self, *args, **kwargs):
+        super(FlatOpticalElement, self).__init__(*args, **kwargs)
+        #copy class attribute to instance attribute
+        self._geometry = copy(self._geometry)
 
     def intersect(self, dir, pos):
         '''Calculate the intersection point between a ray and the element

@@ -54,7 +54,7 @@ TDET = {'ACIS': {'version': 'ACIS-2.2',
                                      [6001, 1702]])
                  },
         }
-'''Constant to used to transform from chip coordinates to TDET system.
+'''Constants used to transform from chip coordinates to TDET system.
 
 Numbers are taken for the Chandra coordinate memo I at
 http://cxc.harvard.edu/contrib/jcm/ncoords.ps

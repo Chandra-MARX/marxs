@@ -293,3 +293,14 @@ def test_change_position_after_init():
 
     assert np.allclose(p1['dir'], p2['dir'])
     assert np.allclose(p1['pos'], p2['pos'])
+
+def test_gratings_are_independent():
+    '''Regression test: Some grating properties are stored in a dict.
+    This test ensures that the relevant numbers are in an instance attribute and not
+    in a class attribute.
+    However, we want to test only user visible properties, not hidden dicts like
+    FlatGrating._geometry. So, compare grove dirs for to gratings.
+    '''
+    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
+    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    assert not np.allclose(g1.geometry('e_groove'), g2.geometry('e_groove'))
