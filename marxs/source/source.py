@@ -1,9 +1,19 @@
+'''
+Sources generate photons with all photon properties: energy, direction, time, polarization.
+
+For objects of type `AstroSource`, the coordinates of the photon origin on the sky are added to the photon list. `astropy.coords.SkyCoord` is an object well suited for this task. These objects can be added to photon tables through the mechanims of `mixin columns <http://docs.astropy.org/en/latest/table/index.html#mixin-columns>`). However, mix-in columns don't (yet) support saving to all table formats or tables operations such as stacking. Thus, it is much better to include the coordinates as two columns of floats with names ``ra`` and ``dec`` into the table.
+
+Sources take a `~astropy.coordinates.SkyCoord` from the user to avoid any ambiguity about the coordinate systme used, but convert this into plain floats used in the photon table.
+'''
+
 import os
 from datetime import datetime
 
 import numpy as np
 from scipy.stats import expon
 from astropy.table import Table
+import astropy.units as u
+from astropy.coordinates import SkyCoord, SkyOffsetFrame
 
 from ..base import SimulationSequenceElement
 from ..optics.polarization import polarization_vectors
@@ -230,49 +240,188 @@ class Source(SimulationSequenceElement):
                                    'User running simulation')
         photons.meta['SIMHOST'] = (os.environ.get('HOST', 'unknown host'),
                                    'Host system running simulation')
+        photons['time'].unit = u.s
+        photons['energy'].unit = u.keV
+        photons['polangle'].unit = u.degree
         return photons
 
 
-class PointSource(Source):
+class AstroSource(Source):
+    '''Astrophysical source with a sky position
+
+    Parameters
+    ----------
+    coords : `astropy.coordinates.SkySoord` (preferred)
+        Position of the source on the sky. If ``coords`` is not a
+        `~astropy.coordinates.SkyCoord` object itself, it is used to
+        initialize such an object. See `~astropy.coordinates.SkyCoord`
+        for a description of allowed input values.
+    '''
+    def __init__(self, **kwargs):
+        coords = kwargs.pop('coords')
+        if isinstance(coords, SkyCoord):
+            self.coords = coords
+        else:
+            self.coords = SkyCoord(coords)
+
+        if not self.coords.isscalar:
+            raise ValueError("Coordinate must be scalar, not array.")
+        super(AstroSource, self).__init__(**kwargs)
+
+    def set_pos(self, photons, coo):
+        '''Set Ra, Dec of photons in table
+
+        This function write Ra, Dec to a table. It is defined here to make the way
+        `astropy.coordinates.SkyCoord` objects are stored more uniform.
+        Currently, mixin columns in tables have some disadvantages, e.g. they
+        cause errors on writing and on stacking. Thus, we store the coordinates
+        as plain numbers. Since that format is not unique (e.g. units could be deg or rad),
+        system could be ICRS, FK4, FK5 or other this conversion is done here for all
+        astrononimcal sources.
+        This also makes it easier to change that design in the future.
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Photon table. Columns ``ra`` and ``dec`` will be added or overwritten.
+        coo : `astropy.coords.SkyCoord`
+            Photon coordinates
+        '''
+        photons['ra'] = coo.icrs.ra.deg
+        photons['dec'] = coo.icrs.dec.deg
+        photons['ra'].unit = u.degree
+        photons['dec'].unit = u.degree
+        photons.meta['COORDSYS'] = ('ICRS', 'Type of coordinate system')
+
+class PointSource(AstroSource):
     '''Astrophysical point source.
 
     Parameters
     ----------
-    coords : Tuple of 2 elements
-        Ra and Dec in decimal degrees.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, coords, **kwargs):
-        self.coords = coords
+    def __init__(self, **kwargs):
         super(PointSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
         photons = super(PointSource, self).generate_photons(exposuretime)
-        photons['ra'] = np.ones(len(photons)) * self.coords[0]
-        photons['dec'] = np.ones(len(photons)) * self.coords[1]
+        self.set_pos(photons, self.coords)
+        return photons
+
+
+class RadialDistributionSource(AstroSource):
+    ''' Base class for sources where photons follow some radial distribution on the sky
+
+    Parameters
+    ----------
+    radial_distribution : callable
+        A function that takes an interger as input, which specifies the number
+        of photons to produce. The output must be an `astropy.units.Quantity`` object
+        with n angles in it.
+    func_par : object
+        ``radial_distribution`` has access to ``self.func_par`` to hold function
+        parameters. This could be, e.g. a tuple with coeffications.
+    kwargs : see `Source`
+        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+        See `Source` for details.
+    '''
+    def __init__(self, **kwargs):
+        self.func = kwargs.pop('radial_distribution')
+        self.func_par = kwargs.pop('func_par', None)
+        super(RadialDistributionSource, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        '''Photon positions are generated in a frame that is centered on the
+        coordinates set in ``coords``, then they get transformed into the global sky
+        system.
+        '''
+        photons = super(RadialDistributionSource, self).generate_photons(exposuretime)
+
+        relative_frame = SkyOffsetFrame(origin=self.coords)
+        n = len(photons)
+        phi = np.random.rand(n) * 2. * np.pi * u.rad
+        d = self.func(n)
+        relative_coords = SkyCoord(d * np.sin(phi), d * np.cos(phi), frame=relative_frame)
+        origin_coord = relative_coords.transform_to(self.coords)
+        self.set_pos(photons, origin_coord)
 
         return photons
 
-class SymbolFSource(Source):
+class SphericalDiskSource(RadialDistributionSource):
+    '''Astrophysical source with the shape of a circle or ring.
+
+    The `DiskSource` makes a small angle approximation. In contrast, this source
+    implements the full spherical geometry at the cost of running slower.
+    For radii less than a few degrees the difference is negligible and we recommend
+    use of the faster `DiskSource`.
+
+    Parameters
+    ----------
+    a_inner, a_outer : `astropy.coordinates.Angle`
+        Inner and outer angle of the ring (e.g. in arcsec).
+        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = [kwargs.pop('a_outer'),
+                              kwargs.pop('a_inner', 0. * u.rad)]
+        kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(self.func_par[1]) +
+                          np.random.rand(n) * (np.cos(self.func_par[0]) - np.cos(self.func_par[1])))
+        super(SphericalDiskSource, self).__init__(**kwargs)
+
+class DiskSource(RadialDistributionSource):
+    '''Astrophysical source with the shape of a circle or ring.
+
+    This source uses a small angle approximation which is valid for radii less than
+    a few degrees and runs much faster. See ``SphericalDiskSource`` for an
+    implementation using full spherical geometry.
+
+    Parameters
+    ----------
+    a_inner, a_outer : `astropy.coordinates.Angle`
+        Inner and outer angle of the ring (e.g. in arcsec).
+        The default is a disk with no inner hole (``a_inner`` is set to zero.)
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = [kwargs.pop('a_outer'),
+                              kwargs.pop('a_inner', 0. * u.rad)]
+        kwargs['radial_distribution'] = lambda n: np.sqrt(self.func_par[1]**2 +
+                          np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
+        super(DiskSource, self).__init__(**kwargs)
+
+class GaussSource(RadialDistributionSource):
+    '''Astrophysical source with a Gaussian brightness profile.
+
+    This source uses a small angle approximation which is valid for radii less than
+    a few degrees.
+
+    Parameters
+    ----------
+    sigma : `astropy.coordinates.Angle`
+        Gaussian sigma setting the width of the distribution
+    '''
+    def __init__(self, **kwargs):
+        kwargs['func_par'] = kwargs.pop('sigma')
+        # Note: rand is in interavall [0..1[, so 1-rand is the same except for edges
+        kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
+        super(GaussSource, self).__init__(**kwargs)
+
+class SymbolFSource(AstroSource):
     '''Source shaped like the letter F.
 
     This source provides a non-symmetric source for testing purposes.
 
     Parameters
     ----------
-    coords : tuple of 2 elements
-        Ra and Dec in decimal degrees.
-    size : float
-        size scale in degrees
+    size : `astropy.units.quantity'
+        angular size
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, coords, size=1, **kwargs):
-        self.coords = coords
-        self.size = size
+    def __init__(self, **kwargs):
+        self.size = kwargs.pop('size', 1. * u.degree)
         super(SymbolFSource, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
@@ -280,17 +429,15 @@ class SymbolFSource(Source):
         n = len(photons)
         elem = np.random.choice(3, size=n)
 
-        ra = np.empty(n)
-        ra[:] = self.coords[0]
-        dec = np.empty(n)
-        dec[:] = self.coords[1]
-        ra[elem == 0] += self.size * np.random.random(np.sum(elem == 0))
-        ra[elem == 1] += self.size
-        dec[elem == 1] += 0.5 * self.size * np.random.random(np.sum(elem == 1))
-        ra[elem == 2] += 0.8 * self.size
-        dec[elem == 2] += 0.3 * self.size * np.random.random(np.sum(elem == 2))
+        ra = np.ones(n) * self.coords.icrs.ra
+        dec = np.ones(n) * self.coords.icrs.dec
+        size = self.size
+        ra[elem == 0] += size * np.random.random(np.sum(elem == 0))
+        ra[elem == 1] += size
+        dec[elem == 1] += 0.5 * size * np.random.random(np.sum(elem == 1))
+        ra[elem == 2] += 0.8 * size
+        dec[elem == 2] += 0.3 * size * np.random.random(np.sum(elem == 2))
 
-        photons['ra'] = ra
-        photons['dec'] = dec
+        self.set_pos(photons, SkyCoord(ra, dec, frame=self.coords))
 
         return photons

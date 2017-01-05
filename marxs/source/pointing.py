@@ -5,6 +5,9 @@ from transforms3d.euler import euler2mat
 from transforms3d.utils import normalized_vector
 
 from astropy.table import Column
+import astropy.units as u
+import astropy.coordinates as coord
+from astropy.coordinates import SkyCoord
 from ..base import SimulationSequenceElement
 from ..math.pluecker import h2e, e2h
 from ..math.rotations import axangle2mat
@@ -38,8 +41,6 @@ class PointingModel(SimulationSequenceElement):
         photons['dir'][:, 3] = 0
 
     def process_photons(self, photons):
-        # Could also loop over single photons if not implemented in
-        # derived class.
         self.add_dir(photons)
         return photons
 
@@ -55,10 +56,13 @@ class FixedPointing(PointingModel):
 
     Parameters
     ----------
-    coords : tuple of 2 elements
-        Ra and Dec of telescope aimpoint in decimal degrees.
-    roll : float
-        ``roll = 0`` means: z axis points North (measured N -> E). Angle in degrees.
+    coords : `astropy.coordinates.SkySoord` (preferred)
+        Position of the source on the sky. If ``coords`` is not a
+        `~astropy.coordinates.SkyCoord` object itself, it is used to
+        initialize such an object. See `~astropy.coordinates.SkyCoord`
+        for a description of allowed input values.
+    roll : `~astropy.units.quantity.Quantity`
+        ``roll = 0`` means: z axis points North (measured N -> E).
     geomarea_reference : np.array
         Homogeneous vector that is normal (with a direction pointing from the
         the source towards the instrument) to all apertures of the telescope.
@@ -81,31 +85,33 @@ class FixedPointing(PointingModel):
     determines the position of the coordinate system.
     '''
     def __init__(self, **kwargs):
-        self.coords = kwargs.pop('coords')
-        self.ra = self.coords[0]
-        self.dec = self.coords[1]
-        self.roll = kwargs.pop('roll', 0.)
+        coords = kwargs.pop('coords')
+        if isinstance(coords, coord.SkyCoord):
+            self.coords = coords
+        else:
+            self.coords = coord.SkyCoord(coords)
+
+        if not self.coords.isscalar:
+            raise ValueError("Coordinate must be scalar, not array.")
+        self.roll = kwargs.pop('roll', 0. * u.rad)
+
         self.geomarea_reference = normalized_vector(kwargs.pop('geomarea_reference',
                                                                np.array([-1, 0, 0, 0])))
 
         super(FixedPointing, self).__init__(**kwargs)
-        '''
-        Negative sign for dec and roll in the code, because these are defined
-        opposite to the right hand rule.
-        '''
-        self.mat3d = euler2mat(np.deg2rad(self.ra),
-                               np.deg2rad(-self.dec),
-                               np.deg2rad(-self.roll), 'rzyx')
 
-    def photons_dir(self, ra, dec, time):
+    @property
+    def offset_coos(self):
+        '''Return `~astropy.coordinates.SkyOffsetFrame`'''
+        return self.coords.skyoffset_frame(rotation=self.roll)
+
+    def photons_dir(self, coos, time):
         '''Calculate direction on photons in homogeneous coordinates.
 
         Parameters
         ----------
-        ra : np.array
-            RA for each photon in rad
-        dec : np.array
-            DEC or each photon in rad
+        coos : `astropy.coordiantes.SkyCoord`
+            Origin of each photon on the sky
         time : np.array
             Time for each photons in sec
 
@@ -114,39 +120,46 @@ class FixedPointing(PointingModel):
         photons_dir : np.array of shape (n, 4)
             Homogeneous direction vector for each photon
         '''
+        photondir = coos.transform_to(self.offset_coos)
+        assert np.allclose(photondir.distance.value, 1.)
         # Minus sign here because photons start at +inf and move towards origin
-        photons_dir = np.zeros((len(ra), 4))
-        photons_dir[:, 0] = - np.cos(dec) * np.cos(ra)
-        photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
-        photons_dir[:, 2] = - np.sin(dec)
-        photons_dir[:, :3] = np.dot(self.mat3d.T, photons_dir[:, :3].T).T
+        return - e2h(photondir.cartesian.xyz.T, 0)
 
-        return photons_dir
-
-    def photons_pol(self, ra, dec, polangle, time):
-        return np.ones_like(ra)
+    def photons_pol(self, coos, polangle, time):
+        '''
+        Parameters
+        ----------
+        coos : `astropy.coordiantes.SkyCoord`
+            Origin of each photon on the sky
+        polangle :
+        time : np.array
+            Time for each photons in sec
+        '''
+        return np.ones_like(time)
 
     def process_photons(self, photons):
         '''
         Parameters
         ----------
-        photons : astropy.table.Table
+        photons : `astropy.table.Table`
         '''
         photons = super(FixedPointing, self).process_photons(photons)
-        ra = np.deg2rad(photons['ra'].data)
-        dec = np.deg2rad(photons['dec'].data)
-        photons['dir'] = self.photons_dir(ra, dec, photons['time'].data)
+        photons['dir'] = self.photons_dir(SkyCoord(photons['ra'], photons['dec'],
+                                                   unit='deg'),
+                                          photons['time'].data)
         projected_area = np.dot(photons['dir'].data, self.geomarea_reference)
         # Photons coming in "through the back" would have negative probabilities.
         # Unlikely to ever come up, but just in case we clip to 0.
         photons['probability'] *= np.clip(projected_area, 0, 1.)
-        photons['polarization'] = self.photons_pol(ra, dec, photons['time'].data, photons['polangle'].data)
-        photons.meta['RA_PNT'] = (self.ra, '[deg] Pointing RA')
-        photons.meta['DEC_PNT'] = (self.dec, '[deg] Pointing Dec')
-        photons.meta['ROLL_PNT'] = (self.roll, '[deg] Pointing Roll')
-        photons.meta['RA_NOM'] = (self.ra, '[deg] Nominal Pointing RA')
-        photons.meta['DEC_NOM'] = (self.dec, '[deg] Nominal Pointing Dec')
-        photons.meta['ROLL_NOM'] = (self.roll, '[deg] Nominal Pointing Roll')
+        photons['polarization'] = self.photons_pol(SkyCoord(photons['ra'], photons['dec'],
+                                                            unit='deg'),
+                                                   photons['time'].data, photons['polangle'].data)
+        photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
+        photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
+        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree), '[deg] Pointing Roll')
+        photons.meta['RA_NOM'] = (self.coords.ra.degree, '[deg] Nominal Pointing RA')
+        photons.meta['DEC_NOM'] = (self.coords.dec.degree, '[deg] Nominal Pointing Dec')
+        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree), '[deg] Nominal Pointing Roll')
 
         return photons
 
@@ -163,21 +176,20 @@ class JitterPointing(FixedPointing):
 
     Parameters
     ----------
-    jitter : float
-        Gaussian sigma of jitter angle in radian
+    jitter : `~astropy.units.quantity.Quantity`
+        Gaussian sigma of jitter angle
     '''
     def __init__(self, **kwargs):
         self.jitter = kwargs.pop('jitter')
-        if self.jitter > 1e-4:
-            warn('Jitter is {0} which seems large [jitter is expected in radian, not arcsec].'.format(self.jitter), SimulationSetupWarning)
         super(JitterPointing, self).__init__(**kwargs)
 
-    def photons_dir(self, ra, dec, time):
-        photons_dir = super(JitterPointing, self).photons_dir(ra, dec, time)
+    def photons_dir(self, *args):
+        photons_dir = super(JitterPointing, self).photons_dir(*args)
         # Get random jitter direction
-        randang = np.random.rand(len(ra)) * 2. * np.pi
-        ax = np.vstack([np.zeros_like(ra), np.sin(randang), np.cos(randang)]).T
-        jitterang = np.random.normal(scale=self.jitter, size=len(ra))
+        n = len(photons_dir)
+        randang = np.random.rand(n) * 2. * np.pi
+        ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
+        jitterang = np.random.normal(scale=self.jitter.to(u.radian), size=n)
         jitterrot = axangle2mat(ax, jitterang)
         photons_dir = np.einsum('...ij,...i->...j', jitterrot, h2e(photons_dir))
         return e2h(photons_dir, 0)

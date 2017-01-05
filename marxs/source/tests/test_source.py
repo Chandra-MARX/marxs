@@ -1,8 +1,13 @@
 import numpy as np
 import pytest
+from scipy.stats import normaltest
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 
-from ...source import SymbolFSource, Source, poisson_process
+from ...source import (SymbolFSource, Source, poisson_process,
+                       PointSource,
+                       DiskSource, SphericalDiskSource, GaussSource)
 from ...optics import RectangleAperture
 from ..source import SourceSpecificationError
 
@@ -13,7 +18,7 @@ def test_photons_header():
     Just test that some of the keywords are there. It's unlikely
     that I need a full list here.
     '''
-    s = SymbolFSource((-123., -43.), 1.)
+    s = SymbolFSource(coords=SkyCoord(-123., -43., unit=u.deg), size=1.*u.deg)
     photons = s.generate_photons(5.)
     for n in ['EXPOSURE', 'CREATOR', 'MARXSVER', 'SIMTIME', 'SIMUSER']:
         assert n in photons.meta
@@ -52,7 +57,7 @@ def test_flux_input():
 def test_energy_input():
     '''Many different options ...'''
     # 1. contant energy
-    s = Source(energy=2.)
+    s = PointSource(coords=SkyCoord("1h12m43.2s +1d12m43s"), energy=2.)
     photons = s.generate_photons(5)
     assert np.all(photons['energy'] == 2.)
 
@@ -151,3 +156,46 @@ def test_Aeff():
     s = Source(flux=.5, geomarea=a.area)
     photons = s.generate_photons(5.)
     assert len(photons) == 40
+
+def test_disk_radius():
+    pos = SkyCoord(12. * u.degree, -23.*u.degree)
+    s = DiskSource(coords=pos, a_inner=50.* u.arcsec,
+                   a_outer=10. * u.arcmin)
+
+    photons = s.generate_photons(1e4)
+    d = pos.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
+    assert np.max(d.arcmin <= 10.)
+    assert np.min(d.arcmin >= 0.8)
+
+@pytest.mark.parametrize("diskclass,diskpar",
+                         [(DiskSource, {'a_outer': 30. * u.arcmin}),
+                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}),
+                          (GaussSource, {'sigma': 1.5 * u.deg})])
+def test_disk_distribution(diskclass, diskpar):
+    '''This is a separate test from test_disk_radius, because it's a simpler
+    to write if we don't have to worry about the inner hole.
+
+    For the test itself: The results should be poisson distributed (or, for large
+    numbers this will be almost normal).
+    That makes testing it a little awkard in a short run time, thus the limits are
+    fairly loose.
+
+    This test is run for several extended sources, incl Gaussian. Stirctly speaking
+    it should fail for a Gaussian distribution, but if the sigma is large enough it
+    will pass a loose test (and still fail if things to catastrophically wrong,
+    e.g. some test circles are outside the source).
+    '''
+
+    s = diskclass(coords=SkyCoord(213., -10., unit=u.deg), **diskpar)
+    photons = s.generate_photons(1e5)
+
+    n = np.empty(10)
+    for i in range(len(n)):
+        circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
+                       (- 10. + np.random.uniform(-0.1, .1))*u.degree)
+        d = circ.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
+        n[i] = (d < 5. * u.arcmin).sum()
+    s, p = normaltest(n)
+    # assert a p value here that is soo small that it's never going to be hit
+    # by chance.
+    assert p > .05
