@@ -19,11 +19,11 @@ Properties that are very easy to define and that are very unlikely to ever chang
 That makes is easier to see where the numbers come from and thus helps for users
 who look at this module as an example of how to build up complex marxs setups.
 '''
-from math import cos, sin
 import numpy as np
 
 from astropy.table import Table
 import astropy.units as u
+from astropy.units import Quantity
 from transforms3d.utils import normalized_vector as norm_vec
 from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
@@ -61,8 +61,8 @@ def chip2tdet(chip, tdet, id_num):
     handedness = tdet['handedness'][id_num]
     origin_tdet = tdet['origin'][id_num]
     theta = tdet['theta'][id_num]
-    rotation = np.array([[cos(theta), sin(theta)],
-                         [-sin(theta), cos(theta)]])
+    rotation = np.array([[np.cos(theta), np.sin(theta)],
+                         [-np.sin(theta), np.cos(theta)]])
     return scale * handedness * np.dot(rotation, (chip - 0.5).T).T + (origin_tdet + 0.5)
 
 
@@ -95,8 +95,8 @@ class ACISChip(FlatDetector):
         detx = self.ODET[0] - x
         dety = self.ODET[1] + y
         theta = np.deg2rad(photons.meta['ROLL_PNT'][0])
-        skyx = self.ODET[0] - x * cos(theta) + y * sin(theta)
-        skyy = self.ODET[1] + x * sin(theta) + y * cos(theta)
+        skyx = self.ODET[0] - x * np.cos(theta) + y * np.sin(theta)
+        skyy = self.ODET[1] + x * np.sin(theta) + y * np.cos(theta)
 
         photons.meta['ACSYS1'] = ('CHIP:AXAF-ACIS-1.0', 'reference for chip coord system')
         photons.meta['ACSYS2'] = ('TDET:{0}'.format(self.TDET['version']), 'reference for tiled detector coord system')
@@ -238,70 +238,81 @@ class LissajousDither(FixedPointing):
         '''
         return self.DitherAmp * np.sin(2. * np.pi * u.radian * time[:, np.newaxis] * u.s / self.DitherPeriod + self.DitherPhase)  / np.array([np.cos(self.coords.icrs.dec), 1., 1.])
 
+
     def pointing(self, time):
         '''Calculate the pointing direction for a set of times
-
         There are the steps to convert the dither (which are offsets) to the total
         pointing direction with the roll properly taken care of.
         (See marxasp.c in the marx code for more details.)
-
         1.  Convert ra/dec offsets to absolute pointing.
         2.  Roll resulting vector about nominal pointing
         3.  Convert result to ra/dec.
-
         Parameters
         ----------
         time : np.array
             Array of times
-
         Results
         -------
         pointing : (n, 3) np.array
             Ra, Dec, roll values in radian for the pointing direction at time t.
         '''
-        dither = self.dither(time).to(u.radian).value
-        phi = dither[:, 0]
-        theta = np.pi/2. - dither[:, 1]
+        nominal = Quantity([self.coords.ra, self.coords.dec,
+                            self.roll])
+        dither = self.dither(time)
+        # roll in astronomical system is defined opposite of the usual mathematical angle
+        # because the ra in the coordinate system increases in the other direction.
+        roll = nominal[2] + dither[:, 2]
+        # Express directions as x,y,z vectors
+        phi = nominal[0]
+        theta = np.pi/2. * u.rad - nominal[1]
+        e_nominal = np.array([np.sin(phi) * np.sin(theta),
+                              np.cos(phi) * np.sin(theta),
+                              np.cos(theta)])
+        phi = nominal[0] + dither[:, 0]
+        theta = np.pi/2. * u.rad - (nominal[1] + dither[:, 1])
         e_dither = np.vstack([np.sin(phi) * np.sin(theta),
                               np.cos(phi) * np.sin(theta),
                               np.cos(theta)]).T
-        pointing_dir = np.zeros_like(dither)
+        pointing_dir = np.zeros_like(dither.value)
 
         # common case for Chandra
-        if np.allclose(dither[:, 2], dither[0, 2]):
-            mat = axangle2mat([1, 0, 0], -dither[0, 2], is_normalized=True)
+        if np.allclose(roll.to(u.rad).value, roll[0].to(u.rad).value):
+            mat = axangle2mat(e_nominal, -roll[0].to(u.rad).value, is_normalized=True)
             constant_roll = True
 
         for i in range(len(time)):
             if not constant_roll:
-                mat = axangle2mat([1, 0, 0], -dither[i, 2], is_normalized=True)
-            pointing_dir[i, :] = np.dot(mat, e_dither[i, :])
+                mat = axangle2mat(e_nominal, -roll[i].to(u.rad).value, is_normalized=True)
+            pointing_dir[i, :] = np.dot(mat, e_dither[i, :].value)
 
         # convert x,y,z pointing back to ra, dec, roll
         pointing = np.vstack([np.arctan2(pointing_dir[:, 0], pointing_dir[:, 1]) % (2.*np.pi),
                               np.pi / 2. - np.arccos(pointing_dir[:, 2]),
-                              dither[:, 2]]).T
+                              roll.to(u.rad).value]).T
         return pointing
 
     def photons_dir(self, coos, time):
         '''Calculate direction on photons in homogeneous coordinates.
-
         Parameters
         ----------
         coos : `astropy.coordiantes.SkyCoord`
             Origin of each photon on the sky
-        time : np.array
+         time : np.array
             Time for each photons in sec
-
         Returns
         -------
         photons_dir : np.array of shape (n, 4)
             Homogeneous direction vector for each photon
         '''
-        photons_dir = super(LissajousDither, self).photons_dir(coos, time)
+        ra = coos.ra.rad
+        dec = coos.dec.rad
         # Minus sign here because photons start at +inf and move towards origin
         pointing = self.pointing(time)
-        for i in range(len(time)):
+        photons_dir = np.zeros((len(ra), 4))
+        photons_dir[:, 0] = - np.cos(dec) * np.cos(ra)
+        photons_dir[:, 1] = - np.cos(dec) * np.sin(ra)
+        photons_dir[:, 2] = - np.sin(dec)
+        for i in range(len(ra)):
             mat3d = euler2mat(pointing[i, 0],
                               - pointing[i, 1],
                               - pointing[i, 2], 'rzyx')
@@ -313,7 +324,7 @@ class LissajousDither(FixedPointing):
 
     def write_asol(self, photons, asolfile, timestep=0.256):
         time = np.arange(0, photons.meta['EXPOSURE'][0], timestep)
-        pointing = np.rad2deg(self.pointing(time))
+        pointing = self.pointing(time).to(u.deg).value
         asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
                      names=['time', 'ra', 'dec', 'roll'],
                      )
@@ -346,6 +357,118 @@ class LissajousDither(FixedPointing):
         # consistent with the value of the TSTART keyword.
         asol['time'] += asol.meta['TSTART'][0]
         asol.write(asolfile, format='fits')  # , checksum=True) - works only with fits interface
+
+
+
+    # def pointing(self, time):
+    #     '''Calculate the pointing direction for a set of times
+
+    #     There are the steps to convert the dither (which are offsets) to the total
+    #     pointing direction with the roll properly taken care of.
+    #     (See marxasp.c in the marx code for more details.)
+
+    #     1.  Convert ra/dec offsets to absolute pointing.
+    #     2.  Roll resulting vector about nominal pointing
+    #     3.  Convert result to ra/dec.
+
+    #     Parameters
+    #     ----------
+    #     time : np.array
+    #         Array of times
+
+    #     Results
+    #     -------
+    #     pointing : (n, 3) np.array
+    #         Ra, Dec, roll values in radian for the pointing direction at time t.
+    #     '''
+    #     dither = self.dither(time).to(u.radian).value
+    #     phi = dither[:, 0]
+    #     theta = np.pi/2. - dither[:, 1]
+    #     e_dither = np.vstack([np.sin(phi) * np.sin(theta),
+    #                           np.cos(phi) * np.sin(theta),
+    #                           np.cos(theta)]).T
+    #     pointing_dir = np.zeros_like(dither)
+
+    #     # common case for Chandra
+    #     roll = self.roll.to(u.radian).value
+    #     if np.allclose(dither[:, 2], dither[0, 2]):
+    #         mat = axangle2mat([1, 0, 0], -dither[0, 2] - roll, is_normalized=True)
+    #         constant_roll = True
+
+    #     for i in range(len(time)):
+    #         if not constant_roll:
+    #             mat = axangle2mat([1, 0, 0], -dither[i, 2] - roll, is_normalized=True)
+    #         pointing_dir[i, :] = np.dot(mat, e_dither[i, :])
+
+    #     # convert x,y,z pointing back to ra, dec, roll
+    #     pointing = np.vstack([np.arctan2(pointing_dir[:, 0], pointing_dir[:, 1]) % (2.*np.pi),
+    #                           np.pi / 2. - np.arccos(pointing_dir[:, 2]),
+    #                           dither[:, 2]]).T
+    #     return pointing
+
+    # def photons_dir(self, coos, time):
+    #     '''Calculate direction on photons in homogeneous coordinates.
+
+    #     Parameters
+    #     ----------
+    #     coos : `astropy.coordiantes.SkyCoord`
+    #         Origin of each photon on the sky
+    #     time : np.array
+    #         Time for each photons in sec
+
+    #     Returns
+    #     -------
+    #     photons_dir : np.array of shape (n, 4)
+    #         Homogeneous direction vector for each photon
+    #     '''
+    #     photons_dir = super(LissajousDither, self).photons_dir(coos, time)
+    #     # Minus sign here because photons start at +inf and move towards origin
+    #     pointing = self.dither(time).to(u.rad).value
+    #     for i in range(len(time)):
+    #         mat3d = euler2mat(pointing[i, 0],
+    #                           - pointing[i, 1],
+    #                           - pointing[i, 2], 'rzyx')
+
+    #         photons_dir[i, :3] = np.dot(mat3d.T, photons_dir[i, :3])
+
+    #     return photons_dir
+
+
+    # def write_asol(self, photons, asolfile, timestep=0.256):
+    #     time = np.arange(0, photons.meta['EXPOSURE'][0], timestep)
+    #     pointing = np.rad2deg(self.pointing(time))
+    #     asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
+    #                  names=['time', 'ra', 'dec', 'roll'],
+    #                  )
+    #     asol['time'].unit = 's'
+    #     # The following columns represent measured offsets in Chandra
+    #     # They are not part of this simulation. Simply set them to 0
+    #     for col in [ 'ra_err', 'dec_err', 'roll_err',
+    #                  'dy', 'dz', 'dtheta', 'dy_err', 'dz_err', 'dtheta_err',
+    #                   'roll_bias', 'pitch_bias', 'yaw_bias', 'roll_bias_err', 'pitch_bias_err', 'yaw_bias_err']:
+    #         asol[col] = np.zeros_like(time)
+    #         if 'bias' in col:
+    #             asol[col].unit = 'deg / s'
+    #         elif ('dy' in col) or ('dz' in col):
+    #             asol[col].unit = 'mm'
+    #         else:
+    #             asol[col].unit = 'deg'
+    #     asol['q_att'] = [mat2quat(euler2mat(np.deg2rad(p[0]),
+    #                                np.deg2rad(-p[1]),
+    #                                np.deg2rad(-p[2]), 'rzyx'))
+    #                      for p in pointing]
+    #     # Copy info like the exposure time from the photons list meta to asol,
+    #     # but not column specific keywords like TTYPEn, TCTYPn, MTYPEn, MFORMn, etc:
+    #     for k in photons.meta:
+    #         if (('TYP' not in k) and ('FORM' not in k) and
+    #             ('TCR' not in k) and ('TCDEL' not in k) and (k not in asol.meta)):
+    #             asol.meta[k] = photons.meta[k]
+    #     asol.meta['EXTNAME'] = 'ASPECT'
+    #     complete_header(asol.meta, None, 'ACASOL', ['OGIP', 'TEMPORALDATA', 'ASPECT'])
+    #     # In MARXS t=0 is the start of the observation, but for Chandra we need to make that
+    #     # consistent with the value of the TSTART keyword.
+    #     asol['time'] += asol.meta['TSTART'][0]
+    #     asol.write(asolfile, format='fits')  # , checksum=True) - works only with fits interface
 
 
 
