@@ -167,7 +167,11 @@ def test_disk_radius():
     assert np.max(d.arcmin <= 10.)
     assert np.min(d.arcmin >= 0.8)
 
-def test_disk_distribution():
+@pytest.mark.parametrize("diskclass,diskpar",
+                         [(DiskSource, {'a_outer': 30. * u.arcmin}),
+                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}),
+                          (GaussSource, {'sigma': 1.5 * u.deg})])
+def test_disk_distribution(diskclass, diskpar):
     '''This is a separate test from test_disk_radius, because it's a simpler
     to write if we don't have to worry about the inner hole.
 
@@ -175,20 +179,23 @@ def test_disk_distribution():
     numbers this will be almost normal).
     That makes testing it a little awkard in a short run time, thus the limits are
     fairly loose.
+
+    This test is run for several extended sources, incl Gaussian. Stirctly speaking
+    it should fail for a Gaussian distribution, but if the sigma is large enough it
+    will pass a loose test (and still fail if things to catastrophically wrong,
+    e.g. some test circles are outside the source).
     '''
 
-    s = DiskSource(coords=SkyCoord(213., -10., unit=u.deg), a_outer=30. * u.arcmin)
-    photons = s.generate_photons(3.6e6)
+    s = diskclass(coords=SkyCoord(213., -10., unit=u.deg), **diskpar)
+    photons = s.generate_photons(1e5)
 
     n = np.empty(10)
     for i in range(len(n)):
         circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
-                       (- 10. + np.random.uniform(-0.1, 1.))*u.degree)
+                       (- 10. + np.random.uniform(-0.1, .1))*u.degree)
         d = circ.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
         n[i] = (d < 5. * u.arcmin).sum()
     s, p = normaltest(n)
-    assert p > .9
-
-def test_homogeneity_disk():
-    '''
-    '''
+    # assert a p value here that is soo small that it's never going to be hit
+    # by chance.
+    assert p > .05
