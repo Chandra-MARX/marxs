@@ -36,7 +36,7 @@ def test_resolvingpower_consistency():
     '''
     entrance = np.array([12000., 0., 0.])
     aper = CircleAperture(position=entrance, zoom=100)
-    lens = PerfectLens(focallength=12000., position=entrance)
+    lens = PerfectLens(focallength=12000., position=entrance, zoom=100)
     rms = RadialMirrorScatter(inplanescatter=1e-4,
                               perpplanescatter=1e-5,
                               position=entrance)
