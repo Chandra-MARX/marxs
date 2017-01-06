@@ -37,6 +37,7 @@ from ...math.pluecker import h2e
 from .fitsheaders import complete_header
 from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE,
     PIX_CORNER_LSI_PAR)
+from .hess import HETG
 
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
@@ -76,7 +77,7 @@ class ACISChip(FlatDetector):
 
     @property
     def chip_name(self):
-        return 'AXIS-{0}'.format(ACIS_name[self.id_num])
+        return 'ACIS-{0}'.format(ACIS_name[self.id_num])
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         # CHIP and TDET are based on pixel coordinates
