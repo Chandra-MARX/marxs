@@ -414,7 +414,7 @@ class SymbolFSource(AstroSource):
 
     Parameters
     ----------
-    size : `astropy.units.quantity'
+    size : `astropy.units.quantity`
         angular size
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.

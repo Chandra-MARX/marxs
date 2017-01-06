@@ -13,11 +13,11 @@ For each type of source, we need to specifiy the following properties:
 - Spectrum of photon energies
 - Polarization
 
-Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `Source`.
+Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `~marxs.source.Source`.
 
 In addition, we need to give the location of the source and its size and shape (most of the currently implemented sources are point sources, but additional shapes will be added in the future):
 
-- **Astrophysical source**: Needs Ra, Dec coordiantes on the sky and a pointing model to translate from sky coordinates to the coordiante system of the satellite. See :ref:`sect-source-radec`. 
+- **Astrophysical source**: Needs coordiantes on the sky and a pointing model to translate from sky coordinates to the coordiante system of the satellite. See :ref:`sect-source-radec`. 
 - **Lab source**: Needs x,y,z coordianates in the coordinate system of the experiement as explained in :ref:`pos4d`. Lab source are described in more detail in :ref:`sect-source-lab`.
 
 
@@ -138,7 +138,7 @@ Lastly, if polarization is a function, it will be called with time and energy as
 Specify the position for an astrophysical source
 ------------------------------------------------
 
-An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the sattellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
+An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
 
 
 The following astropysical sources are included in marxs:
