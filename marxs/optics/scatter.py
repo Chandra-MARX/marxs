@@ -13,9 +13,9 @@ import numpy as np
 
 from ..math.pluecker import e2h, h2e
 from ..math.rotations import axangle2mat
-from .base import OpticalElement
+from .base import FlatOpticalElement
 
-class RadialMirrorScatter(OpticalElement):
+class RadialMirrorScatter(FlatOpticalElement):
     '''Add scatter to any sort of radial mirror.
 
     Scatter is added in the plane of reflection, which is defined here
@@ -37,20 +37,20 @@ class RadialMirrorScatter(OpticalElement):
         self.perpplanescatter = kwargs.pop('perpplanescatter', 0.) # in rad
         super(RadialMirrorScatter, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
+    def specific_process_photons(self, photons, intersect, interpos, intercoos):
         # change this line, if you want to process only some photons (intersect et al.)
-        n = len(photons)
+        n = intersect.sum()
         center = self.pos4d[:-1, -1]
-        radial = h2e(photons['pos'].data) - center
-        perpplane = np.cross(h2e(photons['dir'].data), radial)
+        radial = h2e(photons['pos'][intersect].data) - center
+        perpplane = np.cross(h2e(photons['dir'][intersect].data), radial)
         inplaneangle = np.random.normal(loc=0., scale=self.inplanescatter, size=n)
 
         rot = axangle2mat(perpplane, inplaneangle)
-        photons['dir'] = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'])), 0)
+        outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'][intersect])), 0)
 
         if self.perpplanescatter !=0: # Works for 0 too, but waste of time to run
             perpangle = np.random.normal(loc=0., scale=self.perpplanescatter, size=n)
             rot = axangle2mat(radial, perpangle)
-            photons['dir'] = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'])), 0)
+            outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(outdir)), 0)
 
-        return photons
+        return {'dir': outdir}
