@@ -39,7 +39,7 @@ def test_resolvingpower_consistency():
     lens = PerfectLens(focallength=12000., position=entrance, zoom=100)
     rms = RadialMirrorScatter(inplanescatter=1e-4,
                               perpplanescatter=1e-5,
-                              position=entrance)
+                              position=entrance, zoom=100)
 
     uptomirror = Sequence(elements=[aper, lens, rms])
     # CAT grating with blaze angle ensure that positive and negative orders
