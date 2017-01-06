@@ -134,8 +134,9 @@ def intersect_line_plane(p_line, h_plane):
 
 def point_dir2plane(h_point, h_dir):
     h_plane = np.empty(4)
-    h_plane[:3] = h_dir[:3]
-    h_plane[3] = - np.dot(h_point, h_dir) / h_point[3]
+    h_dir_n = h_dir / np.linalg.norm(h_dir)
+    h_plane[:3] = h_dir_n[:3]
+    h_plane[3] = - np.dot(h_point, h_dir_n) / h_point[3]
     return h_plane
 
 #   @ L = {U:UxQ}, for U the direction of L and Q a point on L.
