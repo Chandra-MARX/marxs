@@ -77,9 +77,9 @@ all_oe = [ThinLens(focallength=100),
 mysource = PointSource(coords=SkyCoord(30., 30., unit='deg'), energy=1., flux=300.)
 masterphotons = mysource.generate_photons(11)
 mypointing = FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
-masterphotons = mypointing.process_photons(masterphotons)
+masterphotons = mypointing(masterphotons)
 myslit = RectangleAperture()
-masterphotons = myslit.process_photons(masterphotons)
+masterphotons = myslit(masterphotons)
 
 
 @pytest.fixture(autouse=True)
@@ -127,7 +127,7 @@ class TestOpticalElementInterface:
         # Process as table
         if isinstance(elem, BaseAperture):
             photons.remove_column('pos')
-        p = elem.process_photons(photons)
+        p = elem(photons)
 
         if compare_results:
             # We can only compare, if one and many did run.
@@ -171,7 +171,7 @@ class TestOpticalElementInterface:
         meta_in = copy.deepcopy(photons.meta)
         if isinstance(elem, BaseAperture):
             photons.remove_column('pos')
-        p = elem.process_photons(photons)
+        p = elem(photons)
         assert all(item in p.meta.items() for item in meta_in.items())
 
 def test_parse_position_keywords_zoom_dimension():

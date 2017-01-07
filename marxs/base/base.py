@@ -158,7 +158,6 @@ class SimulationSequenceElement(MarxsElement):
             if self.id_col not in photons.colnames:
                 photons.add_column(Column(name=self.id_col, data=-np.ones(len(photons))))
 
-
     def __call__(self, photons, *args, **kwargs):
         return self.process_photons(photons, *args, **kwargs)
 

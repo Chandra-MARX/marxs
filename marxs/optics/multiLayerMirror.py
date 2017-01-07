@@ -50,12 +50,11 @@ class MultiLayerMirror(FlatOpticalElement):
             kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
         super(MultiLayerMirror, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
+    def process_photons(self, photons, doesIntersect, intersection, local):
         # NOTE: This function could be split up into smaller, more readable functions, but I
         # have done my best to clearly label the specific calculations in the comments.
 
         # for photons that do not reach the mirror, set probability to zero
-        doesIntersect, intersection, local = self.intersect(photons['dir'], photons['pos'])
         photons['probability'] *= doesIntersect
 
         # save the direction of the incoming photons as beam_dir

@@ -21,7 +21,7 @@ def photons1000():
     np.random.seed(0)
     p = mysource.generate_photons(1000)
     mypointing = marxs.source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
-    return mypointing.process_photons(p)
+    return mypointing(p)
 
 
 def test_pos4d_no_transformation():
@@ -74,7 +74,7 @@ def test_pos4d_transforms_slit(photons1000, myslit):
     of the initial values.
     '''
 
-    p = myslit.process_photons(photons1000)
+    p = myslit(photons1000)
     assert np.allclose(p['pos'][:, 0], 0)
     assert kstest((p['pos'][:, 1] + 2) / 4, "uniform")[1] > 0.01
     assert kstest((p['pos'][:, 2] + 2) / 4, "uniform")[1] > 0.01
@@ -86,7 +86,7 @@ def test_pos4d_transforms_slit_rotated(photons1000):
 
     rotation = axangle2aff(np.array([0, 1, 0]), np.deg2rad(90))
     myslit = marxs.optics.aperture.RectangleAperture(orientation=rotation[:3, :3], zoom=0.5)
-    p = myslit.process_photons(p)
+    p = myslit(p)
     assert np.allclose(p['pos'][:, 2], 0)
     assert kstest(p['pos'][:, 0] + 0.5, "uniform")[1] > 0.01
     assert kstest(p['pos'][:, 1] + 0.5, "uniform")[1] > 0.01

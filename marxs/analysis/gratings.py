@@ -94,7 +94,7 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None, colname='
             elem.order_selector = gratingeff
 
         pg = photons.copy()
-        pg = gratings.process_photons(pg)
+        pg = gratings(pg)
         pg = pg[pg['order'] == order]  # Remove photons that slip between the gratings
         if detector is None:
             xbest = find_best_detector_position(pg, objective_func=sigma_clipped_std)

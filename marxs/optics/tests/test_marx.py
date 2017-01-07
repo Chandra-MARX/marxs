@@ -22,9 +22,9 @@ def test_noexplicettimedependence():
     mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
     photons = mysource.generate_photons(1000)
     mypointing = marxs.source.FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
-    photons = mypointing.process_photons(photons)
+    photons = mypointing(photons)
 
     marxm = marxs.optics.marx.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
-    photons = marxm.process_photons(photons)
+    photons = marxm(photons)
     ks, p_value = ks_2samp(photons['mirror_shell'][:400], photons['mirror_shell'][600:])
     assert p_value > 1e-5

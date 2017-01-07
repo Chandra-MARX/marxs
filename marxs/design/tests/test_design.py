@@ -23,7 +23,7 @@ def test_radius_of_photon_shell():
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
-    photons = marxm.process_photons(photons)
+    photons = marxm(photons)
     r1, r2 = find_radius_of_photon_shell(photons, 0, 9e4)
     assert abs(r1 - 5380.) < 10.
     assert abs(r2 - 5495.) < 10.
@@ -305,7 +305,7 @@ def test_run_photons_through_gas():
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
-    photons = marxm.process_photons(photons)
+    photons = marxm(photons)
     gratingeff = uniform_efficiency_factory(1)
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}
     mytorus = RowlandTorus(9e3/2, 9e3/2)

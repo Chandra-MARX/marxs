@@ -18,7 +18,7 @@ def test_pixelnumbers():
     det = FlatDetector(zoom=[1., 10., 5.], pixsize=0.5)
     assert det.npix == [40, 20]
     assert det.centerpix == [19.5, 9.5]
-    photons = det.process_photons(photons)
+    photons = det(photons)
     assert closeornan(photons['det_x'], np.array([0, 9.9, np.nan]))
     assert closeornan(photons['det_y'], np.array([-0.25, 1., np.nan]))
     assert closeornan(photons['detpix_x'], np.array([19.5, 39.3, np.nan]))

@@ -52,7 +52,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     '''
     p = photons[:]
     mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e8, pixsize=1.)
-    p = mdet.process_photons(p)
+    p = mdet(p)
     ind = (p['probability'] > 0) & (p['mirror_shell'] == mirror_shell)
     r = np.sqrt(p['det_x'][ind]**2+p['det_y'][ind]**2.)
     return np.percentile(r, percentile)

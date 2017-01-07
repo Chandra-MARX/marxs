@@ -40,7 +40,7 @@ class GlobalEnergyFilter(OpticalElement):
         self.filterfunc = kwargs.pop('filterfunc')
         super(GlobalEnergyFilter, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
+    def __call__(self, photons):
         p =  self.filterfunc(photons['energy'])
         if np.any(p < 0.) or np.any(p > 1.):
             raise ValueError('Probabilities returned by filterfunc must be in interval [0, 1].')

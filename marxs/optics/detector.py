@@ -206,9 +206,7 @@ class CircularDetector(OpticalElement):
 
         return intersect, interpos, interpos_local
 
-    def process_photons(self, photons):
-        intersect, interpos, inter_local = self.intersect(photons['dir'], photons['pos'])
-
+    def process_photons(self, photons, intersect, interpos, inter_local):
         photons['pos'][intersect, :] = interpos[intersect, :]
         self.add_output_cols(photons, self.loc_coos_name + self.detpix_name)
         # Add ID number to ID col, if requested

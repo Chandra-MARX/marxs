@@ -22,5 +22,5 @@ def test_src_mir_det():
 	detector = FlatDetector(1., position=np.array([0., 0., 10.]), orientation=rotation2, zoom = np.array([1, 100, 100]))
 
 	photons = source.generate_photons(100)
-	photons = mirror.process_photons(photons)
-	photons = detector.process_photons(photons)
+	photons = mirror(photons)
+	photons = detector(photons)

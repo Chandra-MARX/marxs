@@ -52,7 +52,7 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
     '''
     def width(x, photons):
         mdet = FlatDetector(position=np.array([x, 0, 0]), orientation=orientation, zoom=1e5, pixsize=1.)
-        photons = mdet.process_photons(photons)
+        photons = mdet(photons)
         return objective_func(photons[col].data)
 
     return scipy.optimize.minimize(width, 0, args=(photons,), options={'maxiter': 20, 'disp': True},

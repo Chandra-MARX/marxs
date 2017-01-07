@@ -29,7 +29,7 @@ def test_zeros_order():
     g0 = FlatGrating(d=1./500.,
                      order_selector=mock_order,
                      zoom=np.array([1., 5., 5.]))
-    p = g0.process_photons(p)
+    p = g0(p)
     # Direction unchanged
     d_in = h2e(photons['dir'])
     d_out = h2e(p['dir'])
@@ -52,7 +52,7 @@ def test_translation_invariance():
     photons['pos'] = pos
     for order in [-1, 0, 1]:
         g = FlatGrating(d=1./500, order_selector=constant_order_factory(order), zoom=20)
-        p = g.process_photons(photons.copy())
+        p = g(photons.copy())
         assert np.all(p['order'] == order)
         assert np.allclose(p['pos'][:, 0], 0)
         assert np.allclose(p['dir'][0, :], p['dir'][1, :])
@@ -98,7 +98,7 @@ def test_order_dependence():
     def mock_order(x, y, z):
         return np.array([-2, -1, 0, 1, 2]), np.ones(5)
     g = FlatGrating(d=1./500, order_selector=mock_order)
-    p = g.process_photons(photons)
+    p = g(photons)
     # grooves run in z direction
     assert np.allclose(p['dir'][:, 2], 0.)
     # positive and negative orders are mirrored
@@ -115,7 +115,7 @@ def test_energy_dependence():
                      'probability': np.ones(5),
                      })
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
-    p = g.process_photons(photons)
+    p = g(photons)
     # grooves run in z direction
     assert np.allclose(p['dir'][:, 2], 0.)
     # n lambda = d sin(theta)
@@ -141,18 +141,18 @@ def test_groove_direction():
 
     g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
     assert np.allclose(np.dot(g.geometry('e_groove'), g.geometry('e_perp_groove')), 0.)
-    p = g.process_photons(photons.copy())
+    p = g(photons.copy())
 
     g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
-    p1 = g1.process_photons(photons.copy())
+    p1 = g1(photons.copy())
 
     pos3d = axangles.axangle2mat([1,0,0], .3)
     g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), orientation=pos3d)
-    p2 = g2.process_photons(photons.copy())
+    p2 = g2(photons.copy())
 
     pos4d = axangles.axangle2aff([1,0,0], .1)
     g3 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.2, pos4d=pos4d)
-    p3 = g3.process_photons(photons.copy())
+    p3 = g3(photons.copy())
 
     def angle_in_yz(vec1, vec2):
         '''project in the y,z plane (the plane of the grating) and calculate angle.'''
@@ -180,9 +180,9 @@ def test_order_convention():
                      'probability': np.ones(3),
                      })
     gp = FlatGrating(d=1./500, order_selector=constant_order_factory(1), zoom=2)
-    p1 = gp.process_photons(photons.copy())
+    p1 = gp(photons.copy())
     gm = FlatGrating(d=1./500, order_selector=constant_order_factory(-1), zoom=2)
-    m1 = gm.process_photons(photons.copy())
+    m1 = gm(photons.copy())
     assert np.all(p1['order'] == 1)
     assert np.all(m1['order'] == -1)
     # intersection point with grating cannot depend on order
@@ -202,9 +202,9 @@ def test_CAT_order_convention():
                      'probability': np.ones(5),
                      })
     gp = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
-    p5 = gp.process_photons(photons.copy())
+    p5 = gp(photons.copy())
     gm = CATGrating(d=1./5000, order_selector=constant_order_factory(-5), zoom=2)
-    m5 = gm.process_photons(photons.copy())
+    m5 = gm(photons.copy())
     for g in [gm, gp]:
         assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, -1, -1, 1, 1]))
     assert np.all(p5['dir'][1:3, 1] > 0)
@@ -281,7 +281,7 @@ def test_change_position_after_init():
     photons = generate_test_photons(5)
 
     g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
-    p1 = g1.process_photons(photons.copy())
+    p1 = g1(photons.copy())
 
     pos3d = axangles.axangle2mat([1,0,0], .3)
     trans = np.array([0., -.3, .5])
@@ -289,7 +289,7 @@ def test_change_position_after_init():
     g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), position=trans)
     # then move it so that pos and groove direction match g1
     g2.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
-    p2 = g2.process_photons(photons.copy())
+    p2 = g2(photons.copy())
 
     assert np.allclose(p1['dir'], p2['dir'])
     assert np.allclose(p1['pos'], p2['pos'])
