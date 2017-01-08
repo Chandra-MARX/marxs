@@ -105,7 +105,12 @@ class OpticalElement(SimulationSequenceElement):
     def process_photon(self, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.
 
-        Derived classes should overwrite this function or `process_photons`.
+        This is called from the `process_photons` method in a loop over all
+        photons. That method also collects the output values and inserts them
+        into the photon list. ``process_photon`` can return any number of
+        values in additon to the required dir, pos, etc.. Define a class
+        attribute ``output_columns`` as a list of strings to determine how into
+        which column these numbers should be inserted.
 
         Parameters
         ----------
@@ -133,9 +138,9 @@ class OpticalElement(SimulationSequenceElement):
         polarization : float
             Polarization angle of the photons.
         probability : float
-            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
-            passes the optical element and to number between 0 and 1 to express a probability that
-            the photons passes.
+            Probability that the photon passes this optical element. Set to 0 if the
+            photon is absorbed, to 1 if it passes and to number between 0 and 1 to
+            express a probability that the photons passes.
         other : floats
             One number per entry in `output_columns`.
         '''
