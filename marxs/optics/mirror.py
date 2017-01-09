@@ -59,12 +59,12 @@ class ThinLens(FlatOpticalElement):
     >>> lens = optics.ThinLens(focallength=10,zoom=40)
 
     >>> photons = mysource.generate_photons(11)
-    >>> photons = mypointing.process_photons(photons)
-    >>> photons = myslit.process_photons(photons)
-    >>> photons = lens.process_photons(photons)
+    >>> photons = mypointing(photons)
+    >>> photons = myslit(photons)
+    >>> photons = lens(photons)
 
     >>> mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-9.6, 0, 0]), zoom=1e5)
-    >>> photons = mdet.process_photons(photons)
+    >>> photons = mdet(photons)
     >>> fig = plt.plot(photons['det_x'], photons['det_y'], 's')
     '''
 

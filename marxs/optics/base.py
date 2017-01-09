@@ -66,8 +66,7 @@ class OpticalElement(SimulationSequenceElement):
         elif key in ['v_z', 'e_z']:
             val = self.pos4d[:, 2]
         elif key == 'plane':
-            normal = e2h(np.cross(h2e(self.geometry('e_y')), h2e(self.geometry('e_z'))), 0)
-            return point_dir2plane(self.geometry('center'), normal)
+            return point_dir2plane(self.geometry('center'), self.geometry('e_x'))
         else:
             val = self._geometry[key]
             if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
@@ -81,10 +80,37 @@ class OpticalElement(SimulationSequenceElement):
         self.pos4d = _parse_position_keywords(kwargs)
         super(OpticalElement, self).__init__(**kwargs)
 
+    def intersect(self, dir, pos):
+        '''Calculate the intersection point between a ray and the element
+
+        Parameters
+        ----------
+        dir : `numpy.ndarray` of shape (N, 4)
+            homogeneous coordinates of the direction of the ray
+        pos : `numpy.ndarray` of shape (N, 4)
+            homogeneous coordinates of a point on the ray
+
+        Returns
+        -------
+        intersect :  boolean array of length N
+            ``True`` if an intersection point is found.
+        interpos : `numpy.ndarray` of shape (N, 4)
+            homogeneous coordinates of the intersection point. Values are set
+            to ``np.nan`` if no intersection point is found.
+        interpos_local : `numpy.ndarray` of shape (N, 2)
+            y and z coordinates in the coordiante system of the active plane.
+        '''
+        raise NotImplementedError
+
     def process_photon(self, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.
 
-        Derived classes should overwrite this function or `process_photons`.
+        This is called from the `process_photons` method in a loop over all
+        photons. That method also collects the output values and inserts them
+        into the photon list. ``process_photon`` can return any number of
+        values in additon to the required dir, pos, etc.. Define a class
+        attribute ``output_columns`` as a list of strings to determine how into
+        which column these numbers should be inserted.
 
         Parameters
         ----------
@@ -112,16 +138,20 @@ class OpticalElement(SimulationSequenceElement):
         polarization : float
             Polarization angle of the photons.
         probability : float
-            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
-            passes the optical element and to number between 0 and 1 to express a probability that
-            the photons passes.
+            Probability that the photon passes this optical element. Set to 0 if the
+            photon is absorbed, to 1 if it passes and to number between 0 and 1 to
+            express a probability that the photons passes.
         other : floats
             One number per entry in `output_columns`.
         '''
         raise NotImplementedError
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
-    def process_photons(self, photons):
+    def __call__(self, photons):
+        intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
+        return self.process_photons(photons, intersect, interpos, intercoos)
+
+    def process_photons(self, photons, intersect, interpos, intercoos):
         '''Simulate interaction of optical element with photons - vectorized.
 
         Derived classes should overwrite this function or `process_photon`.
@@ -130,6 +160,9 @@ class OpticalElement(SimulationSequenceElement):
         ----------
         photons: `astropy.table.Table` or `astropy.table.Row`
             Table with photon properties
+        intersect, interpos, intercoos : array (N, 4)
+            The array ``interpos`` contains the intersection points in the global
+            coordinate system, ``intercoos`` in a local coordiante system (2d in most cases).
 
         Returns
         -------
@@ -140,20 +173,41 @@ class OpticalElement(SimulationSequenceElement):
             a copy. Do not rely on either - use ``photons.copy()`` if you want
             to ensure you are working with an independent copy.
         '''
-        if isinstance(photons, Row):
-            photons = Table(photons)
-        outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
-        for i, photon in enumerate(photons):
-            outs = self.process_photon(photon['dir'], photon['pos'],
-                                       photon['energy'],
-                                       photon['polarization'])
-            for a, b in zip(outcols, outs):
-                if a == 'probability':
-                    photons['probability'][i] *= b
-                else:
-                    photons[a][i] = b
-        return photons
+        if intersect.sum() > 0:
+            if hasattr(self, "specific_process_photons"):
+                outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
+                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
+                # Add ID number to ID col, if requested
+                if self.id_col is not None:
+                    photons[self.id_col][intersect] = self.id_num
+                # Set position in different coordinate systems
+                photons['pos'][intersect] = interpos[intersect]
+                photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
+                photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+                for col in outcols:
+                    if col == 'probability':
+                        photons[col][intersect] *= outcols[col]
+                    else:
+                        photons[col][intersect] = outcols[col]
 
+            elif hasattr(self, "process_photon"):
+                if isinstance(photons, Row):
+                    photons = Table(photons)
+                outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
+                n_intersect = intersect.nonzero()[0]
+                for photon, i in zip(photons[intersect], n_intersect):
+                    outs = self.process_photon(photon['dir'], photon['pos'],
+                                               photon['energy'],
+                                               photon['polarization'])
+                    for a, b in zip(outcols, outs):
+                        if a == 'probability':
+                            photons['probability'][i] *= b
+                        else:
+                            photons[a][i] = b
+            else:
+                raise AttributeError('Optical element must have one of three: specific_process_photons, process_photon, or override process_photons.')
+
+        return photons
 
 
 class FlatOpticalElement(OpticalElement):
@@ -215,43 +269,6 @@ class FlatOpticalElement(OpticalElement):
         elif (dir.ndim == 1) and not intersect:
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
-
-    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
-        '''
-        Parameters
-        ----------
-        intersect, interpos, intercoos : array (N, 4)
-            These parameters are here for performance reasons. In many cases, the
-            intersection point between the grating and the rays has been calculated
-            by the calling routine to decide which photon is processed by which
-            grating and only photons intersecting this grating are passed in.
-            The array ``interpos`` contains the intersection points in the global
-            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
-            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
-            calculated here. No checks are done on passed-in values.
-        '''
-        if hasattr(self, 'specific_process_photons'):
-            if (interpos is None) or (intercoos is None) or (intersect is None):
-                intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
-            if intersect.sum() > 0:
-                outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
-                # Add ID number to ID col, if requested
-                if self.id_col is not None:
-                    photons[self.id_col][intersect] = self.id_num
-                # Set position in different coordinate systems
-                photons['pos'][intersect] = interpos[intersect]
-                photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
-                photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
-                for col in outcols:
-                    if col == 'probability':
-                        photons[col][intersect] *= outcols[col]
-                    else:
-                        photons[col][intersect] = outcols[col]
-
-            return photons
-        else:
-            return super(FlatOpticalElement, self).process_photons(photons)
 
     def _plot_mayavi(self, viewer=None):
         from mayavi.mlab import triangular_mesh
@@ -351,17 +368,9 @@ class FlatStack(FlatOpticalElement):
         Parameters
         ----------
         intersect, interpos, intercoos : array (N, 4)
-            These parameters are here for performance reasons. In many cases, the
-            intersection point between the grating and the rays has been calculated
-            by the calling routine to decide which photon is processed by which
-            grating and only photons intersecting this grating are passed in.
             The array ``interpos`` contains the intersection points in the global
             coordinate system, ``intercoos`` in the local (y,z) system of the grating.
-            If not all three of ``intersect``, ``interpos`` and ``intercoos`` are passed in, they are
-            calculated here. No checks are done on passed-in values.
         '''
-        if (interpos is None) or (intercoos is None) or (intersect is None):
-            intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
         if intersect.sum() > 0:
             # This line calls FlatOpticalElement.process_photons to add ID cols and local coos
             # if requested (this could also be done by any of the contained sequence elements,

@@ -189,7 +189,7 @@ class MarxMirror(OpticalElement, BaseAperture):
             raise MarxError('Error in marx_mirror_reflect.')
         return self._c2table(c_photon_list)
 
-    def process_photons(self, photons_in, verbose=0):
+    def __call__(self, photons_in, verbose=0):
         self.add_colpos(photons_in)
         new_photons = self._process_photons_in_c(photons_in, verbose)
         photons = join(new_photons, photons_in, keys='tag',

@@ -20,9 +20,8 @@ class Baffle(FlatOpticalElement):
                'outer_factor': 3}
 
 
-    def process_photons(self, photons):
-        intersect, h_intersect, det_coords = self.intersect(photons['dir'].data, photons['pos'].data)
-        photons['pos'][intersect] = h_intersect[intersect]
+    def process_photons(self, photons, intersect, intercoos, interpoos):
+        photons['pos'][intersect] = intercoos[intersect]
         photons['probability'][~intersect] = 0
         return photons
 

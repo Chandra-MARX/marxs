@@ -51,7 +51,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         '''
         return NotImplementedError
 
-    def process_photons(self, photons):
+    def __call__(self, photons):
         self.add_output_cols(photons, self.loc_coos_name)
         # Add ID number to ID col, if requested
         if self.id_col is not None:
@@ -64,6 +64,9 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         photons['pos'] = self.geometry('center') + x.reshape((-1, 1)) * self.geometry('v_y') + y.reshape((-1, 1)) * self.geometry('v_z')
 
         return photons
+
+    def process_photons(self, photons):
+        raise NotImplementedError('You probably want to use __call__.')
 
     def inner_shape(self):
         '''Return values in Eukledean space'''
@@ -274,7 +277,7 @@ class MultiAperture(BaseAperture, BaseContainer):
         '''Area covered by the aperture'''
         return np.sum([e.area for e in self.elements])
 
-    def process_photons(self, photons):
+    def __call__(self, photons):
         areas = np.array([e.area for e in self.elements])
         aperid = np.digitize(np.random.rand(len(photons)), np.cumsum(areas) / self.area)
 

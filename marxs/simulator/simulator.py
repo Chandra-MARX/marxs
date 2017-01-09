@@ -28,7 +28,7 @@ class BaseContainer(SimulationSequenceElement):
                 raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
         super(BaseContainer, self).__init__(**kwargs)
 
-    def process_photons(self, photons):
+    def __call__(self, photons):
         for elem in self.elements:
             for p in self.preprocess_steps:
                 p(photons)

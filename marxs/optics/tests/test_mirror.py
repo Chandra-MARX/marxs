@@ -14,22 +14,22 @@ def test_PerfectLens(ra):
     lens = optics.PerfectLens(focallength=f, zoom=400)
 
     photons = mysource.generate_photons(11)
-    photons = mypointing.process_photons(photons)
-    photons = myslit.process_photons(photons)
+    photons = mypointing(photons)
+    photons = myslit(photons)
     assert np.allclose(h2e(photons['pos'].data)[:, 0], 100.)
 
-    photons = lens.process_photons(photons)
+    photons = lens(photons)
     assert np.allclose(h2e(photons['pos'].data)[:, 0], 0.)
 
     # How far away do I need to put a detector to hit the focal point?
     d = f * np.cos(np.deg2rad(ra))
     mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-d, 0, 0]), zoom=1e5)
-    photons = mdet.process_photons(photons)
+    photons = mdet(photons)
     assert np.std(photons['det_x']) < 1e-4
     assert np.std(photons['det_y']) < 1e-4
 
     # Check that they actually diverge for other detector placement
     mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-2 * d, 0, 0]), zoom=1e5)
-    photons = mdet.process_photons(photons)
+    photons = mdet(photons)
     assert np.std(photons['det_x']) > 1e-4
     assert np.std(photons['det_y']) > 1e-4
