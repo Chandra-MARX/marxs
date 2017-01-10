@@ -7,55 +7,50 @@ from ..math.utils import norm_vector
 from .. import energy2wave
 from .base import FlatOpticalElement
 
-def uniform_efficiency_factory(max_order = 3):
-    '''Uniform grating efficiency
-
-    This returns a callable that assigns grating orders between ``-max_order``
-    and ``+max_order`` (boundaries included) with uniform efficiency.
+class OrderSelector(object):
+    '''Select from a list of order number independent of energy.
 
     Parameters
     ----------
-    max_order : int
-        Grating orders are chosen between ``-max_order`` and ``+max_order``
-        (boundaries included).
+    orderlist : array
+        This are the order numbers to chose from. They must be integers.
+    p : None or array
+        Probability for a photon to end up in each order. The sum of all probabilities
+        can be smaller than 1, if a certain fraction of photons is absorbed by
+        the grating. If this is ``None`` equal probability is assigned to all orders.
 
-    Returns
+    Example
     -------
-    uniform efficiency : callable
-        A callable that always returns ``order`` for every photon input.
+    Two common use cases for testing are a grating where every photon gets
+    diffracted into the same order or where all photons get distributed with
+    equal probability into a set of orders.
+
+    >>> import numpy as np
+    >>> from marxs.optics import FlatGrating, OrderSelector
+    >>> singleordergrating = FlatGrating(d=1e-4, order_selector=OrderSelector([3]))
+    >>> setofordersgrating = FlatGrating(d=1e-4, order_selector=OrderSelector(np.arange(-3, 4)))
     '''
-    def uniform_efficiency(energy, *args):
-        if np.isscalar(energy):
-            return np.random.randint(-max_order, max_order + 1), 1.
+    def __init__(self, orderlist, p=None):
+        self.orderlist = orderlist
+        if p is None:
+            self.p = np.ones(len(orderlist)) / len(orderlist)
         else:
-            return np.random.randint(-max_order, max_order + 1, len(energy)), np.ones_like(energy)
-    return uniform_efficiency
+            p = np.asanyarray(p)
+            if len(p) != len(orderlist):
+                raise ValueError('Number of elements in orderlist and probabilities does not match.')
+            if p.sum() > 1.:
+                raise ValueError('Sum of all probabilities must be <= 1.')
+            if np.any(p < 0):
+                raise ValueError('Probabilities cannot be negative')
+            self.p = p
 
-
-def constant_order_factory(order = 1):
-    '''Select the same grating order for every photon.
-
-    This is useful for testing and to quickly generate large photon numbers in
-    a specific region of the detector, for example if the input spectrum has to
-    narrow lines close to each other and you want to see if they can be
-    resolved in any specific order. In that case, it is just a waste of time to
-    simulate photons that diffract all over the detector.
-
-    Parameters
-    ----------
-    order : int
-        The grating order that will be assigned to all photons.
-
-    Returns
-    -------
-    select_constant_order : callable
-        A callable that always returns ``order`` for every photon input.
-    '''
-    def select_constant_order(energy, *args):
-        '''Always select the same order'''
-        return np.ones_like(energy, dtype=int) * order, np.ones_like(energy)
-
-    return select_constant_order
+    def __call__(self, energy, *args):
+        p_sum = self.p.sum()
+        p = self.p / p_sum
+        if np.isscalar(energy):
+            return np.random.choice(self.orderlist, p=p), self.p.sum()
+        else:
+            return np.random.choice(self.orderlist, size=len(energy), p=p), p_sum * np.ones_like(energy)
 
 
 class EfficiencyFile(object):
@@ -63,7 +58,7 @@ class EfficiencyFile(object):
 
     The file format supported by this class is as follows:
     The first colum contains energy values in keV, all remaining columns have the probability
-    that a photons with this energy is diffracted into the respective order. The probabilites
+    that a photons with this energy is diffracted into the respective order. The probabilities
     for each order do not have to add up to 1.
 
     Parameters
@@ -113,7 +108,7 @@ class FlatGrating(FlatOpticalElement):
     order_selector : callable
         A function or callable object that accepts arrays of photon energy, polarization
         and the blaze angle
-        as input and returns arrays for  grating order (integer)
+        as input and returns arrays for grating order (integer)
         and probability (float). The probabiliy expresses the chance that the photon passes
         the grating and is not absorbed, e.g. if the probability that a photon at energy E ends
         up in order=[-2, -1, 0, 1, 2] is [0, 0, .5, .3, .0] , then the returned probability for

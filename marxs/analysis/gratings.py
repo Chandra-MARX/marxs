@@ -3,7 +3,7 @@ from __future__ import division
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 
-from ..optics import FlatDetector, CircularDetector, constant_order_factory
+from ..optics import FlatDetector, CircularDetector, OrderSelector
 from ..design import RowlandTorus
 from . import (find_best_detector_position)
 from .analysis import sigma_clipped_std
@@ -88,7 +88,7 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None, colname='
         zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
 
     for i, order in enumerate(orders):
-        gratingeff = constant_order_factory(order)
+        gratingeff = OrderSelector([order])
         gratings.elem_args['order_selector'] = gratingeff
         for elem in gratings.elements:
             elem.order_selector = gratingeff

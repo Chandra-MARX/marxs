@@ -3,9 +3,10 @@ import numpy as np
 from numpy.random import random
 from astropy.table import Table
 from transforms3d import axangles, affines
+import pytest
 
 from ..grating import (FlatGrating, CATGrating,
-                       constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
+                       OrderSelector, EfficiencyFile)
 from ...math.pluecker import h2e
 from ... import energy2wave
 from ...utils import generate_test_photons
@@ -24,10 +25,8 @@ def test_zeros_order():
     photons['dir'][:, 1:] = 0
 
     p = photons.copy()
-    def mock_order(x, y, z):
-        return np.zeros_like(x, dtype=np.int), np.ones_like(x)
     g0 = FlatGrating(d=1./500.,
-                     order_selector=mock_order,
+                     order_selector=OrderSelector([0]),
                      zoom=np.array([1., 5., 5.]))
     p = g0(p)
     # Direction unchanged
@@ -51,7 +50,7 @@ def test_translation_invariance():
     pos[1,:] += delta_pos
     photons['pos'] = pos
     for order in [-1, 0, 1]:
-        g = FlatGrating(d=1./500, order_selector=constant_order_factory(order), zoom=20)
+        g = FlatGrating(d=1./500, order_selector=OrderSelector([order]), zoom=20)
         p = g(photons.copy())
         assert np.all(p['order'] == order)
         assert np.allclose(p['pos'][:, 0], 0)
@@ -81,7 +80,7 @@ def test_angle_dependence():
                      'polarization': np.ones(len(beta)),
                      'probability': np.ones(len(beta)),
                      })
-    g = FlatGrating(d=0.001,  order_selector=constant_order_factory(1), zoom=20)
+    g = FlatGrating(d=0.001,  order_selector=OrderSelector([1]), zoom=20)
     p = g(photons)
     # compare sin alpha to expected value: sin(alpha) = sin(beta) + lambda/d
     alpha = np.arctan2(p['dir'][:, 1], -p['dir'][:, 0])
@@ -114,7 +113,7 @@ def test_energy_dependence():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    g = FlatGrating(d=1./500, order_selector=OrderSelector([1]))
     p = g(photons)
     # grooves run in z direction
     assert np.allclose(p['dir'][:, 2], 0.)
@@ -138,21 +137,23 @@ def test_blaze_dependence():
 def test_groove_direction():
     '''Direction of grooves may not be parallel to z axis.'''
     photons = generate_test_photons(5)
+    order1 = OrderSelector([1])
 
-    g = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    g = FlatGrating(d=1./500, order_selector=order1)
     assert np.allclose(np.dot(g.geometry('e_groove'), g.geometry('e_perp_groove')), 0.)
     p = g(photons.copy())
 
-    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
+    g1 = FlatGrating(d=1./500, order_selector=order1, groove_angle=.3)
     p1 = g1(photons.copy())
 
     pos3d = axangles.axangle2mat([1,0,0], .3)
-    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), orientation=pos3d)
+    g2 = FlatGrating(d=1./500, order_selector=order1, orientation=pos3d)
     p2 = g2(photons.copy())
 
     pos4d = axangles.axangle2aff([1,0,0], .1)
-    g3 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.2, pos4d=pos4d)
+    g3 = FlatGrating(d=1./500, order_selector=order1, groove_angle=.2, pos4d=pos4d)
     p3 = g3(photons.copy())
+
 
     def angle_in_yz(vec1, vec2):
         '''project in the y,z plane (the plane of the grating) and calculate angle.'''
@@ -179,9 +180,9 @@ def test_order_convention():
                      'polarization': np.ones(3),
                      'probability': np.ones(3),
                      })
-    gp = FlatGrating(d=1./500, order_selector=constant_order_factory(1), zoom=2)
+    gp = FlatGrating(d=1./500, order_selector=OrderSelector([1]), zoom=2)
     p1 = gp(photons.copy())
-    gm = FlatGrating(d=1./500, order_selector=constant_order_factory(-1), zoom=2)
+    gm = FlatGrating(d=1./500, order_selector=OrderSelector([-1]), zoom=2)
     m1 = gm(photons.copy())
     assert np.all(p1['order'] == 1)
     assert np.all(m1['order'] == -1)
@@ -201,9 +202,9 @@ def test_CAT_order_convention():
                      'polarization': np.ones(5),
                      'probability': np.ones(5),
                      })
-    gp = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
+    gp = CATGrating(d=1./5000, order_selector=OrderSelector([5]), zoom=2)
     p5 = gp(photons.copy())
-    gm = CATGrating(d=1./5000, order_selector=constant_order_factory(-5), zoom=2)
+    gm = CATGrating(d=1./5000, order_selector=OrderSelector([-5]), zoom=2)
     m5 = gm(photons.copy())
     for g in [gm, gp]:
         assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, -1, -1, 1, 1]))
@@ -213,18 +214,44 @@ def test_CAT_order_convention():
     assert np.all(m5['dir'][3:, 1] > 0)
 
 
-def test_uniform_efficiency_factory():
-    '''Uniform efficiency factory should give results from -order to +order'''
-    f = uniform_efficiency_factory(2)
+def test_uniform_efficiency():
+    '''Uniform efficiency should give results from -order to +order'''
+    f = OrderSelector(np.arange(-2, 3))
     # Make many numbers, to reduce chance of random failure for this test
     testout = f(np.ones(10000), np.ones(10000))
     assert set(testout[0]) == set([-2, -1 , 0, 1, 2])
     assert len(testout[0]) == len(testout[1])
 
 
-def test_constant_order_factory():
+def test_OrderSelector_probabilities():
+    '''Most tests here use a constant order. This test makes sure that the
+    probability is properly used if passed in.
+    '''
+    f = OrderSelector([0,1], [.3, .6])
+    # Make many numbers, to reduce chance of random failure for this test
+    testout = f(np.ones(10000), np.ones(10000))
+    assert set(testout[0]) == set([0, 1])
+    assert np.allclose(testout[1], 0.9)
+    assert (testout[0] == 0).sum() < 0.8 * (testout[0] == 1).sum()
+
+
+def test_OrderSelector_failures():
+    with pytest.raises(ValueError) as e:
+        f = OrderSelector([1, 2, 3, 4], p=[0.1, 0.2, 0.3])
+    assert 'does not match' in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        f = OrderSelector([1, 2, 3], p=[1, 0.2, 0.3])
+    assert 'must be <= 1' in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        f = OrderSelector([1, 2, 3], p=[-0.1, 0.2, 0.3])
+    assert 'negative' in str(e.value)
+
+
+def test_constant_order():
     '''Constant order will give always the same order'''
-    f = constant_order_factory(2)
+    f = OrderSelector([2])
     testout = f(np.ones(15), np.ones(15))
     assert np.all(testout[0] == 2)
     assert len(testout[0]) == len(testout[1])
@@ -252,7 +279,7 @@ def test_CATGRating_misses():
     photons = generate_test_photons(5)
     photons['pos'][:, 1] = np.arange(5)
 
-    cat = CATGrating(d=1./5000, order_selector=constant_order_factory(5), zoom=2)
+    cat = CATGrating(d=1./5000, order_selector=OrderSelector([5]), zoom=2)
     p = cat(photons)
     assert np.all(np.isnan(p['order'][3:]))
     assert np.all(np.isnan(p['grat_y'][3:]))
@@ -269,7 +296,7 @@ def test_grating_d_callable():
         d = np.where(intercoos[:, 0]>=0, darr, darr / 2.)
         return d
 
-    grat = FlatGrating(order_selector=constant_order_factory(1), zoom=2, d=dfunc)
+    grat = FlatGrating(order_selector=OrderSelector([1]), zoom=2, d=dfunc)
     p = grat(photons)
     # negative one has half the grating constant and thus twice the angle
     assert np.abs(p['dir'][1, 1] / p['dir'][0, 1] - 2 ) < 0.00001
@@ -280,13 +307,13 @@ def test_change_position_after_init():
     longer be the case. This test is here to check that for gratings.'''
     photons = generate_test_photons(5)
 
-    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
+    g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
     p1 = g1(photons.copy())
 
     pos3d = axangles.axangle2mat([1,0,0], .3)
     trans = np.array([0., -.3, .5])
     # Make grating at some point
-    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), position=trans)
+    g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), position=trans)
     # then move it so that pos and groove direction match g1
     g2.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
     p2 = g2(photons.copy())
@@ -301,6 +328,6 @@ def test_gratings_are_independent():
     However, we want to test only user visible properties, not hidden dicts like
     FlatGrating._geometry. So, compare grove dirs for to gratings.
     '''
-    g1 = FlatGrating(d=1./500, order_selector=constant_order_factory(1), groove_angle=.3)
-    g2 = FlatGrating(d=1./500, order_selector=constant_order_factory(1))
+    g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
+    g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]))
     assert not np.allclose(g1.geometry('e_groove'), g2.geometry('e_groove'))

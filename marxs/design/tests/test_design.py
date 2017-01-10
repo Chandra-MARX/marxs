@@ -10,7 +10,7 @@ from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        ElementPlacementError)
 from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
-from ...optics import MarxMirror, uniform_efficiency_factory, FlatGrating
+from ...optics import MarxMirror, OrderSelector, FlatGrating
 from ...math.pluecker import h2e
 
 class mock_facet(FlatOpticalElement):
@@ -274,7 +274,7 @@ def test_GAS_facets_on_radius():
 
 def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
-    gratingeff = uniform_efficiency_factory()
+    gratingeff = OrderSelector(np.arange(-3, 4))
     mytorus = RowlandTorus(9e3/2, 9e3/2)
     mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
@@ -286,7 +286,7 @@ def test_persistent_facetargs():
 
     This is important to allow tweaks of a single parameter and then to regenerate the facets.
     '''
-    gratingeff = uniform_efficiency_factory()
+    gratingeff = OrderSelector(np.arange(-3, 4))
     mytorus = RowlandTorus(9e4/2, 9e4/2)
     # id_col is automatically added in GAS is not present here.
     # So, pass in an id_col to make sure the comparison below will still work.
@@ -306,7 +306,7 @@ def test_run_photons_through_gas():
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
     photons = marxm(photons)
-    gratingeff = uniform_efficiency_factory(1)
+    gratingeff = OrderSelector([-1, 0, 1])
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}
     mytorus = RowlandTorus(9e3/2, 9e3/2)
 

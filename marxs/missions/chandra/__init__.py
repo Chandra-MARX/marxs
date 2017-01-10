@@ -30,7 +30,7 @@ from transforms3d.quaternions import mat2quat
 from transforms3d.axangles import axangle2mat
 
 from ...optics import MarxMirror as HDMA
-from ...optics import FlatDetector, FlatGrating, uniform_efficiency_factory
+from ...optics import FlatDetector
 from ...source import FixedPointing
 from ...simulator import Sequence, Parallel
 from ...math.pluecker import h2e
