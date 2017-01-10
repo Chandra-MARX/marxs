@@ -6,7 +6,7 @@ import pytest
 from astropy.coordinates import SkyCoord
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
-                FlatGrating, uniform_efficiency_factory, constant_order_factory,
+                FlatGrating, OrderSelector,
                 MarxMirror, CircleAperture, MultiAperture)
 
 from ..aperture import BaseAperture
@@ -33,25 +33,25 @@ all_oe = [ThinLens(focallength=100),
                                   CircleAperture(position=[0, 200, 0])]),
           FlatDetector(pixsize=2., zoom=100.),
           CircularDetector(),
-          FlatGrating(d=0.001, order_selector=uniform_efficiency_factory(0)),
+          FlatGrating(d=0.001, order_selector=OrderSelector([0])),
           MarxMirror(parfile='marxs/optics/hrma.par'),
           GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0,.5],
                                 elem_class=FlatGrating,
                                 elem_args={'zoom':0.05, 'd':0.002,
-                                           'order_selector': constant_order_factory(1)
+                                           'order_selector': OrderSelector([1])
                                            }),
           LinearCCDArray(mytorus, d_element=0.05, x_range=[0., 0.5],
                           radius=[0., 0.5], phi=0., elem_class=FlatGrating,
                          elem_args={'zoom': 0.05, 'd':0.002,
-                                    'order_selector': constant_order_factory(2)
+                                    'order_selector': OrderSelector([2])
                                 }),
           RowlandCircleArray(rowland=mytorus, elem_class=FlatGrating,
                              elem_args={'zoom': 0.04, 'd': 1e-3,
-                                        'order_selector': constant_order_factory(1)},
+                                        'order_selector': OrderSelector([2])},
                              d_element=0.1,theta=[np.pi - 0.2, np.pi + 0.1]),
           RectangularGrid(rowland=mytorus, elem_class=FlatGrating,
                           elem_args={'zoom': 0.04, 'd': 1e-3,
-                                     'order_selector': constant_order_factory(1)},
+                                     'order_selector': OrderSelector([-1, 0])},
                           d_element=0.1, x_range=[0.8, 1.1], y_range=[0, 0.1],
                           z_range=[0, 0.1]),
 

@@ -82,8 +82,8 @@ Diffraction gratings
 ^^^^^^^^^^^^^^^^^^^^
 The gratings implemented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photon to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that expects a function (or other callable) that assigngs each diffrated photon to a gratings order. For example, the following code makes a grating where the photons are distributed with equal probability in all orders from -2 to 2:
 
-   >>> from marxs.optics import FlatGrating, uniform_efficiency_factory
-   >>> select_ord = uniform_efficiency_factory(2)
+   >>> from marxs.optics import FlatGrating, OrderSelector
+   >>> select_ord = OrderSelector([-2, -1, 0, 1, 2])
    >>> mygrating = FlatGrating(d=0.002, order_selector=select_ord)
 
 The grating module contains different classes for gratings and also different pre-defined ``order_selector`` function. Use the code in those functions as a template to define your own ``order_selector``.

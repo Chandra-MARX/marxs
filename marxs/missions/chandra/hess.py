@@ -3,7 +3,7 @@ from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
 from transforms3d.affines import compose
 
-from ...optics import FlatGrating, uniform_efficiency_factory
+from ...optics import FlatGrating, OrderSelector
 from ...simulator import Parallel
 
 class HETG(Parallel):
@@ -29,7 +29,7 @@ class HETG(Parallel):
         uxf = np.vstack([self.hess[s + 'uxf'].data for s in 'xyz'])
         groove_ang = -np.arctan2(np.einsum('i...,i...->...', ul, uxf),
                                  np.einsum('i...,i...->...', ul, uyf))
-        kwargs['elem_args'] = {'order_selector': uniform_efficiency_factory(),
+        kwargs['elem_args'] = {'order_selector': OrderSelector(np.arange(-3, 4)),
                                'd': d, 'name': list(self.hess['hessloc']),
                                'groove_angle': groove_ang.tolist()}
         super(HETG, self).__init__(**kwargs)

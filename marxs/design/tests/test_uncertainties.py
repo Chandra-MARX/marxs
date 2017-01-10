@@ -3,7 +3,7 @@ import numpy as np
 
 from ..rowland import RowlandTorus, GratingArrayStructure
 from ..uncertainties import generate_facet_uncertainty
-from ...optics import FlatGrating, constant_order_factory
+from ...optics import FlatGrating, OrderSelector
 
 def test_uncertainty_generation():
     '''The best way to test that the output format is reasonable is to use it.
@@ -22,7 +22,7 @@ def test_uncertainty_generation():
                                 radius=[2, 15], phi=[0, np.pi],
                                 elem_class=FlatGrating,
                                 elem_args={'d': 2e-4,
-                                           'order_selector': constant_order_factory(1)},
+                                           'order_selector': OrderSelector([1])},
     )
     oldgaspos = deepcopy(gas.elem_pos)
     for a, b in zip(oldgaspos, gas.elements):

@@ -3,7 +3,7 @@ from astropy.table import Table
 import pytest
 
 from ..simulator import Sequence, SimulationSetupError, Parallel, KeepCol
-from ..optics import ThinLens, FlatGrating, uniform_efficiency_factory
+from ..optics import ThinLens, FlatGrating, OrderSelector
 
 def test_pre_post_process():
     '''test pre-processing and post-processing in sequences'''
@@ -50,17 +50,17 @@ def test_list_elemargs():
     '''Input to elemargs can be single or list.'''
     p0 = Parallel(elem_class=FlatGrating,
                   elem_pos={'position': [np.zeros(3), np.ones(3)]},
-                  elem_args={'order_selector': uniform_efficiency_factory(), 'd': [0.001, 0.002], 'zoom': [3,3]},
+                  elem_args={'order_selector': OrderSelector(np.arange(-3, 4)), 'd': [0.001, 0.002], 'zoom': [3,3]},
                  )
     # equivalent way of inputting things
     p1 = Parallel(elem_class=FlatGrating,
                   elem_pos={'position': [np.zeros(3), np.ones(3)], 'zoom': [3, 3]},
-                  elem_args={'order_selector': uniform_efficiency_factory(), 'd': [0.001, 0.002]},
+                  elem_args={'order_selector': OrderSelector(np.arange(-3, 4)), 'd': [0.001, 0.002]},
                  )
     # yet another way
     p2 = Parallel(elem_class=FlatGrating,
                   elem_pos={'position': [np.zeros(3), np.ones(3)]},
-                  elem_args={'order_selector': uniform_efficiency_factory(), 'd': [0.001, 0.002], 'zoom': 3},
+                  elem_args={'order_selector': OrderSelector(np.arange(-3, 4)), 'd': [0.001, 0.002], 'zoom': 3},
                   )
     for p in [p0, p1, p2]:
         assert len(p.elements) == 2
@@ -73,7 +73,7 @@ def test_list_elemargs():
     with pytest.raises(ValueError) as e:
         p4 = Parallel(elem_class=FlatGrating,
                       elem_pos={'position': [np.zeros(3), np.ones(3)], 'zoom': 3},
-                      elem_args={'order_selector': uniform_efficiency_factory(), 'd': [0.001, 0.002]},
+                      elem_args={'order_selector': OrderSelector(np.arange(-3, 4)), 'd': [0.001, 0.002]},
                       )
     assert 'All elements in elem_pos must have the same number' in str(e.value)
 
