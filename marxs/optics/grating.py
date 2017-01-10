@@ -7,6 +7,32 @@ from ..math.utils import norm_vector
 from .. import energy2wave
 from .base import FlatOpticalElement
 
+def order_list_factory(intlist, *args):
+    '''Select from a list of order number independent of energy
+
+    (For simulations with mono-energetic photons this can also be used as
+    a quick way to implement a realistic order table, by simply passing
+    a parameter `p` with the order list (see `numpy.random.choice`.)
+
+    Parameters
+    ----------
+    intlist : list or array
+        This are the order numbers to chose from. They must be integers.
+    args : see `numpy.random.choice`
+
+    Returns
+    -------
+    select_from_list_efficiency : callable
+        A callable that selects an order from the list for all photons.
+    '''
+    def select_from_list_efficiency(energy, *innerargs):
+        if np.isscalar(energy):
+            return np.random.choice(intlist, *args), 1.
+        else:
+            return np.random.choice(intlist, size=len(energy), *args), np.ones_like(energy)
+    return select_from_list_efficiency
+
+
 def uniform_efficiency_factory(max_order = 3):
     '''Uniform grating efficiency
 

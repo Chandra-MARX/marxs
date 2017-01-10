@@ -5,6 +5,7 @@ from astropy.table import Table
 from transforms3d import axangles, affines
 
 from ..grating import (FlatGrating, CATGrating,
+                       order_list_factory,
                        constant_order_factory, uniform_efficiency_factory, EfficiencyFile)
 from ...math.pluecker import h2e
 from ... import energy2wave
@@ -216,6 +217,15 @@ def test_CAT_order_convention():
 def test_uniform_efficiency_factory():
     '''Uniform efficiency factory should give results from -order to +order'''
     f = uniform_efficiency_factory(2)
+    # Make many numbers, to reduce chance of random failure for this test
+    testout = f(np.ones(10000), np.ones(10000))
+    assert set(testout[0]) == set([-2, -1 , 0, 1, 2])
+    assert len(testout[0]) == len(testout[1])
+
+
+def test_order_list_factory():
+    '''This should give results from -order to +order'''
+    f = order_list_factory([-2, -1, 0, 1, 2])
     # Make many numbers, to reduce chance of random failure for this test
     testout = f(np.ones(10000), np.ones(10000))
     assert set(testout[0]) == set([-2, -1 , 0, 1, 2])
