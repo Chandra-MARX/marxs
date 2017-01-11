@@ -15,7 +15,8 @@ class BaseAperture(object):
 
     display = {'color': (0.0, 0.75, 0.75),
                'opacity': 0.3,
-               'side': 2} # = THREE>DoubleSide in theee.js
+               'side': 2,
+               'shape': 'plane with hole'} # = THREE>DoubleSide in theee.js
 
     @staticmethod
     def add_colpos(photons):
@@ -98,51 +99,6 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         ])
         inner = self.inner_shape()
         return plane_with_hole(outer, inner)
-
-    def _plot_mayavi(self, viewer=None):
-
-        xyz, triangles = self.triangulate_inner_outer()
-
-        from mayavi.mlab import triangular_mesh
-
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = t.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-        return t
-
-    def _plot_threejs(self, outfile):
-        xyz, triangles = self.triangulate_inner_outer()
-
-        from ..visualization import threejs
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        outfile.write('// APERTURE\n')
-        outfile.write('var geometry = new THREE.BufferGeometry(); \n')
-        outfile.write('var vertices = new Float32Array([')
-        for row in xyz:
-            outfile.write('{0}, {1}, {2},'.format(row[0], row[1], row[2]))
-        outfile.write(''']);
-        // itemSize = 3 because there are 3 values (components) per vertex
-        geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-        ''')
-        outfile.write('var faces = new Uint16Array([')
-        for row in triangles:
-            outfile.write('{0}, {1}, {2}, '.format(row[0], row[1], row[2]))
-        outfile.write(''']);
-        // itemSize = 3 because there are 3 values (components) per triangle
-        geometry.setIndex(new THREE.BufferAttribute( faces, 1 ) );
-        ''')
-
-        outfile.write('''var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
-        var mesh = new THREE.Mesh( geometry, material );
-        scene.add( mesh );
-        '''.format(materialspec=materialspec))
-
 
     def _plot_threejsjson(self):
         xyz, triangles = self.triangulate_inner_outer()
@@ -271,6 +227,8 @@ class MultiAperture(BaseAperture, BaseContainer):
         See ``preprocess_steps`` except that the steps are run *after* each aperture
          (*default*: ``[]``) on just the photons that passed that aperture.
     '''
+    display = {'shape': 'container'}
+
     def __init__(self, **kwargs):
         self.elements = kwargs.pop('elements')
         self.id_col = kwargs.pop('id_col', 'aperture')

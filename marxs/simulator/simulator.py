@@ -17,6 +17,7 @@ class BaseContainer(SimulationSequenceElement):
     '''Base class for containers that contain several `SimulationSequenceElement` objects.
     '''
 
+    display = {'shape': 'container'}
     elements = []
     '''List of elements that are contained in this container.'''
 
@@ -55,18 +56,6 @@ class BaseContainer(SimulationSequenceElement):
             else:
                 out.append(elemout)
         return out
-
-    def _plot_threejs(self, *args, **kwargs):
-        for elem in self.elements:
-            elem.plot(format='threejs', *args, **kwargs)
-
-    def _plot_mayavi(self, *args, **kwargs):
-        '''No need to construct deep nested lists on None.'''
-        out = [elem.plot(format='mayavi', *args, **kwargs) for elem in self.elements]
-        if all([elem is None for elem in out]):
-            return None
-        else:
-            return out
 
 
 class Sequence(BaseContainer):

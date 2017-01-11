@@ -75,8 +75,8 @@ class RowlandTorus(MarxsElement):
 
     display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2,
-               'side': 2} # =THREE.DoubleSide
-
+               'side': 2, # =THREE.DoubleSide
+               'shape': 'torus; surface'}
 
     def __init__(self, R, r, **kwargs):
         self.R = R
@@ -181,6 +181,7 @@ class RowlandTorus(MarxsElement):
         xyzw : np.array
             Torus coordinates in global homogeneous coordinate system.
         '''
+        theta, phi = np.meshgrid(theta, phi)
         x = (self.R + self.r * np.cos(theta)) * np.cos(phi)
         z = (self.R + self.r * np.cos(theta)) * np.sin(phi)
         y = self.r * np.sin(theta)
@@ -310,61 +311,6 @@ class RowlandTorus(MarxsElement):
         x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
-
-    def _plot_mayavi(self, theta, phi, viewer=None, *args, **kwargs):
-        '''
-        Parameters
-        ----------
-        theta : np.array
-            2-d array of theta values to be plotted.
-            The mesh is constructed using the points defined by the theta and phi
-            arrays as vertices. Thus, both the coverege (full torus or only a segment)
-            and the resolution are defined through these arrays.
-        phi : np.array
-            2-d array of phi values to be plotted.
-        '''
-        from mayavi.mlab import mesh
-        if (theta.ndim != 2) or (theta.shape != phi.shape):
-            raise ValueError('"theta" and "phi" must have same 2-dim shape.')
-        xyz = h2e(self.parametric(theta.flatten(), phi.flatten()))
-        x = xyz[:, 0].reshape(theta.shape)
-        y = xyz[:, 1].reshape(theta.shape)
-        z = xyz[:, 2].reshape(theta.shape)
-
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        m = mesh(x, y, z, figure=viewer, color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = m.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-        return m
-
-    def _plot_threejs(self, outfile, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
-        from ..visualization import threejs
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        torusparameters = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(self.R, self.r,
-                                                                          int(np.rad2deg(thetaarc)),
-                                                                          int(np.rad2deg(phiarc)),
-                                                                          thetaarc,
-                                                                          theta0,
-                                                                          phiarc,
-                                                                          phi0)
-        rot = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1.]])
-        matrixstring = ', '.join([str(i) for i in np.dot(self.pos4d, rot).flatten()])
-
-        outfile.write('''
-        var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
-        var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.set({matrix});
-        scene.add( mesh );'''.format(materialspec=materialspec,
-                                     torusparameters=torusparameters,
-                                     matrix=matrixstring))
 
     def _plot_threejsjson(self, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
         from ..visualization import threejs

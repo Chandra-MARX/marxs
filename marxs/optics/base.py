@@ -270,42 +270,6 @@ class FlatOpticalElement(OpticalElement):
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
 
-    def _plot_mayavi(self, viewer=None):
-        from mayavi.mlab import triangular_mesh
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        corners = np.array([[-1, -1, -1], [-1,+1, -1],
-                            [-1, -1,  1], [-1, 1,  1],
-                            [ 1, -1, -1], [ 1, 1, -1],
-                            [ 1, -1, +1], [ 1, 1, +1]])
-        triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
-                     (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-        corners = np.einsum('ij,...j->...i', self.pos4d, e2h(corners, 1))
-        b = triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
-                            color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = b.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-
-    def _plot_threejs(self, outfile):
-        from ..visualization import threejs
-        matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
-        if not ('side' in self.display):
-            self.display['side'] = 'THREE.DoubleSide'
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        outfile.write('''
-        var geometry = new THREE.BoxGeometry( 2, 2, 2 );
-        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.set({matrix});
-        scene.add( mesh );'''.format(materialspec=materialspec,
-                                     matrix=matrixstring))
-
     def _plot_threejsjson(self):
         from ..visualization import threejs
         out = {}
