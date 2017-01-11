@@ -145,3 +145,65 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
         geometry.computeBoundingSphere();
         mesh = new THREE.Line( geometry, material );
         scene.add( mesh );'''.format(positions=positions, colors=colors, material=material))
+
+    def box(obs, display, outfile):
+        matrixstring = ', '.join([str(i) for i in obj.pos4d.flatten()])
+        if not ('side' in display):
+            display['side'] = 'THREE.DoubleSide'
+        materialspec = materialspec(display, 'MeshStandardMaterial')
+        outfile.write('''
+        var geometry = new THREE.BoxGeometry( 2, 2, 2 );
+        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.set({matrix});
+        scene.add( mesh );'''.format(materialspec=materialspec,
+                                     matrix=matrixstring))
+
+    def plane_with_hole(obj, display, outfile):
+        xyz, triangles = obj.triangulate_inner_outer()
+        materialspec = materialspec(display, 'MeshStandardMaterial')
+        outfile.write('// APERTURE\n')
+        outfile.write('var geometry = new THREE.BufferGeometry(); \n')
+        outfile.write('var vertices = new Float32Array([')
+        for row in xyz:
+            outfile.write('{0}, {1}, {2},'.format(row[0], row[1], row[2]))
+        outfile.write(''']);
+        // itemSize = 3 because there are 3 values (components) per vertex
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+        ''')
+        outfile.write('var faces = new Uint16Array([')
+        for row in triangles:
+            outfile.write('{0}, {1}, {2}, '.format(row[0], row[1], row[2]))
+        outfile.write(''']);
+        // itemSize = 3 because there are 3 values (components) per triangle
+        geometry.setIndex(new THREE.BufferAttribute( faces, 1 ) );
+        ''')
+
+        outfile.write('''var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+        var mesh = new THREE.Mesh( geometry, material );
+        scene.add( mesh );
+        '''.format(materialspec=materialspec))
+
+    def torus(obj, display, outfile, theta0=0., thetaarc=2*np.pi,
+                      phi0=0., phiarc=np.pi * 2):
+        materialspec = materialspec(self.display, 'MeshStandardMaterial')
+        torusparameters = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(obj.R, obj.r,
+                                                                          int(np.rad2deg(thetaarc)),
+                                                                          int(np.rad2deg(phiarc)),
+                                                                          thetaarc,
+                                                                          theta0,
+                                                                          phiarc,
+                                                                          phi0)
+        rot = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1.]])
+        matrixstring = ', '.join([str(i) for i in np.dot(obj.pos4d, rot).flatten()])
+
+        outfile.write('''
+        var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
+        var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.set({matrix});
+        scene.add( mesh );'''.format(materialspec=materialspec,
+                                     torusparameters=torusparameters,
+                                     matrix=matrixstring))

@@ -90,7 +90,8 @@ class CircularDetector(OpticalElement):
     '''name for output columns that contain this pixel number.'''
 
     display = {'color': (1.0, 1.0, 0.),
-               'opacity': 0.7}
+               'opacity': 0.7
+               'shape': 'surface'}
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
@@ -226,7 +227,7 @@ class CircularDetector(OpticalElement):
 
         return photons
 
-    def parametric(self, phi):
+    def parametric(self, phi, z=np.array([-1, 1])):
         '''Parametric description of the tube.
 
         This is just another way to obtain the shape of the tube, e.g.
@@ -234,38 +235,23 @@ class CircularDetector(OpticalElement):
 
         Parameters
         ----------
-         phi : np.array
+        phi : np.array
             ``phi`` is the angle around the tube profile.
+        z : np.array
+            The coordiantes along the radius coordinate.
 
         Returns
         -------
         xyzw : np.array
             Ring coordinates in global homogeneous coordinate system.
         '''
-        x = np.cos(phi)
-        y = np.sin(phi)
-        z = np.ones_like(x)
-        w = np.ones_like(z)
-        coos = np.array([np.tile(x, 2), np.tile(y, 2), np.hstack([-z, z]), np.tile(w, 2)]).T
-        return np.einsum('...ij,...j', self.pos4d, coos)
-
-    def _plot_mayavi(self, phi, viewer=None, *args, **kwargs):
-        from mayavi.mlab import mesh
         if (phi.ndim != 1):
             raise ValueError('"phi" must have 1-dim shape.')
-        xyz = h2e(self.parametric(phi))
-        x = xyz[:, 0].reshape((2, len(phi)))
-        y = xyz[:, 1].reshape(x.shape)
-        z = xyz[:, 2].reshape(x.shape)
-
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        m = mesh(x, y, z, figure=viewer, color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = m.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-        return m
+        if z.shape != (2, ):
+            rause ValueError('z must be array of two elements (upper/lower z).')
+        phi, z = np.meshgrid(phi, z)
+        x = np.cos(phi)
+        y = np.sin(phi)
+        w = np.ones_like(z)
+        coos = np.array([x, y, z, w].T
+        return np.einsum('...ij,...j', self.pos4d, coos)

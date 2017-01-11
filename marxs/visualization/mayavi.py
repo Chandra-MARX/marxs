@@ -3,8 +3,64 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from ..math.pluecker import h2e
+from ..math.pluecker import h2e, e2h
 from .utils import format_saved_positions
+
+from mayavi.mlab import mesh, triangular_mesh
+
+plot_registry = {'plane with hole': plane_with_hole,
+                 'surface': surface,
+                 'box': box,
+                 }
+
+def plot_object(obj, display, viewer=None, **kwargs):
+    if 'shape' in display:
+        shape = display['shape']
+        shapes = [s.strip() for s in shape.split(';')]
+        for s in shapes:
+            if s in plot_registry:
+                # turn into valid color tuple
+                display['color'] = get_color(display)
+                out = plot_registry[s](obj, display, viewer=None, **kwarg)
+                # No safety net here like for color converting to a tuple.
+                # If the advanced properties are set you are on your own.
+                prop = out.module_manager.children[0].actor.property
+                for n in prop.trait_names():
+                    if n in display:
+                        setattr(prop, n, display[n])
+                return out
+        else:
+            raise KeyError('No function set to plot {0}'.format(shape))
+    else:
+        raise KeyError('"shape" not set in display dict.')
+
+def plane_with_hole(plane, display, viewer=None):
+    xyz, triangles = self.triangulate_inner_outer()
+    t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
+    return t
+
+
+def surface(surface, display, viewer=None, coo1, coo2):
+    xyz = surface.parametric(coo1, coo2)
+    xyz = h2e(xyz)
+    x = xyz[..., 0]
+    y = xyz[..., 1]
+    z = xyz[..., 2]
+    m = mesh(x, y, z, figure=viewer, color=display['color'])
+    return m
+
+
+def box(box, display, viewer=None):
+    corners = np.array([[-1, -1, -1], [-1,+1, -1],
+                        [-1, -1,  1], [-1, 1,  1],
+                        [ 1, -1, -1], [ 1, 1, -1],
+                        [ 1, -1, +1], [ 1, 1, +1]])
+    triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
+                 (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
+    corners = np.einsum('ij,...j->...i', box.pos4d, e2h(corners, 1))
+    b = triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
+                        color=display['color'])
+    return b
 
 def plot_rays(data, scalar=None, viewer=None,
               kwargssurface={'colormap': 'Accent', 'line_width': 1, 'opacity': .4}):
