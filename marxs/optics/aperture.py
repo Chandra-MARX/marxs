@@ -100,24 +100,6 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         inner = self.inner_shape()
         return plane_with_hole(outer, inner)
 
-    def _plot_threejsjson(self):
-        xyz, triangles = self.triangulate_inner_outer()
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'BufferGeometry'
-        out['geometrytype'] = 'Mesh'
-        out['pos'] = [xyz.flatten().tolist()]
-        out['faces'] = [triangles.flatten().tolist()]
-
-        if not ('side' in self.display):
-            out['materialproperties']['side'] = 2
-
-        return out
-
 
 class RectangleAperture(FlatAperture):
     '''Select the position where a parallel ray from an astrophysical source starts the simulation.
