@@ -1,47 +1,27 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from __future__ import absolute_import
+from warnings import warn
 
 import numpy as np
 
 from ..math.pluecker import h2e, e2h
-from .utils import format_saved_positions
+from .utils import format_saved_positions, plot_object_general
 
 from mayavi.mlab import mesh, triangular_mesh
 
-plot_registry = {'plane with hole': plane_with_hole,
-                 'surface': surface,
-                 'box': box,
-                 }
 
-def plot_object(obj, display, viewer=None, **kwargs):
-    if 'shape' in display:
-        shape = display['shape']
-        shapes = [s.strip() for s in shape.split(';')]
-        for s in shapes:
-            if s in plot_registry:
-                # turn into valid color tuple
-                display['color'] = get_color(display)
-                out = plot_registry[s](obj, display, viewer=None, **kwarg)
-                # No safety net here like for color converting to a tuple.
-                # If the advanced properties are set you are on your own.
-                prop = out.module_manager.children[0].actor.property
-                for n in prop.trait_names():
-                    if n in display:
-                        setattr(prop, n, display[n])
-                return out
-        else:
-            raise KeyError('No function set to plot {0}'.format(shape))
-    else:
-        raise KeyError('"shape" not set in display dict.')
+def container(obj, display=None, viewer=None):
+    return [plot_object(e, display=None, viewer=viewer) for e in obj.elements]
 
-def plane_with_hole(plane, display, viewer=None):
-    xyz, triangles = self.triangulate_inner_outer()
-    t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
+
+def plane_with_hole(plane, display, viewer):
+    xyz, triangles = plane.triangulate_inner_outer()
+    t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
 
 
-def surface(surface, display, viewer=None, coo1, coo2):
-    xyz = surface.parametric(coo1, coo2)
+def surface(surface, display, viewer, coo1, coo2):
+    xyz = surface.parametric_surface(coo1, coo2)
     xyz = h2e(xyz)
     x = xyz[..., 0]
     y = xyz[..., 1]
@@ -126,3 +106,23 @@ def plot_rays(data, scalar=None, viewer=None,
     surface = mayavi.mlab.pipeline.surface(lines, figure=viewer, **kwargssurface)
 
     return src, lines, surface
+
+plot_registry = {'plane with hole': plane_with_hole,
+                 'surface': surface,
+                 'box': box,
+                 'container': container,
+                 }
+
+
+def plot_object(obj, display=None, viewer=None, **kwargs):
+    out = plot_object_general(plot_registry, obj, display, **kwargs)
+
+    if out is not None:
+        display = display or obj.display
+        # No safety net here like for color converting to a tuple.
+        # If the advanced properties are set you are on your own.
+        prop = out.module_manager.children[0].actor.property
+        for n in prop.trait_names():
+            if n in display:
+                setattr(prop, n, display[n])
+    return out

@@ -6,13 +6,84 @@ import numpy as np
 
 from ..version import version
 from . import threejs
-from .utils import format_saved_positions
+from .utils import format_saved_positions, plot_object_general
 
 try:
     import jsonschema
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
+
+
+def plot_object(obj, display=None, **kwargs):
+    return plot_object_general(plot_registry, obj, display=display, **kwargs)
+
+
+def container(obj, **kwargs):
+    '''Output of each element can be a dict (if it is a leaf) or a list
+    (if it is a container). We need to flatten the list here to avoid
+    arbitrarily deep recursion.
+    '''
+    out = []
+    for elem in obj.elements:
+        elemout = plot_obj(elem, elem.display)
+        if isinstance(elemout, list):
+            out.extend(elemout)
+        elif (elemout is None):
+            pass
+        else:
+            out.append(elemout)
+    return out
+
+
+def box(obj, display):
+    out = {}
+    out['n'] = 1
+    out['name'] = str(obj.name)
+    out['material'] = 'MeshStandardMaterial'
+    out['materialproperties'] = threejs.materialdict(display, out['material'])
+    out['geometry'] = 'BoxGeometry'
+    out['geometrypars'] = (2, 2, 2)
+    out['pos4d'] = [obj.pos4d.T.flatten().tolist()]
+    if not ('side' in display):
+        out['materialproperties']['side'] = 2
+    return out
+
+
+def plane_with_hole(obj, display):
+    xyz, triangles = obj.triangulate_inner_outer()
+    out = {}
+    out['n'] = 1
+    out['name'] = str(obj.name)
+    out['material'] = 'MeshStandardMaterial'
+    out['materialproperties'] = threejs.materialdict(display, out['material'])
+    out['geometry'] = 'BufferGeometry'
+    out['geometrytype'] = 'Mesh'
+    out['pos'] = [xyz.flatten().tolist()]
+    out['faces'] = [triangles.flatten().tolist()]
+
+    if not ('side' in display):
+        out['materialproperties']['side'] = 2
+
+    return out
+
+
+def torus(obj, display, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
+    out = {}
+    out['n'] = 1
+    out['name'] = str(obj.name)
+    out['material'] = 'MeshStandardMaterial'
+    out['materialproperties'] = threejs.materialdict(display, out['material'])
+    out['geometry'] = 'ModifiedTorusBufferGeometry'
+    out['geometrypars'] = (obj.R, obj.r,
+                           int(np.rad2deg(thetaarc)), int(np.rad2deg(phiarc)),
+                           thetaarc, theta0, phiarc, phi0)
+    out['pos4d'] = [obj.pos4d.flatten().tolist()]
+
+    if not ('side' in display):
+        out['materialproperties']['side'] = 2
+
+    return out
 
 
 def plot_rays(data, scalar=None, prop={}, name='Photon list', cmap=None):
@@ -90,3 +161,10 @@ def write(fileobject, data, photons=None):
         warnings.warn('Module jsonschema not installed. json file will be written without further verification.')
 
     json.dump(jdata, fileobject)
+
+
+plot_registry = {'plane with hole': plane_with_hole,
+                 'torus': torus,
+                 'box': box,
+                 'container': container,
+                 }

@@ -5,7 +5,7 @@ import pytest
 
 from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
-from ..threejsjson import plot_rays, write
+from ..threejsjson import plot_rays, plot_object, write
 
 try:
     import jsonschema
@@ -20,7 +20,7 @@ def test_box():
     det = FlatDetector(zoom=2, position=[2., 3., 4.])
     det.display = det.display
     det.display['opacity'] = 0.1
-    out = det.plot(format='threejsjson')
+    out = plot_object(det)
     out_expected = {'geometry': 'BoxGeometry',
                     'geometrypars': (2, 2, 2),
                     'material': 'MeshStandardMaterial',
@@ -42,7 +42,7 @@ def test_box():
 def test_rowland():
     '''Output of Rowland torus'''
     rowland = RowlandTorus(r=2, R=1)
-    out = rowland.plot(format='threejsjson')
+    out = plot_object(rowland)
     out_expected = {'geometry': 'ModifiedTorusBufferGeometry',
                     'material': 'MeshStandardMaterial',
                     'materialproperties': {'color': '#ff4ccc',
@@ -88,12 +88,11 @@ def test_rays():
 
 
 def test_aperture():
-    '''Any box shaped element has the same representation so it's
-    OK to test just one of them.'''
+    '''Test a plane_with_hole representation.'''
     det = RectangleAperture(zoom=5)
     det.display = det.display
     det.display['opacity'] = 0.3
-    out = det.plot(format='threejsjson')
+    out = plot_object(det)
     out_expected = {'faces': [[0, 4, 5, 0, 1, 5, 1, 5, 6, 1, 2, 6, 2, 6, 7, 2, 3, 7,
                                3, 7, 4, 3, 0, 4]],
                     'geometry': 'BufferGeometry',
@@ -116,7 +115,7 @@ def test_aperture():
 def test_write():
     '''Write anything to disk.'''
     det = RectangleAperture(zoom=5)
-    out = det.plot(format='threejsjson')
+    out = plot_object(det)
 
     if HAS_JSONSCHEMA:
         with tempfile.TemporaryFile('w') as f:
@@ -132,8 +131,8 @@ def test_writelist():
     '''write a list of things to disk.'''
     aper = RectangleAperture(zoom=5)
     det = FlatDetector(zoom=2, position=[2., 3., 4.])
-    out = aper.plot(format='threejsjson')
-    out1 = det.plot(format='threejsjson')
+    out = plot_object(aper)
+    out1 = plot_object(det)
 
     if HAS_JSONSCHEMA:
         with tempfile.TemporaryFile('w') as f:
@@ -149,7 +148,7 @@ def test_write_invalid():
     '''Check that an Exception is raised when trying to write a json that
     is too nested (works only if jsonschema is available).'''
     det = RectangleAperture(zoom=5)
-    out = det.plot(format='threejsjson')
+    out = plot_object(det)
     jsonschema = pytest.importorskip("jsonschema")
 
     with pytest.raises(jsonschema.ValidationError):

@@ -41,7 +41,8 @@ class FlatDetector(FlatOpticalElement):
     detpix_name = ['detpix_x', 'detpix_y']
     '''name for output columns that contain this pixel number.'''
 
-    display = {'color': (1.0, 1.0, 0.)}
+    display = {'color': (1.0, 1.0, 0.),
+               'shape': 'box'}
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
@@ -90,7 +91,7 @@ class CircularDetector(OpticalElement):
     '''name for output columns that contain this pixel number.'''
 
     display = {'color': (1.0, 1.0, 0.),
-               'opacity': 0.7
+               'opacity': 0.7,
                'shape': 'surface'}
 
     def __init__(self, pixsize=1, **kwargs):
@@ -227,7 +228,7 @@ class CircularDetector(OpticalElement):
 
         return photons
 
-    def parametric(self, phi, z=np.array([-1, 1])):
+    def parametric_surface(self, phi, z=np.array([-1, 1])):
         '''Parametric description of the tube.
 
         This is just another way to obtain the shape of the tube, e.g.
@@ -245,13 +246,13 @@ class CircularDetector(OpticalElement):
         xyzw : np.array
             Ring coordinates in global homogeneous coordinate system.
         '''
-        if (phi.ndim != 1):
-            raise ValueError('"phi" must have 1-dim shape.')
-        if z.shape != (2, ):
-            rause ValueError('z must be array of two elements (upper/lower z).')
+        phi = np.asanyarray(phi)
+        z = np.asanyarray(z)
+        if (phi.ndim != 1) or (z.ndim != 1):
+            raise ValueError('input parameters have 1-dim shape.')
         phi, z = np.meshgrid(phi, z)
         x = np.cos(phi)
         y = np.sin(phi)
         w = np.ones_like(z)
-        coos = np.array([x, y, z, w].T
+        coos = np.array([x, y, z, w]).T
         return np.einsum('...ij,...j', self.pos4d, coos)

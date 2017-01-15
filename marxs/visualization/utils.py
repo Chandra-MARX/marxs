@@ -1,9 +1,40 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from __future__ import division
 
+from warnings import warn
 import numpy as np
 
 from ..math.pluecker import h2e
+
+class MARXSVisualizationWarning(Warning):
+    pass
+
+def plot_object_general(plot_registry, obj, display=None, **kwargs):
+    if display is None:
+        if hasattr(obj, 'display'):
+            display = obj.display
+        else:
+            warn('Skipping {0}: No display dictionary found.'.format(obj.name),
+                 MARXSVisualizationWarning)
+            return None
+
+    out = None
+    if 'shape' in display:
+        shape = display['shape']
+        shapes = [s.strip() for s in shape.split(';')]
+        for s in shapes:
+            if s in plot_registry:
+                # turn into valid color tuple
+                display['color'] = get_color(display)
+                out = plot_registry[s](obj, display,  **kwargs)
+        else:
+            warn('Skipping {0}: No function to plot {1}'.format(obj.name, shape),
+                 MARXSVisualizationWarning)
+    else:
+        warn('Skipping {0}: "shape" not set in display dict.'.format(obj.name),
+             MARXSVisualizationWarning)
+    return out
+
 
 def get_color(d):
     '''Look for color information in dictionary.
