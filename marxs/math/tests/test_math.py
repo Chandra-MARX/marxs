@@ -59,3 +59,16 @@ def test_intersect_line_plane():
     lines = e_pointpoint2line(p, q)
     plane = np.array([0, -1., 0, 5])
     assert np.allclose(h2e(intersect_line_plane(lines, plane)), p)
+
+
+def test_intersect_line_plane_parallel():
+    '''Check results for a line that is parallel to or even in the plane.'''
+    # xy plane at z = +20
+    plane = np.array([0, 0, 1, -20.])
+    line_in_plane = dir_point2line(np.array([1, 5, 0]), np.array([5,-500,20]))
+    assert np.all(intersect_line_plane(line_in_plane, plane) == 0)
+
+    line_parallel_plane = dir_point2line(np.array([-.1, 0., 0.]), np.ones(3))
+    intersect = intersect_line_plane(line_parallel_plane, plane)
+    assert intersect[3] == 0
+    assert np.any(intersect != 0)
