@@ -1,17 +1,12 @@
-from warnings import warn
-
 import numpy as np
-from transforms3d.euler import euler2mat
-from transforms3d.utils import normalized_vector
-
 from astropy.table import Column
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.coordinates import SkyCoord
+
 from ..base import SimulationSequenceElement
 from ..math.pluecker import h2e, e2h
 from ..math.rotations import axangle2mat
-from ..utils import SimulationSetupWarning
 
 
 class PointingModel(SimulationSequenceElement):
@@ -63,15 +58,21 @@ class FixedPointing(PointingModel):
         for a description of allowed input values.
     roll : `~astropy.units.quantity.Quantity`
         ``roll = 0`` means: z axis points North (measured N -> E).
-    geomarea_reference : np.array
-        Homogeneous vector that is normal (with a direction pointing from the
-        the source towards the instrument) to all apertures of the telescope.
-        Sources that do not shine directly onto the telescope aperture but
+    reference_transform : np.array of shape (4, 4)
+        By default, photons from an on-axis source come in parallel to the x-axis
+        of the coordinate system. Their direction points from x=+inf inwards.
+        If the simulation uses a different coordinate system (e.g. the optical
+        axis is along the z-axis) set ``reference_transform`` to a matrix that
+        performs the conversion.
+
+        The optical axis of the telescope is the normal to the surface of its
+        entrance aperture. The pointing needs to know this to determine
+        the correct direction of the photons.
+        Also, sources that do not shine directly onto the telescope aperture but
         hit it at an angle, will see a smaller projected geometric area.
         This is taken into account by reducing the probability of off-axies photons
-        accordingly, and thus this objects needs to know the normal (the optical
-        axis) of the aperture. Default is the x-axis, with sources at
-        :math:`+\infty` and pointing inward, i.e. ``[-1, 0, 0, 0]``.
+        accordingly, and thus this object needs to know the orientation (the
+        direction f the optical axis and rotation) of the aperture.
 
     Notes
     -----
@@ -95,8 +96,7 @@ class FixedPointing(PointingModel):
             raise ValueError("Coordinate must be scalar, not array.")
         self.roll = kwargs.pop('roll', 0. * u.rad)
 
-        self.geomarea_reference = normalized_vector(kwargs.pop('geomarea_reference',
-                                                               np.array([-1, 0, 0, 0])))
+        self.reference_transform = kwargs.pop('reference_transform', np.eye(4))
 
         super(FixedPointing, self).__init__(**kwargs)
 
@@ -106,7 +106,7 @@ class FixedPointing(PointingModel):
         return self.coords.skyoffset_frame(rotation=self.roll)
 
     def photons_dir(self, coos, time):
-        '''Calculate direction on photons in homogeneous coordinates.
+        '''Calculate direction of photons in homogeneous coordinates.
 
         Parameters
         ----------
@@ -123,7 +123,8 @@ class FixedPointing(PointingModel):
         photondir = coos.transform_to(self.offset_coos)
         assert np.allclose(photondir.distance.value, 1.)
         # Minus sign here because photons start at +inf and move towards origin
-        return - e2h(photondir.cartesian.xyz.T, 0)
+        photonsdir = -e2h(photondir.cartesian.xyz.T, 0)
+        return np.einsum('...ij,...j->...i', self.reference_transform, photonsdir)
 
     def photons_pol(self, coos, polangle, time):
         '''
@@ -147,10 +148,6 @@ class FixedPointing(PointingModel):
         photons['dir'] = self.photons_dir(SkyCoord(photons['ra'], photons['dec'],
                                                    unit='deg'),
                                           photons['time'].data)
-        projected_area = np.dot(photons['dir'].data, self.geomarea_reference)
-        # Photons coming in "through the back" would have negative probabilities.
-        # Unlikely to ever come up, but just in case we clip to 0.
-        photons['probability'] *= np.clip(projected_area, 0, 1.)
         photons['polarization'] = self.photons_pol(SkyCoord(photons['ra'], photons['dec'],
                                                             unit='deg'),
                                                    photons['time'].data, photons['polangle'].data)
