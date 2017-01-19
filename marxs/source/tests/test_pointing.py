@@ -4,29 +4,24 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from scipy.stats import pearsonr
 
-from ...source import FixedPointing, JitterPointing
+from ...source import FixedPointing, JitterPointing, PointSource
 
 
-def test_geomarea_projection():
-    '''When a ray sees the aperture under an angle the projected aperture size
-    is smaller. This is accounted for by reducing the probability of this photon.'''
-    photons = Table()
-    photons['ra'] = [0., 45., 90., 135., 315.]
-    photons['dec'] = np.zeros(5)
-    photons['origin_coord'] = SkyCoord(photons['ra'], photons['dec'], unit='deg')
-    photons['probability'] = np.ones(5)
-    photons['time'] = np.arange(5)
-    photons['polangle'] = np.zeros(5)
+def test_reference_coordiante_system():
+    '''Usually, rays that are on-axis will come in along the x-axis.
+    Test a simulations with a different coordinate system.'''
+    s = PointSource(coords=SkyCoord(12., 34., unit='deg'))
+    photons = s.generate_photons(5)
+    point_x = FixedPointing(coords=SkyCoord(12., 34., unit='deg'))
+    p_x = point_x(photons.copy())
+    assert np.allclose(p_x['dir'].data[:, 0], -1.)
+    assert np.allclose(p_x['dir'].data[:, 1:], 0)
 
-    fp = FixedPointing(coords=SkyCoord(0., 0., unit='deg'))
-    p = fp(photons.copy())
-
-    assert np.allclose(p['probability'], [1., 1./np.sqrt(2), 0, 0, 1./np.sqrt(2)])
-
-    fp = FixedPointing(coords=SkyCoord(0., 0., unit='deg'), geomarea_reference=[0., -2., 0., 0.])
-    p = fp(photons.copy())
-
-    assert np.allclose(p['probability'], [ 0, 1./np.sqrt(2), 1., 1./np.sqrt(2), 0.])
+    xyz2zxy = np.array([[0., 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]).T
+    point_z = FixedPointing(coords=SkyCoord(12., 34., unit='deg'), reference_transform=xyz2zxy)
+    p_z = point_z(photons.copy())
+    assert np.allclose(p_z['dir'].data[:, 2], -1.)
+    assert np.allclose(p_z['dir'].data[:, :2], 0)
 
 
 def test_jitter():

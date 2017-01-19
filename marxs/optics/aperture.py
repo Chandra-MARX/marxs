@@ -62,6 +62,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
             photons[self.loc_coos_name[0]] = x
             photons[self.loc_coos_name[1]] = y
         photons['pos'] = self.geometry('center') + x.reshape((-1, 1)) * self.geometry('v_y') + y.reshape((-1, 1)) * self.geometry('v_z')
+        projected_area = np.dot(photons['dir'].data, - self.geometry('e_x'))
+        # Photons coming in "through the back" would have negative probabilities.
+        # Unlikely to ever come up, but just in case we clip to 0.
+        photons['probability'] *= np.clip(projected_area, 0, 1.)
 
         return photons
 
@@ -73,7 +77,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         raise NotImplementedError
 
     def triangulate_inner_outer(self):
-        '''Return a triangulation of the aperture hole embedded in a squqre.
+        '''Return a triangulation of the aperture hole embedded in a square.
 
         The size of the outer square is determined by the ``'outer_factor'`` element
         in ``self.display``.

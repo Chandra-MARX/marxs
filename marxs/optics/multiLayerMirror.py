@@ -1,12 +1,76 @@
 import numpy as np
 from astropy.io import ascii
 
-from .base import FlatOpticalElement
-from ..math.pluecker import *
+from .base import FlatOpticalElement, FlatStack
+from ..math.pluecker import e2h, h2e
+from ..math.utils import norm_vector
 
 
-class MultiLayerMirror(FlatOpticalElement):
-    '''Multilayer mirror with varying layer thickness along one axis
+class FlatBrewsterMirror(FlatOpticalElement):
+    '''Flat mirror operated at the Brewster angle.
+
+    Calculation of the Fresnel coefficients can be computationally intense
+    and also requires knowledge of the refractive index for the appropriate material.
+    The ``FlatBrewsterMirror`` simplifies this for a mirror that is known to be
+    operated at the Brewster angle.
+
+    This mirror assumes that all photons arrive at the Brewster angle
+    where only s (senkrecht = direction perpendicular to plane of incidence)
+    polarisation is reflected.
+    It also fully assumes that all photons that are not reflected (i.e. those that
+    are transmitted) are lost. No transmitted photons are returned, instead the
+    probability of the reflected photons is adjusted to account for this overall loss.
+    '''
+    display = {'color': (0., 1., 0.),
+    }
+
+    def fresnel(self, photons, intersect, intersection, local):
+        '''The incident angle can easily be calculated from e_x and photons['dir'].'''
+        return 1., 0.
+
+    def specific_process_photons(self, photons, intersect, intersection, local):
+        directions = norm_vector(photons['dir'].data[intersect])
+        # save the direction of the incoming photons as beam_dir
+        beam_dir = h2e(directions)
+
+        # reflect the photons (change direction) by transforming to local coordinates
+        pos4d_inv = np.linalg.inv(self.pos4d)
+        directions = directions.T
+        directions = np.dot(pos4d_inv, directions)
+        directions[0, :] *= -1
+        directions = np.dot(self.pos4d, directions)
+        new_beam_dir = directions.T
+
+        # split polarization into s and p components
+        # - s is s polarization (perpendicular to plane of incidence)
+        # - p is p polarization (in the plane of incidence)
+
+        # First, make basis vectors.
+        v_s = np.cross(beam_dir, self.geometry('e_x')[0:3])
+        v_s /= np.linalg.norm(v_s, axis=1)[:, np.newaxis]
+        v_p = np.cross(beam_dir, v_s)
+
+        polarization = h2e(photons['polarization'].data[intersect])
+        p_v_s = np.einsum('ij,ij->i', polarization, v_s)
+        p_v_p = np.einsum('ij,ij->i', polarization, v_p)
+
+        # parallel transport of polarization vector
+        # v_s stays the same by definition
+        new_v_p = np.cross(h2e(new_beam_dir), v_s)
+        new_pol = -p_v_s[:, np.newaxis] * v_s + p_v_p[:, np.newaxis] * new_v_p
+
+        fresnel_refl_s, fresnel_refl_p = self.fresnel(photons, intersect, intersection, local)
+        # Calculate new intensity ~ (E_x)^2 + (E_y)^2
+        Es2 = fresnel_refl_s * np.einsum('ij,ij->i', polarization, v_s) ** 2
+        Ep2 = fresnel_refl_p * np.einsum('ij,ij->i', polarization, v_p) ** 2
+
+        return {'dir': new_beam_dir,
+                'probability': Es2 + Ep2,
+                'polarization': e2h(new_pol, 0)}
+
+
+class MultiLayerEfficiency(FlatOpticalElement):
+    '''The Multilayer mirror with varying layer thickness along one axis
 
     The distance between layers (and thus best reflected energy) changes along
     the local y axis.
@@ -38,59 +102,12 @@ class MultiLayerMirror(FlatOpticalElement):
         and fraction polarization for the light used to test the mirrors and create the
         reflectivity file
     '''
-
-    display = {'color': (0., 1., 0.),
-    }
-
-
     def __init__(self, reflFile, testedPolarization, **kwargs):
         self.fileName = reflFile
         self.polFile = testedPolarization
-        if ('zoom' not in kwargs) and ('pos4d' not in kwargs):
-            kwargs['zoom'] = np.array([1, 24.5, 12])   # in mm
-        super(MultiLayerMirror, self).__init__(**kwargs)
+        super(MultiLayerEfficiency, self).__init__(**kwargs)
 
-    def process_photons(self, photons, doesIntersect, intersection, local):
-        # NOTE: This function could be split up into smaller, more readable functions, but I
-        # have done my best to clearly label the specific calculations in the comments.
-
-        # for photons that do not reach the mirror, set probability to zero
-        photons['probability'] *= doesIntersect
-
-        # save the direction of the incoming photons as beam_dir
-        beam_dir = (photons['dir'][:,0:3]).copy()
-        beam_dir /= np.linalg.norm(beam_dir, axis=1)[:, np.newaxis]
-
-        # reflect the photons (change direction) by transforming to local coordinates
-        directions = photons['dir']
-        pos4d_inv = np.linalg.inv(self.pos4d)
-        directions = directions.T
-        directions = np.dot(pos4d_inv, directions)
-        directions[0,:] *= -1
-        directions = np.dot(self.pos4d, directions)
-        photons['dir'] = directions.T
-
-        # split polarization into s and p components
-        # v_1 is s polarization (perpendicular to plane of incidence), v_2 is p polarization (in the plane of incidence)
-        v_1 = np.cross(beam_dir, self.geometry('e_x')[0:3])
-        v_1 /= np.linalg.norm(v_1, axis=1)[:, np.newaxis]
-        v_2 = np.cross(beam_dir, v_1)
-        # find polarization component in each direction, v1 and v2
-        polarization = (photons['polarization'][:,0:3]).copy()
-        # find the dot product of v1 and v2 for each photon with each photon's polarization vector
-        p_v_1 = np.einsum('ij,ij->i', polarization, v_1)   # the cosines between the pairs of vectors (these are unit vectors)
-        p_v_2 = np.einsum('ij,ij->i', polarization, v_2)
-
-        # adjust polarization vectors after reflection
-        # find new v_2
-        new_beam_dir = (photons['dir'][:,0:3]).copy()
-        new_beam_dir /= np.linalg.norm(new_beam_dir, axis=1)[:, np.newaxis]
-        new_v_2 = np.cross(new_beam_dir, v_1)
-        photons['polarization'][:,0:3] = -p_v_1[:, np.newaxis] * v_1 + p_v_2[:, np.newaxis] * new_v_2
-
-        # set position to intersection point
-        photons['pos'] = intersection
-
+    def interp_files(self, photons, local):
         # read in correct reflecting probability file, now in table format
         reflectFile = ascii.read(self.fileName)
 
@@ -99,26 +116,32 @@ class MultiLayerMirror(FlatOpticalElement):
         tested_polarized_fraction = np.interp(photons['energy'], polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
 
         # find probability of being reflected due to position
-        # put the photon positions and the position values from the reflection file into local coordinates
-        local_intersection = h2e((np.dot(pos4d_inv, intersection.T)).T)
+        local_x = local[:, 0] / np.linalg.norm(self.geometry('v_y'))
         local_coords_in_file = reflectFile['X(mm)'] / np.linalg.norm(self.geometry('v_y')) - 1
         # interpolate 'Peak lambda', 'Peak' [reflectivity], and 'FWHM(nm)' to the actual photon positions
-        peak_wavelength = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['Peak lambda'])
-        max_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['Peak']) / tested_polarized_fraction
-        spread_refl = np.interp(local_intersection[:,1], local_coords_in_file, reflectFile['FWHM(nm)'])
+        peak_wavelength = np.interp(local_x, local_coords_in_file, reflectFile['Peak lambda'])
+        max_refl = np.interp(local_x, local_coords_in_file, reflectFile['Peak']) / tested_polarized_fraction
+        spread_refl = np.interp(local_x, local_coords_in_file, reflectFile['FWHM(nm)'])
 
-        wavelength = 1.23984282 / photons['energy']   # wavelength is in nm assuming energy is in keV
-        c_squared = (spread_refl ** 2) / (8. * np.log(2))   # the standard deviation squared of the Gaussian reflectivity functions of each photon's wavelength
-        c_is_zero = (c_squared == 0)   # skip the case when there is no Gaussian (this is assumed to just be the zero function)
+        return peak_wavelength, max_refl, spread_refl
+
+    def specific_process_photons(self, photons, intersect, intersection, local):
+         # wavelength is in nm assuming energy is in keV
+        wavelength = 1.23984282 / photons['energy'].data[intersect]
+        peak_wavelength, max_refl, spread_refl = self.interp_files(photons[intersect], local[intersect])
+
+        # the standard deviation squared of the Gaussian reflectivity functions of each photon's wavelength
+        c_squared = (spread_refl ** 2) / (8. * np.log(2))
+        # skip the case when there is no Gaussian (this is assumed to just be the zero function)
+        c_is_zero = (c_squared == 0)
 
         refl_prob = np.zeros(len(wavelength))
         refl_prob[~c_is_zero] = max_refl[~c_is_zero] * np.exp(-((wavelength[~c_is_zero] - peak_wavelength[~c_is_zero]) ** 2) / (2 * c_squared[~c_is_zero]))
+        return {'probability': refl_prob / 100}
 
-        # find probability of being reflected due to polarization
-        # v_1 is s polarization (perpendicular to plane of incidence), the better reflecting polarization
-        refl_prob[~c_is_zero] *= np.einsum('ij,ij->i', polarization[~c_is_zero], v_1[~c_is_zero]) ** 2   # dot products of unit vectors
-        refl_prob[np.isnan(refl_prob)] = 0
-        # multiply probability by probability of reflection
-        photons['probability'] *= refl_prob / 100
-
-        return photons
+class MultiLayerMirror(FlatStack):
+    def __init__(self, reflFile, testedPolarization, **kwargs):
+        super(MultiLayerMirror, self).__init__(elements=[FlatBrewsterMirror, MultiLayerEfficiency],
+                                               keywords=[{}, {'reflFile': reflFile,
+                                                              'testedPolarization': testedPolarization}],
+                                               **kwargs)
