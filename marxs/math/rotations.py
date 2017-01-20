@@ -47,7 +47,7 @@ def axangle2mat(axes, angles, is_normalized=False):
     ''' Rotation matrix for rotation angle `angle` around `axis`
 
     This is a vectorized version of the routine of the same name in
-    ``tansforms3d``.
+    ``transforms3d``.
 
     Parameters
     ----------

@@ -1,5 +1,5 @@
 import numpy as np
-from astropy.table import Table, Column
+from astropy.table import Column
 import transforms3d
 
 from ..optics.base import FlatOpticalElement
@@ -13,7 +13,7 @@ class FarLabPointSource(Source, FlatOpticalElement):
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
     - photon direction determined by location of source, and selected photon starting position
-	- aperture is in its local y-z plane
+    - aperture is in its local y-z plane
 
     Parameters
     ----------
@@ -122,7 +122,7 @@ class LabPointSourceCone(Source):
         It is sufficient to enter any vector that spans this axis (magnitude does not matter).
     position: 3 element list
         3D coordinates of photon source
-    delta: float 
+    delta: float
         This is half the openning angle of the cone. It is given in steradians.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
@@ -154,7 +154,7 @@ class LabPointSourceCone(Source):
         v = np.random.uniform(0, fractionalArea, n)
         phi = np.arccos(1 - 2 * v)
         # For computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
-        
+
         dir = np.array([np.cos(theta) * np.sin(phi),
                         np.sin(theta) * np.sin(phi),
                         np.cos(phi),
@@ -177,4 +177,3 @@ class LabPointSourceCone(Source):
         photons.add_column(Column(name='dir', data=dir.T))
         photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
         return photons
-
