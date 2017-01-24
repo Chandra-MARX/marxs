@@ -76,7 +76,9 @@ class RowlandTorus(MarxsElement):
 
     display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2,
-               'shape': 'torus; surface'}
+               'shape': 'torus; surface',
+               'coo1': np.linspace(0, 2 * np.pi, 60),
+               'coo2': np.linspace(0, 2 * np.pi, 60)}
 
     def __init__(self, R, r, **kwargs):
         self.R = R

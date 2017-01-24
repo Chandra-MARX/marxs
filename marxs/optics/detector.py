@@ -92,7 +92,9 @@ class CircularDetector(OpticalElement):
 
     display = {'color': (1.0, 1.0, 0.),
                'opacity': 0.7,
-               'shape': 'surface'}
+               'shape': 'surface',
+               'coo1': np.linspace(0, 2 * np.pi, 50),
+               'coo2': [-1, 1]}
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
