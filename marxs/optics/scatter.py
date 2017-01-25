@@ -13,6 +13,7 @@ import numpy as np
 
 from ..math.pluecker import e2h, h2e
 from ..math.rotations import axangle2mat
+from ..math.polarization import parallel_transport
 from .base import FlatOpticalElement
 
 class RadialMirrorScatter(FlatOpticalElement):
@@ -53,4 +54,7 @@ class RadialMirrorScatter(FlatOpticalElement):
             rot = axangle2mat(radial, perpangle)
             outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(outdir)), 0)
 
-        return {'dir': outdir}
+        pol = parallel_transport(photons['dir'].data[intersect, :], outdir,
+                                 photons['polarization'].data[intersect, :])
+
+        return {'dir': outdir, 'polarization': pol}

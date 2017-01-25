@@ -5,6 +5,7 @@ from transforms3d.axangles import axangle2mat
 from .base import FlatOpticalElement
 from ..math.pluecker import h2e, e2h, distance_point_point
 from ..math.utils import norm_vector
+from ..math.polarization import parallel_transport
 
 class PerfectLens(FlatOpticalElement):
     '''This describes an infinitely large lens that focusses all rays exactly.
@@ -31,7 +32,10 @@ class PerfectLens(FlatOpticalElement):
         # A ray through the center is not broken.
         # So, find out where a central ray would go.
         focuspoints = h2e(self.geometry('center')) + self.focallength * norm_vector(h2e(photons['dir'][intersect]))
-        return {'dir': e2h(focuspoints - h2e(interpos[intersect]), 0)}
+        dir = e2h(focuspoints - h2e(interpos[intersect]), 0)
+        pol = parallel_transport(photons['dir'].data[intersect, :], dir,
+                                 photons['polarization'].data[intersect, :])
+        return {'dir': dir, 'polarization': pol}
 
 class ThinLens(FlatOpticalElement):
     '''Focus rays with the thin lens approximation
@@ -77,7 +81,7 @@ class ThinLens(FlatOpticalElement):
         self.focallength = kwargs.pop('focallength')
         super(ThinLens, self).__init__(**kwargs)
 
-    def process_photon(self, dir, pos, energy, polerization):
+    def process_photon(self, dir, pos, energy, polarization):
         intersect, h_intersect, loc_inter = self.intersect(dir, pos)
         distance = distance_point_point(h_intersect,
                                         self.geometry('center')[np.newaxis, :])
@@ -93,4 +97,5 @@ class ThinLens(FlatOpticalElement):
             # Could have a for "i in photons", but might come up with better way
             rot = axangle2mat(e_rotation_axis, delta_angle)
             new_ray_dir = np.dot(rot, dir[:3])
-        return e2h(new_ray_dir, 0), h_intersect, energy, polerization, 1.
+            polarization = e2h(np.dot(rot, polarization[:3]), 0)
+        return e2h(new_ray_dir, 0), h_intersect, energy, polarization, 1.

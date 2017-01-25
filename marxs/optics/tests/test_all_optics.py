@@ -11,6 +11,7 @@ import copy
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+import transforms3d.axangles
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
                 FlatGrating, OrderSelector,
@@ -63,7 +64,10 @@ all_oe = [ThinLens(focallength=100),
                           z_range=[0, 0.1]),
 
           Baffle(),
-          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
+          # MLMirror assumes 45 deg angle and will return nan otherwise
+          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt',
+                           './marxs/optics/data/ALSpolarization2.txt',
+                           orientation=transforms3d.axangles.axangle2mat([0,1,0], np.pi/4)),
           Sequence(elements=[]),
           HETG(),
           RadialMirrorScatter(inplanescatter=0.1),
@@ -168,7 +172,8 @@ class TestOpticalElementInterface:
             photons.remove_column('pos')
 
         photons = elem(photons)
-        assert np.allclose(np.dot(photons['dir'].data, photons['polarization'].data.T), 0.)
+        assert np.allclose(np.einsum('...i,...i', photons['dir'].data,
+                                     photons['polarization'].data), 0.)
 
     def test_metadata_evolution(self, photons, elem):
         '''In almost all cases, the metadata passed into an element should

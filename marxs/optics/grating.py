@@ -4,6 +4,7 @@ import numpy as np
 
 from ..math.pluecker import h2e, e2h
 from ..math.utils import norm_vector
+from ..math.polarization import parallel_transport
 from .. import energy2wave
 from .base import FlatOpticalElement
 
@@ -213,7 +214,10 @@ class FlatGrating(FlatOpticalElement):
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
 
         dir, m, p, blaze = self.diffract_photons(photons, intersect, interpos, intercoos)
-        return {'dir': dir, 'probability': p, 'order': m, 'blaze': blaze}
+        pol = parallel_transport(photons['dir'].data[intersect, :], dir,
+                                 photons['polarization'].data[intersect, :])
+        return {'dir': dir, 'probability': p, 'order': m, 'blaze': blaze,
+                'polarization': pol}
 
 class CATGrating(FlatGrating):
     '''Critical-Angle-Transmission Grating

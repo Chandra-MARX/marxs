@@ -8,15 +8,17 @@ import pytest
 from ..grating import (FlatGrating, CATGrating,
                        OrderSelector, EfficiencyFile)
 from ...math.pluecker import h2e
+from ...math.polarization import polarization_vectors
 from ... import energy2wave
 from ...utils import generate_test_photons
 
 def test_zeros_order():
     '''Photons diffracted into order 0 should just pass through'''
+    dir = random((10, 4)) * 10 - 5
     photons = Table({'pos': random((10, 4)) * 10 - 5,
-                     'dir': random((10, 4)) * 10 - 5,
+                     'dir': dir,
                      'energy': random(10),
-                     'polarization': random(10),
+                     'polarization': polarization_vectors(dir, np.random.rand(10)),
                      'probability': np.ones(10),
                      })
     # Make sure homogeneous coordiantes are valid
@@ -45,6 +47,7 @@ def test_translation_invariance():
     '''For homogeneous gratings, the diffraction eqn does not care where the ray hits.'''
     photons = generate_test_photons(2)
     photons['dir'] = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
+    photons['polarization'] = polarization_vectors(photons['dir'], [2., 4.])
     pos = np.tile(np.array([1., 0., 0., 1.]), (2, 1))
     delta_pos = np.array([0, .23, -.34, 0.])
     pos[1,:] += delta_pos
@@ -77,7 +80,7 @@ def test_angle_dependence():
     photons = Table({'pos': pos,
                      'dir': dir,
                      'energy': np.ones(len(beta)),
-                     'polarization': np.ones(len(beta)),
+                     'polarization': polarization_vectors(dir, [1, 2, 3, 4]),
                      'probability': np.ones(len(beta)),
                      })
     g = FlatGrating(d=0.001,  order_selector=OrderSelector([1]), zoom=20)
@@ -91,7 +94,7 @@ def test_order_dependence():
     photons = Table({'pos': np.ones((5,4)),
                      'dir': np.tile([1., 0, 0, 0], (5,1)),
                      'energy': np.ones(5),
-                     'polarization': np.ones(5),
+                     'polarization': np.tile([0.,1.,0.,0.], (5,1)),
                      'probability': np.ones(5),
                      })
     def mock_order(x, y, z):
@@ -110,7 +113,7 @@ def test_energy_dependence():
     photons = Table({'pos': np.ones((5,4)),
                      'dir': np.tile([1., 0, 0, 0], (5,1)),
                      'energy': np.arange(1., 6),
-                     'polarization': np.ones(5),
+                     'polarization': np.tile([0, 1., 0., 0.], (5, 1)),
                      'probability': np.ones(5),
                      })
     g = FlatGrating(d=1./500, order_selector=OrderSelector([1]))
@@ -130,6 +133,7 @@ def test_blaze_dependence():
 
     photons = generate_test_photons(2)
     photons['dir'][1, :] = [-1,1, 0, 0]
+    photons['polarization'][1, :] = [0, 0, 1, 0]
     g = FlatGrating(d=1., order_selector=order_selector, zoom=5)
     p = g(photons)
     assert np.allclose(p['order'], [0, 7])
@@ -177,7 +181,7 @@ def test_order_convention():
     photons = Table({'pos': np.ones((3, 4)),
                      'dir': dirs,
                      'energy': np.ones(3),
-                     'polarization': np.ones(3),
+                     'polarization': polarization_vectors(dirs, np.ones(3)),
                      'probability': np.ones(3),
                      })
     gp = FlatGrating(d=1./500, order_selector=OrderSelector([1]), zoom=2)
@@ -199,7 +203,7 @@ def test_CAT_order_convention():
     photons = Table({'pos': np.ones((5, 4)),
                      'dir': dirs,
                      'energy': np.ones(5),
-                     'polarization': np.ones(5),
+                     'polarization': polarization_vectors(dirs, np.arange(5)),
                      'probability': np.ones(5),
                      })
     gp = CATGrating(d=1./5000, order_selector=OrderSelector([5]), zoom=2)
@@ -326,7 +330,7 @@ def test_gratings_are_independent():
     This test ensures that the relevant numbers are in an instance attribute and not
     in a class attribute.
     However, we want to test only user visible properties, not hidden dicts like
-    FlatGrating._geometry. So, compare grove dirs for to gratings.
+    FlatGrating._geometry. So, compare grove dirs for two gratings.
     '''
     g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
     g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]))

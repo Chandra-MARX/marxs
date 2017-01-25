@@ -16,7 +16,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, SkyOffsetFrame
 
 from ..base import SimulationSequenceElement
-from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 from .. import __version__ as marxsversion
 
