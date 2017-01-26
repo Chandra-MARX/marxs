@@ -16,8 +16,7 @@ class BaseAperture(object):
 
     display = {'color': (0.0, 0.75, 0.75),
                'opacity': 0.3,
-               'side': 2,
-               'shape': 'plane with hole'} # = THREE>DoubleSide in theee.js
+               'shape': 'plane with hole'}
 
     @staticmethod
     def add_colpos(photons):

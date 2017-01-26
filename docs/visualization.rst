@@ -33,7 +33,7 @@ The most common settings are ``display['color']`` (which can be any RGB tuple or
 
 First, we need to run a simulation.
 
-.. todo
+.. todo:: make script
 
 Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class (here: all gratings):
 
