@@ -16,7 +16,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, SkyOffsetFrame
 
 from ..base import SimulationSequenceElement
-from ..optics.polarization import polarization_vectors
 from ..math.random import RandomArbitraryPdf
 from .. import __version__ as marxsversion
 
@@ -106,13 +105,13 @@ class Source(SimulationSequenceElement):
 
     polarization: contant or ``None``, (2, N) `numpy.ndarray`, `dict <dict>`, `astropy.table.Table` or similar or callable.
         There are several different ways to set the polarization angle of the photons for a
-        polarized source. In all cases, the angle is given in radian and is measured North
+        polarized source. In all cases, the angle is given in degrees and is measured North
         through East. (We ignore the special case of a polarized source exactly on a pole.)
         The default value is ``None`` (unpolarized source).
 
         - ``None``:
           An unpolarized source. Every photons is assigned a random polarization.
-        - number: Constant polarization angle for all photons (in radian).
+        - number: Constant polarization angle for all photons (in degrees).
         - (2, N) `numpy.ndarray` or object with columns "angle" and "probability"
           (e.g. `dict <dict>` or `astropy.table.Table`), where "probability" really means
           "probability density".
@@ -126,7 +125,7 @@ class Source(SimulationSequenceElement):
         - a callable (function or callable object): This option allows full customization.
           The function is called with two arrays (time and energy values) as input
           and must return an array of equal length that contains the polarization angles in
-          radian.
+          degrees.
     geomarea : float
         Geometric opening area of telescope in :math:`mm^2`. If not given,
         an opening of :math:`1 mm^2` is assumed.
@@ -195,7 +194,7 @@ class Source(SimulationSequenceElement):
             rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
             return rand(n)
         elif self.polarization is None:
-            return np.random.uniform(0, 2 * np.pi, n)
+            return np.random.uniform(0, 360., n)
         else:
             raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 

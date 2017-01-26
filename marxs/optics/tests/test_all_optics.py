@@ -1,9 +1,17 @@
+'''This module contains tests that are done for all opticial elements as opposed to tests that
+apply to one class of elements only (e.g. gratings).
+Tests here include simple things that guarantee that all elements comply with the MARXS interface
+(e.g. each element must return a name and description) and more complex consistency checks
+that are required for every type of optical element (e.g. the polarization vector must be
+perpendicular to the photon propagation direction in each an every case).
+'''
 from collections import OrderedDict
 import copy
 
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+import transforms3d.axangles
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
                 FlatGrating, OrderSelector,
@@ -56,7 +64,10 @@ all_oe = [ThinLens(focallength=100),
                           z_range=[0, 0.1]),
 
           Baffle(),
-          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt'),
+          # MLMirror assumes 45 deg angle and will return nan otherwise
+          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt',
+                           './marxs/optics/data/ALSpolarization2.txt',
+                           orientation=transforms3d.axangles.axangle2mat([0,1,0], np.pi/4)),
           Sequence(elements=[]),
           HETG(),
           RadialMirrorScatter(inplanescatter=0.1),
@@ -105,9 +116,6 @@ class TestOpticalElementInterface:
     '''
     def test_one_vs_many_in_call_signature(self, photons, elem):
         '''processing a single photon should give same result as photon list'''
-        if isinstance(elem, MultiLayerMirror):
-            pytest.xfail("#22")
-
         assert np.all(photons['dir'] == photons['dir'])
         p = photons[[0]]
         # Process individually
@@ -134,9 +142,8 @@ class TestOpticalElementInterface:
             assert np.all(dir == p['dir'][0])
             assert np.all(pos == p['pos'][0])
             assert energy == p['energy'][0]
-            # pol can be nan for modules that cannot deal with polarization
-            assert ((np.isnan(pol) and np.isnan(p['polarization'][0]))
-                    or (pol == p['polarization'][0]))
+            assert (np.all(pol == p['polarization'][0]) or
+                    (np.all(np.isnan(pol)) and np.all(np.isnan(p['polarization'][0]))))
             assert prob == p['probability'][0]
 
     def test_desc(self, elem):
@@ -147,9 +154,6 @@ class TestOpticalElementInterface:
 
     def test_prob(self, photons, elem):
         '''For every type of element, the value for 'probability' can only go down.'''
-        if isinstance(elem, MultiLayerMirror):
-            pytest.xfail("#22")
-
         if isinstance(elem, BaseAperture):
             photons.remove_column('pos')
 
@@ -157,17 +161,29 @@ class TestOpticalElementInterface:
         photons = elem(photons)
         assert np.all(photons['probability'] <= 1e-4)
 
+    def test_polarization_direction(self, photons, elem):
+        '''For every type of element, the polarization vector must still be
+        perpendicular to the direction of the photon after it passed through
+        the element. Most elements do not change the direction of the photon,
+        so this test is not really relevant, but testing the full list of
+        elements here is the only way in make sure that this test is not
+        forgotten when individual elements are implemented.'''
+        if isinstance(elem, BaseAperture):
+            photons.remove_column('pos')
+
+        photons = elem(photons)
+        assert np.allclose(np.einsum('...i,...i', photons['dir'].data,
+                                     photons['polarization'].data), 0.)
+
     def test_metadata_evolution(self, photons, elem):
         '''In almost all cases, the metadata passed into an element should
         be returned unchanged. New keys can be added all the time, but it is
-        extremely rare that an element changes and existing meta-data value.
+        extremely rare that an element changes an existing meta-data value.
         (Those cases need to be marked xfail by hand here or be listed in an
         exclusion list when they come up.)
 
         Regression test for #88.
         '''
-        if isinstance(elem, MultiLayerMirror):
-            pytest.xfail("#22")
         meta_in = copy.deepcopy(photons.meta)
         if isinstance(elem, BaseAperture):
             photons.remove_column('pos')

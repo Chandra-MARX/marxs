@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from ..base import SimulationSequenceElement
 from ..math.pluecker import h2e, e2h
 from ..math.rotations import axangle2mat
+from ..math.utils import norm_vector
 
 
 class PointingModel(SimulationSequenceElement):
@@ -121,22 +122,33 @@ class FixedPointing(PointingModel):
             Homogeneous direction vector for each photon
         '''
         photondir = coos.transform_to(self.offset_coos)
-        assert np.allclose(photondir.distance.value, 1.)
         # Minus sign here because photons start at +inf and move towards origin
-        photonsdir = -e2h(photondir.cartesian.xyz.T, 0)
-        return np.einsum('...ij,...j->...i', self.reference_transform, photonsdir)
+        photonsdir = norm_vector(-photondir.cartesian.xyz.T)
+        return np.einsum('...ij,...j->...i', self.reference_transform, e2h(photonsdir, 0))
 
-    def photons_pol(self, coos, polangle, time):
-        '''
+    def photons_pol(self, photonsdir, polangle, time):
+        '''Calculate a polarization vector for linearly polarized light.
+
+        The current definition cannot handle photons coming exactly from either
+        the North pole or the South Pole of the sphere, because the polangle
+        definition "North through east" is not well-defined in these positions.
+
         Parameters
         ----------
-        coos : `astropy.coordiantes.SkyCoord`
-            Origin of each photon on the sky
-        polangle :
+        photonsdir : np.array of shape (n, 4)
+            Direction of photons
+        polangle : np.array
+            Polarization angle in degree measured N through E.
         time : np.array
             Time for each photons in sec
         '''
-        return np.ones_like(time)
+        polangle = np.deg2rad(polangle)
+        north = SkyCoord(0., 90., unit='deg', frame=self.coords)
+        northdir = e2h(north.transform_to(self.offset_coos).cartesian.xyz.T, 0)
+        northdir = np.dot(self.reference_transform, northdir)
+        n_inskyplane = norm_vector(northdir - photonsdir * np.dot(northdir, photonsdir.T)[:, None])
+        e_inskyplane = e2h(np.cross(photonsdir[:, :3], n_inskyplane[:, :3]), 0)
+        return  np.cos(polangle)[:, None] * n_inskyplane + np.sin(polangle)[:, None] * e_inskyplane
 
     def process_photons(self, photons):
         '''
@@ -148,9 +160,9 @@ class FixedPointing(PointingModel):
         photons['dir'] = self.photons_dir(SkyCoord(photons['ra'], photons['dec'],
                                                    unit='deg'),
                                           photons['time'].data)
-        photons['polarization'] = self.photons_pol(SkyCoord(photons['ra'], photons['dec'],
-                                                            unit='deg'),
-                                                   photons['time'].data, photons['polangle'].data)
+        photons['polarization'] = self.photons_pol(photons['dir'].data,
+                                                   photons['polangle'].data,
+                                                   photons['time'].data)
         photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
         photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
         photons.meta['ROLL_PNT'] = (self.roll.to(u.degree), '[deg] Pointing Roll')
@@ -180,13 +192,16 @@ class JitterPointing(FixedPointing):
         self.jitter = kwargs.pop('jitter')
         super(JitterPointing, self).__init__(**kwargs)
 
-    def photons_dir(self, *args):
-        photons_dir = super(JitterPointing, self).photons_dir(*args)
+    def process_photons(self, photons):
+        photons = super(JitterPointing, self).process_photons(photons)
         # Get random jitter direction
-        n = len(photons_dir)
+        n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi
         ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
         jitterang = np.random.normal(scale=self.jitter.to(u.radian), size=n)
         jitterrot = axangle2mat(ax, jitterang)
-        photons_dir = np.einsum('...ij,...i->...j', jitterrot, h2e(photons_dir))
-        return e2h(photons_dir, 0)
+        photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
+                                       h2e(photons['dir'])), 0)
+        photons['polarization'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
+                                                h2e(photons['polarization'])), 0)
+        return photons

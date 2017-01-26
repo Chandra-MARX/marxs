@@ -14,6 +14,7 @@ from astropy.table import Table, Column, join
 from astropy.extern import six
 
 from ..math.pluecker import h2e, e2h
+from ..math.polarization import parallel_transport
 from .base import OpticalElement, photonlocalcoords
 from .aperture import BaseAperture
 
@@ -203,6 +204,9 @@ class MarxMirror(OpticalElement, BaseAperture):
         indices = insorted[ypos]
         photons['probability'] *= photons_in['probability'][indices]
         photons['probability'][photons['unreflected'] | photons['mirror_vblocked']] = 0
+        pol = parallel_transport(photons_in['dir'][insorted], photons['dir'],
+                                 photons_in['polarization'][insorted])
+        photons['polarization'] = pol
         return photons
 
     @property

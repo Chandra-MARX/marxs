@@ -80,15 +80,57 @@ There are two ways to specify that:
    The `transforms3d <https://matthew-brett.github.io/transforms3d/index.html>`_ package provides
    several functions to calculate 3-d and 4-d matrices from Euler angles, axis and angle,
    quaternions and several other representations. This package is installed together with marxs.
+
+Polarization
+============
+In principle, MARXS supports polarization ray-tracing, but only very few
+optical elements actually change the polarization vector of a photon. In these
+cases, that is explicitly explained in the description. All other elements do
+not change the polarization state of a photon. For some, this is physically
+correct (e.g. a photon passing through the hole in baffle), in other cases this
+behavior just a reasonable approximation (e.g. most diffraction gratings
+polarize light only to a very small degree).
+
+Make sure to inspect the implementation of all relevant optical elements if
+your simulation makes use of the photon polarization vector.
+
+In the ray-trace itself, MARXS represents the polarization of each photon as a
+3d-vector and then uses matrices to move this vector in space. This is an
+extension of the 2-d `Jones calculus
+<https://en.wikipedia.org/wiki/Jones_calculus>`_, which is particularly suited
+for light paths that are not all parallel to an optical bench [Chipman_1992]_ .
+See [Yun_et_al_2011]_ and [Yun_2011]_ for details on polarization ray tracing and
+the derivation of the relevant matrices.
+
+This mechanism can handle both linear and circular polarized light. However,
+the light sources currently included in MARXS only support linear
+polarization.
+
+.. rubric:: Bibliography
+
+.. [Chipman_1992] `Proc. SPIE 1746, Polarization Analysis and Measurement, (11
+		  December 1992)
+		  <http://spie.org/Publications/Proceedings/Paper/10.1117/12.138816>`_
+.. [Yun_et_al_2011] `Three-dimensional polarization ray-tracing calculus I:
+		    definition and diattenuation," Appl. Opt. 50, 2855-2865
+		    (2011) <https://doi.org/10.1364/AO.50.002855>`_
+
+.. [Yun_2011] `Polarization Ray Tracing: G. Yun, University of Arizona, dissertation <http://hdl.handle.net/10150/202979>`_
   
 Physical units
 ==============
-Most elements of ``marxs`` are scale free, and no specific unit is attached to by the code. However,
-some elements require an explicit scale (e.g. the grating dispersion depends on the grating constant
-and the photon energy), in this case the following conventions apply:
+MARXS uses `astropy units
+<http://astropy.readthedocs.io/en/stable/units/index.html>` and
+`astropy.coordinates.SkyCoord` for input of source properties and
+coordinates. This makes quantities having a specific unit and avoids confusion
+between degree and radian, eV and keV and so on.
+
+Internally, however, this extra unit makes the computation too slow. Thus, all
+properties are converted to float when they his the first optical element using
+the following conventions:
 
 - Length: base unit is mm.
 - Energy: base unit is keV.
 - Angles: Always expressed in radian.
 
-To avoid confusion, we recommend using mm as unit of lenght throughout marxs.
+When designing an instrument, these units much be used.
