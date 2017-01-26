@@ -4,7 +4,7 @@ import transforms3d
 
 from ..optics.base import FlatOpticalElement
 from .source import Source
-from ..optics.polarization import polarization_vectors
+from ..math.polarization import polarization_vectors
 
 
 class FarLabPointSource(Source, FlatOpticalElement):
