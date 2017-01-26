@@ -20,8 +20,8 @@ class OrderSelector(object):
         can be smaller than 1, if a certain fraction of photons is absorbed by
         the grating. If this is ``None`` equal probability is assigned to all orders.
 
-    Example
-    -------
+    Examples
+    --------
     Two common use cases for testing are a grating where every photon gets
     diffracted into the same order or where all photons get distributed with
     equal probability into a set of orders.

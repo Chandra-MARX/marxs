@@ -241,6 +241,7 @@ def plane_with_hole(obj, display, outfile):
         scene.add( mesh );
         '''.format(materialspec=materialspec))
 
+@format_doc(doc_plot)
 def torus(obj, display, outfile):
     '''Output commands to display (part of) a torus.
 
@@ -250,7 +251,7 @@ def torus(obj, display, outfile):
     '''
     theta = display.get('coo1', [0, 2 * np.pi])
     phi = display.get('coo2', [0, 2 * np.pi])
-    materialspec = materialspec(self.display, 'MeshStandardMaterial')
+    materialspec = materialspec(obj.display, 'MeshStandardMaterial')
     torusparameters = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(obj.R, obj.r,
                                                                       int(np.rad2deg(theta[1])),
                                                                       int(np.rad2deg(phi[1])),
