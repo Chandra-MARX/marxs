@@ -75,8 +75,9 @@ class RowlandTorus(MarxsElement):
 
     display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2,
-               'side': 2, # =THREE.DoubleSide
-               'shape': 'torus; surface'}
+               'shape': 'torus; surface',
+               'coo1': np.linspace(0, 2 * np.pi, 60),
+               'coo2': np.linspace(0, 2 * np.pi, 60)}
 
     def __init__(self, R, r, **kwargs):
         self.R = R
@@ -162,8 +163,32 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
+    def parameteric_surface(self, theta, phi):
+        '''Parametric representation of surface of torus.
+
+        In contrast to `parametric` the input parameters here are 1-d arrays
+        and the functions converts that to a rectangular grid.
+
+        Parameters
+        ----------
+        theta : np.array
+            Points on the Rowland circle (specified in rad, where 0 is on the
+            optical axis across from the focal point).
+        phi : np.array
+            ``phi`` rotates the Rowland circle to make up the Rowland torus.
+
+        Returns
+        -------
+        xyzw : np.array
+            Torus coordinates in global homogeneous coordinate system.
+        '''
+        if (phi.ndim != 1) or (theta.ndim != 1):
+            raise ValueError('input parameters have 1-dim shape.')
+        theta, phi = np.meshgrid(theta, phi)
+        return self.parametric(theta, phi)
+
     def parametric(self, theta, phi):
-        '''Parametric description of the torus.
+        '''Parametric description of points on the torus.
 
         This is just another way to obtain the shape of the torus, e.g.
         for visualization.
@@ -181,7 +206,6 @@ class RowlandTorus(MarxsElement):
         xyzw : np.array
             Torus coordinates in global homogeneous coordinate system.
         '''
-        theta, phi = np.meshgrid(theta, phi)
         x = (self.R + self.r * np.cos(theta)) * np.cos(phi)
         z = (self.R + self.r * np.cos(theta)) * np.sin(phi)
         y = self.r * np.sin(theta)
@@ -311,21 +335,6 @@ class RowlandTorus(MarxsElement):
         x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
-
-    def _plot_threejsjson(self, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'ModifiedTorusBufferGeometry'
-        out['geometrypars'] = (self.R, self.r, int(np.rad2deg(thetaarc)), int(np.rad2deg(phiarc)),
-                               thetaarc, theta0, phiarc, phi0)
-        out['pos4d'] = [self.pos4d.flatten().tolist()]
-
-        return out
-
 
 
 def design_tilted_torus(f, alpha, beta):

@@ -18,7 +18,7 @@ class OpticalElement(SimulationSequenceElement):
     At the very minumum, any derived class needs to implement either `process_photon` or
     `process_photons`. If the interaction with the photons (e.g. scattering of a mirror surface)
     can be implemented in a vectorized way using numpy array operations, the derived class should
-    overwrite `process_photons` (`process_photon` is not used in ths case).
+    overwrite `process_photons` (`process_photon` is not used in this case).
     If no vectorized implementation is available, it is sufficient to overwrite `process_photon`.
     Marxs will call `process_photons`, which (if not overwritten) contains a simple for-loop to
     loop over all photons in the array and call `process_photon` on each of them.
@@ -269,21 +269,6 @@ class FlatOpticalElement(OpticalElement):
         elif (dir.ndim == 1) and not intersect:
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
-
-    def _plot_threejsjson(self):
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'BoxGeometry'
-        out['geometrypars'] = (2, 2, 2)
-        out['pos4d'] = [self.pos4d.T.flatten().tolist()]
-        if not ('side' in self.display):
-            out['materialproperties']['side'] = 2
-
-        return out
 
 
 class FlatStack(FlatOpticalElement):

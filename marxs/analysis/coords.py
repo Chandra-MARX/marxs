@@ -13,8 +13,8 @@ class ProjectOntoPlane(FlatOpticalElement):
     Note that the default output columns are called proj_x and _y independent
     of the actual orientation of the plane.
 
-    Example
-    -------
+    Examples
+    --------
     Project some points onto a plane. If no orientation is given to the
     ``ProjectionOntoPlane`` object, the default is to place it in the yz-plane.
 
