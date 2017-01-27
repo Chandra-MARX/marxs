@@ -28,7 +28,7 @@ class PointingModel(SimulationSequenceElement):
     combination of ``ra``, ``dec`` and ``roll`` still uniquely
     determines the position of the coordinate system.
     '''
-    def add_dir(self, photons):
+    def add_dir(selv, photons):
         linecoords = Column(name='dir', length=len(photons),
                             shape=(4,))
         photons.add_column(linecoords)
@@ -36,8 +36,8 @@ class PointingModel(SimulationSequenceElement):
         # component. Play safe here.
         photons['dir'][:, 3] = 0
 
-    def process_photons(self, photons):
-        self.add_dir(photons)
+    def process_photons(selv, photons):
+        selv.add_dir(photons)
         return photons
 
 
@@ -54,7 +54,7 @@ class FixedPointing(PointingModel):
     ----------
     coords : `astropy.coordinates.SkySoord` (preferred)
         Position of the source on the sky. If ``coords`` is not a
-        `~astropy.coordinates.SkyCoord` object itself, it is used to
+        `~astropy.coordinates.SkyCoord` object itselv, it is used to
         initialize such an object. See `~astropy.coordinates.SkyCoord`
         for a description of allowed input values.
     roll : `~astropy.units.quantity.Quantity`
@@ -86,27 +86,27 @@ class FixedPointing(PointingModel):
     combination of ``ra``, ``dec`` and ``roll`` still uniquely
     determines the position of the coordinate system.
     '''
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         coords = kwargs.pop('coords')
         if isinstance(coords, coord.SkyCoord):
-            self.coords = coords
+            selv.coords = coords
         else:
-            self.coords = coord.SkyCoord(coords)
+            selv.coords = coord.SkyCoord(coords)
 
-        if not self.coords.isscalar:
+        if not selv.coords.isscalar:
             raise ValueError("Coordinate must be scalar, not array.")
-        self.roll = kwargs.pop('roll', 0. * u.rad)
+        selv.roll = kwargs.pop('roll', 0. * u.rad)
 
-        self.reference_transform = kwargs.pop('reference_transform', np.eye(4))
+        selv.reference_transform = kwargs.pop('reference_transform', np.eye(4))
 
-        super(FixedPointing, self).__init__(**kwargs)
+        super(FixedPointing, selv).__init__(**kwargs)
 
     @property
-    def offset_coos(self):
+    def offset_coos(selv):
         '''Return `~astropy.coordinates.SkyOffsetFrame`'''
-        return self.coords.skyoffset_frame(rotation=self.roll)
+        return selv.coords.skyoffset_frame(rotation=selv.roll)
 
-    def photons_dir(self, coos, time):
+    def photons_dir(selv, coos, time):
         '''Calculate direction of photons in homogeneous coordinates.
 
         Parameters
@@ -121,12 +121,12 @@ class FixedPointing(PointingModel):
         photons_dir : np.array of shape (n, 4)
             Homogeneous direction vector for each photon
         '''
-        photondir = coos.transform_to(self.offset_coos)
+        photondir = coos.transform_to(selv.offset_coos)
         # Minus sign here because photons start at +inf and move towards origin
         photonsdir = norm_vector(-photondir.cartesian.xyz.T)
-        return np.einsum('...ij,...j->...i', self.reference_transform, e2h(photonsdir, 0))
+        return np.einsum('...ij,...j->...i', selv.reference_transform, e2h(photonsdir, 0))
 
-    def photons_pol(self, photonsdir, polangle, time):
+    def photons_pol(selv, photonsdir, polangle, time):
         '''Calculate a polarization vector for linearly polarized light.
 
         The current definition cannot handle photons coming exactly from either
@@ -143,32 +143,32 @@ class FixedPointing(PointingModel):
             Time for each photons in sec
         '''
         polangle = np.deg2rad(polangle)
-        north = SkyCoord(0., 90., unit='deg', frame=self.coords)
-        northdir = e2h(north.transform_to(self.offset_coos).cartesian.xyz.T, 0)
-        northdir = np.dot(self.reference_transform, northdir)
+        north = SkyCoord(0., 90., unit='deg', frame=selv.coords)
+        northdir = e2h(north.transform_to(selv.offset_coos).cartesian.xyz.T, 0)
+        northdir = np.dot(selv.reference_transform, northdir)
         n_inskyplane = norm_vector(northdir - photonsdir * np.dot(northdir, photonsdir.T)[:, None])
         e_inskyplane = e2h(np.cross(photonsdir[:, :3], n_inskyplane[:, :3]), 0)
         return  np.cos(polangle)[:, None] * n_inskyplane + np.sin(polangle)[:, None] * e_inskyplane
 
-    def process_photons(self, photons):
+    def process_photons(selv, photons):
         '''
         Parameters
         ----------
         photons : `astropy.table.Table`
         '''
-        photons = super(FixedPointing, self).process_photons(photons)
-        photons['dir'] = self.photons_dir(SkyCoord(photons['ra'], photons['dec'],
+        photons = super(FixedPointing, selv).process_photons(photons)
+        photons['dir'] = selv.photons_dir(SkyCoord(photons['ra'], photons['dec'],
                                                    unit='deg'),
                                           photons['time'].data)
-        photons['polarization'] = self.photons_pol(photons['dir'].data,
+        photons['polarization'] = selv.photons_pol(photons['dir'].data,
                                                    photons['polangle'].data,
                                                    photons['time'].data)
-        photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
-        photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
-        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree), '[deg] Pointing Roll')
-        photons.meta['RA_NOM'] = (self.coords.ra.degree, '[deg] Nominal Pointing RA')
-        photons.meta['DEC_NOM'] = (self.coords.dec.degree, '[deg] Nominal Pointing Dec')
-        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree), '[deg] Nominal Pointing Roll')
+        photons.meta['RA_PNT'] = (selv.coords.ra.degree, '[deg] Pointing RA')
+        photons.meta['DEC_PNT'] = (selv.coords.dec.degree, '[deg] Pointing Dec')
+        photons.meta['ROLL_PNT'] = (selv.roll.to(u.degree), '[deg] Pointing Roll')
+        photons.meta['RA_NOM'] = (selv.coords.ra.degree, '[deg] Nominal Pointing RA')
+        photons.meta['DEC_NOM'] = (selv.coords.dec.degree, '[deg] Nominal Pointing Dec')
+        photons.meta['ROLL_NOM'] = (selv.roll.to(u.degree), '[deg] Nominal Pointing Roll')
 
         return photons
 
@@ -188,17 +188,17 @@ class JitterPointing(FixedPointing):
     jitter : `~astropy.units.quantity.Quantity`
         Gaussian sigma of jitter angle
     '''
-    def __init__(self, **kwargs):
-        self.jitter = kwargs.pop('jitter')
-        super(JitterPointing, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.jitter = kwargs.pop('jitter')
+        super(JitterPointing, selv).__init__(**kwargs)
 
-    def process_photons(self, photons):
-        photons = super(JitterPointing, self).process_photons(photons)
+    def process_photons(selv, photons):
+        photons = super(JitterPointing, selv).process_photons(photons)
         # Get random jitter direction
         n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi
         ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
-        jitterang = np.random.normal(scale=self.jitter.to(u.radian), size=n)
+        jitterang = np.random.normal(scale=selv.jitter.to(u.radian), size=n)
         jitterrot = axangle2mat(ax, jitterang)
         photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
                                        h2e(photons['dir'])), 0)
