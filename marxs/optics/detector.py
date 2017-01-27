@@ -43,23 +43,23 @@ class FlatDetector(FlatOpticalElement):
     display = {'color': (1.0, 1.0, 0.),
                'shape': 'box'}
 
-    def __init__(self, pixsize=1, **kwargs):
-        self.pixsize = pixsize
-        super(FlatDetector, self).__init__(**kwargs)
-        t, r, zoom, s = decompose44(self.pos4d)
-        self.npix = [0, 0]
-        self.centerpix = [0, 0]
+    def __init__(selv, pixsize=1, **kwargs):
+        selv.pixsize = pixsize
+        super(FlatDetector, selv).__init__(**kwargs)
+        t, r, zoom, s = decompose44(selv.pos4d)
+        selv.npix = [0, 0]
+        selv.centerpix = [0, 0]
         for i in (0, 1):
             z  = zoom[i + 1]
-            self.npix[i] = int(np.round(2. * z / self.pixsize))
-            if np.abs(2. * z / self.pixsize - self.npix[i]) > 1e-2:
+            selv.npix[i] = int(np.round(2. * z / selv.pixsize))
+            if np.abs(2. * z / selv.pixsize - selv.npix[i]) > 1e-2:
                 warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), SimulationSetupWarning)
-            self.centerpix[i] = (self.npix[i] - 1) / 2
+            selv.centerpix[i] = (selv.npix[i] - 1) / 2
 
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
-        detx = intercoos[intersect, 0] / self.pixsize + self.centerpix[0]
-        dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
-        return {self.detpix_name[0]: detx, self.detpix_name[1]: dety}
+    def specific_process_photons(selv, photons, intersect, interpos, intercoos):
+        detx = intercoos[intersect, 0] / selv.pixsize + selv.centerpix[0]
+        dety = intercoos[intersect, 1] / selv.pixsize + selv.centerpix[1]
+        return {selv.detpix_name[0]: detx, selv.detpix_name[1]: dety}
 
 class CircularDetector(OpticalElement):
     '''A detector shaped like a ring or tube.
@@ -95,11 +95,11 @@ class CircularDetector(OpticalElement):
                'coo1': np.linspace(0, 2 * np.pi, 50),
                'coo2': [-1, 1]}
 
-    def __init__(self, pixsize=1, **kwargs):
-        self.pixsize = pixsize
-        self.phi_offset = kwargs.pop('phi_offset', 0.)
-        self.inwards = kwargs.pop('inside', True)
-        super(CircularDetector, self).__init__(**kwargs)
+    def __init__(selv, pixsize=1, **kwargs):
+        selv.pixsize = pixsize
+        selv.phi_offset = kwargs.pop('phi_offset', 0.)
+        selv.inwards = kwargs.pop('inside', True)
+        super(CircularDetector, selv).__init__(**kwargs)
 
     @classmethod
     def from_rowland(cls, rowland, width):
@@ -121,14 +121,14 @@ class CircularDetector(OpticalElement):
         return cls(pos4d=pos4d_circ, phi_offset=-np.pi)
 
     @property
-    def _inwardsoutwards(self):
-        'Transform the self.inwards bool into [-1, +1]'
-        if self.inwards:
+    def _inwardsoutwards(selv):
+        'Transform the selv.inwards bool into [-1, +1]'
+        if selv.inwards:
             return 1.
         else:
             return -1.
 
-    def intersect(self, dir, pos, transform=True):
+    def intersect(selv, dir, pos, transform=True):
         '''Calculate the intersection point between a ray and the element
 
         Parameters
@@ -150,7 +150,7 @@ class CircularDetector(OpticalElement):
             to ``np.nan`` is no intersecton point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
             phi, z coordiantes (in the local frame) for one of the intersection points.
-            If both intersection points are required, reset ``self.inner`` and call this
+            If both intersection points are required, reset ``selv.inner`` and call this
             function again.
         '''
         # This could be moved to a general function
@@ -158,7 +158,7 @@ class CircularDetector(OpticalElement):
             raise ValueError('First input must be direction vectors.')
         # Could test pos, too...
         if transform:
-            invpos4d = np.linalg.inv(self.pos4d)
+            invpos4d = np.linalg.inv(selv.pos4d)
             dir = np.dot(invpos4d, dir.T).T
             pos = np.dot(invpos4d, pos.T).T
 
@@ -182,11 +182,11 @@ class CircularDetector(OpticalElement):
             a1 = (- b + np.sqrt(underroot[i])) / denom
             a2 = (- b - np.sqrt(underroot[i])) / denom
             x1 = xy[i, :] + a1[:, np.newaxis] * r[i, :]
-            apick = np.where(self._inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
+            apick = np.where(selv._inwardsoutwards * np.sum(x1 * r[i, :], axis=1) >=0, a1, a2)
             xy_p = xy[i, :] + apick[:, np.newaxis] * r[i, :]
             phi = np.arctan2(xy_p[:, 1], xy_p[:, 0])
             # Shift phi by offset, then wrap to that it is in range [-pi, pi]
-            interpos_local[i, 0] = (phi - self.phi_offset + np.pi) % (2 * np.pi) - np.pi
+            interpos_local[i, 0] = (phi - selv.phi_offset + np.pi) % (2 * np.pi) - np.pi
             # Those look like they hit in the xy plane.
             # Still possible to miss if z axis is too large.
             # Calculate z-coordiante at intersection
@@ -195,7 +195,7 @@ class CircularDetector(OpticalElement):
             interpos[i, 2] = interpos_local[i, 1]
             interpos[i, 3] = 1
             # set those elements on intersect that miss in z to False
-            trans, rot, zoom, shear = decompose44(self.pos4d)
+            trans, rot, zoom, shear = decompose44(selv.pos4d)
             z_p = interpos[i, 2]
             intersect[i.nonzero()[0][np.abs(z_p) > 1]] = False
             # Now reset everything to nan that does not intersect
@@ -206,30 +206,30 @@ class CircularDetector(OpticalElement):
             interpos_local[:, 1] = interpos_local[:, 1] * zoom[2]
             interpos[~i, :] = np.nan
 
-            interpos = np.dot(self.pos4d, interpos.T).T
+            interpos = np.dot(selv.pos4d, interpos.T).T
 
         return intersect, interpos, interpos_local
 
-    def process_photons(self, photons, intersect, interpos, inter_local):
+    def process_photons(selv, photons, intersect, interpos, inter_local):
         photons['pos'][intersect, :] = interpos[intersect, :]
-        self.add_output_cols(photons, self.loc_coos_name + self.detpix_name)
+        selv.add_output_cols(photons, selv.loc_coos_name + selv.detpix_name)
         # Add ID number to ID col, if requested
-        if self.id_col is not None:
-            photons[self.id_col][intersect] = self.id_num
+        if selv.id_col is not None:
+            photons[selv.id_col][intersect] = selv.id_num
         # Set position in different coordinate systems
         photons['pos'][intersect] = interpos[intersect]
-        photons[self.loc_coos_name[0]][intersect] = inter_local[intersect, 0]
-        photons[self.loc_coos_name[1]][intersect] = inter_local[intersect, 1]
-        trans, rot, zoom, shear = decompose44(self.pos4d)
+        photons[selv.loc_coos_name[0]][intersect] = inter_local[intersect, 0]
+        photons[selv.loc_coos_name[1]][intersect] = inter_local[intersect, 1]
+        trans, rot, zoom, shear = decompose44(selv.pos4d)
         if np.isclose(zoom[0], zoom[1]):
-            photons[self.detpix_name[0]][intersect] = inter_local[intersect, 0] * zoom[0] / self.pixsize
+            photons[selv.detpix_name[0]][intersect] = inter_local[intersect, 0] * zoom[0] / selv.pixsize
         else:
             warnings.warn('Pixel coordinate for elliptical mirrors not implemented.', PixelSizeWarning)
-        photons[self.detpix_name[1]][intersect] = inter_local[intersect, 1] / self.pixsize
+        photons[selv.detpix_name[1]][intersect] = inter_local[intersect, 1] / selv.pixsize
 
         return photons
 
-    def parametric_surface(self, phi, z=np.array([-1, 1])):
+    def parametric_surface(selv, phi, z=np.array([-1, 1])):
         '''Parametric description of the tube.
 
         This is just another way to obtain the shape of the tube, e.g.
@@ -256,4 +256,4 @@ class CircularDetector(OpticalElement):
         y = np.sin(phi)
         w = np.ones_like(z)
         coos = np.array([x, y, z, w]).T
-        return np.einsum('...ij,...j', self.pos4d, coos)
+        return np.einsum('...ij,...j', selv.pos4d, coos)

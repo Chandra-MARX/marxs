@@ -65,7 +65,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         parameters for the mirror model.
     '''
 
-    def __init__(self, parfile, **kwargs):
+    def __init__(selv, parfile, **kwargs):
         # If the state shared between different object that use the s
         # same C module? In that case I need to add a lock so that only
         # one object of this class can exist at any one time.
@@ -74,16 +74,16 @@ class MarxMirror(OpticalElement, BaseAperture):
         if not os.path.isfile(parfile):
             raise IOError('MARX parameter file {0} does NOT exist.'.format(parfile))
         else:
-            self.parfile = parfile
+            selv.parfile = parfile
         if six.PY2:
-            self.cparfile = marx.pf_open_parameter_file(parfile, 'r')
+            selv.cparfile = marx.pf_open_parameter_file(parfile, 'r')
         else:
-            self.cparfile = marx.pf_open_parameter_file(bytes(parfile, 'utf8'), bytes('r', 'utf8'))
-        out = marx.marx_mirror_init(self.cparfile)
+            selv.cparfile = marx.pf_open_parameter_file(bytes(parfile, 'utf8'), bytes('r', 'utf8'))
+        out = marx.marx_mirror_init(selv.cparfile)
         if out < 0:
             raise MarxError('Mirror cannot be initialized. Probably missing parameters or syntax error in {0}.'.format(parfile))
 
-        super(MarxMirror, self).__init__(**kwargs)
+        super(MarxMirror, selv).__init__(**kwargs)
 
     @staticmethod
     def _table2c(photons):
@@ -182,17 +182,17 @@ class MarxMirror(OpticalElement, BaseAperture):
         return photons
 
     @photonlocalcoords
-    def _process_photons_in_c(self, photons, verbose):
+    def _process_photons_in_c(selv, photons, verbose):
         '''Wrap the MARX C module'''
-        c_photon_list, keep_cffi_pointers = self._table2c(photons)
+        c_photon_list, keep_cffi_pointers = selv._table2c(photons)
         out = marx.marx_mirror_reflect(c_photon_list, verbose)
         if out != 0:
             raise MarxError('Error in marx_mirror_reflect.')
-        return self._c2table(c_photon_list)
+        return selv._c2table(c_photon_list)
 
-    def __call__(self, photons_in, verbose=0):
-        self.add_colpos(photons_in)
-        new_photons = self._process_photons_in_c(photons_in, verbose)
+    def __call__(selv, photons_in, verbose=0):
+        selv.add_colpos(photons_in)
+        new_photons = selv._process_photons_in_c(photons_in, verbose)
         photons = join(new_photons, photons_in, keys='tag',
                        uniq_col_name='{col_name}{table_name}',
                        table_names=['', '_beforemirror'])
@@ -210,7 +210,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         return photons
 
     @property
-    def area(self):
+    def area(selv):
         '''Area of the aperture.
 
         This does not take into account any projection effects for

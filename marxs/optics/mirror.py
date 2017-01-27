@@ -24,14 +24,14 @@ class PerfectLens(FlatOpticalElement):
 
     loc_coos_name = ['mirror_x', 'mirror_y']
 
-    def __init__(self, **kwargs):
-        self.focallength = kwargs.pop('focallength')
-        super(PerfectLens, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.focallength = kwargs.pop('focallength')
+        super(PerfectLens, selv).__init__(**kwargs)
 
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+    def specific_process_photons(selv, photons, intersect, interpos, intercoos):
         # A ray through the center is not broken.
         # So, find out where a central ray would go.
-        focuspoints = h2e(self.geometry('center')) + self.focallength * norm_vector(h2e(photons['dir'][intersect]))
+        focuspoints = h2e(selv.geometry('center')) + selv.focallength * norm_vector(h2e(photons['dir'][intersect]))
         dir = e2h(focuspoints - h2e(interpos[intersect]), 0)
         pol = parallel_transport(photons['dir'].data[intersect, :], dir,
                                  photons['polarization'].data[intersect, :])
@@ -77,22 +77,22 @@ class ThinLens(FlatOpticalElement):
     }
 
 
-    def __init__(self, **kwargs):
-        self.focallength = kwargs.pop('focallength')
-        super(ThinLens, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.focallength = kwargs.pop('focallength')
+        super(ThinLens, selv).__init__(**kwargs)
 
-    def process_photon(self, dir, pos, energy, polarization):
-        intersect, h_intersect, loc_inter = self.intersect(dir, pos)
+    def process_photon(selv, dir, pos, energy, polarization):
+        intersect, h_intersect, loc_inter = selv.intersect(dir, pos)
         distance = distance_point_point(h_intersect,
-                                        self.geometry('center')[np.newaxis, :])
+                                        selv.geometry('center')[np.newaxis, :])
         if distance == 0.:
             # No change of direction for rays through the origin.
             # Need to special case this, because rotation axis is not defined
             # in this case.
             new_ray_dir = h2e(dir)
         else:
-            delta_angle = distance / self.focallength
-            e_rotation_axis = np.cross(dir[:3], (h_intersect - self.geometry('center'))[:3])
+            delta_angle = distance / selv.focallength
+            e_rotation_axis = np.cross(dir[:3], (h_intersect - selv.geometry('center'))[:3])
             # This is the first step that cannot be done on a stack of photons
             # Could have a for "i in photons", but might come up with better way
             rot = axangle2mat(e_rotation_axis, delta_angle)
