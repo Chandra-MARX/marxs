@@ -52,43 +52,43 @@ class RandomArbitraryPdf(object):
 
     http://stackoverflow.com/questions/21100716/
     '''
-    def __init__(self, x, pdf, randomize_in_bin=True, sort=True):
+    def __init__(selv, x, pdf, randomize_in_bin=True, sort=True):
         if not len(x) == len(pdf):
             raise ValueError('x and pdf must have same number of elements.')
         if not np.all(np.array(pdf) >= 0):
             raise ValueError('pdf cannot have negative elements.')
 
-        self.x = np.asarray(x)
-        self.bin_width = np.hstack(([0], np.diff(x)))
-        if not np.all(self.bin_width >=0):
+        selv.x = np.asarray(x)
+        selv.bin_width = np.hstack(([0], np.diff(x)))
+        if not np.all(selv.bin_width >=0):
             raise ValueError('x must be input in increasing order.')
-        pdf = np.asarray(pdf) * self.bin_width
-        self.sort = sort
-        self.randomize_in_bin = randomize_in_bin
+        pdf = np.asarray(pdf) * selv.bin_width
+        selv.sort = sort
+        selv.randomize_in_bin = randomize_in_bin
 
         # sort the pdf - otherwise bins with small numbers might be lost to round-off errors
         # idea is from http://stackoverflow.com/questions/21100716/
-        if self.sort:
-            self.sortindex = np.argsort(pdf)
-            self.pdf = pdf[self.sortindex]
+        if selv.sort:
+            selv.sortindex = np.argsort(pdf)
+            selv.pdf = pdf[selv.sortindex]
         else:
-            self.pdf = pdf
+            selv.pdf = pdf
         # cumulative distribution function
-        self.cdf = np.cumsum(self.pdf)
+        selv.cdf = np.cumsum(selv.pdf)
 
-    def __call__(self, N):
+    def __call__(selv, N):
         """Draw from the distribution function. See docstring of class."""
         #pick numbers which are uniformly random over the cumulative distribution function
-        choice = np.random.uniform(high=self.cdf[-1], size=N)
+        choice = np.random.uniform(high=selv.cdf[-1], size=N)
         # Now here is the difficult and comparatively expensive part:
         # We need a reverse lookup to find the bin in the cdf so that we an use it
         # to map this back to the x values of the pdf
         # np.searchsorted is a binary search with O(log n).
-        index = np.searchsorted(self.cdf, choice)
+        index = np.searchsorted(selv.cdf, choice)
         #if necessary, map the indices back to their original ordering
-        if self.sort:
-            index = self.sortindex[index]
-        if self.randomize_in_bin:
-            return self.x[index - 1] + self.bin_width[index] * np.random.rand(N)
+        if selv.sort:
+            index = selv.sortindex[index]
+        if selv.randomize_in_bin:
+            return selv.x[index - 1] + selv.bin_width[index] * np.random.rand(N)
         else:
-            return self.x[index]
+            return selv.x[index]
