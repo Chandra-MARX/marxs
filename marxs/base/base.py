@@ -58,18 +58,18 @@ class MarxsElement(with_metaclass(DocMeta, object)):
     display = {}
     'Dictionary for display specifications, e.g. color'
 
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         '''Define a new MARXS element.'''
         if 'name' in kwargs:
-            self.name = kwargs.pop('name')
+            selv.name = kwargs.pop('name')
         else:
-            self.name = self.__class__
+            selv.name = selv.__class__
 
         if len(kwargs) > 0:
             raise ValueError('Initialization arguments {0} not understood'.format(', '.join(kwargs.keys())))
 
-    def describe(self):
-        return OrderedDict(element=self.name)
+    def describe(selv):
+        return OrderedDict(element=selv.name)
 
 class SimulationSequenceElement(MarxsElement):
     '''Base class for all elements in a simulation sequence that processes photons.'''
@@ -114,14 +114,14 @@ class SimulationSequenceElement(MarxsElement):
     Currently, this will not work with all optical elements.
     '''
 
-    def __init__(self, **kwargs):
-        self.id_num = kwargs.pop('id_num', -9)
+    def __init__(selv, **kwargs):
+        selv.id_num = kwargs.pop('id_num', -9)
         # We want to use id_col as a class attribute, but overwrite it if given as a kwarg
         if 'id_col' in kwargs:
-            self.id_col = kwargs.pop('id_col')
-        super(SimulationSequenceElement, self).__init__(**kwargs)
+            selv.id_col = kwargs.pop('id_col')
+        super(SimulationSequenceElement, selv).__init__(**kwargs)
 
-    def add_output_cols(self, photons, colnames=[]):
+    def add_output_cols(selv, photons, colnames=[]):
         '''Add output columns of the correct format (currently: float) to the photon array.
 
         This function takes the column names that are added to ``photons`` from several sources:
@@ -140,16 +140,16 @@ class SimulationSequenceElement(MarxsElement):
         '''
         temp = np.empty(len(photons))
         temp[:] = np.nan
-        for n in self.output_columns + colnames:
+        for n in selv.output_columns + colnames:
             if n not in photons.colnames:
                 photons.add_column(Column(name=n, data=temp))
 
-        if self.id_col is not None:
-            if self.id_col not in photons.colnames:
-                photons.add_column(Column(name=self.id_col, data=-np.ones(len(photons))))
+        if selv.id_col is not None:
+            if selv.id_col not in photons.colnames:
+                photons.add_column(Column(name=selv.id_col, data=-np.ones(len(photons))))
 
-    def __call__(self, photons, *args, **kwargs):
-        return self.process_photons(photons, *args, **kwargs)
+    def __call__(selv, photons, *args, **kwargs):
+        return selv.process_photons(photons, *args, **kwargs)
 
 
 def _parse_position_keywords(kwargs):
