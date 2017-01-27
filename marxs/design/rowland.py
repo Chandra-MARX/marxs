@@ -79,13 +79,13 @@ class RowlandTorus(MarxsElement):
                'coo1': np.linspace(0, 2 * np.pi, 60),
                'coo2': np.linspace(0, 2 * np.pi, 60)}
 
-    def __init__(self, R, r, **kwargs):
-        self.R = R
-        self.r = r
-        self.pos4d = _parse_position_keywords(kwargs)
-        super(RowlandTorus, self).__init__(**kwargs)
+    def __init__(selv, R, r, **kwargs):
+        selv.R = R
+        selv.r = r
+        selv.pos4d = _parse_position_keywords(kwargs)
+        super(RowlandTorus, selv).__init__(**kwargs)
 
-    def quartic(self, xyz, transform=True):
+    def quartic(selv, xyz, transform=True):
         '''Quartic torus equation.
 
         Roots of this equation are points on the torus.
@@ -109,11 +109,11 @@ class RowlandTorus(MarxsElement):
             raise ValueError('Input coordinates must be defined in Eukledian space.')
 
         if transform:
-            invpos4d = np.linalg.inv(self.pos4d)
+            invpos4d = np.linalg.inv(selv.pos4d)
             xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
-        return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., [0,2]]**2).sum(axis=-1)
+        return ((xyz**2).sum(axis=-1) + selv.R**2. - selv.r**2.)**2. - 4. * selv.R**2. * (xyz[..., [0,2]]**2).sum(axis=-1)
 
-    def solve_quartic(self, x=None, y=None, z=None, interval=[0, 1], transform=True):
+    def solve_quartic(selv, x=None, y=None, z=None, interval=[0, 1], transform=True):
         '''Solve the quartic for points on the Rowland torus in Cartesian coordinates.
 
         This method solves the quartic equation for positions on the Rowland Torus for
@@ -157,13 +157,13 @@ class RowlandTorus(MarxsElement):
         xyz = np.vstack([x,y,z]).T
         def f(val_in):
             xyz[..., ind] = val_in
-            return self.quartic(xyz, transform=transform)
+            return selv.quartic(xyz, transform=transform)
         val_out, brent_out = optimize.brentq(f, interval[0], interval[1], full_output=True)
         if not brent_out.converged:
             raise Exception('Intersection with torus not found.')
         return val_out
 
-    def parameteric_surface(self, theta, phi):
+    def parameteric_surface(selv, theta, phi):
         '''Parametric representation of surface of torus.
 
         In contrast to `parametric` the input parameters here are 1-d arrays
@@ -185,9 +185,9 @@ class RowlandTorus(MarxsElement):
         if (phi.ndim != 1) or (theta.ndim != 1):
             raise ValueError('input parameters have 1-dim shape.')
         theta, phi = np.meshgrid(theta, phi)
-        return self.parametric(theta, phi)
+        return selv.parametric(theta, phi)
 
-    def parametric(self, theta, phi):
+    def parametric(selv, theta, phi):
         '''Parametric description of points on the torus.
 
         This is just another way to obtain the shape of the torus, e.g.
@@ -206,14 +206,14 @@ class RowlandTorus(MarxsElement):
         xyzw : np.array
             Torus coordinates in global homogeneous coordinate system.
         '''
-        x = (self.R + self.r * np.cos(theta)) * np.cos(phi)
-        z = (self.R + self.r * np.cos(theta)) * np.sin(phi)
-        y = self.r * np.sin(theta)
+        x = (selv.R + selv.r * np.cos(theta)) * np.cos(phi)
+        z = (selv.R + selv.r * np.cos(theta)) * np.sin(phi)
+        y = selv.r * np.sin(theta)
         w = np.ones_like(z)
         torus = np.array([x, y, z, w]).T
-        return np.einsum('...ij,...j', self.pos4d, torus)
+        return np.einsum('...ij,...j', selv.pos4d, torus)
 
-    def xyzw2parametric(self, xyzw, transform=True, intersectvalid=True):
+    def xyzw2parametric(selv, xyzw, transform=True, intersectvalid=True):
         '''Calculate (theta, phi) coordinates for point on torus surface.
 
         Parameters
@@ -227,7 +227,7 @@ class RowlandTorus(MarxsElement):
             calling function already, set to ``False``.
 
         intersectvalid : bool
-            When ``r >=R`` the torus can intersect with itself. At these points,
+            When ``r >=R`` the torus can intersect with itselv. At these points,
             phi is not unique. If ``intersectvalid`` is true, those points will
             be filled with on arbitrarily chosen valid value (0.), otherwise
             they will be nan.
@@ -238,25 +238,25 @@ class RowlandTorus(MarxsElement):
             Parametric representation for all points on the torus.
         '''
         if transform:
-            invpos4d = np.linalg.inv(self.pos4d)
+            invpos4d = np.linalg.inv(selv.pos4d)
             xyzw = np.einsum('...ij,...j', invpos4d, xyzw)
 
         xyz = h2e(xyzw)
 
-        if not np.allclose(self.quartic(xyz, transform=False) / self.R**4., 0.):
+        if not np.allclose(selv.quartic(xyz, transform=False) / selv.R**4., 0.):
             raise ValueError('Parametric representation is only defined for points on torus surface.')
         # There are two branches and we can use the sign to distinguish between them
-        s = np.sign(np.sqrt(xyz[:,0]**2 + xyz[:, 2]**2) - self.R)
-        theta = np.arcsin(s * xyz[:, 1] / self.r) + (s < 0) * np.pi
+        s = np.sign(np.sqrt(xyz[:,0]**2 + xyz[:, 2]**2) - selv.R)
+        theta = np.arcsin(s * xyz[:, 1] / selv.r) + (s < 0) * np.pi
 
-        factor = self.R + self.r * np.cos(theta)
+        factor = selv.R + selv.r * np.cos(theta)
         with warnings.catch_warnings():
             phi = np.arctan2(xyz[:, 2] / factor, xyz[:, 0] / factor)
         phi[factor == 0] = 0 if intersectvalid else np.nan
 
         return theta, phi
 
-    def normal_parametric(self, theta, phi):
+    def normal_parametric(selv, theta, phi):
         '''Return the gradient vector field.
 
         Following the usual concentions, the vector is pointing outwards
@@ -280,10 +280,10 @@ class RowlandTorus(MarxsElement):
         normal[:, 1] = np.sin(theta)
         normal[:, 2] = np.cos(theta) * np.sin(phi)
 
-        return np.einsum('...ij,...j', self.pos4d, e2h(normal, 0))
+        return np.einsum('...ij,...j', selv.pos4d, e2h(normal, 0))
 
 
-    def normal(self, xyzw):
+    def normal(selv, xyzw):
         '''Return the gradient vector field.
 
         Following the usual concentions, the vector is pointing outwards
@@ -303,10 +303,10 @@ class RowlandTorus(MarxsElement):
         '''
         if not len(xyzw.shape) == 2:
             raise ValueError('Shape of input array must be (N, 4).')
-        theta, phi = self.xyzw2parametric(xyzw, 1)
-        return self.normal_parametric(theta, phi)
+        theta, phi = selv.xyzw2parametric(xyzw, 1)
+        return selv.normal_parametric(theta, phi)
 
-    def xyz_from_radiusangle(self, radius, angle, interval):
+    def xyz_from_radiusangle(selv, radius, angle, interval):
         '''Get Cartesian coordiantes for radius, angle on the rowland circle.
 
         y, z are calculated from the radius and angle of polar coordiantes in a plane;
@@ -332,9 +332,9 @@ class RowlandTorus(MarxsElement):
         '''
         y = radius * np.cos(angle)
         z = radius * np.sin(angle)
-        x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
+        x = selv.solve_quartic(y=y,z=z, interval=interval, transform=False)
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T
-        return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
+        return h2e(np.einsum('...ij,...j', selv.pos4d, xyz))
 
 
 def design_tilted_torus(f, alpha, beta):
@@ -438,28 +438,28 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
 
     id_col = 'CCD_ID'
 
-    def __init__(self, rowland, d_element, theta, **kwargs):
-        self.rowland = rowland
+    def __init__(selv, rowland, d_element, theta, **kwargs):
+        selv.rowland = rowland
         if not len(theta) % 2 == 0:
             raise ValueError('radius must be a list of [inner_1, outer_1, inner_2, outer_2, ...].')
         if np.max(np.abs(theta)) > 10:
             raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
-        self.theta = theta
-        self.d_element = d_element
-        kwargs['normal_spec'] = self.rowland_normal
-        kwargs['parallel_spec'] =  self.rowland.parametric(0., 0.) - self.rowland.parametric(1., 0.)
-        kwargs['pos_spec'] = self.xyzwpos
+        selv.theta = theta
+        selv.d_element = d_element
+        kwargs['normal_spec'] = selv.rowland_normal
+        kwargs['parallel_spec'] =  selv.rowland.parametric(0., 0.) - selv.rowland.parametric(1., 0.)
+        kwargs['pos_spec'] = selv.xyzwpos
 
-        super(RowlandCircleArray, self).__init__(**kwargs)
+        super(RowlandCircleArray, selv).__init__(**kwargs)
 
-    def rowland_normal(self, xyzw):
-        return self.rowland.normal(xyzw)
+    def rowland_normal(selv, xyzw):
+        return selv.rowland.normal(xyzw)
 
-    def xyzwpos(self):
-        radii = self.distribute_elements_on_arc()
-        return self.rowland.parametric(radii, 0.)
+    def xyzwpos(selv):
+        radii = selv.distribute_elements_on_arc()
+        return selv.rowland.parametric(radii, 0.)
 
-    def max_elements_on_arc(self, theta):
+    def max_elements_on_arc(selv, theta):
         '''Max number of elements that fit on an arc
 
         Parameters
@@ -474,9 +474,9 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
             Elements might reach beyond the limits if the arc length
             is not an integer multiple of the element size.
         '''
-        return int(np.ceil(self.rowland.r * (theta[1] - theta[0]) / self.d_element))
+        return int(np.ceil(selv.rowland.r * (theta[1] - theta[0]) / selv.d_element))
 
-    def distribute_elements_on_arc(self):
+    def distribute_elements_on_arc(selv):
         '''Distributes elements as evenly as possible along an arc segment.
 
         Returns
@@ -485,11 +485,11 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
             Theta coordinates of the element *center* positions.
         '''
         theta = []
-        for i in range(len(self.theta) // 2):
-            bracket = self.theta[2 * i: 2 * i + 2]
-            n = self.max_elements_on_arc(bracket)
+        for i in range(len(selv.theta) // 2):
+            bracket = selv.theta[2 * i: 2 * i + 2]
+            n = selv.max_elements_on_arc(bracket)
             theta.append(np.mean(bracket) +
-                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element / self.rowland.r)
+                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * selv.d_element / selv.rowland.r)
         return np.hstack(theta)
 
 
@@ -536,55 +536,55 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
 
     id_col = 'CCD_ID'
 
-    def __init__(self, rowland, d_element, x_range, radius, phi, **kwargs):
-        self.rowland = rowland
+    def __init__(selv, rowland, d_element, x_range, radius, phi, **kwargs):
+        selv.rowland = rowland
         if not len(radius) % 2 == 0:
             raise ValueError('radius must be a list of [inner_1, outer_1, inner_2, outer_2, ...].')
         radarray = np.array(radius)
         if not np.all(radarray[1::2] > radarray[::2]):
             raise ValueError('Outer radius must be larger than inner radius.')
-        self.radius = radius
+        selv.radius = radius
 
         if np.max(np.abs(phi)) > 10:
             raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
-        self.phi = phi
-        self.x_range = x_range
-        self.d_element = d_element
+        selv.phi = phi
+        selv.x_range = x_range
+        selv.d_element = d_element
 
         if 'normal_spec' not in kwargs.keys():
-            kwargs['normal_spec'] = self.rowland_normal
+            kwargs['normal_spec'] = selv.rowland_normal
 
         if 'parallel_spec' not in kwargs.keys():
-            radii = self.distribute_elements_on_radius()
-            kwargs['parallel_spec'] =  e2h(normalized_vector(self.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.xyz_from_radiusangle(radii[0], self.phi, self.x_range)), 0)
+            radii = selv.distribute_elements_on_radius()
+            kwargs['parallel_spec'] =  e2h(normalized_vector(selv.xyz_from_radiusangle(radii[1], selv.phi, selv.x_range) - selv.xyz_from_radiusangle(radii[0], selv.phi, selv.x_range)), 0)
 
         if 'pos_spec' not in kwargs.keys():
-            kwargs['pos_spec'] = self.xyzwpos
+            kwargs['pos_spec'] = selv.xyzwpos
 
-        super(LinearCCDArray, self).__init__(**kwargs)
+        super(LinearCCDArray, selv).__init__(**kwargs)
 
-    def rowland_normal(self, xyzw):
-        return self.rowland.normal(xyzw)
+    def rowland_normal(selv, xyzw):
+        return selv.rowland.normal(xyzw)
 
-    def xyz_from_radiusangle(self, r, phi, x_range):
+    def xyz_from_radiusangle(selv, r, phi, x_range):
         '''Wrap `marxs.design.RowlandTorus.xyz_from_radiusangle` for better error message'''
         try:
-            xyz = self.rowland.xyz_from_radiusangle(r, phi, x_range)
+            xyz = selv.rowland.xyz_from_radiusangle(r, phi, x_range)
         except ValueError as e:
             if 'f(a) and f(b) must have different signs' in str(e):
-                raise ElementPlacementError('No intersection with Rowland torus in range {0}'.format(self.x_range))
+                raise ElementPlacementError('No intersection with Rowland torus in range {0}'.format(selv.x_range))
             else:
                 # Something else went wrong
                 raise e
         return xyz
 
-    def xyzwpos(self):
-        radii = self.distribute_elements_on_radius()
-        facet_pos = np.array([self.xyz_from_radiusangle(r, self.phi, self.x_range).flatten() for r in radii])
+    def xyzwpos(selv):
+        radii = selv.distribute_elements_on_radius()
+        facet_pos = np.array([selv.xyz_from_radiusangle(r, selv.phi, selv.x_range).flatten() for r in radii])
         return e2h(facet_pos, 1)
 
 
-    def max_elements_on_radius(self, radius):
+    def max_elements_on_radius(selv, radius):
         '''Distribute elements on a radius.
 
         Parameters
@@ -599,9 +599,9 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
             Elements might reach beyond the radius limits if the difference between
             inner and outer radius is not an integer multiple of the element size.
         '''
-        return int(np.ceil((radius[1] - radius[0]) / self.d_element))
+        return int(np.ceil((radius[1] - radius[0]) / selv.d_element))
 
-    def distribute_elements_on_radius(self):
+    def distribute_elements_on_radius(selv):
         '''Distributes elements as evenly as possible along a radius.
 
         .. note::
@@ -615,11 +615,11 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
             Radii of the element *center* positions.
         '''
         radii = []
-        for i in range(len(self.radius) // 2):
-            radiusbracket = self.radius[2 * i: 2 * i + 2]
-            n = self.max_elements_on_radius(radiusbracket)
+        for i in range(len(selv.radius) // 2):
+            radiusbracket = selv.radius[2 * i: 2 * i + 2]
+            n = selv.max_elements_on_radius(radiusbracket)
             radii.append(np.mean(radiusbracket) +
-                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
+                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * selv.d_element)
         return np.hstack(radii)
 
 
@@ -673,22 +673,22 @@ class GratingArrayStructure(LinearCCDArray):
 
     id_col = 'facet'
 
-    def __init__(self, rowland, d_element, x_range, radius, phi=[0., 2*np.pi],
+    def __init__(selv, rowland, d_element, x_range, radius, phi=[0., 2*np.pi],
                  parallel_spec=np.array([0., 1., 0., 0.]), **kwargs):
         if np.min(radius) < 0:
             raise ValueError('Radius must be positive.')
         kwargs['parallel_spec'] = parallel_spec
-        kwargs['pos_spec'] = self.xyzwpos
+        kwargs['pos_spec'] = selv.xyzwpos
 
-        super(GratingArrayStructure, self).__init__(rowland, d_element, x_range, radius, phi, **kwargs)
+        super(GratingArrayStructure, selv).__init__(rowland, d_element, x_range, radius, phi, **kwargs)
 
-    def calc_ideal_center(self):
+    def calc_ideal_center(selv):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
-        a = (self.phi[0] + anglediff(self.phi) / 2 ) % (2. * np.pi)
-        r = sum(self.radius) / 2
-        return self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten()
+        a = (selv.phi[0] + anglediff(selv.phi) / 2 ) % (2. * np.pi)
+        r = sum(selv.radius) / 2
+        return selv.rowland.xyz_from_radiusangle(r, a, selv.x_range).flatten()
 
-    def max_elements_on_arc(self, radius):
+    def max_elements_on_arc(selv, radius):
         '''Calculate maximal number of elements that can be placed at a certain radius.
 
         Parameters
@@ -696,9 +696,9 @@ class GratingArrayStructure(LinearCCDArray):
         radius : float
             Radius of circle where the centers of all elements will be placed.
         '''
-        return radius * anglediff(self.phi) // self.d_element
+        return radius * anglediff(selv.phi) // selv.d_element
 
-    def distribute_elements_on_arc(self, radius):
+    def distribute_elements_on_arc(selv, radius):
         '''Distribute elements on an arc.
 
         The elements are distributed as evenly as possible over the arc.
@@ -720,23 +720,23 @@ class GratingArrayStructure(LinearCCDArray):
             The phi angles for centers of the elements at ``radius``.
         '''
         # arc is most crowded on inner radius
-        n = self.max_elements_on_arc(radius - self.d_element / 2)
-        element_angle = self.d_element / (2. * np.pi * radius)
+        n = selv.max_elements_on_arc(radius - selv.d_element / 2)
+        element_angle = selv.d_element / (2. * np.pi * radius)
         # thickness of space between elements, distributed equally
-        d_between = (anglediff(self.phi) - n * element_angle) / (n + 1)
+        d_between = (anglediff(selv.phi) - n * element_angle) / (n + 1)
         centerangles = d_between + 0.5 * element_angle + np.arange(n) * (d_between + element_angle)
-        return (self.phi[0] + centerangles) % (2. * np.pi)
+        return (selv.phi[0] + centerangles) % (2. * np.pi)
 
-    def getelem_xyzw(self):
+    def getelem_xyzw(selv):
         pos = []
-        radii = self.distribute_elements_on_radius()
+        radii = selv.distribute_elements_on_radius()
         for r in radii:
-            angles = self.distribute_elements_on_arc(r)
+            angles = selv.distribute_elements_on_arc(r)
             for a in angles:
-                pos.append(self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten())
+                pos.append(selv.rowland.xyz_from_radiusangle(r, a, selv.x_range).flatten())
         return e2h(np.array(pos), 1)
 
-    def calculate_elempos(self):
+    def calculate_elempos(selv):
         '''Calculate the position of elements based on some algorithm.
 
         Returns
@@ -748,9 +748,9 @@ class GratingArrayStructure(LinearCCDArray):
         '''
         pos4d = []
 
-        xyzw = self.getelem_xyzw()
-        normals = self.get_spec('normal_spec', xyzw)
-        parallels = self.get_spec('parallel_spec', xyzw, normals)
+        xyzw = selv.getelem_xyzw()
+        normals = selv.get_spec('normal_spec', xyzw)
+        parallels = selv.get_spec('parallel_spec', xyzw, normals)
 
         for i in range(xyzw.shape[0]):
 
@@ -766,40 +766,40 @@ class GratingArrayStructure(LinearCCDArray):
 class RectangularGrid(ParallelCalculated, OpticalElement):
     id_col = 'facet'
 
-    def __init__(self, **kwargs):
-        self.x_range = kwargs.pop('x_range')
-        self.y_range = kwargs.pop('y_range')
-        self.z_range = kwargs.pop('z_range')
-        self.rowland = kwargs.pop('rowland')
-        self.d_element = kwargs.pop('d_element')
-        kwargs['pos_spec'] = self.elempos
+    def __init__(selv, **kwargs):
+        selv.x_range = kwargs.pop('x_range')
+        selv.y_range = kwargs.pop('y_range')
+        selv.z_range = kwargs.pop('z_range')
+        selv.rowland = kwargs.pop('rowland')
+        selv.d_element = kwargs.pop('d_element')
+        kwargs['pos_spec'] = selv.elempos
         if 'normal_spec' not in kwargs.keys():
             kwargs['normal_spec'] = np.array([0., 0., 0., 1.])
         if 'parallel_spec' not in kwargs.keys():
             kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
 
-        super(RectangularGrid, self).__init__(**kwargs)
+        super(RectangularGrid, selv).__init__(**kwargs)
 
-    def elempos(self):
+    def elempos(selv):
 
-        n_y =  int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
-        n_z =  int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
+        n_y =  int(np.ceil((selv.y_range[1] - selv.y_range[0]) / selv.d_element))
+        n_z =  int(np.ceil((selv.z_range[1] - selv.z_range[0]) / selv.d_element))
 
         # n_y and n_z are rounded up, so they cover a slighty larger range than y/z_range
-        width_y = n_y * self.d_element
-        width_z = n_z * self.d_element
+        width_y = n_y * selv.d_element
+        width_z = n_z * selv.d_element
 
-        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element), self.y_range[1], self.d_element)
-        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element), self.z_range[1], self.d_element)
+        ypos = np.arange(0.5 * (selv.y_range[0] - width_y + selv.y_range[1] + selv.d_element), selv.y_range[1], selv.d_element)
+        zpos = np.arange(0.5 * (selv.z_range[0] - width_z + selv.z_range[1] + selv.d_element), selv.z_range[1], selv.d_element)
         ypos, zpos = np.meshgrid(ypos, zpos)
 
         xpos = []
         for y, z in zip(ypos.flatten(), zpos.flatten()):
-            xpos.append(self.rowland.solve_quartic(y=y, z=z, interval=self.x_range))
+            xpos.append(selv.rowland.solve_quartic(y=y, z=z, interval=selv.x_range))
 
         return np.vstack([np.array(xpos), ypos.flatten(), zpos.flatten(), np.ones_like(xpos)]).T
 
-    def calculate_elempos(self):
+    def calculate_elempos(selv):
         '''Calculate the position of elements based on some algorithm.
 
         Returns
@@ -811,9 +811,9 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
         '''
         pos4d = []
 
-        xyzw = self.elempos()
-        normals = self.get_spec('normal_spec', xyzw)
-        parallels = self.get_spec('parallel_spec', xyzw, normals)
+        xyzw = selv.elempos()
+        normals = selv.get_spec('normal_spec', xyzw)
+        parallels = selv.get_spec('parallel_spec', xyzw, normals)
 
         for i in range(xyzw.shape[0]):
 
