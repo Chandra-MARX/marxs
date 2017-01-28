@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''Add additional scattering to processed photons.
 
 Classes in this file add additional scattering in a statistical sense.

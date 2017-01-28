@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''
 
 See `ASC FITS File Designers' Guide ASC-FITS-2.1.0 <cxc.harvard.edu/contrib/arots/fits/ascfits.ps>`.

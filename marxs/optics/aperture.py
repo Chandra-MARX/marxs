@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from astropy import table
 from astropy.utils.metadata import enable_merge_strategies
