@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from .base import (GeometryError, VisualizationWarning,
                   DocMeta,
                   MarxsElement, SimulationSequenceElement,

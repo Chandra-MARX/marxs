@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from copy import deepcopy
 import numpy as np
 

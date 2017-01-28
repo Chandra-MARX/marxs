@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from io import StringIO
 import numpy as np
 from numpy.random import random

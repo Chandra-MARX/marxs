@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from .rowland import (RowlandTorus,
                       GratingArrayStructure, LinearCCDArray,
                       RectangularGrid,

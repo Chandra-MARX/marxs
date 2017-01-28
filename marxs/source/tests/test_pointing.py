@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord

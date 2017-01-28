@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''This module contains tests that are done for all opticial elements as opposed to tests that
 apply to one class of elements only (e.g. gratings).
 Tests here include simple things that guarantee that all elements comply with the MARXS interface

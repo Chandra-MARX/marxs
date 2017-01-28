@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''
 .. todo::
    Add a mechanism for unit conversion. This expects all distances in mm and all energies in keV.

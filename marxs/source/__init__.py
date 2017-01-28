@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from .source import (Source, PointSource,
                      RadialDistributionSource,
                      SphericalDiskSource,

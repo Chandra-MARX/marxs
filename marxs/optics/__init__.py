@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from .aperture import RectangleAperture, CircleAperture, MultiAperture
 from .detector import FlatDetector, CircularDetector
 from .marx import MarxMirror

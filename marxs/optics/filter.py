@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''This module contains filters, e.g. an optical blocking filter or CCD contamination.
 '''
 import numpy as np
