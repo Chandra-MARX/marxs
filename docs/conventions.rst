@@ -32,7 +32,7 @@ the surface of a mirror or detector) is in the y-z plane. The center is at the o
 coordiante system and the default size in each dimenstion is 1, measured from the center.
 Thus, e.g. the default definition for a `marxs.optics.detector.FlatDetector`, makes a detector surface with
 the following corners (in 3-d x,y,z coordinates): [0, -1, -1], [0, -1, 1], [0, 1, 1] and [0, 1, -1].
-This detector has the thickness 1, but that only matters for display purposes, since the ray-trace
+This detector has the thickness 2 (from x=-1 to x=+1), but that only matters for display purposes, since the ray-trace
 calculates the intersection with the "active surface" in the y-z plane independent of the
 thickeness in x-direction. There are exceptions to these defaults, those are noted in the description
 of the individual optical elements.

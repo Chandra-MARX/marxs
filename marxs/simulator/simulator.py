@@ -18,56 +18,29 @@ class BaseContainer(SimulationSequenceElement):
     '''Base class for containers that contain several `SimulationSequenceElement` objects.
     '''
 
+    display = {'shape': 'container'}
     elements = []
     '''List of elements that are contained in this container.'''
 
-    def __init__(self, **kwargs):
-        self.preprocess_steps = kwargs.pop('preprocess_steps', [])
-        self.postprocess_steps = kwargs.pop('postprocess_steps', [])
-        for elem in self.elements + self.preprocess_steps + self.postprocess_steps:
+    def __init__(selv, **kwargs):
+        selv.preprocess_steps = kwargs.pop('preprocess_steps', [])
+        selv.postprocess_steps = kwargs.pop('postprocess_steps', [])
+        for elem in selv.elements + selv.preprocess_steps + selv.postprocess_steps:
             if not callable(elem):
                 raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
-        super(BaseContainer, self).__init__(**kwargs)
+        super(BaseContainer, selv).__init__(**kwargs)
 
-    def __call__(self, photons):
-        for elem in self.elements:
-            for p in self.preprocess_steps:
+    def __call__(selv, photons):
+        for elem in selv.elements:
+            for p in selv.preprocess_steps:
                 p(photons)
             photons = elem(photons)
-            for p in self.postprocess_steps:
+            for p in selv.postprocess_steps:
                 p(photons)
         return photons
 
-    def intersect(self, photons, **kwargs):
+    def intersect(selv, photons, **kwargs):
         raise NotImplementedError
-
-    def _plot_threejsjson(self, **kwargs):
-        '''Output of each element can be a dict (if it is a leaf) or a list
-        (if it is a container). We need to flatten the list here to avoid
-        arbitrarily deep recursion.
-        '''
-        out = []
-        for elem in self.elements:
-            elemout = elem.plot(format="threejsjson", **kwargs)
-            if isinstance(elemout, list):
-                out.extend(elemout)
-            elif (elemout is None):
-                pass
-            else:
-                out.append(elemout)
-        return out
-
-    def _plot_threejs(self, *args, **kwargs):
-        for elem in self.elements:
-            elem.plot(format='threejs', *args, **kwargs)
-
-    def _plot_mayavi(self, *args, **kwargs):
-        '''No need to construct deep nested lists on None.'''
-        out = [elem.plot(format='mayavi', *args, **kwargs) for elem in self.elements]
-        if all([elem is None for elem in out]):
-            return None
-        else:
-            return out
 
 
 class Sequence(BaseContainer):
@@ -125,9 +98,9 @@ class Sequence(BaseContainer):
     40 * 40 pixel detector).
     '''
 
-    def __init__(self, **kwargs):
-        self.elements = kwargs.pop('elements')
-        super(Sequence, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.elements = kwargs.pop('elements')
+        super(Sequence, selv).__init__(**kwargs)
 
 
 class Parallel(BaseContainer):
@@ -234,12 +207,12 @@ class Parallel(BaseContainer):
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
     '''
-    def __init__(self, **kwargs):
-        self.pos4d = _parse_position_keywords(kwargs)
-        self.id_num_offset = kwargs.pop('id_num_offset', 0)
-        self.elem_class = kwargs.pop('elem_class')
+    def __init__(selv, **kwargs):
+        selv.pos4d = _parse_position_keywords(kwargs)
+        selv.id_num_offset = kwargs.pop('id_num_offset', 0)
+        selv.elem_class = kwargs.pop('elem_class')
         # Need to operate on a copy here, to avoid changing elem_args of outer level
-        self.elem_args = kwargs.pop('elem_args', {}).copy()
+        selv.elem_args = kwargs.pop('elem_args', {}).copy()
 
         elem_pos = kwargs.pop('elem_pos')
         if isinstance(elem_pos, dict):
@@ -253,24 +226,24 @@ class Parallel(BaseContainer):
 
             n = len(elem_pos[keys[0]])
             # Turn dictionary of lists into list of dicts and parse position keywords
-            self.elem_pos = []
+            selv.elem_pos = []
             for i in range(n):
                 elem_pos_dict = {}
                 for k in keys:
                     elem_pos_dict[k] = elem_pos[k][i]
-                self.elem_pos.append(_parse_position_keywords(elem_pos_dict))
+                selv.elem_pos.append(_parse_position_keywords(elem_pos_dict))
         else:
-            self.elem_pos = elem_pos
+            selv.elem_pos = elem_pos
 
-        super(Parallel, self).__init__(**kwargs)
+        super(Parallel, selv).__init__(**kwargs)
 
-        if 'id_col' not in self.elem_args:
-            self.elem_args['id_col'] = self.id_col
-        self.elem_uncertainty = [np.eye(4)] * len(self.elem_pos)
-        self.generate_elements()
+        if 'id_col' not in selv.elem_args:
+            selv.elem_args['id_col'] = selv.id_col
+        selv.elem_uncertainty = [np.eye(4)] * len(selv.elem_pos)
+        selv.generate_elements()
 
 
-    def generate_elements(self):
+    def generate_elements(selv):
         '''Initialize all optical elements.
 
         After any of the ``elem_pos``, ``elem_uncertainty`` or
@@ -283,35 +256,35 @@ class Parallel(BaseContainer):
         - the uncertainty for individual facets.
         '''
 
-        self.elements = []
+        selv.elements = []
 
-        for i in range(len(self.elem_pos)):
+        for i in range(len(selv.elem_pos)):
             # _parse_position_keywords pops off keywords, thus operate on a copy here
-            elem_args = self.elem_args.copy()
+            elem_args = selv.elem_args.copy()
             # check if elem_args is the same for every element
             specific_elem_args = {}
             for k, v in elem_args.items():
-                if isinstance(v, list) and (len(v) == len(self.elem_pos)):
+                if isinstance(v, list) and (len(v) == len(selv.elem_pos)):
                     specific_elem_args[k] = v[i]
                 else:
                     specific_elem_args[k] = v
             if 'name' not in specific_elem_args:
-                specific_elem_args['name'] = 'Elem {0} in {1}'.format(i, self.name)
+                specific_elem_args['name'] = 'Elem {0} in {1}'.format(i, selv.name)
 
             elem_pos4d = _parse_position_keywords(specific_elem_args)
             telem, relem, zelem, Selem = decompose44(elem_pos4d)
             if not np.allclose(Selem, 0.):
                 raise ValueError('pos4 for elem includes shear, which is not supported here.')
 
-            e_center, e_rot, e_zoom, stemp = decompose44(self.elem_pos[i])
-            tsigelem, rsigelem, zsigelem, stemp = decompose44(self.elem_uncertainty[i])
+            e_center, e_rot, e_zoom, stemp = decompose44(selv.elem_pos[i])
+            tsigelem, rsigelem, zsigelem, stemp = decompose44(selv.elem_uncertainty[i])
             if not np.allclose(stemp, 0.):
                 raise SimulationSetupError('Shear is not supported in the elem uncertainty.')
             # Will be able to write this so much better in python 3.5,
             # but for now I don't want to nest np.dot too much so here it goes
             f_pos4d = np.eye(4)
-            for m in reversed([self.pos4d,                 # global position of ParallelElement
-                               self.uncertainty,           # uncertainty in global positioning
+            for m in reversed([selv.pos4d,                 # global position of ParallelElement
+                               selv.uncertainty,           # uncertainty in global positioning
                                translation2aff(tsigelem),  # uncertaintig in translation for elem
                                translation2aff(e_center),  # translate elem center to global center
                                translation2aff(telem),     # offset for all elem. Usually 0.
@@ -324,21 +297,21 @@ class Parallel(BaseContainer):
                               ]):
                 assert m.shape == (4, 4)
                 f_pos4d = np.dot(m, f_pos4d)
-            self.elements.append(self.elem_class(pos4d = f_pos4d,
-                                                 id_num=self.id_num_offset + i,
+            selv.elements.append(selv.elem_class(pos4d = f_pos4d,
+                                                 id_num=selv.id_num_offset + i,
                                                  **specific_elem_args))
 
 
 class ParallelCalculated(Parallel):
 
-    def __init__(self, **kwargs):
-        self.pos_spec = kwargs.pop('pos_spec')
-        self.normal_spec = kwargs.pop('normal_spec')
-        self.parallel_spec = kwargs.pop('parallel_spec')
-        kwargs['elem_pos'] = self.calculate_elempos()
-        super(ParallelCalculated, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.pos_spec = kwargs.pop('pos_spec')
+        selv.normal_spec = kwargs.pop('normal_spec')
+        selv.parallel_spec = kwargs.pop('parallel_spec')
+        kwargs['elem_pos'] = selv.calculate_elempos()
+        super(ParallelCalculated, selv).__init__(**kwargs)
 
-    def calculate_elempos(self):
+    def calculate_elempos(selv):
         '''Calculate the position of elements based on some algorithm.
 
         Classes derived from `Parallel` can overwrite this method if they want to
@@ -355,9 +328,9 @@ class ParallelCalculated(Parallel):
         '''
         pos4d = []
 
-        xyzw = self.get_elemxyzw()
-        normals = self.get_spec('normal_spec', xyzw)
-        parallels = self.get_spec('parallel_spec', xyzw, normals)
+        xyzw = selv.get_elemxyzw()
+        normals = selv.get_spec('normal_spec', xyzw)
+        parallels = selv.get_spec('parallel_spec', xyzw, normals)
         normals = h2e(normals)
         parallels = h2e(parallels)
 
@@ -371,14 +344,14 @@ class ParallelCalculated(Parallel):
             pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
 
-    def get_elemxyzw(self):
-        if callable(self.pos_spec):
-            return self.pos_spec()
+    def get_elemxyzw(selv):
+        if callable(selv.pos_spec):
+            return selv.pos_spec()
         else:
-            return self.pos_spec
+            return selv.pos_spec
 
-    def get_spec(self, specname, xyzw, *args, **kwargs):
-        spec = getattr(self, specname)
+    def get_spec(selv, specname, xyzw, *args, **kwargs):
+        spec = getattr(selv, specname)
         # function
         if callable(spec):
             return spec(xyzw, *args, **kwargs)
@@ -411,12 +384,12 @@ class KeepCol(object):
         List of saved data. This will be empty initially.
     '''
 
-    def __init__(self, colname):
-        self.colname = colname
-        self.data = []
+    def __init__(selv, colname):
+        selv.colname = colname
+        selv.data = []
 
-    def __call__(self, photons):
-        if self.colname not in photons.colnames:
-            raise KeyError('photon list has no column {0}.'.format(self.colname))
+    def __call__(selv, photons):
+        if selv.colname not in photons.colnames:
+            raise KeyError('photon list has no column {0}.'.format(selv.colname))
         else:
-            self.data.append(photons[self.colname].copy())
+            selv.data.append(photons[selv.colname].copy())

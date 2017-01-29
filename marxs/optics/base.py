@@ -19,13 +19,13 @@ class OpticalElement(SimulationSequenceElement):
     At the very minumum, any derived class needs to implement either `process_photon` or
     `process_photons`. If the interaction with the photons (e.g. scattering of a mirror surface)
     can be implemented in a vectorized way using numpy array operations, the derived class should
-    overwrite `process_photons` (`process_photon` is not used in ths case).
+    overwrite `process_photons` (`process_photon` is not used in this case).
     If no vectorized implementation is available, it is sufficient to overwrite `process_photon`.
     Marxs will call `process_photons`, which (if not overwritten) contains a simple for-loop to
     loop over all photons in the array and call `process_photon` on each of them.
     '''
 
-    def geometry(self, key):
+    def geometry(selv, key):
         '''This function wraps access to the pos4d matrix.
 
         This is mostly a convenience method that gives access to vectors from the
@@ -50,38 +50,38 @@ class OpticalElement(SimulationSequenceElement):
           direction of :math:`\hat v_{x,y,z}` called :math:`\hat e_{x,y,z}`.
         - ``plane``: It also adds the homogeneous coordinates of the active plane
           as ``plane``.
-        - Other labels get looked up in ``self._geometry`` and if the resulting
+        - Other labels get looked up in ``selv._geometry`` and if the resulting
           value is a 4-d vector, it gets transformed with ``pos4d``.
 
         Not all these labels make sense for every optical element (e.g. a curved
         mirror does not really have a "plane").
-        Access through this method is slower than direct indexing of ``self.pos4d``.
+        Access through this method is slower than direct indexing of ``selv.pos4d``.
         '''
 
         if key == 'center':
-            return self.pos4d[:, 3]
+            return selv.pos4d[:, 3]
         elif key in ['v_x', 'e_x']:
-            val = self.pos4d[:, 0]
+            val = selv.pos4d[:, 0]
         elif key in ['v_y', 'e_y']:
-            val = self.pos4d[:, 1]
+            val = selv.pos4d[:, 1]
         elif key in ['v_z', 'e_z']:
-            val = self.pos4d[:, 2]
+            val = selv.pos4d[:, 2]
         elif key == 'plane':
-            return point_dir2plane(self.geometry('center'), self.geometry('e_x'))
+            return point_dir2plane(selv.geometry('center'), selv.geometry('e_x'))
         else:
-            val = self._geometry[key]
+            val = selv._geometry[key]
             if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
-                val = np.dot(self.pos4d, val)
+                val = np.dot(selv.pos4d, val)
         if key[:2] == 'e_':
             return val / np.linalg.norm(val)
         else:
             return val
 
-    def __init__(self, **kwargs):
-        self.pos4d = _parse_position_keywords(kwargs)
-        super(OpticalElement, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.pos4d = _parse_position_keywords(kwargs)
+        super(OpticalElement, selv).__init__(**kwargs)
 
-    def intersect(self, dir, pos):
+    def intersect(selv, dir, pos):
         '''Calculate the intersection point between a ray and the element
 
         Parameters
@@ -103,7 +103,7 @@ class OpticalElement(SimulationSequenceElement):
         '''
         raise NotImplementedError
 
-    def process_photon(self, dir, pos, energy, polarization):
+    def process_photon(selv, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.
 
         This is called from the `process_photons` method in a loop over all
@@ -148,11 +148,11 @@ class OpticalElement(SimulationSequenceElement):
         raise NotImplementedError
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
-    def __call__(self, photons):
-        intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
-        return self.process_photons(photons, intersect, interpos, intercoos)
+    def __call__(selv, photons):
+        intersect, interpos, intercoos = selv.intersect(photons['dir'].data, photons['pos'].data)
+        return selv.process_photons(photons, intersect, interpos, intercoos)
 
-    def process_photons(self, photons, intersect, interpos, intercoos):
+    def process_photons(selv, photons, intersect, interpos, intercoos):
         '''Simulate interaction of optical element with photons - vectorized.
 
         Derived classes should overwrite this function or `process_photon`.
@@ -175,29 +175,29 @@ class OpticalElement(SimulationSequenceElement):
             to ensure you are working with an independent copy.
         '''
         if intersect.sum() > 0:
-            if hasattr(self, "specific_process_photons"):
-                outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
+            if hasattr(selv, "specific_process_photons"):
+                outcols = selv.specific_process_photons(photons, intersect, interpos, intercoos)
+                selv.add_output_cols(photons, selv.loc_coos_name + list(outcols.keys()))
                 # Add ID number to ID col, if requested
-                if self.id_col is not None:
-                    photons[self.id_col][intersect] = self.id_num
+                if selv.id_col is not None:
+                    photons[selv.id_col][intersect] = selv.id_num
                 # Set position in different coordinate systems
                 photons['pos'][intersect] = interpos[intersect]
-                photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
-                photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+                photons[selv.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
+                photons[selv.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
                 for col in outcols:
                     if col == 'probability':
                         photons[col][intersect] *= outcols[col]
                     else:
                         photons[col][intersect] = outcols[col]
 
-            elif hasattr(self, "process_photon"):
+            elif hasattr(selv, "process_photon"):
                 if isinstance(photons, Row):
                     photons = Table(photons)
-                outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
+                outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + selv.output_columns
                 n_intersect = intersect.nonzero()[0]
                 for photon, i in zip(photons[intersect], n_intersect):
-                    outs = self.process_photon(photon['dir'], photon['pos'],
+                    outs = selv.process_photon(photon['dir'], photon['pos'],
                                                photon['energy'],
                                                photon['polarization'])
                     for a, b in zip(outcols, outs):
@@ -220,7 +220,7 @@ class FlatOpticalElement(OpticalElement):
 
     Derived classes have the option to implement their own `process_photons` or, alternatively,
     they can implement a function called
-    ``specific_process_photons(self, photons, intersect, interpos, intercoos)`` that returns a dictionary
+    ``specific_process_photons(selv, photons, intersect, interpos, intercoos)`` that returns a dictionary
     of the form ``{'column name': value, ...}`` where value is an array that holds one value for
     each photon that intersects the optical element. In the special case of ``probability`` the
     return value should only contain the probability assigned in **this** element. This value
@@ -232,12 +232,12 @@ class FlatOpticalElement(OpticalElement):
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
-    def __init__(self, *args, **kwargs):
-        super(FlatOpticalElement, self).__init__(*args, **kwargs)
+    def __init__(selv, *args, **kwargs):
+        super(FlatOpticalElement, selv).__init__(*args, **kwargs)
         #copy class attribute to instance attribute
-        self._geometry = copy(self._geometry)
+        selv._geometry = copy(selv._geometry)
 
-    def intersect(self, dir, pos):
+    def intersect(selv, dir, pos):
         '''Calculate the intersection point between a ray and the element
 
         Parameters
@@ -258,69 +258,18 @@ class FlatOpticalElement(OpticalElement):
             y and z coordinates in the coordiante system of the active plane.
         '''
         plucker = dir_point2line(h2e(dir), h2e(pos))
-        interpos =  intersect_line_plane(plucker, self.geometry('plane'))
-        vec_center_inter = - h2e(self.geometry('center')) + h2e(interpos)
-        ey = np.dot(vec_center_inter, h2e(self.geometry('e_y')))
-        ez = np.dot(vec_center_inter, h2e(self.geometry('e_z')))
-        intersect = ((np.abs(ey) <= np.linalg.norm(self.geometry('v_y'))) &
-                     (np.abs(ez) <= np.linalg.norm(self.geometry('v_z'))))
+        interpos =  intersect_line_plane(plucker, selv.geometry('plane'))
+        vec_center_inter = - h2e(selv.geometry('center')) + h2e(interpos)
+        ey = np.dot(vec_center_inter, h2e(selv.geometry('e_y')))
+        ez = np.dot(vec_center_inter, h2e(selv.geometry('e_z')))
+        intersect = ((np.abs(ey) <= np.linalg.norm(selv.geometry('v_y'))) &
+                     (np.abs(ez) <= np.linalg.norm(selv.geometry('v_z'))))
         if dir.ndim == 2:
             interpos[~intersect, :3] = np.nan
         # input of single photon.
         elif (dir.ndim == 1) and not intersect:
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
-
-    def _plot_mayavi(self, viewer=None):
-        from mayavi.mlab import triangular_mesh
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        corners = np.array([[-1, -1, -1], [-1,+1, -1],
-                            [-1, -1,  1], [-1, 1,  1],
-                            [ 1, -1, -1], [ 1, 1, -1],
-                            [ 1, -1, +1], [ 1, 1, +1]])
-        triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
-                     (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-        corners = np.einsum('ij,...j->...i', self.pos4d, e2h(corners, 1))
-        b = triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
-                            color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = b.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-
-    def _plot_threejs(self, outfile):
-        from ..visualization import threejs
-        matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
-        if not ('side' in self.display):
-            self.display['side'] = 'THREE.DoubleSide'
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        outfile.write('''
-        var geometry = new THREE.BoxGeometry( 2, 2, 2 );
-        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.set({matrix});
-        scene.add( mesh );'''.format(materialspec=materialspec,
-                                     matrix=matrixstring))
-
-    def _plot_threejsjson(self):
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'BoxGeometry'
-        out['geometrypars'] = (2, 2, 2)
-        out['pos4d'] = [self.pos4d.T.flatten().tolist()]
-        if not ('side' in self.display):
-            out['materialproperties']['side'] = 2
-
-        return out
 
 
 class FlatStack(FlatOpticalElement):
@@ -353,18 +302,18 @@ class FlatStack(FlatOpticalElement):
 
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         elements = kwargs.pop('elements')
         keywords = kwargs.pop('keywords')
-        super(FlatStack, self).__init__(**kwargs)
-        self.elements = []
+        super(FlatStack, selv).__init__(**kwargs)
+        selv.elements = []
         for elem, k in zip(elements, keywords):
-            self.elements.append(elem(pos4d=self.pos4d, **k))
+            selv.elements.append(elem(pos4d=selv.pos4d, **k))
 
-    def specific_process_photons(self, *args, **kwargs):
+    def specific_process_photons(selv, *args, **kwargs):
         return {}
 
-    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
+    def process_photons(selv, photons, intersect=None, interpos=None, intercoos=None):
         '''
         Parameters
         ----------
@@ -376,8 +325,8 @@ class FlatStack(FlatOpticalElement):
             # This line calls FlatOpticalElement.process_photons to add ID cols and local coos
             # if requested (this could also be done by any of the contained sequence elements,
             # but we want the user to be able to specify that for either of them).
-            photons = super(FlatStack, self).process_photons(photons, intersect, interpos, intercoos)
-            for e in self.elements:
+            photons = super(FlatStack, selv).process_photons(photons, intersect, interpos, intercoos)
+            for e in selv.elements:
                 photons = e.process_photons(photons, intersect, interpos, intercoos)
 
         return photons
@@ -396,7 +345,7 @@ def photonlocalcoords(f, colnames=['pos', 'dir']):
 
     Parameters
     ----------
-    f : callable with signature ``f(self, photons, *args, **kwargs)``
+    f : callable with signature ``f(selv, photons, *args, **kwargs)``
         The function to be decorated. In the signature, ``photons`` is a
         `astropy.table.Table`.
     colnames : list of strings
@@ -404,15 +353,15 @@ def photonlocalcoords(f, colnames=['pos', 'dir']):
         different coordinate system.
     '''
     @wraps(f)
-    def wrapper(self, photons, *args, **kwargs):
+    def wrapper(selv, photons, *args, **kwargs):
         # transform to coordsys if single instrument
-        invpos4d = np.linalg.inv(self.pos4d)
+        invpos4d = np.linalg.inv(selv.pos4d)
         for n in colnames:
             photons[n] = np.einsum('...ij,...j', invpos4d, photons[n])
-        photons = f(self, photons, *args, **kwargs)
+        photons = f(selv, photons, *args, **kwargs)
         # transform back into coordsys of satellite
         for n in colnames:
-            photons[n] = np.einsum('...ij,...j', self.pos4d, photons[n])
+            photons[n] = np.einsum('...ij,...j', selv.pos4d, photons[n])
         return photons
 
     return wrapper

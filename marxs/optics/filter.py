@@ -37,12 +37,12 @@ class GlobalEnergyFilter(OpticalElement):
     --------
     marxs.optics.filter.EnergyFilter
     '''
-    def __init__(self, **kwargs):
-        self.filterfunc = kwargs.pop('filterfunc')
-        super(GlobalEnergyFilter, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.filterfunc = kwargs.pop('filterfunc')
+        super(GlobalEnergyFilter, selv).__init__(**kwargs)
 
-    def __call__(self, photons):
-        p =  self.filterfunc(photons['energy'])
+    def __call__(selv, photons):
+        p =  selv.filterfunc(photons['energy'])
         if np.any(p < 0.) or np.any(p > 1.):
             raise ValueError('Probabilities returned by filterfunc must be in interval [0, 1].')
         photons['probability'] *= p
@@ -77,12 +77,12 @@ class EnergyFilter(FlatOpticalElement):
     display = {'color': (1.0, 0., 0.),
                'opacity': 0.5,
     }
-    def __init__(self, **kwargs):
-        self.filterfunc = kwargs.pop('filterfunc')
-        super(EnergyFilter, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.filterfunc = kwargs.pop('filterfunc')
+        super(EnergyFilter, selv).__init__(**kwargs)
 
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
-        p =  self.filterfunc(photons['energy'][intersect])
+    def specific_process_photons(selv, photons, intersect, interpos, intercoos):
+        p =  selv.filterfunc(photons['energy'][intersect])
         if np.any(p < 0.) or np.any(p > 1.):
             raise ValueError('Probabilities returned by filterfunc must be in interval [0, 1].')
         return {'probability': p}

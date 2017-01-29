@@ -1,9 +1,73 @@
-# Licensed under GPL version 3 - see LICENSE.rst
+
+'''This module collects helper functions for visualization that are of use for several backends.
+
+The functions here are not intended to be called directly by the user. Instead, they
+refractor common tasks that are used in several visualization backends.
+'''
+
 from __future__ import division
 
+import warnings
 import numpy as np
 
-from ..math.pluecker import h2e
+from ..math import pluecker
+
+class MARXSVisualizationWarning(Warning):
+    '''Warning class for MARXS objects missing from plotting'''
+    pass
+
+def plot_object_general(plot_registry, obj, display=None, **kwargs):
+    '''Look up a plottig routine for an object and execute it.
+
+    This function is not meant to be called directly by the user, instead, it
+    is designed to simplify the implementation of new plotting backends.
+
+    Parameters
+    ----------
+    plot_registry : dict
+        Keys are the names of the shape of an object and values in this dictionary
+        are functions that know how to plot this type of shape. The appropriate
+        plotting function is then called with the input `obj`, `display` and any
+        other keyword arguments.
+    obj : `marxs.base.MarxsElement`
+        The element that should be plotted.
+    display : dict of None
+        Dictionary with display settings. If this is ``None``, ``obj.display`` is
+        used. If that is also ``None`` then the objects is skipped.
+    kwargs : other keyword arguments
+        These arguments are just passed through to the plotting function.
+
+    Returns
+    -------
+    out : different
+        The output from the plotting function that was executed is passed through.
+        Different plotting backends return different kinds of output.
+    '''
+    if display is None:
+        if hasattr(obj, 'display') and (obj.display is not None):
+            display = obj.display
+        else:
+            warnings.warn('Skipping {0}: No display dictionary found.'.format(obj.name),
+                           MARXSVisualizationWarning)
+            return None
+
+    out = None
+    if 'shape' in display:
+        shape = display['shape']
+        shapes = [s.strip() for s in shape.split(';')]
+        for s in shapes:
+            if s in plot_registry:
+                # turn into valid color tuple
+                display['color'] = get_color(display)
+                out = plot_registry[s](obj, display,  **kwargs)
+        else:
+            warnings.warn('Skipping {0}: No function to plot {1}'.format(obj.name, shape),
+                          MARXSVisualizationWarning)
+    else:
+        warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(obj.name),
+                       MARXSVisualizationWarning)
+    return out
+
 
 def get_color(d):
     '''Look for color information in dictionary.
@@ -92,8 +156,8 @@ def plane_with_hole(outer, inner):
     triangles : nd.array
         List of the indices. Each row has the index of three points in ``xyz``.
 
-    Example
-    -------
+    Examples
+    --------
     In this example, we make a square and cut out a smaller square in the middle.
 
     >>> import numpy as np
@@ -158,7 +222,7 @@ def format_saved_positions(keepcol, atol=1e-2):
         raise ValueError('KeepCol object contains no data.')
     d = np.dstack(keepcol.data)
     d = np.swapaxes(d, 1, 2)
-    d = h2e(d)
+    d = pluecker.h2e(d)
     ind = [0]
     i = 1
     for i in range(1, d.shape[1]):

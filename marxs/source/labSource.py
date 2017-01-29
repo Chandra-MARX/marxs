@@ -25,23 +25,23 @@ class FarLabPointSource(Source, FlatOpticalElement):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, sourcePos, **kwargs):
-        self.sourcePos = sourcePos
-        super(FarLabPointSource, self).__init__(**kwargs)
+    def __init__(selv, sourcePos, **kwargs):
+        selv.sourcePos = sourcePos
+        super(FarLabPointSource, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
-        photons = super(FarLabPointSource, self).generate_photons(exposuretime)
+    def generate_photons(selv, exposuretime):
+        photons = super(FarLabPointSource, selv).generate_photons(exposuretime)
         n = len(photons)
         # randomly choose direction - photons uniformly distributed over aperture area
         # measurements in mm
-        pos = np.dot(self.pos4d, np.array([np.zeros(n),
+        pos = np.dot(selv.pos4d, np.array([np.zeros(n),
                                            np.random.uniform(-1, 1, n),
                                            np.random.uniform(-1, 1, n),
                                            np.ones(n)]))
 
-        dir = np.array([pos[0, :] - self.sourcePos[0],
-                        pos[1, :] - self.sourcePos[1],
-                        pos[2, :] - self.sourcePos[2],
+        dir = np.array([pos[0, :] - selv.sourcePos[0],
+                        pos[1, :] - selv.sourcePos[1],
+                        pos[2, :] - selv.sourcePos[2],
                         np.zeros(n)])
         photons['pos'] = pos.T
         photons['dir'] = dir.T
@@ -70,19 +70,19 @@ class LabPointSource(Source):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, position, direction=None, **kwargs):
-        self.dir = direction
-        self.position = position
-        super(LabPointSource, self).__init__(**kwargs)
+    def __init__(selv, position, direction=None, **kwargs):
+        selv.dir = direction
+        selv.position = position
+        super(LabPointSource, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
-        photons = super(LabPointSource, self).generate_photons(exposuretime)
+    def generate_photons(selv, exposuretime):
+        photons = super(LabPointSource, selv).generate_photons(exposuretime)
         n = len(photons)
 
         # assign position to photons
-        pos = np.array([self.position[0] * np.ones(n),
-                        self.position[1] * np.ones(n),
-                        self.position[2] * np.ones(n),
+        pos = np.array([selv.position[0] * np.ones(n),
+                        selv.position[1] * np.ones(n),
+                        selv.position[2] * np.ones(n),
                         np.ones(n)])
 
         # randomly choose direction - photons go in all directions from source
@@ -93,15 +93,15 @@ class LabPointSource(Source):
                         np.sin(phi),
                         np.zeros(n)])
 
-        if (self.dir != None):
-        	if (self.dir[1] == 'x'):
+        if (selv.dir != None):
+        	if (selv.dir[1] == 'x'):
         		col = 0
-        	if (self.dir[1] == 'y'):
+        	if (selv.dir[1] == 'y'):
         		col = 1
-        	if (self.dir[1] == 'z'):
+        	if (selv.dir[1] == 'z'):
         		col = 2
         	dir[col] = abs(dir[col])
-        	if (self.dir[0] == '-'):
+        	if (selv.dir[0] == '-'):
         		dir[col] *= -1
 
         photons.add_column(Column(name='pos', data=pos.T))
@@ -129,21 +129,21 @@ class LabPointSourceCone(Source):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, position, delta, direction=None,  **kwargs):
+    def __init__(selv, position, delta, direction=None,  **kwargs):
 
-        self.dir = direction / np.sqrt(np.dot(direction, direction)) #normalize direction
-        self.position = position
-        self.deltaphi = delta
-        super(LabPointSourceCone, self).__init__(**kwargs)
+        selv.dir = direction / np.sqrt(np.dot(direction, direction)) #normalize direction
+        selv.position = position
+        selv.deltaphi = delta
+        super(LabPointSourceCone, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
-        photons = super(LabPointSourceCone, self).generate_photons(exposuretime)
+    def generate_photons(selv, exposuretime):
+        photons = super(LabPointSourceCone, selv).generate_photons(exposuretime)
         n = len(photons)
 
         # assign position to photons
-        pos = np.array([self.position[0] * np.ones(n),
-                        self.position[1] * np.ones(n),
-                        self.position[2] * np.ones(n),
+        pos = np.array([selv.position[0] * np.ones(n),
+                        selv.position[1] * np.ones(n),
+                        selv.position[2] * np.ones(n),
                         np.ones(n)])
 
         # Randomly choose direction - photons directions randomly distributed inside cone.
@@ -151,7 +151,7 @@ class LabPointSourceCone(Source):
         # Angle from pole (z-axis) = phi. Angle from x-axis on x-y plane is theta
         # This cone is temporarily centered about the z axis.
         theta = np.random.uniform(0, 2 * np.pi, n);
-        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
+        fractionalArea = 2 * np.pi * (1 - np.cos(selv.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
         v = np.random.uniform(0, fractionalArea, n)
         phi = np.arccos(1 - 2 * v)
         # For computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
@@ -162,11 +162,11 @@ class LabPointSourceCone(Source):
                         np.zeros(n)])
 
         # Now we have all directions for n photons in dir.
-        # Now we rotate dir to align with the given direction: self.dir
-        # To find axis of rotation: cross self.dir with z
-        axis = np.cross(self.dir, [0, 0, 1])
+        # Now we rotate dir to align with the given direction: selv.dir
+        # To find axis of rotation: cross selv.dir with z
+        axis = np.cross(selv.dir, [0, 0, 1])
 
-        angle = np.arccos(self.dir[2]) # Simplified
+        angle = np.arccos(selv.dir[2]) # Simplified
 
         rotationMatrix = transforms3d.axangles.axangle2aff(axis, -angle)
 

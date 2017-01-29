@@ -138,9 +138,10 @@ def test_tube_parametric():
     '''Generate points on surface using parametic. Then make rays for intersection
     which should return those points as intersection points.'''
     circ = CircularDetector(zoom=[2., 3., 4.])
-    parametric = circ.parametric(phi=[-.1, 0., 1.])
+    parametric = circ.parametric_surface(phi=[-.1, 0., 1.])
+    parametric = parametric.reshape((6, 4))
     # select dir so that it's in the right direction to recover these points.
-    dir = np.tile([1, 0,0,0], (6, 1))
+    dir = np.tile([1, 0, 0, 0], (6, 1))
     intersect, interpos, inter_local = circ.intersect(dir, parametric)
     assert np.allclose(parametric, interpos)
 
@@ -151,6 +152,6 @@ def test_CircularDetector_from_Rowland():
                            orientation=transforms3d.euler.euler2mat(1, 2, 3, 'syxz'))
     detcirc = CircularDetector.from_rowland(rowland, width=1e-6)
     phi = np.mgrid[0:2.*np.pi:360j]
-    points = detcirc.parametric(phi)
+    points = detcirc.parametric_surface(phi)
     # Quartic < 1e5 is very close for these large values of r and R.
     assert np.max(np.abs(rowland.quartic(h2e(points)))) < 1e5

@@ -131,78 +131,78 @@ class Source(SimulationSequenceElement):
         Geometric opening area of telescope in :math:`mm^2`. If not given,
         an opening of :math:`1 mm^2` is assumed.
     '''
-    def __init__(self, **kwargs):
-        self.energy = kwargs.pop('energy', 1.)
-        self.flux = kwargs.pop('flux', 1.)
-        self.polarization = kwargs.pop('polarization', None)
-        self.geomarea = kwargs.pop('geomarea', 1.)
+    def __init__(selv, **kwargs):
+        selv.energy = kwargs.pop('energy', 1.)
+        selv.flux = kwargs.pop('flux', 1.)
+        selv.polarization = kwargs.pop('polarization', None)
+        selv.geomarea = kwargs.pop('geomarea', 1.)
 
-        super(Source, self).__init__(**kwargs)
+        super(Source, selv).__init__(**kwargs)
 
-    def __call__(self, *args, **kwargs):
-        return self.generate_photons(*args, **kwargs)
+    def __call__(selv, *args, **kwargs):
+        return selv.generate_photons(*args, **kwargs)
 
-    def generate_times(self, exposuretime):
-        if callable(self.flux):
-            return self.flux(exposuretime, self.geomarea)
-        elif np.isscalar(self.flux):
-            return np.arange(0, exposuretime, 1./(self.flux * self.geomarea))
+    def generate_times(selv, exposuretime):
+        if callable(selv.flux):
+            return selv.flux(exposuretime, selv.geomarea)
+        elif np.isscalar(selv.flux):
+            return np.arange(0, exposuretime, 1./(selv.flux * selv.geomarea))
         else:
             raise SourceSpecificationError('`flux` must be a number or a callable.')
 
-    def generate_energies(self, t):
+    def generate_energies(selv, t):
         n = len(t)
         # function
-        if callable(self.energy):
-            en = self.energy(t)
+        if callable(selv.energy):
+            en = selv.energy(t)
             if len(en) != n:
                 raise SourceSpecificationError('`energy` has to return an array of same size as input time array.')
             else:
                 return en
         # constant energy
-        elif np.isscalar(self.energy):
-            return np.ones(n) * self.energy
+        elif np.isscalar(selv.energy):
+            return np.ones(n) * selv.energy
         # 2 * n numpy array
-        elif hasattr(self.energy, 'shape') and (self.energy.shape[0] == 2):
-            rand = RandomArbitraryPdf(self.energy[0, :], self.energy[1, :])
+        elif hasattr(selv.energy, 'shape') and (selv.energy.shape[0] == 2):
+            rand = RandomArbitraryPdf(selv.energy[0, :], selv.energy[1, :])
             return rand(n)
         # np.recarray or astropy.table.Table
-        elif hasattr(self.energy, '__getitem__'):
-            rand = RandomArbitraryPdf(self.energy['energy'], self.energy['flux'])
+        elif hasattr(selv.energy, '__getitem__'):
+            rand = RandomArbitraryPdf(selv.energy['energy'], selv.energy['flux'])
             return rand(n)
         # anything else
         else:
             raise SourceSpecificationError('`energy` must be number, function, 2*n array or have fields "energy" and "flux".')
 
 
-    def generate_polarization(self, times, energies):
+    def generate_polarization(selv, times, energies):
         n = len(times)
         # function
-        if callable(self.polarization):
-            pol = self.polarization(times, energies)
+        if callable(selv.polarization):
+            pol = selv.polarization(times, energies)
             if len(pol) != n:
                 raise SourceSpecificationError('`polarization` has to return an array of same size as input time and energy arrays.')
             else:
                 return pol
-        elif np.isscalar(self.polarization):
-            return np.ones(n) * self.polarization
+        elif np.isscalar(selv.polarization):
+            return np.ones(n) * selv.polarization
         # 2 * n numpy array
-        elif hasattr(self.polarization, 'shape') and (self.polarization.shape[0] == 2):
-            rand = RandomArbitraryPdf(self.polarization[0, :], self.polarization[1, :])
+        elif hasattr(selv.polarization, 'shape') and (selv.polarization.shape[0] == 2):
+            rand = RandomArbitraryPdf(selv.polarization[0, :], selv.polarization[1, :])
             return rand(n)
         # np.recarray or astropy.table.Table
-        elif hasattr(self.polarization, '__getitem__'):
-            rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
+        elif hasattr(selv.polarization, '__getitem__'):
+            rand = RandomArbitraryPdf(selv.polarization['angle'], selv.polarization['probability'])
             return rand(n)
-        elif self.polarization is None:
+        elif selv.polarization is None:
             return np.random.uniform(0, 360., n)
         else:
             raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 
-    def generate_photon(self):
+    def generate_photon(selv):
         raise NotImplementedError
 
-    def generate_photons(self, exposuretime):
+    def generate_photons(selv, exposuretime):
         '''Central function to generate photons.
 
         Calling this function generates a a photon table according to the `flux`, `energy`,
@@ -221,9 +221,9 @@ class Source(SimulationSequenceElement):
         photons : `astropy.table.Table`
             Table with photon properties.
         '''
-        times = self.generate_times(exposuretime)
-        energies = self.generate_energies(times)
-        pol = self.generate_polarization(times, energies)
+        times = selv.generate_times(exposuretime)
+        energies = selv.generate_energies(times)
+        pol = selv.generate_polarization(times, energies)
         n = len(times)
         photons = Table({'time': times, 'energy': energies, 'polangle': pol,
                          'probability': np.ones(n)})
@@ -253,22 +253,22 @@ class AstroSource(Source):
     ----------
     coords : `astropy.coordinates.SkySoord` (preferred)
         Position of the source on the sky. If ``coords`` is not a
-        `~astropy.coordinates.SkyCoord` object itself, it is used to
+        `~astropy.coordinates.SkyCoord` object itselv, it is used to
         initialize such an object. See `~astropy.coordinates.SkyCoord`
         for a description of allowed input values.
     '''
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         coords = kwargs.pop('coords')
         if isinstance(coords, SkyCoord):
-            self.coords = coords
+            selv.coords = coords
         else:
-            self.coords = SkyCoord(coords)
+            selv.coords = SkyCoord(coords)
 
-        if not self.coords.isscalar:
+        if not selv.coords.isscalar:
             raise ValueError("Coordinate must be scalar, not array.")
-        super(AstroSource, self).__init__(**kwargs)
+        super(AstroSource, selv).__init__(**kwargs)
 
-    def set_pos(self, photons, coo):
+    def set_pos(selv, photons, coo):
         '''Set Ra, Dec of photons in table
 
         This function write Ra, Dec to a table. It is defined here to make the way
@@ -302,12 +302,12 @@ class PointSource(AstroSource):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, **kwargs):
-        super(PointSource, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        super(PointSource, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
-        photons = super(PointSource, self).generate_photons(exposuretime)
-        self.set_pos(photons, self.coords)
+    def generate_photons(selv, exposuretime):
+        photons = super(PointSource, selv).generate_photons(exposuretime)
+        selv.set_pos(photons, selv.coords)
         return photons
 
 
@@ -321,31 +321,31 @@ class RadialDistributionSource(AstroSource):
         of photons to produce. The output must be an `astropy.units.Quantity`` object
         with n angles in it.
     func_par : object
-        ``radial_distribution`` has access to ``self.func_par`` to hold function
+        ``radial_distribution`` has access to ``selv.func_par`` to hold function
         parameters. This could be, e.g. a tuple with coeffications.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, **kwargs):
-        self.func = kwargs.pop('radial_distribution')
-        self.func_par = kwargs.pop('func_par', None)
-        super(RadialDistributionSource, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.func = kwargs.pop('radial_distribution')
+        selv.func_par = kwargs.pop('func_par', None)
+        super(RadialDistributionSource, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    def generate_photons(selv, exposuretime):
         '''Photon positions are generated in a frame that is centered on the
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
         '''
-        photons = super(RadialDistributionSource, self).generate_photons(exposuretime)
+        photons = super(RadialDistributionSource, selv).generate_photons(exposuretime)
 
-        relative_frame = SkyOffsetFrame(origin=self.coords)
+        relative_frame = SkyOffsetFrame(origin=selv.coords)
         n = len(photons)
         phi = np.random.rand(n) * 2. * np.pi * u.rad
-        d = self.func(n)
+        d = selv.func(n)
         relative_coords = SkyCoord(d * np.sin(phi), d * np.cos(phi), frame=relative_frame)
-        origin_coord = relative_coords.transform_to(self.coords)
-        self.set_pos(photons, origin_coord)
+        origin_coord = relative_coords.transform_to(selv.coords)
+        selv.set_pos(photons, origin_coord)
 
         return photons
 
@@ -363,12 +363,12 @@ class SphericalDiskSource(RadialDistributionSource):
         Inner and outer angle of the ring (e.g. in arcsec).
         The default is a disk with no inner hole (``a_inner`` is set to zero.)
     '''
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         kwargs['func_par'] = [kwargs.pop('a_outer'),
                               kwargs.pop('a_inner', 0. * u.rad)]
-        kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(self.func_par[1]) +
-                          np.random.rand(n) * (np.cos(self.func_par[0]) - np.cos(self.func_par[1])))
-        super(SphericalDiskSource, self).__init__(**kwargs)
+        kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(selv.func_par[1]) +
+                          np.random.rand(n) * (np.cos(selv.func_par[0]) - np.cos(selv.func_par[1])))
+        super(SphericalDiskSource, selv).__init__(**kwargs)
 
 class DiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
@@ -383,12 +383,12 @@ class DiskSource(RadialDistributionSource):
         Inner and outer angle of the ring (e.g. in arcsec).
         The default is a disk with no inner hole (``a_inner`` is set to zero.)
     '''
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         kwargs['func_par'] = [kwargs.pop('a_outer'),
                               kwargs.pop('a_inner', 0. * u.rad)]
-        kwargs['radial_distribution'] = lambda n: np.sqrt(self.func_par[1]**2 +
-                          np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
-        super(DiskSource, self).__init__(**kwargs)
+        kwargs['radial_distribution'] = lambda n: np.sqrt(selv.func_par[1]**2 +
+                          np.random.rand(n) * (selv.func_par[0]**2 - selv.func_par[1]**2))
+        super(DiskSource, selv).__init__(**kwargs)
 
 class GaussSource(RadialDistributionSource):
     '''Astrophysical source with a Gaussian brightness profile.
@@ -401,11 +401,11 @@ class GaussSource(RadialDistributionSource):
     sigma : `astropy.coordinates.Angle`
         Gaussian sigma setting the width of the distribution
     '''
-    def __init__(self, **kwargs):
+    def __init__(selv, **kwargs):
         kwargs['func_par'] = kwargs.pop('sigma')
         # Note: rand is in interavall [0..1[, so 1-rand is the same except for edges
-        kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
-        super(GaussSource, self).__init__(**kwargs)
+        kwargs['radial_distribution'] = lambda n: selv.func_par * np.sqrt(np.log(np.random.rand(n)))
+        super(GaussSource, selv).__init__(**kwargs)
 
 class SymbolFSource(AstroSource):
     '''Source shaped like the letter F.
@@ -420,24 +420,24 @@ class SymbolFSource(AstroSource):
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, **kwargs):
-        self.size = kwargs.pop('size', 1. * u.degree)
-        super(SymbolFSource, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.size = kwargs.pop('size', 1. * u.degree)
+        super(SymbolFSource, selv).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
-        photons = super(SymbolFSource, self).generate_photons(exposuretime)
+    def generate_photons(selv, exposuretime):
+        photons = super(SymbolFSource, selv).generate_photons(exposuretime)
         n = len(photons)
         elem = np.random.choice(3, size=n)
 
-        ra = np.ones(n) * self.coords.icrs.ra
-        dec = np.ones(n) * self.coords.icrs.dec
-        size = self.size
+        ra = np.ones(n) * selv.coords.icrs.ra
+        dec = np.ones(n) * selv.coords.icrs.dec
+        size = selv.size
         ra[elem == 0] += size * np.random.random(np.sum(elem == 0))
         ra[elem == 1] += size
         dec[elem == 1] += 0.5 * size * np.random.random(np.sum(elem == 1))
         ra[elem == 2] += 0.8 * size
         dec[elem == 2] += 0.3 * size * np.random.random(np.sum(elem == 2))
 
-        self.set_pos(photons, SkyCoord(ra, dec, frame=self.coords))
+        selv.set_pos(photons, SkyCoord(ra, dec, frame=selv.coords))
 
         return photons

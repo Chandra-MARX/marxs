@@ -34,24 +34,24 @@ class RadialMirrorScatter(FlatOpticalElement):
         sigma of Gaussian for scatter perpendicular to the plane of reflection
         [in radian] (default = 0)
     '''
-    def __init__(self, **kwargs):
-        self.inplanescatter = kwargs.pop('inplanescatter') # in rad
-        self.perpplanescatter = kwargs.pop('perpplanescatter', 0.) # in rad
-        super(RadialMirrorScatter, self).__init__(**kwargs)
+    def __init__(selv, **kwargs):
+        selv.inplanescatter = kwargs.pop('inplanescatter') # in rad
+        selv.perpplanescatter = kwargs.pop('perpplanescatter', 0.) # in rad
+        super(RadialMirrorScatter, selv).__init__(**kwargs)
 
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+    def specific_process_photons(selv, photons, intersect, interpos, intercoos):
         # change this line, if you want to process only some photons (intersect et al.)
         n = intersect.sum()
-        center = self.pos4d[:-1, -1]
+        center = selv.pos4d[:-1, -1]
         radial = h2e(photons['pos'][intersect].data) - center
         perpplane = np.cross(h2e(photons['dir'][intersect].data), radial)
-        inplaneangle = np.random.normal(loc=0., scale=self.inplanescatter, size=n)
+        inplaneangle = np.random.normal(loc=0., scale=selv.inplanescatter, size=n)
 
         rot = axangle2mat(perpplane, inplaneangle)
         outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'][intersect])), 0)
 
-        if self.perpplanescatter !=0: # Works for 0 too, but waste of time to run
-            perpangle = np.random.normal(loc=0., scale=self.perpplanescatter, size=n)
+        if selv.perpplanescatter !=0: # Works for 0 too, but waste of time to run
+            perpangle = np.random.normal(loc=0., scale=selv.perpplanescatter, size=n)
             rot = axangle2mat(radial, perpangle)
             outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(outdir)), 0)
 

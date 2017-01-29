@@ -18,18 +18,30 @@ class Baffle(FlatOpticalElement):
     '''
 
     display = {'color': (1., 0.5, 0.4),
-               'outer_factor': 3}
+               'outer_factor': 3,
+               'shape': 'plane with hole'}
 
 
-    def process_photons(self, photons, intersect, intercoos, interpoos):
+    def process_photons(selv, photons, intersect, intercoos, interpoos):
         photons['pos'][intersect] = intercoos[intersect]
         photons['probability'][~intersect] = 0
         return photons
 
-    def _plot_mayavi(self, viewer=None):
+    def triangulate_inner_outer(selv):
+        '''Return a triangulation of the bafflee hole embedded in a square.
 
-        r_out = self.display.get('outer_factor', 3)
-        g = self.geometry
+        The size of the outer square is determined by the ``'outer_factor'`` element
+        in ``selv.display``.
+
+        Returns
+        -------
+        xyz : np.array
+            Numpy array of vertex positions in Eukeldian space
+        triangles : np.array
+            Array of index numbers that define triangles
+        '''
+        r_out = selv.display.get('outer_factor', 3)
+        g = selv.geometry
         outer = h2e(g['center']) + r_out * np.vstack([h2e( g['v_x']) + h2e(g['v_y']),
                                                       h2e(-g['v_x']) + h2e(g['v_y']),
                                                       h2e(-g['v_x']) - h2e(g['v_y']),
@@ -40,16 +52,4 @@ class Baffle(FlatOpticalElement):
                                                h2e(-g['v_x']) - h2e(g['v_y']),
                                                h2e( g['v_x']) - h2e(g['v_y'])
         ])
-        xyz, triangles = plane_with_hole(outer, inner)
-
-        from mayavi.mlab import triangular_mesh
-
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        t = triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=self.display['color'])
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        for n in t.property.trait_names():
-            if n in self.display:
-                setattr(t.module_manager.children[0].actor.property, n, self.display(n))
-        return t
+        return plane_with_hole(outer, inner)
