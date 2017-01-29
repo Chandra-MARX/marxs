@@ -19,7 +19,6 @@ from astropy.utils.decorators import format_doc
 from ..math import pluecker
 from . import utils
 
-from mayavi import mlab
 
 
 doc_plot='''
@@ -53,6 +52,8 @@ def container(obj, display=None, viewer=None):
 def plane_with_hole(obj, display, viewer=None):
     '''Plot a plane with an inner hole such as an aperture.'''
     xyz, triangles = obj.triangulate_inner_outer()
+    from mayavi import mlab
+
     t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
 
@@ -71,6 +72,8 @@ def surface(surface, display, viewer=None):
     x = xyz[..., 0]
     y = xyz[..., 1]
     z = xyz[..., 2]
+    from mayavi import mlab
+
     m = mlab.mesh(x, y, z, figure=viewer, color=display['color'])
     return m
 
@@ -84,6 +87,8 @@ def box(obj, display, viewer=None):
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
     corners = np.einsum('ij,...j->...i', obj.pos4d, pluecker.e2h(corners, 1))
+    from mayavi import mlab
+
     b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
                         color=display['color'])
     return b
@@ -141,6 +146,7 @@ def plot_rays(data, scalar=None, viewer=None,
     a = np.arange(n * N).reshape((-1, N))[:, :-1].flatten()
     b = a + 1
     connections = np.vstack([a,b]).T
+    from mayavi import mlab
 
     # Create the points
     src = mlab.pipeline.scalar_scatter(x, y, z, s, figure=viewer)

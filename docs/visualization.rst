@@ -49,6 +49,8 @@ Reference/API
 =============
 
 .. automodapi:: marxs.visualization
+.. automodapi:: marxs.visualization.mayavi
+   :skip: format_doc
 .. automodapi:: marxs.visualization.threejs
    :skip: format_doc
 .. automodapi:: marxs.visualization.threejsjson
