@@ -17,8 +17,10 @@ from astropy.utils.decorators import format_doc
 from ..math import pluecker
 from . import utils
 
-from mayavi import mlab
-
+# The following import fails on headless servers (Travis, readthedocs).
+# from mayavi import mlab
+# Thus, I've moved the import statement into the individual functions, so that
+# this module can still be imported when Travis or Read the docs build the documentation.
 
 doc_plot='''
     {__doc__}
@@ -50,6 +52,8 @@ def container(obj, display=None, viewer=None):
 @format_doc(doc_plot)
 def plane_with_hole(obj, display, viewer=None):
     '''Plot a plane with an inner hole such as an aperture.'''
+    from mayavi import mlab
+
     xyz, triangles = obj.triangulate_inner_outer()
     t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
@@ -63,6 +67,8 @@ def surface(surface, display, viewer=None):
     ``parametric_surface()`` method of the object that is plotted; see there
     for a detailted description of parameters.
     '''
+    from mayavi import mlab
+
     xyz = surface.parametric_surface(display.get('coo1', [-1, 1]),
                                      display.get('coo2', [-1, 1]))
     xyz = pluecker.h2e(xyz)
@@ -75,6 +81,8 @@ def surface(surface, display, viewer=None):
 @format_doc(doc_plot)
 def box(obj, display, viewer=None):
     '''Plot an rectangular box for an object.'''
+    from mayavi import mlab
+
     corners = np.array([[-1, -1, -1], [-1,+1, -1],
                         [-1, -1,  1], [-1, 1,  1],
                         [ 1, -1, -1], [ 1, 1, -1],
@@ -115,6 +123,8 @@ def plot_rays(data, scalar=None, viewer=None,
     out : mayavi ojects
         This just passes through the information returned from the mayavi calls.
     '''
+    from mayavi import mlab
+
     if hasattr(data, 'data') and isinstance(data.data, list):
         data = utils.format_saved_positions(data)
 
