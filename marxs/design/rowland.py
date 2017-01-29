@@ -76,8 +76,9 @@ class RowlandTorus(MarxsElement):
 
     display = {'color': (1., 0.3, 0.3),
                'opacity': 0.2,
-               'side': 2} # =THREE.DoubleSide
-
+               'shape': 'torus; surface',
+               'coo1': np.linspace(0, 2 * np.pi, 60),
+               'coo2': np.linspace(0, 2 * np.pi, 60)}
 
     def __init__(self, R, r, **kwargs):
         self.R = R
@@ -163,8 +164,32 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
+    def parameteric_surface(self, theta, phi):
+        '''Parametric representation of surface of torus.
+
+        In contrast to `parametric` the input parameters here are 1-d arrays
+        and the functions converts that to a rectangular grid.
+
+        Parameters
+        ----------
+        theta : np.array
+            Points on the Rowland circle (specified in rad, where 0 is on the
+            optical axis across from the focal point).
+        phi : np.array
+            ``phi`` rotates the Rowland circle to make up the Rowland torus.
+
+        Returns
+        -------
+        xyzw : np.array
+            Torus coordinates in global homogeneous coordinate system.
+        '''
+        if (phi.ndim != 1) or (theta.ndim != 1):
+            raise ValueError('input parameters have 1-dim shape.')
+        theta, phi = np.meshgrid(theta, phi)
+        return self.parametric(theta, phi)
+
     def parametric(self, theta, phi):
-        '''Parametric description of the torus.
+        '''Parametric description of points on the torus.
 
         This is just another way to obtain the shape of the torus, e.g.
         for visualization.
@@ -311,76 +336,6 @@ class RowlandTorus(MarxsElement):
         x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
         xyz = np.vstack([x,y,z, np.ones_like(x)]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
-
-    def _plot_mayavi(self, theta, phi, viewer=None, *args, **kwargs):
-        '''
-        Parameters
-        ----------
-        theta : np.array
-            2-d array of theta values to be plotted.
-            The mesh is constructed using the points defined by the theta and phi
-            arrays as vertices. Thus, both the coverege (full torus or only a segment)
-            and the resolution are defined through these arrays.
-        phi : np.array
-            2-d array of phi values to be plotted.
-        '''
-        from mayavi.mlab import mesh
-        if (theta.ndim != 2) or (theta.shape != phi.shape):
-            raise ValueError('"theta" and "phi" must have same 2-dim shape.')
-        xyz = h2e(self.parametric(theta.flatten(), phi.flatten()))
-        x = xyz[:, 0].reshape(theta.shape)
-        y = xyz[:, 1].reshape(theta.shape)
-        z = xyz[:, 2].reshape(theta.shape)
-
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        m = mesh(x, y, z, figure=viewer, color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = m.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-        return m
-
-    def _plot_threejs(self, outfile, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
-        from ..visualization import threejs
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        torusparameters = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(self.R, self.r,
-                                                                          int(np.rad2deg(thetaarc)),
-                                                                          int(np.rad2deg(phiarc)),
-                                                                          thetaarc,
-                                                                          theta0,
-                                                                          phiarc,
-                                                                          phi0)
-        rot = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1.]])
-        matrixstring = ', '.join([str(i) for i in np.dot(self.pos4d, rot).flatten()])
-
-        outfile.write('''
-        var geometry = new THREE.ModifiedTorusBufferGeometry({torusparameters});
-        var material = new THREE.MeshStandardMaterial({{ {materialspec} }});
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.set({matrix});
-        scene.add( mesh );'''.format(materialspec=materialspec,
-                                     torusparameters=torusparameters,
-                                     matrix=matrixstring))
-
-    def _plot_threejsjson(self, theta0=0., thetaarc=2*np.pi, phi0=0., phiarc=np.pi * 2):
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'ModifiedTorusBufferGeometry'
-        out['geometrypars'] = (self.R, self.r, int(np.rad2deg(thetaarc)), int(np.rad2deg(phiarc)),
-                               thetaarc, theta0, phiarc, phi0)
-        out['pos4d'] = [self.pos4d.flatten().tolist()]
-
-        return out
-
 
 
 def design_tilted_torus(f, alpha, beta):

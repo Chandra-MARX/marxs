@@ -19,7 +19,7 @@ class OpticalElement(SimulationSequenceElement):
     At the very minumum, any derived class needs to implement either `process_photon` or
     `process_photons`. If the interaction with the photons (e.g. scattering of a mirror surface)
     can be implemented in a vectorized way using numpy array operations, the derived class should
-    overwrite `process_photons` (`process_photon` is not used in ths case).
+    overwrite `process_photons` (`process_photon` is not used in this case).
     If no vectorized implementation is available, it is sufficient to overwrite `process_photon`.
     Marxs will call `process_photons`, which (if not overwritten) contains a simple for-loop to
     loop over all photons in the array and call `process_photon` on each of them.
@@ -270,57 +270,6 @@ class FlatOpticalElement(OpticalElement):
         elif (dir.ndim == 1) and not intersect:
             interpos[:3] = np.nan
         return intersect, interpos, np.vstack([ey, ez]).T
-
-    def _plot_mayavi(self, viewer=None):
-        from mayavi.mlab import triangular_mesh
-        # turn into valid color tuple
-        self.display['color'] = get_color(self.display)
-        corners = np.array([[-1, -1, -1], [-1,+1, -1],
-                            [-1, -1,  1], [-1, 1,  1],
-                            [ 1, -1, -1], [ 1, 1, -1],
-                            [ 1, -1, +1], [ 1, 1, +1]])
-        triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
-                     (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-        corners = np.einsum('ij,...j->...i', self.pos4d, e2h(corners, 1))
-        b = triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
-                            color=self.display['color'])
-
-        # No safety net here like for color converting to a tuple.
-        # If the advanced properties are set you are on your own.
-        prop = b.module_manager.children[0].actor.property
-        for n in prop.trait_names():
-            if n in self.display:
-                setattr(prop, n, self.display[n])
-
-    def _plot_threejs(self, outfile):
-        from ..visualization import threejs
-        matrixstring = ', '.join([str(i) for i in self.pos4d.flatten()])
-        if not ('side' in self.display):
-            self.display['side'] = 'THREE.DoubleSide'
-        materialspec = threejs.materialspec(self.display, 'MeshStandardMaterial')
-        outfile.write('''
-        var geometry = new THREE.BoxGeometry( 2, 2, 2 );
-        var material = new THREE.MeshStandardMaterial( {{ {materialspec} }} );
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.set({matrix});
-        scene.add( mesh );'''.format(materialspec=materialspec,
-                                     matrix=matrixstring))
-
-    def _plot_threejsjson(self):
-        from ..visualization import threejs
-        out = {}
-        out['n'] = 1
-        out['name'] = str(self.name)
-        out['material'] = 'MeshStandardMaterial'
-        out['materialproperties'] = threejs.materialdict(self.display, out['material'])
-        out['geometry'] = 'BoxGeometry'
-        out['geometrypars'] = (2, 2, 2)
-        out['pos4d'] = [self.pos4d.T.flatten().tolist()]
-        if not ('side' in self.display):
-            out['materialproperties']['side'] = 2
-
-        return out
 
 
 class FlatStack(FlatOpticalElement):
