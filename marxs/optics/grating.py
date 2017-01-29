@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''Gratings and efficiency files'''
 import math
 import numpy as np

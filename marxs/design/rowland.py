@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''Tools for setting up instruments in the Rowland Torus geometry.'''
 
 from __future__ import division

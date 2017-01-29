@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''Tests for calling marx the right way.
 
 Test in this module are not meant to check that the marx c code works - that really

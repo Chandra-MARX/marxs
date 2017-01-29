@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''`Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ plotting backend
 
 Mayavi is a python package for interactive 3-D displays that uses VTK underneath.
@@ -8,6 +9,8 @@ requires a ``mayavi.core.scene.Scene`` instance as input and returns a mayavi ob
 The plotting routines attempt to find all valid OpenGL properties by name in the
 ``display`` dictionaries and apply those to the plotted object.
 '''
+
+
 from __future__ import absolute_import
 
 import numpy as np

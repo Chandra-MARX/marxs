@@ -1,8 +1,10 @@
+
 '''This module collects helper functions for visualization that are of use for several backends.
 
 The functions here are not intended to be called directly by the user. Instead, they
 refractor common tasks that are used in several visualization backends.
 '''
+
 from __future__ import division
 
 import warnings

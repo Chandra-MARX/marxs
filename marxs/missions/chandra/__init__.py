@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''Geometry and operations of the Chandra Observatory.
 
 This module provides the optical elements on the Chandra Observatory.

@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from ..polarization import polarization_vectors, paralleltransport_matrix
 from .. import utils

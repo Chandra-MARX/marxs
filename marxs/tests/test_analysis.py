@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import transforms3d
 from astropy.table import Table

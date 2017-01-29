@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from os import path
 from astropy.extern.six.moves.configparser import ConfigParser
 from cffi import FFI

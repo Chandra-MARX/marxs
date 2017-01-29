@@ -1,3 +1,4 @@
+
 '''Plot routines for json output to be loaded into `three.js <threejs.org>`__.
 
 Each routine returns a json dictionary. These json dictionaries can be collected in
@@ -33,6 +34,7 @@ Each of the sublists has the following fields:
   - ``pos4d``: list of lists of 16 numbers
   - ``geometrypars``: list (meaning depends on geometry, e.g. radius of torus)
 '''
+
 import os
 import json
 import datetime

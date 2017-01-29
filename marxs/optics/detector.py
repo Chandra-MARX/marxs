@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 from __future__ import division
 import warnings
 

@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 '''
 Sources generate photons with all photon properties: energy, direction, time, polarization.
 
