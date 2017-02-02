@@ -76,6 +76,7 @@ class EnergyFilter(FlatOpticalElement):
 
     display = {'color': (1.0, 0., 0.),
                'opacity': 0.5,
+               'shape': 'box',
     }
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
