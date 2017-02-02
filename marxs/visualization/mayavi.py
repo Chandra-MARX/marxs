@@ -203,7 +203,8 @@ def plot_object(obj, display=None, viewer=None, **kwargs):
     '''
     out = utils.plot_object_general(plot_registry, obj, display, **kwargs)
 
-    if out is not None:
+    if (out is not None) and not isinstance(out, list):
+        # containers return list, but properties are already set there
         display = display or obj.display
         # No safety net here like for color converting to a tuple.
         # If the advanced properties are set you are on your own.

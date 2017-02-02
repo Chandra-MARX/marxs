@@ -59,6 +59,7 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
                 # turn into valid color tuple
                 display['color'] = get_color(display)
                 out = plot_registry[s](obj, display,  **kwargs)
+                break
         else:
             warnings.warn('Skipping {0}: No function to plot {1}'.format(obj.name, shape),
                           MARXSVisualizationWarning)

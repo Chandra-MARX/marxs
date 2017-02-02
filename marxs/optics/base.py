@@ -8,7 +8,6 @@ from astropy.table import Table, Row
 from ..math.pluecker import (e2h, h2e, point_dir2plane, dir_point2line,
                              intersect_line_plane)
 from ..base import SimulationSequenceElement, _parse_position_keywords
-from ..visualization.utils import get_color
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -227,7 +226,8 @@ class FlatOpticalElement(OpticalElement):
     will be multiplied with the previous probabilities of each photon automatically.
     '''
 
-    _geometry = {'shape': 'box'}
+    display = {'shape': 'box'}
+    _geometry = {}
 
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
