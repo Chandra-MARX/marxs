@@ -1,7 +1,7 @@
 import numpy as np
 
 from .pluecker import e2h
-
+from .utils import norm_vector
 
 def polarization_vectors(dir_array, angles):
     '''Takes angle polarizations and converts them to vectors in the direction of polarization.
@@ -104,13 +104,14 @@ def paralleltransport_matrix(dir1, dir2, jones=np.eye(2), replace_nans=True):
         ``dir1=dir2``. In those cases, the local coordinate system is not well
         defines and thus no Jones matrix can be applied. In MARXS ``dir1=dir2``
         often happens if some photons in a list miss the optical element in
-        questions - and this it is appropriate not to apply any Jones matrix to
-        them.
+        question - these photons just pass through.
 
     Returns
     -------
     p_mat : np.array of shape(n, 3, 3)
     '''
+    dir1 = norm_vector(dir1)
+    dir2 = norm_vector(dir2)
     jones_3 = np.eye(3)
     jones_3[:2, :2] = jones
     s = np.cross(dir1, dir2)

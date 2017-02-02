@@ -254,7 +254,9 @@ class FlatOpticalElement(OpticalElement):
             homogeneous coordinates of the intersection point. Values are set
             to ``np.nan`` if no intersection point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane.
+            y and z coordinates in the coordiante system of the active plane
+            (not normalized to the dimensions of the element in question, but
+            in absolute units).
         '''
         plucker = dir_point2line(h2e(dir), h2e(pos))
         interpos =  intersect_line_plane(plucker, self.geometry('plane'))

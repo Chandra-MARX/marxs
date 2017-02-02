@@ -174,6 +174,9 @@ class TestOpticalElementInterface:
         photons = elem(photons)
         assert np.allclose(np.einsum('...i,...i', photons['dir'].data,
                                      photons['polarization'].data), 0.)
+        # Also, the polarization vector must still be a unit vector.
+        assert np.allclose(np.linalg.norm(photons['polarization'], axis=1), 1)
+
 
     def test_metadata_evolution(self, photons, elem):
         '''In almost all cases, the metadata passed into an element should
