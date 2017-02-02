@@ -763,7 +763,6 @@ class GratingArrayStructure(LinearCCDArray):
         return pos4d
 
 
-
 class RectangularGrid(ParallelCalculated, OpticalElement):
     id_col = 'facet'
 
@@ -783,8 +782,8 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
 
     def elempos(self):
 
-        n_y =  int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
-        n_z =  int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
+        n_y = int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
+        n_z = int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
 
         # n_y and n_z are rounded up, so they cover a slighty larger range than y/z_range
         width_y = n_y * self.d_element

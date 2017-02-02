@@ -116,13 +116,19 @@ Lastly, "energy" can be a function that assigns energy values based on the timin
 
 Polarization
 ^^^^^^^^^^^^
-An unpolarized source can be created with ``polarization=None`` (this is also the default). In this case, a random polarization is assigned to every photon. The other options are very similar to "energy": Allowed are a constant value or a table of some form (see examples above) with two columns "angle" and "probability" (really "probability density") or a numpy array where the first column represents the angle and the second one the probability density. Here is an example where most polarizations are randomly oriented, but an orientation around :math:`35^{\circ}` (0.6 in radian) is a lot more likely.
+An unpolarized source can be created with ``polarization=None`` (this is also
+the default). In this case, a random polarization is assigned to every
+photon. The other options are very similar to "energy": Allowed are a constant
+angle (in degrees) or a table of some form (see examples above) with two columns "angle" and "probability" (really "probability density") or a numpy array where the first column represents the angle and the second one the probability density. Here is an example where most polarizations are randomly oriented, but an orientation around :math:`35^{\circ}` (0.6 in radian) is a lot more likely.
 
-    >>> angles = np.array([0., 0.5, 0.7, 2 * np.pi])
+    >>> angles = np.array([0., 30., 40., 360])
     >>> prob = np.array([1, 1., 8., 1.])
     >>> polsource = PointSource(coords=SkyCoord(11., -5.123, unit='deg'), polarization={'angle': angles, 'probability': prob})
 
-Lastly, if polarization is a function, it will be called with time and energy as parameters allowing for time and energy dependent polarization distributions. The following function returns a 50% polarization fraction in the 6.4 keV Fe flourescence line after a a certain features comes into view at t=1000 s.
+Lastly, if polarization is a function, it will be called with time and energy
+as parameters allowing for time and energy dependent polarization
+distributions. The following function returns a 50% polarization fraction in
+the 6.4 keV Fe flourescence line after some polarized feature comes into view at t=1000 s.
 
     >>> def polfunc(time, energy):
     ...     pol = np.random.uniform(high=2*np.pi, size=len(time))
