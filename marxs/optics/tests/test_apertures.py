@@ -38,6 +38,18 @@ def test_circle_invalid_parameters():
         c = CircleAperture(zoom=[2, 2, 3])
     assert 'does not have the same size' in str(e.value)
 
+def test_circle_radius():
+    '''Check that all rays actually fall into the aperture area.'''
+    p = generate_test_photons(500)
+    p.remove_column('pos')
+    c = CircleAperture(phi=[0, np.pi / 2], r_inner=15, zoom=25)
+    p = c(p)
+    assert np.all(p['pos'][1] >= 0)
+    assert np.all(p['pos'][2] >= 0)
+    rad = np.linalg.norm(p['pos'], axis=1)
+    assert np.all(rad >= 15.)
+    assert np.all(rad <= 25.)
+
 def test_circle_area():
     '''Check that the area of rings and wedges comes out correctly.'''
     c = CircleAperture(zoom=[1, 2, 2])

@@ -163,7 +163,7 @@ class CircleAperture(FlatAperture):
         phi = np.random.uniform(self.phi[0], self.phi[1], n)
         # normalize r_inner
         r_inner = self.r_inner / np.linalg.norm(self.geometry('v_y'))
-        r = np.sqrt(r_inner**2 + np.random.random(n))
+        r = np.sqrt(np.random.uniform(r_inner**2, 1., n))
 
         x = r * np.cos(phi)
         y = r * np.sin(phi)
