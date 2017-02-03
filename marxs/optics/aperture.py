@@ -5,7 +5,7 @@ from astropy.utils.metadata import enable_merge_strategies
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
-from ..visualization.utils import plane_with_hole, get_color
+from ..visualization.utils import plane_with_hole
 from ..math.pluecker import h2e
 from ..math.utils import anglediff
 from ..simulator import BaseContainer
@@ -136,23 +136,34 @@ class CircleAperture(FlatAperture):
         Bounding angles for a segment covered by the GSA. :math:`\phi=0`
         is on the positive y axis. The segment fills the space from ``phi1`` to
         ``phi2`` in the usual mathematical way (counterclockwise).
-        Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
-        the segment crosses the y axis.
-        (Default is the full circle.)
+        Angles are given in radian. Use ``phi[1] < 0`` if the segment crosses
+        the y axis. (Default is the full circle.)
+    r_inner : float
+        Inner radius for ring-like apertures. Default is 0 (full circle).
     '''
     def __init__(self, **kwargs):
         phi = kwargs.pop('phi', [0, 2. * np.pi])
         if np.max(np.abs(phi)) > 10:
             raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
+        if phi[0] > phi[1]:
+            raise ValueError('phi[1] must be greater than phi[0].')
+        if (phi[1] - phi[0]) > (2 * np.pi + 1e-6):
+            raise ValueError('phi[1] - phi[0] must be less than 2 pi.')
         self.phi = phi
+        self.r_inner = kwargs.pop('r_inner', 0.)
         super(CircleAperture, self).__init__(**kwargs)
+        if self.r_inner > np.linalg.norm(self.geometry('v_y')):
+            raise ValueError('r_inner must be less than size of full aperture.')
+
+        if not np.isclose(np.linalg.norm(self.geometry('v_y')),
+                          np.linalg.norm(self.geometry('v_z'))):
+            raise GeometryError('Aperture does not have the same size in y, z direction.')
 
     def generate_local_xy(self, n):
         phi = np.random.uniform(self.phi[0], self.phi[1], n)
-        r = np.sqrt(np.random.random(n))
-        if not np.isclose(np.linalg.norm(self.geometry('v_y')),
-                          np.linalg.norm(self.geometry('v_z'))):
-            raise GeometryError('Aperture does not have same size in y, z direction.')
+        # normalize r_inner
+        r_inner = self.r_inner / np.linalg.norm(self.geometry('v_y'))
+        r = np.sqrt(r_inner**2 + np.random.random(n))
 
         x = r * np.cos(phi)
         y = r * np.sin(phi)
@@ -161,7 +172,8 @@ class CircleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return 2. * np.pi * np.linalg.norm(self.geometry('v_y'))
+        A_circ = np.pi * (np.linalg.norm(self.geometry('v_y'))**2 - self.r_inner**2)
+        return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ
 
     def inner_shape(self):
         n = self.display.get('n_inner_vertices', 90)
