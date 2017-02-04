@@ -112,9 +112,9 @@ def box(obj, display):
     return out
 
 
-def plane_with_hole(obj, display):
+def triangulation(obj, display):
     '''Describe a plane with a hole, such as an aperture of baffle.'''
-    xyz, triangles = obj.triangulate_inner_outer()
+    xyz, triangles = obj.triangulate()
     out = {}
     out['n'] = 1
     out['name'] = str(obj.name)
@@ -235,7 +235,7 @@ def write(fileobject, data, photons=None):
     json.dump(jdata, fileobject)
 
 
-plot_registry = {'plane with hole': plane_with_hole,
+plot_registry = {'triangulation': triangulation,
                  'torus': torus,
                  'box': box,
                  'container': container,

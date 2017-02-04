@@ -50,11 +50,11 @@ def container(obj, display=None, viewer=None):
     return [plot_object(e, display=None, viewer=viewer) for e in obj.elements]
 
 @format_doc(doc_plot)
-def plane_with_hole(obj, display, viewer=None):
+def triangulation(obj, display, viewer=None):
     '''Plot a plane with an inner hole such as an aperture.'''
     from mayavi import mlab
 
-    xyz, triangles = obj.triangulate_inner_outer()
+    xyz, triangles = obj.triangulate()
     t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
 
@@ -165,7 +165,7 @@ def plot_rays(data, scalar=None, viewer=None,
 
     return src, lines, surface
 
-plot_registry = {'plane with hole': plane_with_hole,
+plot_registry = {'triangulation': triangulation,
                  'surface': surface,
                  'box': box,
                  'container': container,

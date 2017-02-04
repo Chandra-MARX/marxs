@@ -16,7 +16,7 @@ class BaseAperture(object):
 
     display = {'color': (0.0, 0.75, 0.75),
                'opacity': 0.3,
-               'shape': 'plane with hole'}
+               'shape': 'triangulation'}
 
     @staticmethod
     def add_colpos(photons):
@@ -77,7 +77,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         '''Return values in Eukledean space'''
         raise NotImplementedError
 
-    def triangulate_inner_outer(self):
+    def triangulate(self):
         '''Return a triangulation of the aperture hole embedded in a square.
 
         The size of the outer square is determined by the ``'outer_factor'`` element
@@ -175,11 +175,11 @@ class CircleAperture(FlatAperture):
         A_circ = np.pi * (np.linalg.norm(self.geometry('v_y'))**2 - self.r_inner**2)
         return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ
 
-    def inner_shape(self):
+    def inner_shape(self, r_factor=1):
         n = self.display.get('n_inner_vertices', 90)
         phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
-        v_y = self.geometry('v_y')
-        v_z = self.geometry('v_z')
+        v_y = r_factor * self.geometry('v_y')
+        v_z = r_factor * self.geometry('v_z')
 
         x = np.cos(phi)
         y = np.sin(phi)
@@ -192,6 +192,21 @@ class CircleAperture(FlatAperture):
         y[~ind] = 0
 
         return h2e(self.geometry('center') + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+
+    def triangulate(self):
+        xyz, triangles = super(CircleAperture, self).triangulate()
+        if (self.r_inner > 0):
+            n_in = xyz.shape[0]
+            n = self.display.get('n_inner_vertices', 90)
+            new_xyz = self.inner_shape(r_factor = self.r_inner / np.linalg.norm(self.geometry('v_y')))
+            xyz = np.vstack([xyz, h2e(self.geometry('center')), new_xyz])
+            new_tri = np.zeros((n, 3))
+            new_tri[:, 0] = n_in
+            new_tri[:, 1] = np.arange(n_in + 1, n_in + n + 1)
+            new_tri[0, 2] = n_in + n
+            new_tri[1:, 2] = np.arange(n_in + 1, n_in + n)
+            triangles = np.vstack([triangles, new_tri])
+        return xyz, triangles
 
 
 class MultiAperture(BaseAperture, BaseContainer):
