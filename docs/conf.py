@@ -80,7 +80,7 @@ rst_epilog += """
 #]
 
 numpydoc_show_class_members = False
-todo_include_todos = True
+todo_include_todos = False
 
 
 # -- Project information ------------------------------------------------------
