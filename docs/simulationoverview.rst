@@ -15,10 +15,3 @@ of the instrument are still worked out with the help of the ray-trace simulation
 If you already have a ``marxs`` file that contains your instrument parameters from the instrument
 team or provided in the example directory of this package, you can skip this section.
 
-.. toctree::
-   :maxdepth: 2
-
-   optics
-   design
-   newopticalelements
-

@@ -2,8 +2,9 @@
 
 .. _sources:
 
+********************************
 Define the source in a marxs run
-================================
+********************************
 
 A "source" in marxs is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in Marxs is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
 
@@ -24,12 +25,12 @@ In addition, we need to give the location of the source and its size and shape (
  .. _sect-source-fluxenpol:
 
 Specify flux, energy and polarizarion for a source
---------------------------------------------------
+==================================================
 
 The source flux, the energy and the polarization of sources are specified in the same way for astrophysical sources and lab sources. We show a few examples here and spell out the full specification below.
 
 Flux
-^^^^
+----
 The source flux can just be a number, giving the total counts / second / mm^2 (if no number is given, the default is ``flux=1``).
 
      >>> from __future__ import print_function
@@ -64,7 +65,7 @@ Note that this simple implementation is incomplete (it can happen by chance that
     >>> star = PointSource(coords=SkyCoord("23h12m2.3s -3d4m12.3s"), flux=poisson_process(100.))
 
 Energy
-^^^^^^
+------
 Similarly to the flux, the input for ``energy`` can just be a number, which specifies the energy of a monochromatic source in keV (the default is ``energy=1``):
 
     >>> FeKalphaline = PointSource(coords=SkyCoord(255., -33., unit="deg"), energy=6.7)
@@ -115,7 +116,7 @@ Lastly, "energy" can be a function that assigns energy values based on the timin
      6.0    2.0
 
 Polarization
-^^^^^^^^^^^^
+------------
 An unpolarized source can be created with ``polarization=None`` (this is also
 the default). In this case, a random polarization is assigned to every
 photon. The other options are very similar to "energy": Allowed are a constant
@@ -141,8 +142,8 @@ the 6.4 keV Fe flourescence line after some polarized feature comes into view at
 	
 .. _sect-source-radec:
 
-Specify the position for an astrophysical source
-------------------------------------------------
+Specify the sky position for an astrophysical source
+====================================================
 
 An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
 
@@ -160,7 +161,7 @@ Sources can be used with the following pointing models:
 .. _sect-source-lab:
 
 Specify the position for a laboratory source
---------------------------------------------
+============================================
 
 Sources in the lab are specified in the same coordinate system used for all other optical elements, see `pos4d` for details.
 
@@ -171,7 +172,7 @@ The following laboratory sources are provided:
 - `~marxs.source.LabPointSourceCone`
 
 Design your own sources and pointing models
--------------------------------------------
+===========================================
 
 The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 

@@ -5,9 +5,53 @@ Installation
 Requirements
 ============
 
-- numpy >=1.8
-- scipy
+MARXS has few hard requirements:
 
+- `numpy <http://www.numpy.org/>`_
+- `astropy`_
+- `transforms3d <https://matthew-brett.github.io/transforms3d/>`_
+
+Numpy and astropy are best installed with a package manager such as conda. See the `astropy installation instructions for a detailed discussion <https://astropy.readthedocs.io/en/stable/install.html>`_. ``transforms3d`` is easily installed with::
+
+    pip install transforms3d
+
+The following Python packages are strongly recommended, but most parts of MARXS will work without them:
+
+- scipy
+- matplotlib
+- mayavi (for 3 D output)
+- jsonschema
+
+Again, these are all available through common package managers such as conda, ``apt-get`` etc.
+  
+In addition MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
+  
+Install the python code
+=======================
+
+setup.py
+--------
+
+To download the latest development version of MARXS:
+
+.. code-block:: bash
+
+   $ git clone https://github.com/Chandra-MARXS/marxs.git
+   $ cd marxs
+
+Now you install, run tests or build the documentation:
+
+.. code-block:: bash
+
+   $ python setup.py install
+   $ python setup.py test
+   $ python setup.py build_docs
+
+If you want to contribute to MARXS, but are not familiar with Python or
+git or Astropy yet, please have a look at the  
+`Astropy developer documentation <http://docs.astropy.org/en/latest/#developer-documentation>`__.
+
+  
 .. _sect-installmarxccode:
 
 `classic marx`_ C code
@@ -25,7 +69,7 @@ These are the steps required to use the interface to `classic marx`_:
 - Edit ``setup.cfg`` with the path to the `classic marx`_ source code and to compiled binaries.
 - Once that is done, install marxs with ``python setup.py install`` in the root directory of the MARXS distribution.
 
-In the current (`classic marx`_ 5.1) default setup, `classic marx`_ compiles static libraries, not
+The current `classic marx`_ default setup compiles static libraries, not
 shared objects. Static libraries are a tiny bit better in performance at the
 cost of extra difficulty of linking them into shared objects. Since `classic marx`_ is
 not meant to be used a library for external functions (like this python
@@ -35,8 +79,8 @@ libraries works, on other you might see an error like this::
 
     relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC
 
-In that case, simply recompile and install `classic marx`_ as *P* osition *I* ndependent
-*C* ode. In the `classic marx`_ source code directory:: 
+In that case, simply recompile and install `classic marx`_ as position independent
+code (PIC). In the `classic marx`_ source code directory:: 
 
     make distclean
     ./configure --prefix=/path/to/your/instalation/ CFLAGS="-O2 -g -fPIC"

@@ -1,5 +1,6 @@
+*******************************************
 Optical elements that make up an instrument
-===========================================
+*******************************************
 
 A simulation is defined by creating objects for all optical elements such as mirrors and gratings and
 sorting these optical elements in the order in which a photon encounters them. Marxs works under the
@@ -16,7 +17,7 @@ detectors. Such complex setups are described in :ref:`complexgeometry`.
 .. _args for optical elements:
 
 Define an optical element for the simulation
---------------------------------------------
+============================================
 All optical elements have to be derived from :obj:`marxs.optics.base.OpticalElement` and they all share a common interface. 
 
 Optical elements are generated with the following keywords:
@@ -39,7 +40,7 @@ Optical elements are generated with the following keywords:
 
 
 List of optical elements provided by marxs
-------------------------------------------
+==========================================
 Note that elements which generate photons (astropysical sources or lab sources) are not listed here. See :ref:`sources`.
 For convenience the following elements can be imported directly from `marxs.optics` such as:
 
@@ -52,7 +53,7 @@ This short from is recommended over the long form:
 .. _sect-apertures:
     
 Entrance apertures
-^^^^^^^^^^^^^^^^^^
+------------------
 
 For astrophysical sources, we assume that the rays are parallel when they reach the experiement. The direction of the photons is given by the location of the source on the sky and the pointing model, but we still need to select which of the parallel rays we select for the simulation. This is done by an optical element that we call an "aperture" in Marxs. In the case of the `~marxs.optics.MarxMirror` this fuctionality is already included in the code that describes the mirror. For designs that do not use the `~marxs.optics.MarxMirror` the following entrance apertures are included in Marxs:
 
@@ -62,8 +63,7 @@ For astrophysical sources, we assume that the rays are parallel when they reach 
 
 
 General optical elements
-^^^^^^^^^^^^^^^^^^^^^^^^
-
+------------------------
    
 -   `marxs.optics.Baffle`
 -   `marxs.optics.PerfectLens`
@@ -79,7 +79,7 @@ General optical elements
 
 
 Diffraction gratings
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 The gratings implemented in marxs solve the diffration equation, but not Maxwell's equations. Thus, they cannot determine the probability for a photon to be diffracted into a particular order. Instead, gratings accept a keyword ``order_selector`` that expects a function (or other callable) that assigngs each diffrated photon to a gratings order. For example, the following code makes a grating where the photons are distributed with equal probability in all orders from -2 to 2:
 
    >>> from marxs.optics import FlatGrating, OrderSelector
@@ -97,7 +97,7 @@ The grating module contains different classes for gratings and also different pr
 .. _complexgeometry:
 
 Complex designs
----------------
+===============
 
 Most optical elements only change rays that intersect them (`~marxs.optics.Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
 
@@ -115,7 +115,7 @@ In contrast, `~marxs.simulator.Parallel` is meant for designs with identical ele
 
 
 Reference / API
----------------
+===============
 .. automodapi:: marxs.optics
 
 .. automodapi:: marxs.simulator

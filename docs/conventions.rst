@@ -1,6 +1,6 @@
-*********************
-Coordinates and units
-*********************
+********************************************
+Coordinates, physical units and polarization
+********************************************
 
 .. _coordsys:
 .. _pos4d:

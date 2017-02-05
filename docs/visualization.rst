@@ -11,9 +11,6 @@ Look at the photon event lists
 ==============================
 In many cases, the most imporant output of a marxs simulation will be the photon event list with simulated detector (x, y) coordiantes for each photon. Much of the analysis can be done with any plotting package of your choice.
 
-.. todo::
-   example with matplotlib code and image here
-
 
 A 3 dimensional picture
 =======================
