@@ -23,6 +23,7 @@ class FlatBrewsterMirror(FlatOpticalElement):
     probability of the reflected photons is adjusted to account for this overall loss.
     '''
     display = {'color': (0., 1., 0.),
+               'shape': 'box'
     }
 
     def fresnel(self, photons, intersect, intersection, local):
