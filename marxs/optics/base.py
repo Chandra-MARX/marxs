@@ -174,16 +174,18 @@ class OpticalElement(SimulationSequenceElement):
             to ensure you are working with an independent copy.
         '''
         if intersect.sum() > 0:
+            self.add_output_cols(photons, self.loc_coos_name)
+            # Add ID number to ID col, if requested
+            if self.id_col is not None:
+                photons[self.id_col][intersect] = self.id_num
+            # Set position in different coordinate systems
+            photons['pos'][intersect] = interpos[intersect]
+            photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
+            photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+
             if hasattr(self, "specific_process_photons"):
                 outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, self.loc_coos_name + list(outcols.keys()))
-                # Add ID number to ID col, if requested
-                if self.id_col is not None:
-                    photons[self.id_col][intersect] = self.id_num
-                # Set position in different coordinate systems
-                photons['pos'][intersect] = interpos[intersect]
-                photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
-                photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+                self.add_output_cols(photons, list(outcols.keys()))
                 for col in outcols:
                     if col == 'probability':
                         photons[col][intersect] *= outcols[col]
