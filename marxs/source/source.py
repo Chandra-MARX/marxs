@@ -27,13 +27,16 @@ def poisson_process(rate):
     Parameters
     ----------
     rate : float
-        Expectation value for the rate of events.
+        Expectation value for the total rate of events in photons / cm**2 / s.
 
     Returns
     -------
     poisson_rate : function
         Function that generates Poisson distributed times with rate ``rate``.
     '''
+    if not np.isscalar(rate):
+        raise ValueError('"rate" must be scalar.')
+
     def poisson_rate(exposuretime, geomarea):
         '''Generate Poisson distributed times.
 
@@ -42,7 +45,7 @@ def poisson_process(rate):
         exposuretime : float
             Exposure time in sec.
         geomarea : float
-            Geometric opening area of telescope in :math:`mm^2`.
+            Geometric opening area of telescope in :math:`cm^2`.
 
         Returns
         -------
@@ -51,11 +54,11 @@ def poisson_process(rate):
         '''
         fullrate = rate * geomarea
         # Make 10 % more numbers then we expect to need, because it's random
-        times = expon.rvs(scale=1./rate, size=exposuretime * fullrate * 1.1)
+        times = expon.rvs(scale=1./fullrate, size=int(exposuretime * fullrate * 1.1))
         # If we don't have enough numbers right now, add some more.
         while times.sum() < exposuretime:
-            times = np.hstack([times, expon.rvs(scale=1/rate,
-                                                size=(exposuretime - times.sum() * fullrate * 1.1))])
+            times = np.hstack([times, expon.rvs(scale=1/fullrate,
+                                                size=int(exposuretime - times.sum() * fullrate * 1.1))])
         times = np.cumsum(times)
         return times[times < exposuretime]
     return poisson_rate
@@ -76,7 +79,7 @@ class Source(SimulationSequenceElement):
     Parameters
     ----------
     flux : number or callable
-        This sets the total flux from a source in photons/s/mm^2; the default value
+        This sets the total flux from a source in photons/s/cm^2; the default value
         is 1 cts/s.
         Options are:
 
@@ -128,8 +131,8 @@ class Source(SimulationSequenceElement):
           and must return an array of equal length that contains the polarization angles in
           degrees.
     geomarea : float
-        Geometric opening area of telescope in :math:`mm^2`. If not given,
-        an opening of :math:`1 mm^2` is assumed.
+        Geometric opening area of telescope in :math:`cm^2`. If not given,
+        an opening of :math:`1 cm^2` is assumed.
     '''
     def __init__(self, **kwargs):
         self.energy = kwargs.pop('energy', 1.)
@@ -148,7 +151,7 @@ class Source(SimulationSequenceElement):
         elif np.isscalar(self.flux):
             return np.arange(0, exposuretime, 1./(self.flux * self.geomarea))
         else:
-            raise SourceSpecificationError('`flux` must be a number or a callable.')
+            raise SourceSpecificationError('`flux` must be a scalar number or a callable.')
 
     def generate_energies(self, t):
         n = len(t)
