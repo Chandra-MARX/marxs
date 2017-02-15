@@ -166,10 +166,12 @@ class FixedPointing(PointingModel):
                                                    photons['time'].data)
         photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
         photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
-        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree), '[deg] Pointing Roll')
+        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree).value,
+                                    '[deg] Pointing Roll')
         photons.meta['RA_NOM'] = (self.coords.ra.degree, '[deg] Nominal Pointing RA')
         photons.meta['DEC_NOM'] = (self.coords.dec.degree, '[deg] Nominal Pointing Dec')
-        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree), '[deg] Nominal Pointing Roll')
+        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree).value,
+                                    '[deg] Nominal Pointing Roll')
 
         return photons
 
