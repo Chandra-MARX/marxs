@@ -201,7 +201,7 @@ class JitterPointing(FixedPointing):
         n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi
         ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
-        jitterang = np.random.normal(scale=self.jitter.to(u.radian), size=n)
+        jitterang = np.random.normal(scale=self.jitter.to(u.radian).value, size=n)
         jitterrot = axangle2mat(ax, jitterang)
         photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
                                        h2e(photons['dir'])), 0)
