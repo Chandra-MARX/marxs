@@ -51,7 +51,7 @@ def poisson_process(rate):
         '''
         fullrate = rate * geomarea
         # Make 10 % more numbers then we expect to need, because it's random
-        times = expon.rvs(scale=1./rate, size=exposuretime * fullrate * 1.1)
+        times = expon.rvs(scale=1./rate, size=int(exposuretime * fullrate * 1.1))
         # If we don't have enough numbers right now, add some more.
         while times.sum() < exposuretime:
             times = np.hstack([times, expon.rvs(scale=1/rate,
