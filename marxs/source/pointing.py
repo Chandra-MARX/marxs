@@ -192,7 +192,7 @@ class JitterPointing(FixedPointing):
         Gaussian sigma of jitter angle
     '''
     def __init__(self, **kwargs):
-        self.jitter = kwargs.pop('jitter')
+        self.jitter = np.abs(kwargs.pop('jitter'))
         super(JitterPointing, self).__init__(**kwargs)
 
     def process_photons(self, photons):
@@ -201,10 +201,13 @@ class JitterPointing(FixedPointing):
         n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi
         ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
-        jitterang = np.random.normal(scale=self.jitter.to(u.radian).value, size=n)
-        jitterrot = axangle2mat(ax, jitterang)
-        photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
-                                       h2e(photons['dir'])), 0)
-        photons['polarization'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
-                                                h2e(photons['polarization'])), 0)
+        if self.jitter > 0:
+            # For comparison it's often useful to run a model with jitter=0
+            # but that would fail np.random.normal(scale=0)
+            jitterang = np.random.normal(scale=self.jitter.to(u.radian).value, size=n)
+            jitterrot = axangle2mat(ax, jitterang)
+            photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
+                                           h2e(photons['dir'])), 0)
+            photons['polarization'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
+                                                    h2e(photons['polarization'])), 0)
         return photons
