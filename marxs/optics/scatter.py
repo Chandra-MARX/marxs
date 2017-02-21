@@ -54,8 +54,11 @@ class RadialMirrorScatter(FlatOpticalElement):
             perpangle = np.random.normal(loc=0., scale=self.perpplanescatter, size=n)
             rot = axangle2mat(radial, perpangle)
             outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(outdir)), 0)
+        else:
+            perpangle = np.zeros_like(inplaneangle)
 
         pol = parallel_transport(photons['dir'].data[intersect, :], outdir,
                                  photons['polarization'].data[intersect, :])
 
-        return {'dir': outdir, 'polarization': pol}
+        return {'dir': outdir, 'polarization': pol,
+                'inplanescatter': inplaneangle, 'perpplanescatter': perpangle}
