@@ -80,7 +80,7 @@ def surface(surface, display, viewer=None):
 
 @format_doc(doc_plot)
 def box(obj, display, viewer=None):
-    '''Plot an rectangular box for an object.'''
+    '''Plot a rectangular box for an object.'''
     from mayavi import mlab
 
     corners = np.array([[-1, -1, -1], [-1,+1, -1],
@@ -138,7 +138,7 @@ def plot_rays(data, scalar=None, viewer=None,
     elif scalar.shape == (n, ):
         s = np.repeat(scalar, N)
     elif scalar.shape == (n, N):
-        s = scalar
+        s = scalar.flatten()
     else:
         raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})'.format(n, N))
 
