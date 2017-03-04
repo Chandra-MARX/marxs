@@ -2,7 +2,7 @@
 Running MARXS at a glance
 *************************
 
-A MARXS simulation can be customized in many different ways to adapt to different instruments and science questions. Therefore, some classes support quite complext input. Before discussing all options in detail, we want to present a complete MARX run with typical parameters here.
+A MARXS simulation can be customized in many different ways to adapt to different instruments and science questions. Therefore, some classes support quite complex input. Before discussing all options in detail, we want to present a complete MARX run with typical parameters here.
 
 Our question is a follows: `Miller et al. (2003) <http://adsabs.harvard.edu/abs/2003ApJ...585L..37M>`_ observed two ultra-luminous X-ray source in NGC 1313 with XMM-Newton. If we take a grating spectrum of one of these sources, will be get any trace from the second trace on the corner of the detector?
 
@@ -50,6 +50,8 @@ Now, can can finally create our sources:
    >>> src2 = PointSource(coords=ngc1313_X2, energy={'energy': energies, 'flux': spectrum2},
    ...                    flux=flux2, geomarea=HRMA.area)
 
+See :ref:`sources` for more details.
+   
 Set up observation and instrument configuration
 ===============================================
 We need to specify the pointing direction and the roll angle (if different from 0)::
@@ -65,6 +67,8 @@ and also set up the instrument components. The mirror was already initialized ab
    Some warnings that ACIS 1024 * pixel size does not match chip size exactly ...
 
 That was easy!
+
+If you are simulating an instrument that is not part pf the MARXS package itself you can either specify everything yourself (see :ref:`sect-optics` for more details) or use files provided, e.g. by the instrument team. In that case, you have probably also received more detailed instructions on how to use these files.
 
 Run the simulation
 ==================
@@ -91,9 +95,10 @@ New we can either merge the two photon lists to a single list similar to what we
 
 or make use of the fact that in the simulation (unlike in real life) we know exactly which photon came from which source and keep them separate.
 
-Tracking the photon probability
-===============================
-For every photon, MARXS tracks the probability that this specific photons makes it to the detector. So, if a photon, for example, passes through an absorbing filter that absorbes 50% of all photons this this energy, each photon will have the value in its column "probability" multiplied by 0.5. This way, all photons that are send out by the source, will end up in the final photon list, although some of them will have a probability of 0. Another approach commonly used in Monte-Carlo ray-trace codes is to draw a random number, and if it is below 0.5, the photons is transmitted through the filter, above 0.5 it is discoarded. However, that reduces the number of photons in the final distribution list and thus increases the random scatter in the results. Simulations need to be run with a larger number of photons to see faint features.
+.. _sect-runexample-look:
+
+Look at simulation results
+==========================
 
 In MARXS, if you want to know the number of photons that are expected to be detected, you select the photons in the output list that hit the detector and then add up all the probabilities::
 
@@ -105,8 +110,7 @@ If, instead, you are looking for a list of detected photons which has the same n
 
   >>> pobs = p[p['probability'] < np.random.uniform(len(p))]
 
-Look at simulation results
-==========================
+For more details on the MARXS output see :ref:`sect-results`.
 
 We can now look at the distribution of photons on the detector::
 
@@ -118,4 +122,6 @@ Notice that the plot is not scaled equally in the x and y axis and thus the zero
 .. plot:: pyplots/runexample.py
 
 Only photons from the first source (blue) are visible, no photon from the second source is seen because its distance to source 1 is larger than the Chandra field-of-view. (We could have seen that without running a simulation.)
+
+For more details on visualization see :ref:`visualize`.
    

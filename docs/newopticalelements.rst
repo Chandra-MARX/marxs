@@ -56,7 +56,7 @@ A simpe example for an optical element is the baffle - a rectangular opening in 
 
 .. literalinclude:: ../marxs/optics/baffle.py
 
-The code above uses the `~marxs.optics.FlatOpticalElement.intersect` mathod it inherits to calculate which photons intersect at all and if so, at which coordinate. This point is entered into the ``photons['pos']``.
+The code above uses the `~marxs.optics.FlatOpticalElement.intersect` method it inherits to calculate which photons intersect at all and if so, at which coordinate. This point is entered into the ``photons['pos']``.
 
 Note that the baffle can be rectangular without writing a single line of code here. ``baf = Baffle(zoom=[1,3,2])`` would create a baffle of size 6*4 (the outer boundaries are 3 or 2 mm from the center) because the `~marxs.optics.OpticalElement` can interpret all :ref:`pos4d` keywords and the `marxs.optics.FlatOpticalElement.intersect` makes use of this information when it calculates intersection points.
 

@@ -18,7 +18,7 @@ def generate_test_photons(n=1):
     - position: ``x=1; y=0; z=0``
     - direction: negative x-axis
     - energy: 1 keV
-    - polarization: 1
+    - polarization: y-direction
 
     This is useful for testing purposes.
 
