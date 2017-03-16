@@ -4,7 +4,7 @@ Running MARXS at a glance
 
 A MARXS simulation can be customized in many different ways to adapt to different instruments and science questions. Therefore, some classes support quite complex input. Before discussing all options in detail, we want to present a complete MARX run with typical parameters here.
 
-Our question is a follows: `Miller et al. (2003) <http://adsabs.harvard.edu/abs/2003ApJ...585L..37M>`_ observed two ultra-luminous X-ray source in NGC 1313 with XMM-Newton. If we take a grating spectrum of one of these sources, will be get any trace from the second trace on the corner of the detector?
+Our question is the following: `Miller et al. (2003) <http://adsabs.harvard.edu/abs/2003ApJ...585L..37M>`_ observed two ultra-luminous X-ray source in NGC 1313 with XMM-Newton. If we take a grating spectrum of one of these sources with Chandra, will be get any trace from the second trace on the corner of the detector?
 
 We will simulate two point sources in Chandra, one on the optical axis and one located a few arcmin off-axis. MARXS includes a simplified description of the Chandra X-ray observatory in the `marxs.missions` module.
 
@@ -123,5 +123,5 @@ Notice that the plot is not scaled equally in the x and y axis and thus the zero
 
 Only photons from the first source (blue) are visible, no photon from the second source is seen because its distance to source 1 is larger than the Chandra field-of-view. (We could have seen that without running a simulation.)
 
-For more details on visualization see :ref:`visualize`.
+For more details on visualization see :ref:`visualization`.
    

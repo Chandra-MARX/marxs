@@ -1,5 +1,6 @@
+***********************************
 Tools to help the instrument design
-===================================
+***********************************
 
 In the previous sections, we either used pre-defined instrument configurations or
 placed all components "by hand", giving their absolute coordinates in mm. But how do we

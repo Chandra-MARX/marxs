@@ -60,14 +60,9 @@ The `classic marx`_ code is an optional dependency. By default, it is not used a
 modules build on `classic marx`_ will be unavailable.
 
 In order to build the interface to the `classic marx`_ C code, you need to set the path
-to both, the `classic marx`_ source code and an installed version of `classic marx`_ on your
+to the `classic marx`_ source code *and* an installed version of `classic marx`_ on your
 machine in the ``setup.cfg`` file in the root directory of the installation
-package.
-
-These are the steps required to use the interface to `classic marx`_:
-
-- Edit ``setup.cfg`` with the path to the `classic marx`_ source code and to compiled binaries.
-- Once that is done, install marxs with ``python setup.py install`` in the root directory of the MARXS distribution.
+package *before* you call ``python setup.py install`` in the root directory of the MARXS distribution.
 
 The current `classic marx`_ default setup compiles static libraries, not
 shared objects. Static libraries are a tiny bit better in performance at the
@@ -91,13 +86,3 @@ code (PIC). In the `classic marx`_ source code directory::
 I promise that the performance difference is so small, you won't notice
 it when you run the `classic marx`_ version, but it allows the setup process of
 this python module to compile the interface to use those libraries.
-
-If you are a developer, you might want to tell git to ignore the local path
-that you put into ``setup.cfg`` to avoid committing and pushing that to the
-repro accidentially::
-
-  git update-index --assume-unchanged setup.cfg
-
-(However, note that this will make some manual fixing necessary if the upstream
-``setup.cfg`` changes, e.g. because we decide to add a new option. See 
-``git help update-index`` for more explanation.)

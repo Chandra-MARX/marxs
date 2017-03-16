@@ -31,3 +31,15 @@ Order of optical elements is known.
 
   
 We welcome contributions to MARXS through `github <https://github.com/Chandra-MARX/marxs/>`_ by opening issues for bugs, questions, or feature requests, or, even better, through pull requests.
+
+Interaction with `classic MARX`_
+================================
+You might want to tell git to ignore the local path
+that you put into ``setup.cfg`` to avoid committing and pushing that to the
+repro accidentially::
+
+  git update-index --assume-unchanged setup.cfg
+
+(However, note that this will make some manual fixing necessary if the upstream
+``setup.cfg`` changes, e.g. because we decide to add a new option. See 
+``git help update-index`` for more explanation.)

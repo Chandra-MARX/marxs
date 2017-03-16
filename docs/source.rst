@@ -3,10 +3,10 @@
 .. _sources:
 
 ********************************
-Define the source in a marxs run
+Define the source in a MARXS run
 ********************************
 
-A "source" in marxs is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in Marxs is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
+A "source" in MARXS is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in Marxs is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
 
 For each type of source, we need to specifiy the following properties:
 
@@ -14,7 +14,7 @@ For each type of source, we need to specifiy the following properties:
 - Spectrum of photon energies
 - Polarization
 
-Marxs offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed. Examples are given in :ref:`sect-source-fluxenpol`, the formal specification is written in `~marxs.source.Source`.
+MARXS offers many options to specify the flux, spectrum and polarization that are designed to make common use cases very easy, while allowing for arbitrarily complex models if needed. Examples are given here, the formal specification is written in `~marxs.source.Source`.
 
 In addition, we need to give the location of the source and its size and shape (most of the currently implemented sources are point sources, but additional shapes will be added in the future):
 
@@ -36,7 +36,7 @@ The source flux can just be a number, giving the total counts / second / mm^2 (i
      >>> from __future__ import print_function
      >>> from marxs.source import PointSource
      >>> from astropy.coordinates import SkyCoord
-     >>> star = PointSource(coords="23h12m2.3s -3d4m12.3s", flux=5.)
+     >>> star = PointSource(coords=SkyCoord("23h12m2.3s -3d4m12.3s"), flux=5.)
      >>> photons = star.generate_photons(20)
      >>> print(photons['time'][:6])
      time
@@ -49,7 +49,7 @@ The source flux can just be a number, giving the total counts / second / mm^2 (i
       0.8
       1.0
 
-This will generate 5 counts per second for 20 seconds with an absolutely constant (no Poisson) rate, so the photons list will contain 100 photons.
+This will generate 5 counts per second for 20 seconds with an absolutely constant (no Poisson) rate, so the photon list will contain 100 photons.
 
 ``flux`` can also be set to a function that takes the total exposure time as input and returns a list of times, one per photon. In the following example we show how to implement a `Poisson process <https://en.wikipedia.org/wiki/Poisson_process>`_ where the time intervals between two photons are `exponentially distributed <https://en.wikipedia.org/wiki/Poisson_process#Properties>`_ with an average rate of 100 events per second (so the average time difference between events is 0.01 s):
 
@@ -59,7 +59,7 @@ This will generate 5 counts per second for 20 seconds with an absolutely constan
     ...     return times[times < exposuretime]
     >>> star = PointSource(coords=SkyCoord(0, 0, unit="deg"), flux=poisson_rate)
 
-Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). Marxs provides a better implementation called `~marxs.source.source.poisson_process` which will generate the appropriate function automatically given the expected rate:
+Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). MARXS provides a better implementation called `~marxs.source.poisson_process` which will generate the appropriate function automatically given the expected rate:
 
     >>> from marxs.source.source import poisson_process
     >>> star = PointSource(coords=SkyCoord("23h12m2.3s -3d4m12.3s"), flux=poisson_process(100.))
@@ -142,15 +142,19 @@ the 6.4 keV Fe flourescence line after some polarized feature comes into view at
 	
 .. _sect-source-radec:
 
-Specify the sky position for an astrophysical source
-====================================================
+Specify the sky position of an astrophysical source
+===================================================
 
-An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see `pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
+An astrophysical source in Marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see :ref:`pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
 
 
 The following astropysical sources are included in marxs:
 
 - `marxs.source.PointSource`
+- `marxs.source.RadialDistributionSource`
+- `marxs.source.GaussSource`
+- `marxs.source.DiskSource`
+- `marxs.source.SphericalDiskSource` 
 - `marxs.source.SymbolFSource`
 	       
 Sources can be used with the following pointing models:
@@ -160,10 +164,10 @@ Sources can be used with the following pointing models:
 
 .. _sect-source-lab:
 
-Specify the position for a laboratory source
-============================================
+Specify the position of a laboratory source
+===========================================
 
-Sources in the lab are specified in the same coordinate system used for all other optical elements, see `pos4d` for details.
+Sources in the lab are specified in the same coordinate system used for all other optical elements, see :ref:`pos4d` for details.
 
 The following laboratory sources are provided:
 
@@ -174,7 +178,7 @@ The following laboratory sources are provided:
 Design your own sources and pointing models
 ===========================================
 
-The base class for all marxs sources is `Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
+The base class for all marxs sources is `~marxs.source.Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 
 - `marxs.source.Source`
 

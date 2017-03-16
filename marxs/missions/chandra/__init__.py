@@ -14,7 +14,7 @@ This module provides the optical elements on the Chandra Observatory.
    - Grating order efficiencies are the same for every order.
 
 Some spacecraft properties are defined in module attributes, others are read from
-reference files in the CALDB (or the files shipped with `classic marx`).
+reference files in the CALDB (or the files shipped with `classic MARX`).
 Properties that are very easy to define and that are very unlikely to ever change
 (e.g. the mapping of ACIS chip number to chip name) are set in this module.
 That makes is easier to see where the numbers come from and thus helps for users
@@ -30,7 +30,7 @@ from transforms3d.euler import euler2mat
 from transforms3d.quaternions import mat2quat
 from transforms3d.axangles import axangle2mat
 
-from ...optics import MarxMirror as HDMA
+from ...optics import MarxMirror as HRMA
 from ...optics import FlatDetector
 from ...source import FixedPointing
 from ...simulator import Sequence, Parallel
@@ -69,7 +69,7 @@ def chip2tdet(chip, tdet, id_num):
 
 
 class ACISChip(FlatDetector):
-
+    '''A class that defines one chip in the ACIS instrument.'''
     def __init__(self, **kwargs):
         self.TDET = TDET['ACIS']
         self.ODET = ODET['ACIS']
@@ -110,12 +110,14 @@ class ACISChip(FlatDetector):
                 'x': skyx, 'y': skyy,}
 
 class ACIS(Parallel):
-    '''
+    '''The ACIS instrument
+
     Missing:
-    - This currently only implements the ideal **detection**, no PHA, no
-read-out streaks,
+
+    - This currently only implements the ideal **detection**, no PHA, no read-out streaks,
       no pile-up etc.
     - contamination
+
     '''
 
     OLSI = np.array([0.684, 0.750, 236.552])
@@ -249,11 +251,13 @@ class LissajousDither(FixedPointing):
         1.  Convert ra/dec offsets to absolute pointing.
         2.  Roll resulting vector about nominal pointing
         3.  Convert result to ra/dec.
+
         Parameters
         ----------
         time : np.array
             Array of times
-        Results
+
+        Returns
         -------
         pointing : (n, 3) np.array
             Ra, Dec, roll values in radian for the pointing direction at time t.
@@ -295,12 +299,14 @@ class LissajousDither(FixedPointing):
 
     def photons_dir(self, coos, time):
         '''Calculate direction on photons in homogeneous coordinates.
+
         Parameters
         ----------
         coos : `astropy.coordiantes.SkyCoord`
             Origin of each photon on the sky
-         time : np.array
+        time : np.array
             Time for each photons in sec
+
         Returns
         -------
         photons_dir : np.array of shape (n, 4)
@@ -325,6 +331,22 @@ class LissajousDither(FixedPointing):
 
 
     def write_asol(self, photons, asolfile, timestep=0.256):
+        '''Write an aspect solution (asol) file
+
+        Chandra analysis scripts often require an aspect solution, which is essientiall
+        a list of pointing directions in the dither pattern vs. time.
+        This method write such a list to a file.
+
+        Parameters
+        ----------
+        photons :  `astropy.table.Table` or `astropy.table.Row`
+            Table with photon properties. Some meta data from the header of this table
+            is required (e.g. the length of the observation).
+        asolfile : string
+            Path and file name where the asol file is saved.
+        timestamp : float
+            Time step between entries in the asol file in seconds.
+        '''
         time = np.arange(0, photons.meta['EXPOSURE'][0], timestep)
         pointing = self.pointing(time).to(u.deg).value
         asol = Table([time, pointing[:, 0], pointing[:, 1], pointing[:, 2]],
@@ -476,7 +498,7 @@ class LissajousDither(FixedPointing):
 
 
 class Chandra(Sequence):
-    '''
+    '''Main class representing the Chandra X-ray observatory
 
 
     '''
@@ -486,6 +508,19 @@ class Chandra(Sequence):
         return super(Chandra, self).process_photons(photons)
 
     def write_evt(self, photons, filename):
+        '''Write a Chandra event level 1 file.
+
+        As opposed to directly saving the photon list, this adds some Chandra
+        specific meta data.
+
+        Parameters
+        ----------
+        photons :  `astropy.table.Table` or `astropy.table.Row`
+            Table with photon properties. Some meta data from the header of this table
+            is required (e.g. the length of the observation).
+        filename : string
+            Path and file name where the file is saved.
+        '''
         photons.meta['EXTNAME'] = 'EVENTS'
         # rename RA, DEC columns - otherwise CIAO tasks will be confused.
         photons.rename_column('ra', 'marxs_ra')
