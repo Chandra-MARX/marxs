@@ -21,7 +21,7 @@ Photons from astrophysical sources have the follwoing properties: Time, energy, 
   >>> photons = src.generate_photons(5)
   >>> photons.colnames
   ['energy', 'probability', 'polangle', 'time', 'ra', 'dec']
-  >>>photons['probability']
+  >>> photons['probability']
   <Column name='probability' dtype='float64' length=5>
   1.0
   1.0

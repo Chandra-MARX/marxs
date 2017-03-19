@@ -103,7 +103,7 @@ Last, we process the photons through both detectors::
   
   >>> photons = det1(photons)
   >>> photons = det2(photons)
-  >>> photons 
+  >>> photons  # doctest: +IGNORE_OUTPUT
   <Table length=5>
   polarization [4]  energy   pos [4]     dir [4]   probability  det_x   det_y  detpix_y detpix_x  CCD_ID
       float64      float64   float64     float64     float64   float64 float64 float64  float64  float64

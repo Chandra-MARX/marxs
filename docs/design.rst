@@ -26,7 +26,7 @@ be 1 m away from the focal point::
   >>> from marxs import optics
   >>> from marxs import simulator
   >>> from marxs.design import rowland
-  >>> rowland = rowland.RowlandTorus(500, 500)
+  >>> my_torus = rowland.RowlandTorus(500, 500)
 
 Our instrument approximates an imaging optic by using a circular aperture that illuminates
 a `marxs.optics.PerfectLens` with some additional scatter
@@ -59,7 +59,7 @@ the frame the gratings are mounted on), and the range along the optical axis (th
 in which the gratings are expected to fall (the equation of the torus is solved numerically and the
 solver needs a bounded regions with a unique solution to work)::
 
-  >>> gas = rowland.GratingArrayStructure(rowland=rowland, d_element=25, x_range=[800, 1000],
+  >>> gas = rowland.GratingArrayStructure(rowland=my_torus, d_element=25, x_range=[800, 1000],
   ...                                     radius=[20, 100], elem_class=optics.FlatGrating,
   ...                                     elem_args={'d': 1e-5, 'zoom':[1, 10, 10],
   ...                                                'order_selector': optics.OrderSelector([-1, 0, 1])})
@@ -69,13 +69,13 @@ Last, we place detectors on the inner part of the Rowland circle. This is very s
 2D pattern, but just in a 1D line along the Rowland Circle. Since we do not want to fill the entire
 :math:`2 \pi` of the circle, we set a limit on ``theta``. All other parameters work the same way as above::
   
-  >>> det = rowland.RowlandCircleArray(rowland, theta=[np.pi - 0.8, np.pi + 0.8],
+  >>> det = rowland.RowlandCircleArray(my_torus, theta=[np.pi - 0.8, np.pi + 0.8],
   ...                                  d_element=10.5, elem_class=optics.FlatDetector,
   ...                                  elem_args={'zoom': [1, 5, 5], 'pixsize': 0.01})
 
 Last, all the elements above as combined into a single element::
   
-  >>> demo = simulator.Sequence(elements=[aperture, mirror, gas, det)
+  >>> demo = simulator.Sequence(elements=[aperture, mirror, gas, det])
 
 
 Reference / API

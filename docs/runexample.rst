@@ -115,7 +115,7 @@ For more details on the MARXS output see :ref:`sect-results`.
 We can now look at the distribution of photons on the detector::
 
   >>> from matplotlib import pyplot as plt
-  >>> plt.plot(p1['tdetx'], p1['tdety'], '.')
+  >>> line = plt.plot(p1['tdetx'], p1['tdety'], '.')
 
 Notice that the plot is not scaled equally in the x and y axis and thus the zeroth order looks a little streched and that we plot in detector coordinates. Because of the dither, the photons look a little smeared out (zoomin in on the zeroth order shows the dither pattern.)
   
