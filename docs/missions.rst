@@ -1,3 +1,4 @@
+
 *************************************
 Mission definitions included in MARXS
 *************************************
@@ -16,3 +17,4 @@ Reference/API
 .. automodapi:: marxs.missions
 
 .. automodapi:: marxs.missions.chandra
+   :skip: HRMA

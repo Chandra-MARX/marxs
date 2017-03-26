@@ -22,7 +22,7 @@ who look at this module as an example of how to build up complex marxs setups.
 '''
 import numpy as np
 
-from ...optics import MarxMirror as HRMA
+from marxs.optics import MarxMirror as HRMA
 from .hess import HETG
 from .chandra import Chandra
 from .dither import LissajousDither

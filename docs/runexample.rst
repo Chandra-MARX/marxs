@@ -117,7 +117,7 @@ We can now look at the distribution of photons on the detector::
   >>> from matplotlib import pyplot as plt
   >>> line = plt.plot(p1['tdetx'], p1['tdety'], '.')
 
-Notice that the plot is not scaled equally in the x and y axis and thus the zeroth order looks a little streched and that we plot in detector coordinates. Because of the dither, the photons look a little smeared out (zoomin in on the zeroth order shows the dither pattern.)
+Notice that the plot is not scaled equally in the x and y axis and thus the zeroth order looks a little streched. Also, we plot in detector coordinates. Because of the dither, the photons look a little smeared out (A plot zooming in on the zeroth order would show the dither pattern.)
   
 .. plot:: pyplots/runexample.py
 

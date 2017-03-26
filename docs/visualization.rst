@@ -25,15 +25,43 @@ All backends support a function called ``plot_object`` which plots objects in th
 Each optical element in MARXS has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.
 The most common settings are ``display['color']`` (which can be any RGB tuple or any color valid in `matplotlib <http://matplotlib.org>`_) and ``display['opacity']`` (a number between 0 and 1).
 
-First, we need to run a simulation.
-
-.. todo:: make script
-
-Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class (here: all gratings):
-
-To change just one particular element (here CCD 0) we copy the class dictionary to that element and set the color:
+First, we need to set up mirrors, gratings and detectors. In this example, we use the Chandra toy model included in MARXS::
 
 
+   >>> from marxs import optics
+   >>> from marxs.missions import chandra
+   >>> marxm = chandra.HRMA(os.path.join(os.path.dirname(optics.__file__), 'hrma.par'))
+   >>> hetg = chandra.HETG()
+   >>> aciss = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
+
+
+Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class (here: We change the color of one ACIS chip, and later they will all have the same color):
+
+   >>> aciss.elements[0].display['color'] = 'orange'
+   
+To change just one particular element (here the ACIS-S3 chip, which is the forth chip in the ACIS-S array) we copy the class dictionary to that element and set the color:
+
+    >>> import copy
+    >>> aciss3 = aciss[3]
+    >>> aciss3.display = copy.deepcopy(aciss3.display)
+    >>> aciss3.display['color'] = 'r'
+
+.. _sect-vis-example:
+
+Using MARXS to visualize sub-aperturing
+=======================================
+In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. 
+
+We already have the mirror (called ``marxm`` above), the gratings (called ``hetg``) and the detector array (``aciss``). For pure convenience we combine those three things in `~marxs.simulator.Sequence` and also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marx.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
+
+The ``hetg`` has several hundred gratings. We want to know how photons that go through a particular set of gratings are  distributed throughcompared to the total point-spread function. Therefore, we assign a color to every sector of gratings and in our plots, we color gratings in this sector and photons that passed through it accordingly.
+
+.. plot:: plots/vis_subaperturing.py
+   :include-source:
+
+On the plot, we see that photons from each sector (e.g. the sector that colors photons red) form a long strip on the detector. Only adding up photons from all sectors gives us a rounf PSF. Subaperturing is the idea to disperse only photons from one sector, such that the PSF in cross-dospersion direction is large, but the dispersion in cross-dispersion direction is much smaller. Thus, the spectral resolution of the dispersed spectrum will be higher than for a spectrograph that uses the full PSF. (A detailed discussion is beyond the scope of this manual. Here, we are mostly concerend with showing how MARXS can be used to run the simulations and how to turn those into useful output.)
+      
+Later, we just connect all the stored positions for a photon by a line and we will see the ray path taken through the instrument:
 
 
 

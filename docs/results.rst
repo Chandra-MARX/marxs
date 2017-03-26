@@ -40,7 +40,23 @@ Other optical elements can, but do not have to add columns with more information
 
 Tracking the photon probability
 ===============================
-For every photon, MARXS tracks the probability that this specific photon makes it to the detector. So, if a photon, for example, passes through an absorbing filter that absorbes 50% of all photons of this energy, each photon will have the value in its column "probability" multiplied by 0.5. This way, all photons that are send out by the source, will end up in the final photon list, although some of them will have a probability of 0. Another approach commonly used in Monte-Carlo ray-trace codes is to draw a random number, and if it is below 0.5, the photons is transmitted through the filter, above 0.5 it is discoarded. However, that reduces the number of photons in the final distribution list and thus increases the random scatter in the results. Simulations need to be run with a larger number of photons to see faint features.
+For every photon, MARXS tracks the probability that this specific photon makes it to the detector. So, if a photon, for example, passes through a filter that absorbes 50% of all photons, each photon will have the value in its column "probability" multiplied by 0.5. This way, all photons that are send out by the source, will end up in the final photon list, although some of them will have a probability of 0.
+So, if you want to know the number of photons that are expected to reach a certain point in the simulation (e.g. a detector surface), you need to add up all the probabilities::
+  
+  >>> from marxs.optics import GlobalEnergyFilter
+  >>> efilter = GlobalEnergyFilter(lambda x: 0.5 * np.ones_like(x))
+  >>> photons = efilter(photons)
+  >>> 'Expected number of photons: {}'.format(photons['probability'].sum())
+  'Expected number of photons: 2.5'
+
+
+Another approach commonly used in Monte-Carlo ray-trace codes is to draw a random number, and if it is below 0.5, the photons is transmitted through the filter, above 0.5 it is discoarded. This can be done with a MARXS photon event list like this::
+  
+  >>> pobs = photons[photons['probability'] < np.random.uniform(len(photons))]
+
+However, that reduces the number of photons in the final distribution list and thus increases the random scatter in the results (which may be what you want, if you are looking for a list of detected photons that will have the same noise level as a real observation).
+
+
 
 Save results to disk
 ====================
@@ -52,4 +68,9 @@ Sometimes, an instrument specification might provide a specific writing method t
 
 Visualize results
 =================
-The most important output of a MARXS simulation will be the photon event list with simulated detector (x, y) coordinates for each photon. This can be plotted in the same python session (see :ref:`sect-runexample-look` for an example) or in any plotting package of your choice that reads the photon event list from a file.
+The most important output of a MARXS simulation will be the photon event list with simulated detector (x, y) coordinates for each photon. This can be plotted in the same python session or in any plotting package of your choice that reads the photon event list from a file.
+
+Since plotting is usually done at the end of a simulation with several steps, no code example is included here. Indead look at:
+
+   - :ref:`sect-runexample-look`
+   - :ref:`sect-vis-example`.
