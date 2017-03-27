@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
-from marxs.source.source import Source
+from marxs.source import Source
 en = np.arange(0.5, 7., .5)
 flux = en**(-2)
 

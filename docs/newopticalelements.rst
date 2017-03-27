@@ -1,5 +1,6 @@
+**********************************
 Define your own simulation element
-==================================
+**********************************
 
 Marxs comes with a selection of useful optical elements and for many cases these elements are sufficient to define your mission. However, if that is not the case, you may want to write your own code to deal with those pieces that marxs is missing. We are very interested in adding more elements to marxs and we would love to hear from you. Just open an issue or pull request to add your code to marxs at `our github repro <https://github.com/Chandra-MARX/marxs>`_.
 
@@ -49,20 +50,20 @@ A `~marxs.optics.FlatOpticalElement` already has an `~marxs.optics.FlatOpticalEl
 For performance, we recommend to use vecorized implementation and change the values of the photon table in place (as opposed to making copies of parts of the table and joining them back together) whereever possible.
 
 Example for a derived class
----------------------------
+===========================
 
 A simpe example for an optical element is the baffle - a rectangular opening in a large metal plate. It can be inserted into the beam and all photons that do not pass through the hole will be absorbed. In practice, the metal plate is not infinite, but has an outer bound, too, but all photons passing on the outside are either absorbed by the satellite housing ot the tube of the lab beamline and are lost from the experiment anyway and do not need to be traced any further.
 
 .. literalinclude:: ../marxs/optics/baffle.py
 
-The code above uses the `~marxs.optics.FlatOpticalElement.intersect` mathod it inherits to calculate which photons intersect at all and if so, at which coordinate. This point is entered into the ``photons['pos']``.
+The code above uses the `~marxs.optics.FlatOpticalElement.intersect` method it inherits to calculate which photons intersect at all and if so, at which coordinate. This point is entered into the ``photons['pos']``.
 
 Note that the baffle can be rectangular without writing a single line of code here. ``baf = Baffle(zoom=[1,3,2])`` would create a baffle of size 6*4 (the outer boundaries are 3 or 2 mm from the center) because the `~marxs.optics.OpticalElement` can interpret all :ref:`pos4d` keywords and the `marxs.optics.FlatOpticalElement.intersect` makes use of this information when it calculates intersection points.
 
 The baffles does not add any new descriptive columns to the output, thus the value `~marxs.base.SimulationSequenceElement.id_col` defined in a base class is not overwritten. However, the baffle does have a class dictionary `~marxs.optics.baffle.Baffle.display` that contains default parameters for plotting (see :ref:`visualization`).
 
 Non-physical elements
----------------------
+=====================
 
 Above, we discussed elements that are physically present, such as mirrors or detectors. The simulations also allows elements that are not a piece of hardware, for example, a function that just saves a copy of the photon list to disk or prints some diagnostic information would also work::
 

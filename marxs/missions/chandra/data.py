@@ -164,3 +164,26 @@ HRC-S3-LR,s,h,"(0.000  -49.622   13.167 )",,,"LSI coords for HRC-S2 LR"
 HRC-S3-UR,s,h,"(2.253 -155.400   13.167 )",,,"LSI coords for HRC-S2 UR"
 HRC-S3-UL,s,h,"(2.253 -155.400  -13.167 )",,,"LSI coords for HRC-S2 UL"
 '''
+
+def chip2tdet(chip, tdet, id_num):
+    '''Convert CHIP coordinates to TDET coordiantes.
+
+    See eqn (5) in `the Chandra coordiante memo <http://cxc.harvard.edu/contrib/jcm/ncoords.ps>`_.
+
+    Parameters
+    ----------
+    chip : (N, 2) np.array
+        chip coordiantes
+    tdet : dict
+        dictionary with definitions for the coordiante conversion.
+        See `ACISTDET` for an example.
+    id_num : integer
+        chip ID number (e.g. ``1`` for ACIS-I1)
+    '''
+    scale = tdet['scale'][id_num]
+    handedness = tdet['handedness'][id_num]
+    origin_tdet = tdet['origin'][id_num]
+    theta = tdet['theta'][id_num]
+    rotation = np.array([[np.cos(theta), np.sin(theta)],
+                         [-np.sin(theta), np.cos(theta)]])
+    return scale * handedness * np.dot(rotation, (chip - 0.5).T).T + (origin_tdet + 0.5)
