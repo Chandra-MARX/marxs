@@ -97,8 +97,8 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
   >>> posdat = visualization.utils.format_saved_positions(keeppos)[ind, :, :]
   >>> fig = mlab.figure()
-  >>> plot_object(chand, viewer=fig)
-  >>> plot_rays(posdat, scalar=photons['energy'][ind])
+  >>> obj = plot_object(chand, viewer=fig)
+  >>> rays = plot_rays(posdat, scalar=photons['energy'][ind])
    
 .. raw:: html
 

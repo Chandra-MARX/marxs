@@ -228,8 +228,8 @@ class Source(SimulationSequenceElement):
         energies = self.generate_energies(times)
         pol = self.generate_polarization(times, energies)
         n = len(times)
-        photons = Table({'time': times, 'energy': energies, 'polangle': pol,
-                         'probability': np.ones(n)})
+        photons = Table([times, energies, pol, np.ones(n)],
+                        names=['time', 'energy', 'polangle', 'probability'])
         photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
 
         #photons.meta['DATE-OBS'] =

@@ -20,7 +20,7 @@ Photons from astrophysical sources have the follwoing properties: Time, energy, 
   >>> point = source.FixedPointing (coords=coords)
   >>> photons = src.generate_photons(5)
   >>> photons.colnames
-  ['energy', 'probability', 'polangle', 'time', 'ra', 'dec']
+  ['time', 'energy', 'polangle', 'probability', 'ra', 'dec']
   >>> photons['probability']
   <Column name='probability' dtype='float64' length=5>
   1.0
@@ -42,9 +42,10 @@ Tracking the photon probability
 ===============================
 For every photon, MARXS tracks the probability that this specific photon makes it to the detector. So, if a photon, for example, passes through a filter that absorbes 50% of all photons, each photon will have the value in its column "probability" multiplied by 0.5. This way, all photons that are send out by the source, will end up in the final photon list, although some of them will have a probability of 0.
 So, if you want to know the number of photons that are expected to reach a certain point in the simulation (e.g. a detector surface), you need to add up all the probabilities::
-  
+
+  >>> import numpy as np
   >>> from marxs.optics import GlobalEnergyFilter
-  >>> efilter = GlobalEnergyFilter(lambda x: 0.5 * np.ones_like(x))
+  >>> efilter = GlobalEnergyFilter(filterfunc=lambda x: 0.5 * np.ones_like(x))
   >>> photons = efilter(photons)
   >>> 'Expected number of photons: {}'.format(photons['probability'].sum())
   'Expected number of photons: 2.5'
