@@ -215,9 +215,9 @@ def box(obs, display, outfile):
                                  matrix=matrixstring))
 
 @format_doc(doc_plot)
-def plane_with_hole(obj, display, outfile):
+def triangulation(obj, display, outfile):
     '''Output commands for a plane with an inner hole.'''
-    xyz, triangles = obj.triangulate_inner_outer()
+    xyz, triangles = obj.triangulate()
     materialspec = materialspec(display, 'MeshStandardMaterial')
     outfile.write('// {}\n'.format(obj.name))
     outfile.write('var geometry = new THREE.BufferGeometry(); \n')
@@ -272,7 +272,7 @@ def torus(obj, display, outfile):
                                  torusparameters=torusparameters,
                                  matrix=matrixstring))
 
-plot_registry = {'plane with hole': plane_with_hole,
+plot_registry = {'triangulation': triangulation,
                  'torus': torus,
                  'box': box,
                  'container': container,

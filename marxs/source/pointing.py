@@ -166,10 +166,12 @@ class FixedPointing(PointingModel):
                                                    photons['time'].data)
         photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
         photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
-        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree), '[deg] Pointing Roll')
+        photons.meta['ROLL_PNT'] = (self.roll.to(u.degree).value,
+                                    '[deg] Pointing Roll')
         photons.meta['RA_NOM'] = (self.coords.ra.degree, '[deg] Nominal Pointing RA')
         photons.meta['DEC_NOM'] = (self.coords.dec.degree, '[deg] Nominal Pointing Dec')
-        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree), '[deg] Nominal Pointing Roll')
+        photons.meta['ROLL_NOM'] = (self.roll.to(u.degree).value,
+                                    '[deg] Nominal Pointing Roll')
 
         return photons
 
@@ -199,7 +201,7 @@ class JitterPointing(FixedPointing):
         n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi
         ax = np.vstack([np.zeros(n), np.sin(randang), np.cos(randang)]).T
-        jitterang = np.random.normal(scale=self.jitter.to(u.radian), size=n)
+        jitterang = np.random.normal(scale=self.jitter.to(u.radian).value, size=n)
         jitterrot = axangle2mat(ax, jitterang)
         photons['dir'] = e2h(np.einsum('...ij,...i->...j', jitterrot,
                                        h2e(photons['dir'])), 0)

@@ -10,3 +10,4 @@ from .baffle import Baffle
 from .scatter import RadialMirrorScatter
 from .filter import EnergyFilter, GlobalEnergyFilter
 from .base import OpticalElement, FlatOpticalElement, FlatStack
+from .multiLayerMirror import FlatBrewsterMirror
