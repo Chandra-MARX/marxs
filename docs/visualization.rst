@@ -27,14 +27,14 @@ The most common settings are ``display['color']`` (which can be any RGB tuple or
 
 First, we need to set up mirrors, gratings and detectors. In this example, we use the Chandra toy model included in MARXS::
 
-
+   >>> import os
    >>> from marxs import optics
    >>> from marxs.missions import chandra
    >>> marxm = chandra.HRMA(os.path.join(os.path.dirname(optics.__file__), 'hrma.par'))
    >>> hetg = chandra.HETG()
    >>> aciss = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
 
-
+   
 Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class (here: We change the color of one ACIS chip, and later they will all have the same color):
 
    >>> aciss.elements[0].display['color'] = 'orange'
@@ -42,29 +42,76 @@ Usually, ``display`` is a class dictionary, so any change on any one object will
 To change just one particular element (here the ACIS-S3 chip, which is the forth chip in the ACIS-S array) we copy the class dictionary to that element and set the color:
 
     >>> import copy
-    >>> aciss3 = aciss[3]
+    >>> aciss3 = aciss.elements[3]
     >>> aciss3.display = copy.deepcopy(aciss3.display)
     >>> aciss3.display['color'] = 'r'
-
+    
 .. _sect-vis-example:
 
 Using MARXS to visualize sub-aperturing
 =======================================
 In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. 
 
-We already have the mirror (called ``marxm`` above), the gratings (called ``hetg``) and the detector array (``aciss``). For pure convenience we combine those three things in `~marxs.simulator.Sequence` and also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marx.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
+
+2d plot
+-------
 
 The ``hetg`` has several hundred gratings. We want to know how photons that go through a particular set of gratings are  distributed throughcompared to the total point-spread function. Therefore, we assign a color to every sector of gratings and in our plots, we color gratings in this sector and photons that passed through it accordingly.
 
-.. plot:: plots/vis_subaperturing.py
+.. plot:: pyplots/vis_subaperturing.py
    :include-source:
 
 On the plot, we see that photons from each sector (e.g. the sector that colors photons red) form a long strip on the detector. Only adding up photons from all sectors gives us a rounf PSF. Subaperturing is the idea to disperse only photons from one sector, such that the PSF in cross-dospersion direction is large, but the dispersion in cross-dispersion direction is much smaller. Thus, the spectral resolution of the dispersed spectrum will be higher than for a spectrograph that uses the full PSF. (A detailed discussion is beyond the scope of this manual. Here, we are mostly concerend with showing how MARXS can be used to run the simulations and how to turn those into useful output.)
-      
-Later, we just connect all the stored positions for a photon by a line and we will see the ray path taken through the instrument:
 
+3d output
+---------
 
+Next, we want to show how the ``chand`` object that we use above looks in the 3d.
+Very similar to the previous example, we combine mirror, detector, and grating into `~marxs.simulator.Sequence`. Unlike the simulation for the 2d case, we also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marxs.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
+Another changes compared to the 2d plotting is that we generate a lot fewer photons because the green lines indicating the photon paths can obscurre the graitings.
+  
+.. doctest-requires:: mayavi
 
+  >>> import numpy as np
+  >>> from mayavi import mlab
+  >>> import matplotlib.pyplot as plt
+  >>> from astropy.coordinates import SkyCoord
+  >>> from marxs import simulator, source, visualization
+  >>> from marxs.visualization.mayavi import plot_object, plot_rays
+  >>> # Add in an object to save intermediate photons positions
+  >>> keeppos = simulator.KeepCol('pos')
+  >>> chand = simulator.Sequence(elements=[marxm, hetg, aciss],
+  ...                            postprocess_steps = [keeppos])
+  >>> # Define source and run photons through Chandra
+  >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
+  ...                           energy=2., flux=1.)
+  >>> pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
+  >>> photons = star.generate_photons(1000)
+  >>> photons = pointing(photons)
+  >>> photons = chand(photons)
+  >>> # Color gratings according to the sector they are in
+  >>> sectorcol = dict(zip('ABCDEFG', 'rgbcmyk'))
+  >>> for e in hetg.elements:
+  ...     e.display = copy.deepcopy(e.display)
+  ...     e.display['color'] = sectorcol[e.name[1]]
+  >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
+  >>> posdat = visualization.utils.format_saved_positions(keeppos)[ind, :, :]
+  >>> fig = mlab.figure()
+  >>> plot_object(chand, viewer=fig)
+  >>> plot_rays(posdat, scalar=photons['energy'][ind])
+   
+.. raw:: html
+
+  <div class="figure" align="center">
+  <x3d width='500px' height='400px'> 
+  <scene>
+  <inline url="_static/chandra.x3d"> </inline> 
+  </scene> 
+  </x3d>
+  <p class="caption" style="clear:both;"><span class="caption-text">
+  3D view of the instrument set up. Green lines are photon paths. Use your mouse to rotate, pan and zoom. <a href="https://www.x3dom.org/documentation/interaction/">(Detailed instructions for camera navigation)</a> </span></p>
+  </div>
+        
 .. _sect-vis-api:
 
 Reference/API
