@@ -15,6 +15,7 @@ class MARXSVisualizationWarning(Warning):
     '''Warning class for MARXS objects missing from plotting'''
     pass
 
+
 def plot_object_general(plot_registry, obj, display=None, **kwargs):
     '''Look up a plottig routine for an object and execute it.
 
@@ -106,6 +107,7 @@ def get_color(d):
             import matplotlib.colors
             return matplotlib.colors.colorConverter.to_rgb(c)
 
+
 def color_tuple_to_hex(color):
     '''Convert color tuple to hex string.
 
@@ -132,6 +134,7 @@ def color_tuple_to_hex(color):
         raise ValueError('Input tuple must be all float or all int.')
     # Now pad with zeros if required
     return out[:2] + out[2:].zfill(6)
+
 
 def plane_with_hole(outer, inner):
     '''Triangulation of a plane with an inner hole

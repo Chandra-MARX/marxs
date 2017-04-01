@@ -154,7 +154,7 @@ General optical elements
 -   `marxs.optics.EnergyFilter`
 -   `marxs.optics.FlatDetector`
 -   `marxs.optics.CircularDetector`
--   `marxs.optics.MultiLayerMirror`
+-   `marxs.optics.FlatBrewsterMirror`
 
 
 

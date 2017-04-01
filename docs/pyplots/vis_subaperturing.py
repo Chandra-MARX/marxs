@@ -1,47 +1,52 @@
-import os
 import copy
-import numpy as np
 import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord
+import numpy as np
 
-from marxs import optics, simulator, source
-from marxs.missions import chandra
+from marxs import optics, simulator, source, design
+from marxs.design import rowland
 
-# define the instrument with mirror, gratings and detectors
+rowland = design.rowland.RowlandTorus(500, 500)
 
-marxm = chandra.HRMA(os.path.join(os.path.dirname(optics.__file__), 'hrma.par'))
-hetg = chandra.HETG()
-aciss = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
-
-keeppos = simulator.KeepCol('pos')
-chand = simulator.Sequence(elements=[marxm, hetg, aciss])
-
-# Define source and run photons through Chandra
-star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
-                          energy=2., flux=1.)
-pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
-photons = star.generate_photons(20000)
-photons = pointing(photons)
-photons = chand(photons)
-
+aper = optics.CircleAperture(position=[1200, 0, 0], zoom=[1, 100, 100], r_inner=20)
+mirr = optics.FlatStack(position=[1100, 0, 0], zoom=[20, 100, 100],
+                        elements=[optics.PerfectLens, optics.RadialMirrorScatter],
+                        keywords = [{'focallength': 1100},
+                                    {'inplanescatter': 1e-3, 'perpplanescatter': 1e-4}])
+gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=25, x_range=[800, 1000],
+                                           radius=[20, 100], elem_class=optics.FlatGrating,
+                                           elem_args={'d': 1e-5, 'zoom': [1, 10, 10],
+                                                      'order_selector': optics.OrderSelector([-1, 0, 1])})
 
 # Color gratings according to the sector they are in
-sectorcol = dict(zip('ABCDEFG', 'rgbcmyk'))
-for e in hetg.elements:
+for e in gas.elements:
      e.display = copy.deepcopy(e.display)
-     # First character of "name" is sector id
-     e.display['color'] = sectorcol[e.name[1]]
+     # Angle from baseline in range 0..pi
+     ang = np.arctan(e.pos4d[1,3] / e.pos4d[2, 3]) % (np.pi)
+     # pick one of fixe colors
+     e.display['color'] = 'rgb'[int(ang / np.pi * 3)]
 
-# Color all photons according to the sector they go through
-photons['color'] = [sectorcol[hetg.elements[int(i)].name[1]] for i in photons['facet']]
+det_kwargs = {'d_element': 10.5, 'elem_class': optics.FlatDetector,
+              'elem_args': {'zoom': [1, 5, 5], 'pixsize': 0.01}}
+det = design.rowland.RowlandCircleArray(rowland, theta=[2.3, 3.9], **det_kwargs)
+
+target = SkyCoord(30., 30., unit='deg')
+star = source.PointSource(coords=target, energy=.5, flux= 1.)
+pointing = source.FixedPointing(coords=target)
+instrum = simulator.Sequence(elements=[aper, mirr, gas, det])
+
+photons = star.generate_photons(10000)
+photons = pointing(photons)
+photons = instrum(photons)
+
+ # Color all photons according to the grating they go through
+photons['color'] = [gas.elements[int(i)].display['color'] for i in photons['facet']]
 
 # Make plot
-ind = (photons['probability'] > 0) & (photons['facet'] >=0)
-pp = photons[ind  & np.isfinite(photons['tdetx'])]
 fig = plt.figure()
-for p in pp [(pp['tdetx'] > 4000) & (pp['tdetx'] < 4150)]:
-    plt.plot(p['tdetx'], p['tdety'], '.', c=p['color'])
+for p in photons[photons['order'] == 0]:
+    plt.plot(p['det_x'], p['det_y'], '.', c=p['color'])
 plt.gca().set_aspect("equal")
-plt.xlim([4136, 4140])
-plt.ylim([2232, 2235])
 plt.title('0 th order')
+plt.xlim([-2, 2])
+plt.ylim([-2, 2])
