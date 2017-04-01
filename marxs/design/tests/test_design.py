@@ -12,7 +12,7 @@ from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
 from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, OrderSelector, FlatGrating
-from ...math.pluecker import h2e
+from ...math.utils import h2e
 
 class mock_facet(FlatOpticalElement):
     '''Lightweight class with no functionality for tests.'''

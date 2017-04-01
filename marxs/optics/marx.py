@@ -14,7 +14,7 @@ import numpy as np
 from astropy.table import Table, Column, join
 from astropy.extern import six
 
-from ..math.pluecker import h2e, e2h
+from ..math.utils import h2e, e2h
 from ..math.polarization import parallel_transport
 from .base import OpticalElement, photonlocalcoords
 from .aperture import BaseAperture

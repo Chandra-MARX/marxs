@@ -1,72 +1,9 @@
 # Licensed under GPL version 3 - see LICENSE.rst
+'''This module collects routines that deal with lines in Pluecker coordiantes incl. the
+construction of the Pluecker coordinates from e.g. two points in space or a direction and
+a point.
+'''
 import numpy as np
-
-# tests for e2h and h2e
-
-
-def e2h(e, w):
-    '''Convert Euclidean coordinates to homogeneous coordinates
-
-    Parameters
-    ----------
-    e : np.array
-        Input Euclidean coordinates. This can be multidimensional, but the last
-        dimension must be of size 3.
-    w : float
-        ``0`` for directions (points at infinity)
-        ``1`` for positions (points in Euclidean space)
-
-    Returns
-    -------
-    h : np.array
-        Homogeneous coordinates. Same shape as ``e`` except that the last
-        dimension is now has 4 elements.
-    '''
-    if not ((w == 0) or (w == 1)):
-        raise ValueError('w must be 0 or 1.')
-    shape = list(e.shape)
-    shape[-1] += 1
-    h = np.empty(shape)
-    h[..., :3] = e
-    h[..., 3] = w
-    return h
-
-
-def h2e(h):
-    '''Convert homogeneous coordinates to Euclidean coordinates
-
-    This functions works for points at infinity and for points in real
-    euclidean space, but it expects that each time it is called ``h`` contains
-    only the one or the other but not a mixture of both.
-
-    Parameters
-    ----------
-    h : np.array
-        Input homogeneous coordinates. This can be multidimensional, but the
-        last dimension must be of size 4.
-
-    Returns
-    -------
-    e : np.array
-        Euclidean coordinates. Same shape as ``e`` except that the last
-        last dimension is now has 3 elements.
-    '''
-    if np.all(h[..., 3] == 0) or np.allclose(h[..., 3], 1):
-        return h[..., :3]
-    elif np.all(h[..., 3] != 0):
-        return (h[..., :3] / h[..., 3][..., None])
-    else:
-        raise ValueError('Input array must be either all euklidean points or all points at infinity.')
-
-
-def distance_point_point(h_p1, h_p2):
-    if max(h_p1.ndim, h_p2.ndim) == 1:
-        axis = 0
-    elif max(h_p1.ndim, h_p2.ndim) == 2:
-        axis = 1
-    else:
-        raise ValueError('This function expects 1d or 2d input.')
-    return np.linalg.norm(h2e(h_p1) - h2e(h_p2), axis=axis)
 
 
 def angle_line_plane(p_line, h_plane):
@@ -84,8 +21,6 @@ def angle_line_plane(p_line, h_plane):
     return np.arccos(np.dot(l, p) / (np.linalg.norm(l) * np.linalg.norm(p)))
 
 
-# Plucker stuff. Can go in separate file at some point...
-# Find better naming convention
 #  @ L = {U:V}, with 3-tuples U and V, with U.V = 0, and with U non-null.
 
 def e_pointpoint2line(e_p1, e_p2):
@@ -93,14 +28,6 @@ def e_pointpoint2line(e_p1, e_p2):
     p_line = np.empty(e_p1.shape[:-1] + (6,) )
     p_line[..., :3] = e_p2 - e_p1
     p_line[..., 3:] = np.cross(e_p2, e_p1)
-    return p_line
-
-
-def h_point_h_point2line(h_p1, h_p2):
-    '''Do I actually need this, or can I just require to use h2e?'''
-    p_line = np.empty(h_p1.shape[:-1] + (6,) )
-    p_line[..., :3] = h_p1[..., 3] * h_p2[..., :3] - h_p2[..., 3] * h_p1[..., :3]
-    p_line[..., 3:] = np.cross(h_p2[..., :3], h_p1[..., :3])
     return p_line
 
 

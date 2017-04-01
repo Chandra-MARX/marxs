@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..optics import FlatOpticalElement
-from ..math.pluecker import h2e
+from ..math.utils import h2e
 
 class ProjectOntoPlane(FlatOpticalElement):
     '''Project photon positions onto a plane.

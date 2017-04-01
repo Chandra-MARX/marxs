@@ -3,11 +3,11 @@
 import math
 import numpy as np
 
-from ..math.pluecker import h2e, e2h
-from ..math.utils import norm_vector
+from ..math.utils import norm_vector, h2e, e2h
 from ..math.polarization import parallel_transport
 from .. import energy2wave
 from .base import FlatOpticalElement
+
 
 class OrderSelector(object):
     '''Select from a list of order number independent of energy.

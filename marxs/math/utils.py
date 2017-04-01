@@ -1,6 +1,84 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 
+
+def e2h(e, w):
+    '''Convert Euclidean coordinates to homogeneous coordinates
+
+    Parameters
+    ----------
+    e : np.array
+        Input Euclidean coordinates. This can be multidimensional, but the last
+        dimension must be of size 3.
+    w : float
+        ``0`` for directions (points at infinity)
+        ``1`` for positions (points in Euclidean space)
+
+    Returns
+    -------
+    h : np.array
+        Homogeneous coordinates. Same shape as ``e`` except that the last
+        dimension is now has 4 elements.
+    '''
+    if not ((w == 0) or (w == 1)):
+        raise ValueError('w must be 0 or 1.')
+    shape = list(e.shape)
+    shape[-1] += 1
+    h = np.empty(shape)
+    h[..., :3] = e
+    h[..., 3] = w
+    return h
+
+
+def h2e(h):
+    '''Convert homogeneous coordinates to Euclidean coordinates
+
+    This functions works for points at infinity and for points in real
+    euclidean space, but it expects that each time it is called ``h`` contains
+    only the one or the other but not a mixture of both.
+
+    Parameters
+    ----------
+    h : np.array
+        Input homogeneous coordinates. This can be multidimensional, but the
+        last dimension must be of size 4.
+
+    Returns
+    -------
+    e : np.array
+        Euclidean coordinates. Same shape as ``e`` except that the last
+        last dimension is now has 3 elements.
+    '''
+    if np.all(h[..., 3] == 0) or np.allclose(h[..., 3], 1):
+        return h[..., :3]
+    elif np.all(h[..., 3] != 0):
+        return (h[..., :3] / h[..., 3][..., None])
+    else:
+        raise ValueError('Input array must be either all euklidean points or all points at infinity.')
+
+
+def distance_point_point(h_p1, h_p2):
+    '''Calculate the Eukledian distance between 2 points
+
+    Parameters
+    ----------
+    h_p1, h_p2 : np.ndarray of shape (4) or (N, 4)
+        homogeneous coordiantes of input points
+
+    Returns
+    -------
+    d : np.array of shape (1) or (N)
+        Eukledian distance between those points
+    '''
+    if max(h_p1.ndim, h_p2.ndim) == 1:
+        axis = 0
+    elif max(h_p1.ndim, h_p2.ndim) == 2:
+        axis = 1
+    else:
+        raise ValueError('This function expects 1d or 2d input.')
+    return np.linalg.norm(h2e(h_p1) - h2e(h_p2), axis=axis)
+
+
 def translation2aff(vec):
     '''Transform 3-d translation vector to affine 4*4 matrix.
 
@@ -19,6 +97,7 @@ def translation2aff(vec):
     m = np.eye(4)
     m[:3, 3] = vec
     return m
+
 
 def zoom2aff(zoom):
     '''Transform zoom to affine 4*4 matrix.
@@ -42,6 +121,7 @@ def zoom2aff(zoom):
     else:
         raise ValueError('Zoom must be either scalar or 3 element vector.')
     return z
+
 
 def mat2aff(mat):
     '''Transform 3*3 matrix (e.g. rotation) to affine 4*4 matrix.
@@ -75,6 +155,7 @@ def norm_vector(vec):
     '''
     length2 = np.sum(vec * vec, axis=-1)
     return vec / np.sqrt(length2)[:, None]
+
 
 def anglediff(phi):
     '''Angle range covered by phi, accounting for 2 pi properly
