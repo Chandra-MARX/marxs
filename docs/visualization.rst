@@ -25,32 +25,44 @@ All backends support a function called ``plot_object`` which plots objects in th
 Each optical element in MARXS has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.
 The most common settings are ``display['color']`` (which can be any RGB tuple or any color valid in `matplotlib <http://matplotlib.org>`_) and ``display['opacity']`` (a number between 0 and 1).
 
-First, we need to set up mirrors, gratings and detectors. In this example, we use the Chandra toy model included in MARXS::
+First, we need to set up mirrors, gratings and detectors (here gratings on a Rowland torus)::
 
-   >>> import os
-   >>> from marxs import optics
-   >>> from marxs.missions import chandra
-   >>> marxm = chandra.HRMA(os.path.join(os.path.dirname(optics.__file__), 'hrma.par'))
-   >>> hetg = chandra.HETG()
-   >>> aciss = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
+  >>> from marxs import optics, design
+  >>> from marxs.design import rowland
+  >>> rowland = design.rowland.RowlandTorus(500, 500)
+  >>> aper = optics.CircleAperture(position=[1200, 0, 0], zoom=[1, 100, 100], r_inner=20)
+  >>> mirr = optics.FlatStack(position=[1100, 0, 0], zoom=[20, 100, 100],
+  ...                         elements=[optics.PerfectLens, optics.RadialMirrorScatter],
+  ...                         keywords = [{'focallength': 1100},
+  ...                                     {'inplanescatter': 1e-3, 'perpplanescatter': 1e-4}])
+  >>> gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=25, x_range=[800, 1000],
+  ...                                            radius=[20, 100], elem_class=optics.FlatGrating,
+  ...                                            elem_args={'d': 1e-5, 'zoom': [1, 10, 10],
+  ...                                                       'order_selector': optics.OrderSelector([-1, 0, 1])})
+  >>> det_kwargs = {'d_element': 10.5, 'elem_class': optics.FlatDetector,
+  ...               'elem_args': {'zoom': [1, 5, 5], 'pixsize': 0.01}}
+  >>> det = design.rowland.RowlandCircleArray(rowland, theta=[2.3, 3.9], **det_kwargs)
 
+
+Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class::
+
+  >>> optics.FlatDetector.display['color'] = 'orange'
    
-Usually, ``display`` is a class dictionary, so any change on any one object will affect all elements of that class (here: We change the color of one ACIS chip, and later they will all have the same color):
+To change just one particular element we copy the class dictionary to that element and set the color. In this example, we calculate the angle that each grating has from the y-axis. We split that in three regions and color the gratings accordingly::
 
-   >>> aciss.elements[0].display['color'] = 'orange'
-   
-To change just one particular element (here the ACIS-S3 chip, which is the forth chip in the ACIS-S array) we copy the class dictionary to that element and set the color:
+  >>> import copy
+  >>> import numpy as np
+  >>> for e in gas.elements:
+  ...     e.display = copy.deepcopy(e.display)
+  ...     ang = np.arctan(e.pos4d[1,3] / e.pos4d[2, 3]) % (np.pi)
+  ...     e.display['color'] = 'rgb'[int(ang / np.pi * 3)]
 
-    >>> import copy
-    >>> aciss3 = aciss.elements[3]
-    >>> aciss3.display = copy.deepcopy(aciss3.display)
-    >>> aciss3.display['color'] = 'r'
-    
+
 .. _sect-vis-example:
 
 Using MARXS to visualize sub-aperturing
 =======================================
-In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. 
+In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. This is a fully functional ray-trace simulation; the only unrealsitic point is the grating constant of the diffraction gratings which is about an order of magnitude smaller than current gratings.
 
 
 2d plot
@@ -66,7 +78,7 @@ On the plot, we see that photons from each sector (e.g. the sector that colors p
 3d output
 ---------
 
-Next, we want to show how the ``chand`` object that we use above looks in the 3d.
+Next, we want to show how the instrument that we use above looks in the 3d.
 Very similar to the previous example, we combine mirror, detector, and grating into `~marxs.simulator.Sequence`. Unlike the simulation for the 2d case, we also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marxs.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
 Another changes compared to the 2d plotting is that we generate a lot fewer photons because the green lines indicating the photon paths can obscurre the graitings.
   
@@ -74,30 +86,22 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
 
   >>> import numpy as np
   >>> from mayavi import mlab
-  >>> import matplotlib.pyplot as plt
   >>> from astropy.coordinates import SkyCoord
-  >>> from marxs import simulator, source, visualization
+  >>> from marxs import source, simulator, visualization
   >>> from marxs.visualization.mayavi import plot_object, plot_rays
-  >>> # Add in an object to save intermediate photons positions
-  >>> keeppos = simulator.KeepCol('pos')
-  >>> chand = simulator.Sequence(elements=[marxm, hetg, aciss],
-  ...                            postprocess_steps = [keeppos])
-  >>> # Define source and run photons through Chandra
+  >>> # object to save intermediate photons positions after every step of the simulaion
+  >>> pos = simulator.KeepCol('pos')
+  >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det], postprocess_steps=[pos])
   >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
   ...                           energy=2., flux=1.)
   >>> pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
   >>> photons = star.generate_photons(1000)
   >>> photons = pointing(photons)
-  >>> photons = chand(photons)
-  >>> # Color gratings according to the sector they are in
-  >>> sectorcol = dict(zip('ABCDEFG', 'rgbcmyk'))
-  >>> for e in hetg.elements:
-  ...     e.display = copy.deepcopy(e.display)
-  ...     e.display['color'] = sectorcol[e.name[1]]
+  >>> photons = instrum(photons)
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
-  >>> posdat = visualization.utils.format_saved_positions(keeppos)[ind, :, :]
+  >>> posdat = visualization.utils.format_saved_positions(pos)[ind, :, :]
   >>> fig = mlab.figure()
-  >>> obj = plot_object(chand, viewer=fig)
+  >>> obj = plot_object(instrum, viewer=fig)
   >>> rays = plot_rays(posdat, scalar=photons['energy'][ind])
    
 .. raw:: html
@@ -105,11 +109,11 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   <div class="figure" align="center">
   <x3d width='500px' height='400px'> 
   <scene>
-  <inline url="_static/chandra.x3d"> </inline> 
+  <inline url="_static/subaperturing.x3d"> </inline> 
   </scene> 
   </x3d>
   <p class="caption" style="clear:both;"><span class="caption-text">
-  3D view of the instrument set up. Green lines are photon paths. Use your mouse to rotate, pan and zoom. <a href="https://www.x3dom.org/documentation/interaction/">(Detailed instructions for camera navigation)</a> </span></p>
+  3D view of the instrument set up. Green lines are photon paths. As set above, all detectors are orange and the gratings are red, green, and blue, depending on their position. The mirror and the aperture are shown with their default representation (white box and transparent green plate with the aperture hole). Use your mouse to rotate, pan and zoom. <a href="https://www.x3dom.org/documentation/interaction/">(Detailed instructions for camera navigation)</a> </span></p>
   </div>
         
 .. _sect-vis-api:
