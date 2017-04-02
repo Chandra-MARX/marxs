@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
 from ... import source, optics
-from ...math.pluecker import h2e
+from ...math.utils import h2e
 
 
 @pytest.mark.parametrize("ra", [0., 30., -60.])

@@ -12,7 +12,7 @@ random change is added to the direction vector.
 '''
 import numpy as np
 
-from ..math.pluecker import e2h, h2e
+from ..math.utils import e2h, h2e
 from ..math.rotations import axangle2mat
 from ..math.polarization import parallel_transport
 from .base import FlatOpticalElement

@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 
 from ..analysis import (find_best_detector_position,
                         resolvingpower_per_order)
-from ..math.pluecker import e2h
+from ..math.utils import e2h
 from ..source import PointSource, FixedPointing
 from ..simulator import Sequence
 from ..optics import (CATGrating,

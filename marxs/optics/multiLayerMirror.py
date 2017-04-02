@@ -3,8 +3,7 @@ import numpy as np
 from astropy.io import ascii
 
 from .base import FlatOpticalElement, FlatStack
-from ..math.pluecker import e2h, h2e
-from ..math.utils import norm_vector
+from ..math.utils import norm_vector, e2h, h2e
 
 
 class FlatBrewsterMirror(FlatOpticalElement):

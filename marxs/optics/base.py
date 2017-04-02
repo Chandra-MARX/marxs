@@ -5,8 +5,8 @@ from copy import copy
 import numpy as np
 from astropy.table import Table, Row
 
-from ..math.pluecker import (e2h, h2e, point_dir2plane, dir_point2line,
-                             intersect_line_plane)
+from ..math.pluecker import point_dir2plane, dir_point2line, intersect_line_plane
+from ..math.utils import e2h, h2e
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 class OpticalElement(SimulationSequenceElement):

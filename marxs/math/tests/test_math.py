@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from ..pluecker import *
+from ..utils import *
 
 pos1d100 = np.array([1.,0,0,1])
 pos1d100_a = np.array([-3., 0, 0, -3])

@@ -2,8 +2,8 @@
 import numpy as np
 
 from .base import FlatOpticalElement
-from ..math.pluecker import h2e
-from ..visualization.utils import get_color, plane_with_hole
+from ..math.utils import h2e
+from ..visualization.utils import plane_with_hole
 
 
 class Baffle(FlatOpticalElement):

@@ -8,7 +8,7 @@ import pytest
 
 from ..grating import (FlatGrating, CATGrating,
                        OrderSelector, EfficiencyFile)
-from ...math.pluecker import h2e
+from ...math.utils import h2e
 from ...math.polarization import polarization_vectors
 from ... import energy2wave
 from ...utils import generate_test_photons

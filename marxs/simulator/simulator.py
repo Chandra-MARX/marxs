@@ -2,12 +2,10 @@
 import numpy as np
 from transforms3d.affines import decompose44
 
-from ..math.utils import translation2aff, zoom2aff, mat2aff
+from ..math.utils import translation2aff, zoom2aff, mat2aff, e2h, h2e
 from ..base import SimulationSequenceElement, _parse_position_keywords
-from ..math.pluecker import h2e, e2h
 import transforms3d
 from transforms3d.utils import normalized_vector
-
 
 
 class SimulationSetupError(Exception):

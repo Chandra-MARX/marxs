@@ -5,7 +5,7 @@ from transforms3d.utils import normalized_vector as norm_vec
 
 from ...optics import FlatDetector
 from ...simulator import Parallel
-from ...math.pluecker import h2e
+from ...math.utils import h2e
 
 from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE,
                    PIX_CORNER_LSI_PAR, chip2tdet)

@@ -13,8 +13,7 @@ from ..optics.base import OpticalElement
 from ..base import _parse_position_keywords, MarxsElement
 from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
-from ..math.pluecker import e2h, h2e
-from ..math.utils import anglediff
+from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
 from ..visualization.utils import get_color
 

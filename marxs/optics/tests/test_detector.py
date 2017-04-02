@@ -5,7 +5,7 @@ import transforms3d
 
 from ..detector import FlatDetector, CircularDetector
 from ...tests import closeornan
-from ...math.pluecker import h2e
+from ...math.utils import h2e
 from ...design import RowlandTorus
 
 def test_pixelnumbers():

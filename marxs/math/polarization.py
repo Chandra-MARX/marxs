@@ -1,8 +1,12 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 
-from .pluecker import e2h
-from .utils import norm_vector
+from .utils import norm_vector, e2h
+
+
+__all__ = ['polarization_vectors', 'Q_reflection', 'paralleltransport_matrix',
+           'parallel_transport']
+
 
 def polarization_vectors(dir_array, angles):
     '''Takes angle polarizations and converts them to vectors in the direction of polarization.

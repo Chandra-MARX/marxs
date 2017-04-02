@@ -6,10 +6,10 @@ from astropy.utils.metadata import enable_merge_strategies
 from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..visualization.utils import plane_with_hole
-from ..math.pluecker import h2e
-from ..math.utils import anglediff
+from ..math.utils import anglediff, h2e
 from ..simulator import BaseContainer
 from .. import utils
+
 
 class BaseAperture(object):
     '''Base Aperture class'''

@@ -4,8 +4,7 @@ import numpy as np
 from transforms3d.axangles import axangle2mat
 
 from .base import FlatOpticalElement
-from ..math.pluecker import h2e, e2h, distance_point_point
-from ..math.utils import norm_vector
+from ..math.utils import h2e, e2h, distance_point_point, norm_vector
 from ..math.polarization import parallel_transport
 
 class PerfectLens(FlatOpticalElement):

@@ -6,9 +6,8 @@ import astropy.coordinates as coord
 from astropy.coordinates import SkyCoord
 
 from ..base import SimulationSequenceElement
-from ..math.pluecker import h2e, e2h
 from ..math.rotations import axangle2mat
-from ..math.utils import norm_vector
+from ..math.utils import norm_vector, h2e, e2h
 
 
 class PointingModel(SimulationSequenceElement):

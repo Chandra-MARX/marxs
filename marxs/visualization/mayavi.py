@@ -14,13 +14,13 @@ from __future__ import absolute_import
 import numpy as np
 from astropy.utils.decorators import format_doc
 
-from ..math import pluecker
+from ..math import utils as mutils
 from . import utils
 
 # The following import fails on headless servers (Travis, readthedocs).
 # from mayavi import mlab
 # Thus, I've moved the import statement into the individual functions, so that
-# this module can still be imported when Travis or Read the docs build the documentation.
+# this module can still be imported when Travis or readthedocs to build the documentation.
 
 doc_plot='''
     {__doc__}
@@ -71,7 +71,7 @@ def surface(surface, display, viewer=None):
 
     xyz = surface.parametric_surface(display.get('coo1', [-1, 1]),
                                      display.get('coo2', [-1, 1]))
-    xyz = pluecker.h2e(xyz)
+    xyz = mutils.h2e(xyz)
     x = xyz[..., 0]
     y = xyz[..., 1]
     z = xyz[..., 2]
@@ -89,7 +89,7 @@ def box(obj, display, viewer=None):
                         [ 1, -1, +1], [ 1, 1, +1]])
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-    corners = np.einsum('ij,...j->...i', obj.pos4d, pluecker.e2h(corners, 1))
+    corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
     b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
                         color=display['color'])
     return b
