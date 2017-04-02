@@ -9,7 +9,7 @@ from __future__ import division
 import warnings
 import numpy as np
 
-from ..math.utils import h2e
+from ..math import utils as mutils
 
 class MARXSVisualizationWarning(Warning):
     '''Warning class for MARXS objects missing from plotting'''
@@ -222,7 +222,7 @@ def format_saved_positions(keepcol, atol=1e-2):
         raise ValueError('KeepCol object contains no data.')
     d = np.dstack(keepcol.data)
     d = np.swapaxes(d, 1, 2)
-    d = h2e(d)
+    d = mutils.h2e(d)
     ind = [0]
     i = 1
     for i in range(1, d.shape[1]):

@@ -3,6 +3,9 @@ from astropy.table import Table
 from astropy.utils.metadata import MergeStrategy
 import warnings
 
+__all__ = ['SimulationSetupWarning', 'generate_test_photons', 'MergeIdentical']
+
+
 class SimulationSetupWarning(Warning):
     pass
 

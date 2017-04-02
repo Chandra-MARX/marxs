@@ -4,6 +4,10 @@ import numpy as np
 from .utils import norm_vector, e2h
 
 
+__all__ = ['polarization_vectors', 'Q_reflection', 'paralleltransport_matrix',
+           'parallel_transport']
+
+
 def polarization_vectors(dir_array, angles):
     '''Takes angle polarizations and converts them to vectors in the direction of polarization.
 
