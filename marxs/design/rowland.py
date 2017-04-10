@@ -1,5 +1,17 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-'''Tools for setting up instruments in the Rowland Torus geometry.'''
+'''Tools for setting up instruments in the Rowland Torus geometry.
+
+This includes an object that represents the Rowland torus itself (imaginatively called
+`~marxs.design.rowland.RowlandTorus`, some helper functions used to set the right parameters
+for the torus and a few classes that are derived from `marxs.simulation.ParallelCalculated`,
+each placing elements such as gratings or detectors on the Rowland torus. There are many ways
+to do that, e.g. the limits can be defined in x,y,z coordiantes or in theta, phi coordinates
+on the torus, gratings can be ordered in concentric circles or pack densely in a rectoangular
+area etc. At this point, the different classes do not exploit all these possibilities, they
+merely give a few of many possible ways to set up an instrument.
+
+These classes my be generalized in the future.
+'''
 
 from __future__ import division
 
@@ -763,6 +775,39 @@ class GratingArrayStructure(LinearCCDArray):
 
 
 class RectangularGrid(ParallelCalculated, OpticalElement):
+    '''A collection of diffraction gratings on the Rowland torus.
+
+    This class is similar to ``marxs.design.rowland.GratingArrayStructure`` but instead
+    of placing elements on concentric circles, they are placed to fill a rectangular
+    area.
+
+    When a is initialized, it places
+    elements in the space available on the Rowland circle, most
+    commonly, this class is used to place grating facets.
+
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See `marxs.simulation.Parallel`
+    for details.
+
+    After any of the `elem_pos`, `elem_uncertainty` or
+    `uncertainty` is changed, `generate_elements` needs to be
+    called to regenerate the facets on the GAS.
+
+    Parameters
+    ----------
+    rowland : RowlandTorus
+    d_element : float
+        Size of the edge of a element, which is assumed to be flat and square.
+        (``d_element`` can be larger than the actual size of the silicon membrane to
+        accommodate a minimum thickness of the surrounding frame.)
+    x_range: list of 2 floats
+        Minimum and maximum of the x coordinate that is searched for an intersection
+        with the torus. A ray can intersect a torus in up to four points. ``x_range``
+        specififes the range for the numerical search for the intersection point.
+    y_range, z_range: lost of two floats
+        limits of the rectangular area where gratings are placed.
+    '''
+
     id_col = 'facet'
 
     def __init__(self, **kwargs):
