@@ -36,19 +36,16 @@ Marxs sources have separate parameters for the ``energy`` (shape of the spectrum
 
 The last thing that the source needs to know is how large the geometric opening of the telescope is, so that the right number of photons are generated. So, we create an instance of the Chandra mirror with the parameter file included in the MARXS distribution::
 
-   >>> import os
-   >>> from marxs import optics
-   >>> parfile = os.path.join(os.path.dirname(optics.__file__), 'hrma.par')
-   >>> HRMA = optics.MarxMirror(parfile) # doctest: +IGNORE_OUTPUT
-   Reading data files from classic MARX C code ...
+   >>> from marxs.missions import chandra
+   >>> aperture = chandra.Aperture()
 
 Now, can can finally create our sources:
  
    >>> from marxs.source import PointSource
    >>> src1 = PointSource(coords=ngc1313_X1, energy={'energy': energies, 'flux': spectrum1},
-   ...                    flux=flux1, geomarea=HRMA.area)
+   ...                    flux=flux1, geomarea=aperture.area)
    >>> src2 = PointSource(coords=ngc1313_X2, energy={'energy': energies, 'flux': spectrum2},
-   ...                    flux=flux2, geomarea=HRMA.area)
+   ...                    flux=flux2, geomarea=aperture.area)
 
 See :ref:`sources` for more details.
    
@@ -62,6 +59,7 @@ We need to specify the pointing direction and the roll angle (if different from 
 and also set up the instrument components. The mirror was already initialized above, and the rest is easy because it is already included in MARXS (but keep in mind that the Chandra model used here includes only the geometry. It leaves out many important effects which require aceess to CALDB data, such as ACIS contamination, order probabilities for gratings etc. Use `classic marx`_ to simulate Chandra data for real.)
 ::
 
+   >>> hrma = chandra.HRMA()
    >>> hetg = chandra.HETG()
    >>> acis = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])  # doctest: +IGNORE_OUTPUT
    Some warnings that ACIS 1024 * pixel size does not match chip size exactly ...
@@ -76,6 +74,7 @@ In MARXS, a source generates a photon table and all following elements process t
 
    >>> p1 = src1.generate_photons(1e4)  # 10 ks exposure time
    >>> p1 = pointing(p1)
+   >>> p1 = aperture(p1)
    >>> p1 = HRMA(p1)
    >>> p1 = hetg(p1)
    >>> p1 = acis(p1)
@@ -84,6 +83,7 @@ We can do the same thing for the photons from the second source::
 
    >>> p2 = src2.generate_photons(1e4)  # 10 ks exposure time
    >>> p2 = pointing(p2)
+   >>> p2 = aperture(p2)
    >>> p2 = HRMA(p2)
    >>> p2 = hetg(p2)
    >>> p2 = acis(p2)

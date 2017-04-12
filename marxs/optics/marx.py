@@ -217,7 +217,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         This does not take into account any projection effects for
         apertures that are not perpendicular to the optical axis.
         '''
-        return marx.Marx_Mirror_Geometric_Area
+        return marx.Marx_Mirror_Geometric_Area * 100 #factor converts from cm^2 to mm^2
 
 
 

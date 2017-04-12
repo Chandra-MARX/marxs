@@ -22,9 +22,10 @@ who look at this module as an example of how to build up complex marxs setups.
 '''
 import numpy as np
 
-from marxs.optics import MarxMirror as HRMA
+from marxs.optics import MarxMirror
 from .hess import HETG
 from .chandra import Chandra
 from .dither import LissajousDither
 from .acis import ACIS
 from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, PIXSIZE)
+from .hrma_py import Aperture, HRMA
