@@ -44,15 +44,15 @@ def poisson_process(rate):
         ----------
         exposuretime : float
             Exposure time in sec.
-        geomarea : float
-            Geometric opening area of telescope in :math:`cm^2`.
+        geomarea : `astropy.unit.Quantity`
+            Geometric opening area of telescope
 
         Returns
         -------
         times : `numpy.ndarray`
             Poisson distributed times.
         '''
-        fullrate = rate * geomarea
+        fullrate = rate * geomarea.to(u.cm**2).value
         # Make 10 % more numbers then we expect to need, because it's random
         times = expon.rvs(scale=1./fullrate, size=int(exposuretime * fullrate * 1.1))
         # If we don't have enough numbers right now, add some more.
@@ -130,7 +130,7 @@ class Source(SimulationSequenceElement):
           The function is called with two arrays (time and energy values) as input
           and must return an array of equal length that contains the polarization angles in
           degrees.
-    geomarea : float
+    geomarea : `astropu.units.Quantity`
         Geometric opening area of telescope in :math:`cm^2`. If not given,
         an opening of :math:`1 cm^2` is assumed.
     '''
@@ -138,7 +138,7 @@ class Source(SimulationSequenceElement):
         self.energy = kwargs.pop('energy', 1.)
         self.flux = kwargs.pop('flux', 1.)
         self.polarization = kwargs.pop('polarization', None)
-        self.geomarea = kwargs.pop('geomarea', 1.)
+        self.geomarea = kwargs.pop('geomarea', 1. * u.cm**2)
 
         super(Source, self).__init__(**kwargs)
 
@@ -149,9 +149,9 @@ class Source(SimulationSequenceElement):
         if callable(self.flux):
             return self.flux(exposuretime, self.geomarea)
         elif np.isscalar(self.flux):
-            return np.arange(0, exposuretime, 1./(self.flux * self.geomarea))
+            return np.arange(0, exposuretime, 1./(self.flux * self.geomarea.to(u.cm**2).value))
         else:
-            raise SourceSpecificationError('`flux` must be a scalar number or a callable.')
+            raise SourceSpecificationError('`flux` must be a quantity or a callable.')
 
     def generate_energies(self, t):
         n = len(t)

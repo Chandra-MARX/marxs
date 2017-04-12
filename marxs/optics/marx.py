@@ -13,6 +13,7 @@ import os
 import numpy as np
 from astropy.table import Table, Column, join
 from astropy.extern import six
+import astropy.units as u
 
 from ..math.utils import h2e, e2h
 from ..math.polarization import parallel_transport
@@ -217,7 +218,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         This does not take into account any projection effects for
         apertures that are not perpendicular to the optical axis.
         '''
-        return marx.Marx_Mirror_Geometric_Area * 100 #factor converts from cm^2 to mm^2
+        return marx.Marx_Mirror_Geometric_Area * u.cm**2
 
 
 

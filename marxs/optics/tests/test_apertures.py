@@ -2,12 +2,14 @@
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+import astropy.units as u
 import pytest
 
 from ..aperture import CircleAperture, RectangleAperture, MultiAperture
 from ...utils import generate_test_photons
 from ...source import FixedPointing
 from ...base import GeometryError
+from ...math.utils import h2e
 
 def test_circle_phi():
     p = generate_test_photons(500)
@@ -46,23 +48,23 @@ def test_circle_radius():
     p = c(p)
     assert np.all(p['pos'][1] >= 0)
     assert np.all(p['pos'][2] >= 0)
-    rad = np.linalg.norm(p['pos'], axis=1)
+    rad = np.linalg.norm(h2e(p['pos']), axis=1)
     assert np.all(rad >= 15.)
     assert np.all(rad <= 25.)
 
 def test_circle_area():
     '''Check that the area of rings and wedges comes out correctly.'''
     c = CircleAperture(zoom=[1, 2, 2])
-    assert np.isclose(c.area, np.pi * 4)
+    assert np.isclose(c.area, np.pi * 4 * u.mm**2, atol=1e-8*u.mm**2)
 
     c = CircleAperture(zoom=[1, 2, 2], r_inner=1)
-    assert np.isclose(c.area, np.pi * 3)
+    assert np.isclose(c.area, np.pi * 3 * u.mm**2, atol=1e-8*u.mm**2)
 
     c = CircleAperture(zoom=[1, 2, 2], phi = [1.3 * np.pi, 1.8 * np.pi])
-    assert np.isclose(c.area, np.pi)
+    assert np.isclose(c.area, np.pi * u.mm**2, atol=1e-8*u.mm**2)
 
     c = CircleAperture(zoom=[1, 2, 2], phi = [1.3 * np.pi, 1.8 * np.pi], r_inner=1)
-    assert np.isclose(c.area, np.pi * 0.75)
+    assert np.isclose(c.area, np.pi * 0.75 * u.mm**2, atol=1e-8*u.mm**2)
 
 
 def test_MultiAperture():

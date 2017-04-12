@@ -147,11 +147,11 @@ def test_poisson_process():
     scipy version.
     '''
     p = poisson_process(20.)
-    times = p(100., 1.)
+    times = p(100., 1. * u.cm**2)
     assert (len(times) > 1500) and (len(times) < 2500)
     assert (times[-1] > 99.) and (times[-1] < 100.)
 
-    times = p(100., 10.)
+    times = p(100., 10. * u.cm**2)
     assert (len(times) > 18000) and (len(times) < 22000)
     assert (times[-1] > 99.) and (times[-1] < 100.)
 
@@ -164,7 +164,7 @@ def test_poisson_input():
 def test_Aeff():
     '''Check that a higher effective area leads to more counts.'''
     a = RectangleAperture(zoom=2)
-    s = Source(flux=.5, geomarea=a.area)
+    s = Source(flux=50, geomarea=a.area)
     photons = s.generate_photons(5.)
     assert len(photons) == 40
 

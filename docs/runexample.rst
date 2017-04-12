@@ -75,7 +75,7 @@ In MARXS, a source generates a photon table and all following elements process t
    >>> p1 = src1.generate_photons(1e4)  # 10 ks exposure time
    >>> p1 = pointing(p1)
    >>> p1 = aperture(p1)
-   >>> p1 = HRMA(p1)
+   >>> p1 = hrma(p1)
    >>> p1 = hetg(p1)
    >>> p1 = acis(p1)
 
@@ -84,7 +84,7 @@ We can do the same thing for the photons from the second source::
    >>> p2 = src2.generate_photons(1e4)  # 10 ks exposure time
    >>> p2 = pointing(p2)
    >>> p2 = aperture(p2)
-   >>> p2 = HRMA(p2)
+   >>> p2 = hrma(p2)
    >>> p2 = hetg(p2)
    >>> p2 = acis(p2)
 
