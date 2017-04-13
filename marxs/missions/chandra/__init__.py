@@ -20,11 +20,9 @@ Properties that are very easy to define and that are very unlikely to ever chang
 That makes is easier to see where the numbers come from and thus helps for users
 who look at this module as an example of how to build up complex marxs setups.
 '''
-import numpy as np
-
-from marxs.optics import MarxMirror as HRMA
 from .hess import HETG
 from .chandra import Chandra
 from .dither import LissajousDither
 from .acis import ACIS
 from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, PIXSIZE)
+from .hrma_py import Aperture, HRMA

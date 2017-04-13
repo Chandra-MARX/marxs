@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from astropy import table
+import astropy.units as u
 from astropy.utils.metadata import enable_merge_strategies
 
 from .base import FlatOpticalElement
@@ -113,7 +114,7 @@ class RectangleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return 4 * np.linalg.norm(self.geometry('v_y')) * np.linalg.norm(self.geometry('v_z'))
+        return 4 * np.linalg.norm(self.geometry('v_y')) * np.linalg.norm(self.geometry('v_z')) * u.mm**2
 
     def inner_shape(self):
         g = self.geometry
@@ -173,7 +174,7 @@ class CircleAperture(FlatAperture):
     def area(self):
         '''Area covered by the aperture'''
         A_circ = np.pi * (np.linalg.norm(self.geometry('v_y'))**2 - self.r_inner**2)
-        return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ
+        return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ * u.mm**2
 
     def inner_shape(self, r_factor=1):
         n = self.display.get('n_inner_vertices', 90)
@@ -246,10 +247,10 @@ class MultiAperture(BaseAperture, BaseContainer):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return np.sum([e.area for e in self.elements])
+        return u.Quantity([e.area for e in self.elements]).sum()
 
     def __call__(self, photons):
-        areas = np.array([e.area for e in self.elements])
+        areas = u.Quantity([e.area for e in self.elements])
         aperid = np.digitize(np.random.rand(len(photons)), np.cumsum(areas) / self.area)
 
         # Add ID number to ID col, if requested
