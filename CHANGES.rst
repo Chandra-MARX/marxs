@@ -1,3 +1,18 @@
+1.1 (unreleased)
+----------------
+
+New Features
+^^^^^^^^^^^^
+
+API Changes
+^^^^^^^^^^^
+
+Bug fixes
+^^^^^^^^^
+
+Other changes and additions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 1.0 (14-Apr-2017)
 -----------------
 This is the first release intended to use. The Change log will begin starting with this release.
