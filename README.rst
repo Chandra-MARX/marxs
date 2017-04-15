@@ -18,3 +18,7 @@ Multi-Architecture-Raytrace-Xraymission-Simulator
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
    :target: http://www.astropy.org/
    :alt: Powered by astropy
+   
+.. image:: https://zenodo.org/badge/34215358.svg
+   :target: https://zenodo.org/badge/latestdoi/34215358
+   :alt: Link to last release with DOI
