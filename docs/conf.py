@@ -137,6 +137,12 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Marxsdoc'
 
+html_theme_options = {
+    'logotext1': 'MARXS',  # white,  semi-bold
+    'logotext2': ':docs',  # orange, light
+    'logotext3': ''   # white,  light
+}
+
 ## -- Options for the edit_on_github extension ----------------------------------------
 
 if eval(setup_cfg.get('edit_on_github')):
