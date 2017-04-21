@@ -7,8 +7,8 @@ A MARXS simulation can be customized in many different ways to adapt to differen
 Our question is the following: We will simulate an observation with the Chandra X-ray observatory. Chandra dithers its pointing on the sky. We want to know what pattern this dither makes on the detector for a fairly short observation. 
 MARXS includes a simplified description of the Chandra X-ray observatory in the `marxs.missions` module.
 
-Creating two sources
-====================
+Creating a source
+=================
 
 First, we need to set up a point sources with a spectrum and a total flux.
 We have to set the positions of our sources as an `astropy.coordinates.SkyCoord`::
