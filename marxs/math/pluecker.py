@@ -4,7 +4,7 @@ construction of the Pluecker coordinates from e.g. two points in space or a dire
 a point.
 '''
 import numpy as np
-
+from numpy.linalg import norm
 
 def angle_line_plane(p_line, h_plane):
     '''Compute angle between normal to plane and line
@@ -12,9 +12,13 @@ def angle_line_plane(p_line, h_plane):
     Parameters
     ----------
     p_line : array-like
-        Line(s)
+        Line(s) in Pluecker coordinates
     h_plane : array-like
-        Plane
+        Plane in homogeneous coordinates
+
+    Returns
+    -------
+    angle : array-like
     '''
     l = p_line[:3]
     p = h_plane[:3]
@@ -24,7 +28,20 @@ def angle_line_plane(p_line, h_plane):
 #  @ L = {U:V}, with 3-tuples U and V, with U.V = 0, and with U non-null.
 
 def e_pointpoint2line(e_p1, e_p2):
-    '''p1, p2 are distinct point on line, direction is p1 -> p2'''
+    '''Return a line in Pluecker coordinates connecting two points.
+
+    p1, p2 are distinct point on line, direction is p1 -> p2
+
+    Parameters
+    ----------
+    e_p1, e_p2: array_like
+        Array of Eucledian positions
+
+    Returns
+    -------
+    p_line : array-like
+        Lines in Pluecker coordinates
+    '''
     p_line = np.empty(e_p1.shape[:-1] + (6,) )
     p_line[..., :3] = e_p2 - e_p1
     p_line[..., 3:] = np.cross(e_p2, e_p1)
@@ -32,6 +49,22 @@ def e_pointpoint2line(e_p1, e_p2):
 
 
 def dir_point2line(e_dir, e_pos):
+    '''Return a line in Pluecker coordinates connecting two points.
+
+    p1, p2 are distinct point on line, direction is p1 -> p2
+
+    Parameters
+    ----------
+    e_dir: array_like
+        Array of Euclidean direction vectors
+    e_point : array-like
+        Array of points in eukledian coordinates
+
+    Returns
+    -------
+    p_line : array-like
+        Lines in Pluecker coordinates
+    '''
     p_line = np.empty(e_dir.shape[:-1] + (6,) )
     p_line[..., :3] = e_dir
     p_line[..., 3:] = np.cross(e_dir, e_pos)
@@ -68,11 +101,26 @@ def intersect_line_plane(p_line, h_plane):
 
 
 def point_dir2plane(h_point, h_dir):
+    '''Return a plane in homogeneous coordinates
+
+    Parameters
+    ----------
+    h_point : array-like
+        Point in plane in homogeneous coordinates
+    h_dir: array_like
+        Normal vector of plane in homogeneous coordinates
+
+    Returns
+    -------
+    p_line : array-like
+        Lines in Pluecker coordinates
+    '''
     h_plane = np.empty(4)
-    h_dir_n = h_dir / np.linalg.norm(h_dir)
+    h_dir_n = h_dir / norm(h_dir)
     h_plane[:3] = h_dir_n[:3]
     h_plane[3] = - np.dot(h_point, h_dir_n) / h_point[3]
     return h_plane
+
 
 #   @ L = {U:UxQ}, for U the direction of L and Q a point on L.
 #   @ L = {qP-pQ:PxQ}, for (P:p) and (Q:q) distinct homogeneous points on L.
