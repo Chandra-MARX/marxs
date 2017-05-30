@@ -66,8 +66,8 @@ all_oe = [ThinLens(focallength=100),
 
           Baffle(),
           # MLMirror assumes 45 deg angle and will return nan otherwise
-          MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt',
-                           './marxs/optics/data/ALSpolarization2.txt',
+          MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt',
+                           testedPolarization='./marxs/optics/data/ALSpolarization2.txt',
                            orientation=transforms3d.axangles.axangle2mat([0,1,0], np.pi/4)),
           Sequence(elements=[]),
           HETG(),

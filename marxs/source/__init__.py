@@ -8,4 +8,4 @@ from .source import (Source, PointSource,
                      poisson_process,
                      )
 from .pointing import FixedPointing, JitterPointing
-from .labSource import LabPointSource, FarLabPointSource, LabPointSourceCone
+from .labSource import FarLabPointSource, LabPointSourceCone

@@ -1,37 +1,31 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import transforms3d
+import pytest
 
-from ..labSource import LabPointSource as LabSource
 from ..labSource import LabPointSourceCone
 
+def test_labsource_eukledian():
+    with pytest.raises(ValueError) as err:
+        source = LabPointSourceCone(position=[1,2,3, 1.])
+    assert 'in Eukledian coordinates' in str(err.value)
+
 def test_photon_generation():
-	'''This tests the lab point source. It checks that the starting points are all
+        '''This tests the lab point source. It checks that the starting points are all
 	at the sources position.
 	'''
 	pos = [1., 1., 1.]
 	rate = 10
-	source = LabSource(pos, flux=rate, energy=5.)
+	source = LabPointSourceCone(position=pos, flux=rate, energy=5.)
 
 	photons = source.generate_photons(1.)
 	assert np.all(photons['pos'] == np.ones([10, 4]))
 
 
-def test_photon_direction():
-	'''This tests the lab point source. It checks the optional 'direction' parameter.
-	'''
-	pos = [1., 1., 1.]
-	rate = 10
-	source = LabSource(pos, flux=rate, energy=5., direction = '-y')
-
-	photons = source.generate_photons(1.)
-	assert np.all(photons['dir'][:, 1] <= 0)
-
-
 def test_directions_range_cone():
 	'''This tests that all of the photons in the returned table have directions within the given parameters.
 	- Ensures that all direciton vectors are normed
-	- Ensures that all direction vectors are within specified range 
+	- Ensures that all direction vectors are within specified range
 
 	'''
 
@@ -42,7 +36,7 @@ def test_directions_range_cone():
 	delta = ((np.pi / 2) * (np.random.random() * 2 - 1))
 
 	# run simulation
-	source = LabPointSourceCone(pos, delta = delta, flux=rate, energy=5., direction = direction)
+	source = LabPointSourceCone(position=pos, half_opening= delta, flux=rate, energy=5., direction = direction)
 	photons = source.generate_photons(1.)
 
 
@@ -80,4 +74,3 @@ def test_directions_range_cone():
 	withinRange = [(maxDistanceSquared > i) for i in displacementDistancesSquared]
 
 	assert all(correctSizes) and all(withinRange)
-

@@ -31,7 +31,7 @@ def test_photon_reflection():
                      'dir': dir,
                      'energy': [1.23984282 / 3.02, 1.23984282 / 6, 0.4],
                      'polarization': polarization, 'probability': [1., 1., 1.]})
-    mirror = MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt', './marxs/optics/data/ALSpolarization2.txt', zoom=[1, 24.5, 12])
+    mirror = MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt', testedPolarization='./marxs/optics/data/ALSpolarization2.txt', zoom=[1, 24.5, 12])
     photons = mirror(photons)
 
     # confirm reflection angle
@@ -76,8 +76,8 @@ def test_photon_reflection2():
                      'polarization': polarization,
                      'probability': [1., 1., 1., 1.]})
     a = 2**(-0.5)
-    mirror = MultiLayerMirror('./marxs/optics/data/testFile_mirror.txt',
-                              './marxs/optics/data/ALSpolarization2.txt',
+    mirror = MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt',
+                              testedPolarization='./marxs/optics/data/ALSpolarization2.txt',
                               orientation=np.array([[-a, 0, a],[0, -1, 0],[a, 0, a]]))
     photons = mirror(photons)
 
