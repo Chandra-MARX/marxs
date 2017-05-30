@@ -153,4 +153,4 @@ def test_write_invalid():
 
     with pytest.raises(jsonschema.ValidationError):
         with tempfile.TemporaryFile('w') as f:
-                write(f, [[out]])
+            write(f, [[out]])

@@ -171,7 +171,7 @@ def test_groove_direction():
     assert np.allclose(angle_in_yz(p3['dir'][0,:], p2['dir'][0, :]), 0)
 
     for px in [p1, p2, p3]:
-            assert np.allclose(angle_in_yz(p['dir'][0,:], px['dir'][0, :]), 0.3)
+        assert np.allclose(angle_in_yz(p['dir'][0,:], px['dir'][0, :]), 0.3)
 
 
 def test_order_convention():

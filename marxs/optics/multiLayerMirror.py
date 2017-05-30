@@ -17,7 +17,7 @@ class FlatBrewsterMirror(FlatOpticalElement):
     This mirror assumes that all photons arrive at the Brewster angle
     where only s (senkrecht = direction perpendicular to plane of incidence)
     polarisation is reflected.
-    It also fully assumes that all photons that are not reflected (i.e. those that
+    It also assumes that all photons that are not reflected (i.e. those that
     are transmitted) are lost. No transmitted photons are returned, instead the
     probability of the reflected photons is adjusted to account for this overall loss.
     '''
@@ -78,8 +78,6 @@ class MultiLayerEfficiency(FlatOpticalElement):
     All reflectivity data is assumed to be for a single, desired angle. There
     is currently no way to enter varying reflection that depends on the angle
     of incidence.
-    There is a default size of 49mm by 24mm, but this can be overridden by
-    entering a different value for zoom.
 
     Provide reflectivity data in a file with columns:
 
@@ -103,9 +101,9 @@ class MultiLayerEfficiency(FlatOpticalElement):
         and fraction polarization for the light used to test the mirrors and create the
         reflectivity file
     '''
-    def __init__(self, reflFile, testedPolarization, **kwargs):
-        self.fileName = reflFile
-        self.polFile = testedPolarization
+    def __init__(self, **kwargs):
+        self.fileName = kwargs.pop('reflFile')
+        self.polFile = kwargs.pop('testedPolarization')
         super(MultiLayerEfficiency, self).__init__(**kwargs)
 
     def interp_files(self, photons, local):
@@ -141,8 +139,8 @@ class MultiLayerEfficiency(FlatOpticalElement):
         return {'probability': refl_prob / 100}
 
 class MultiLayerMirror(FlatStack):
-    def __init__(self, reflFile, testedPolarization, **kwargs):
+    def __init__(self, **kwargs):
         super(MultiLayerMirror, self).__init__(elements=[FlatBrewsterMirror, MultiLayerEfficiency],
-                                               keywords=[{}, {'reflFile': reflFile,
-                                                              'testedPolarization': testedPolarization}],
+                                               keywords=[{}, {'reflFile': kwargs.pop('reflFile'),
+                                                              'testedPolarization': kwargs.pop('testedPolarization')}],
                                                **kwargs)

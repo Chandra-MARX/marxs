@@ -6,6 +6,13 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
+- Remove ``marxs.sources.LabPointSource``, which was just a special case of
+  `~marxs.sources.LabPointSourceCone`. Instead, set the default values of the later
+  so that it reproduces the behaviour of the former. [#144]
+
+- `~marxs.optics.MultiLayerEfficiency` and `~marxs.optics.MultiLayerMirror` now expect
+  all parameters as keyword arguments for consistency with the other elements in MARXS.
+  [#144]
 
 Bug fixes
 ^^^^^^^^^

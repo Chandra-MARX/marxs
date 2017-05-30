@@ -137,6 +137,12 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Marxsdoc'
 
+html_theme_options = {
+    'logotext1': 'MARXS',  # white,  semi-bold
+    'logotext2': ':docs',  # orange, light
+    'logotext3': ''   # white,  light
+}
+
 ## -- Options for the edit_on_github extension ----------------------------------------
 
 if eval(setup_cfg.get('edit_on_github')):
@@ -151,3 +157,8 @@ if eval(setup_cfg.get('edit_on_github')):
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+
+    edit_on_github_skip_regex = '_.*|api/.*'
+
+# -- Resolving issue number to links in changelog -----------------------------
+github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])

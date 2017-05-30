@@ -6,6 +6,7 @@ import transforms3d
 from ..optics.base import FlatOpticalElement
 from .source import Source
 from ..math.polarization import polarization_vectors
+from ..math.utils import h2e, e2h
 
 
 class FarLabPointSource(Source, FlatOpticalElement):
@@ -49,66 +50,6 @@ class FarLabPointSource(Source, FlatOpticalElement):
         return photons
 
 
-class LabPointSource(Source):
-    '''Simple in-lab point source
-
-    - photons uniformly distributed in all directions
-    - photon start position is source position
-    - TODO: improve direction capability to allow for vector and angle around that vector
-
-    Parameters
-    ----------
-    position: 3 element list
-        3D coordinates of photon source
-    direction: string
-        Hemisphere of photons, format is + or - followed by x, y, or z. Ex: '+x' or '-z'.
-        In many cases, it is sufficient to simulate photons for one hemisphere. In this case, the
-        parameter ``direction`` can reduce the runtime by reducing the number of photons that are
-        not relevant for the simulation.
-
-    kwargs : see `Source`
-        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
-        See `Source` for details.
-    '''
-    def __init__(self, position, direction=None, **kwargs):
-        self.dir = direction
-        self.position = position
-        super(LabPointSource, self).__init__(**kwargs)
-
-    def generate_photons(self, exposuretime):
-        photons = super(LabPointSource, self).generate_photons(exposuretime)
-        n = len(photons)
-
-        # assign position to photons
-        pos = np.array([self.position[0] * np.ones(n),
-                        self.position[1] * np.ones(n),
-                        self.position[2] * np.ones(n),
-                        np.ones(n)])
-
-        # randomly choose direction - photons go in all directions from source
-        theta = np.random.uniform(0, 2 * np.pi, n);
-        phi = np.arcsin(np.random.uniform(-1, 1, n))
-        dir = np.array([np.cos(theta) * np.cos(phi),
-                        np.sin(theta) * np.cos(phi),
-                        np.sin(phi),
-                        np.zeros(n)])
-
-        if (self.dir != None):
-        	if (self.dir[1] == 'x'):
-        		col = 0
-        	if (self.dir[1] == 'y'):
-        		col = 1
-        	if (self.dir[1] == 'z'):
-        		col = 2
-        	dir[col] = abs(dir[col])
-        	if (self.dir[0] == '-'):
-        		dir[col] *= -1
-
-        photons.add_column(Column(name='pos', data=pos.T))
-        photons.add_column(Column(name='dir', data=dir.T))
-        photons.add_column(Column(name='polarization', data=polarization_vectors(dir.T, photons['polangle'])))
-        return photons
-
 class LabPointSourceCone(Source):
     '''In-lab point source
 
@@ -117,23 +58,28 @@ class LabPointSourceCone(Source):
 
     Parameters
     ----------
-    direction: 3 element list
-        Direction is given by a vector [x,y,z]
-        This is the direction of the center of the cone (axis about which cone size is measured in steradians).
-        It is sufficient to enter any vector that spans this axis (magnitude does not matter).
-    position: 3 element list
-        3D coordinates of photon source
-    delta: float
+    position: array-like of shape(3,)
+        Eukledian coordinates of photon source. Default is at the origin
+        of the coordinate system.
+    half_opening: float
         This is half the openning angle of the cone. It is given in steradians.
+        The default is pi, which distributes the photons evenly over the entire
+        sphere.
+    direction: array-like of shape (3,)
+        This is the direction of the center of the cone.
+        Default is the positive x-axis.
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
     '''
-    def __init__(self, position, delta, direction=None,  **kwargs):
-
-        self.dir = direction / np.sqrt(np.dot(direction, direction)) #normalize direction
-        self.position = position
-        self.deltaphi = delta
+    def __init__(self, position=[0, 0, 0], half_opening=np.pi,
+                 direction=[1., 0., 0.],
+                 **kwargs):
+        if (len(position) != 3) or (len(direction) != 3):
+            raise ValueError('Direction and position are expected in Eukledian coordinates.')
+        self.dir = e2h(np.asanyarray(direction) / np.linalg.norm(direction), 0)
+        self.position = e2h(np.asanyarray(position), 1)
+        self.half_opening = half_opening
         super(LabPointSourceCone, self).__init__(**kwargs)
 
     def generate_photons(self, exposuretime):
@@ -141,17 +87,15 @@ class LabPointSourceCone(Source):
         n = len(photons)
 
         # assign position to photons
-        pos = np.array([self.position[0] * np.ones(n),
-                        self.position[1] * np.ones(n),
-                        self.position[2] * np.ones(n),
-                        np.ones(n)])
+        pos = np.ones((4, n)) * self.position[:, None]
 
         # Randomly choose direction - photons directions randomly distributed inside cone.
         # Visualize in arbitrary x-y-z coordinate system (to be reconciled with class parameters later)
         # Angle from pole (z-axis) = phi. Angle from x-axis on x-y plane is theta
         # This cone is temporarily centered about the z axis.
-        theta = np.random.uniform(0, 2 * np.pi, n);
-        fractionalArea = 2 * np.pi * (1 - np.cos(self.deltaphi)) / (4 * np.pi) #this is the fractional surface area swept out by delta
+        theta = np.random.uniform(0, 2 * np.pi, n)
+        #this is the fractional surface area swept out by delta
+        fractionalArea = 2 * np.pi * (1 - np.cos(self.half_opening)) / (4 * np.pi)
         v = np.random.uniform(0, fractionalArea, n)
         phi = np.arccos(1 - 2 * v)
         # For computation of phi see http://www.bogotobogo.com/Algorithms/uniform_distribution_sphere.php
@@ -164,7 +108,7 @@ class LabPointSourceCone(Source):
         # Now we have all directions for n photons in dir.
         # Now we rotate dir to align with the given direction: self.dir
         # To find axis of rotation: cross self.dir with z
-        axis = np.cross(self.dir, [0, 0, 1])
+        axis = np.cross(h2e(self.dir), [0, 0, 1])
 
         angle = np.arccos(self.dir[2]) # Simplified
 
