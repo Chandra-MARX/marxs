@@ -12,11 +12,11 @@ def test_src_mir_det():
     string2 = 'marxs/optics/data/ALSpolarization2.txt'
     a = 2**(-0.5)
     rotation1 = np.array([[a, 0, -a],
-			  [0, 1, 0],
-			  [a, 0, a]])
+                          [0, 1, 0],
+                          [a, 0, a]])
     rotation2 = np.array([[0, 0, 1],
-			  [0, 1, 0],
-			  [-1, 0, 0]])
+                          [0, 1, 0],
+                          [-1, 0, 0]])
 
     source = LabPointSourceCone([10., 0., 0.], flux=100., energy=-1.)
     mirror = MultiLayerMirror(reflFile=string1, testedPolarization=string2,
