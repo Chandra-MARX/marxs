@@ -19,6 +19,7 @@ Bug fixes
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Improved Documentation [#146]
 
 1.0 (14-Apr-2017)
 -----------------

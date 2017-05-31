@@ -126,7 +126,7 @@ class Parallel(BaseContainer):
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
 
-    All uncertianty matrices should only consist of translation and rotations
+    All uncertainty matrices should only consist of translation and rotations
     and all uncertainties should be relatively small.
 
     After any of the attributes ``elem_pos``, ``elem_uncertainty`` or
@@ -150,7 +150,6 @@ class Parallel(BaseContainer):
     "Uncertainty" rotations are always done *after*
     all other rotations are accounted for.
 
-
     Parameters
     ----------
     elem_class : class
@@ -166,7 +165,8 @@ class Parallel(BaseContainer):
         (Note that this has to be a list. Other python types like tuple or np.array that behave
         like lists in some contexts are not allowed here to avoid ambiguities.)
     elem_pos : list of arrays or dictionary of lists
-        Gives the position of the individual elements. This can either be a list of
+        Gives the position of the individual elements in the local coordinate system of the
+        `Parallel` object. This can either be a list of
         (4,4) np.arrays or a dictionary with entries of ``pos4d`` or ``position``,
         ``orientation`` and ``zoom`` as explained in :ref:`pos4d` where each entry in the
         dictionary is a list of values
@@ -301,6 +301,48 @@ class Parallel(BaseContainer):
 
 
 class ParallelCalculated(Parallel):
+    '''Base class for containers that automatically determine positions of elements
+
+    `ParallelCalculated` derives from `Parallel`. It adds a mechanism to
+    automatically calculate the ``pos4d`` matrices of all elements in
+    this container when the object is initialized.
+
+    This class cannot be used directly since derived classes have to add that
+    algorithm. The following text explains how that works.
+
+    `ParallelCalculated` assumes that the ``pos4d`` matrix for each element
+    can constructed from three vectors:
+
+    - Position of the center
+    - Direction of normal (x-axis of element)
+    - Direction the y-axis of the element should be normal to.
+
+    Parameters
+    ----------
+    pos_spec : np.array of shape (n, 4) or callable
+        Specification of the center positions for all elements in homogeneous
+        coordinates. If this is callable, it will be called with no argument
+        and should return an np.array of shape (n, 4).
+    normal_spec : np.array of shape (4, ) or callable
+        Specification of the normal for each element. This can either by a point
+        in homogeneous coordinates (such as the focal point of the mirror). In
+        case, the normal of all elements will be directed towards that point.
+        If this is a direction in homogeneous coordinates (last coordinate
+        is 0), then all normal vectors are parallel to this one (e.g. to make
+        CCD elements that are all perpendicular to the optical axis). Finally,
+        this can be a callable. In that case, it will be called with the
+        element positions from ``pos_spec`` as input and should return an array
+        of the same size with normal vectors.
+    parallel_spec :  np.array of shape (4, ) or callable
+        Specification of a direction that one box side of each element should be
+        parallel to. ``normal_spec`` defines a plane, but any rotation in that
+        plane is still allowed. The element will be rotated such that one of
+        the planes of the element contains the direction of ``parallel_spec``.
+        If this is a homogeneous coordinate (a point or direction), see
+        ``normal_spec``. If this is a callable, it will be called with two
+        arguments, the output of ``pos_spec`` and ``normal_spec`` and should
+        return an array of the same size.
+    '''
 
     def __init__(self, **kwargs):
         self.pos_spec = kwargs.pop('pos_spec')
@@ -312,10 +354,9 @@ class ParallelCalculated(Parallel):
     def calculate_elempos(self):
         '''Calculate the position of elements based on some algorithm.
 
-        Classes derived from `Parallel` can overwrite this method if they want to
+        Classes derived from `ParallelCalculated` can overwrite this method if they want to
         provide a way to calculate the pos4d matrices for the elements that make up this
-        `Parallel` element.
-        This function is called in the intialization if ``elem_pos is None``.
+        `ParallelCalculated` element.
 
         Returns
         -------
@@ -361,7 +402,7 @@ class ParallelCalculated(Parallel):
             else:
                 return e2h(h2e(xyzw) - h2e(spec)[None, :], 1)
         else:
-            raise ValueError(specname + 'must be callable of homogeneous coordinate.')
+            raise ValueError(specname + 'must be callable or homogeneous coordinate.')
 
 
 class KeepCol(object):

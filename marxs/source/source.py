@@ -131,8 +131,7 @@ class Source(SimulationSequenceElement):
           and must return an array of equal length that contains the polarization angles in
           degrees.
     geomarea : `astropu.units.Quantity`
-        Geometric opening area of telescope in :math:`cm^2`. If not given,
-        an opening of :math:`1 cm^2` is assumed.
+        Geometric opening area of telescope. Default is :math:`1 cm^2`.
     '''
     def __init__(self, **kwargs):
         self.energy = kwargs.pop('energy', 1.)

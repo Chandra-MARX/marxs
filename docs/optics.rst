@@ -166,12 +166,11 @@ The gratings implemented in marxs solve the diffration equation, but not Maxwell
    >>> select_ord = OrderSelector([-2, -1, 0, 1, 2])
    >>> mygrating = FlatGrating(d=0.002, order_selector=select_ord)
 
-The grating module contains different classes for gratings and also different pre-defined ``order_selector`` function. Use the code in those functions as a template to define your own ``order_selector``.
+The grating module contains different classes for gratings and also an `~marxs.optics.OrderSelector`.
    
 - `marxs.optics.FlatGrating`
 - `marxs.optics.CATGrating`
-- `marxs.optics.constant_order_factory`
-- `marxs.optics.uniform_efficiency_factory`
+- `marxs.optics.OrderSelector`
 - `marxs.optics.EfficiencyFile`
 	       
 .. _complexgeometry:
@@ -181,15 +180,21 @@ Complex designs
 
 Most optical elements only change rays that intersect them (`~marxs.optics.Baffle` is an exception - it set the probability of all photons that do **not** intersect the central hole to 0.). Thus, any complex experiement can just be constructed as a list of optical elements, even if many photons only interact with some of those elements.
 
-Marxs offers three classes to make handling complext designs more comfortable:
-`~marxs.simulator.Sequence`, `~marxs.simulator.Parallel`, and `~marxs.optics.FlatStack`:
+Marxs offers classes to make handling complext designs more comfortable:
+`~marxs.simulator.Sequence`, `~marxs.simulator.Parallel`, `~marxs.simulator.ParallelCalculated`, 
+and `~marxs.optics.FlatStack`:
 
 The class `~marxs.simulator.Sequence` can be used to group several optical elements. There are two use cases:
 
 - Group several optical elements that are passed by each photon in sequence.
 - Group several different parallel elements, e.g. a CCD detector and a proportional counter that are both mounted in the focal plane.
 
-In contrast, `~marxs.simulator.Parallel` is meant for designs with identical elements, e.g. a camera consisting of four CCD chips.
+In contrast, `~marxs.simulator.Parallel` is meant for designs with identical
+elements, e.g. a camera consisting of four CCD chips; it required a list of
+positions for each of these CCDs as an input.
+`~marxs.simulator.ParallelCalculated` is a class for objects where the
+positions of individual elements are not input manually, but are calculated by
+some algorithm.
   
 `~marxs.optics.FlatStack` is a special case of the `~marxs.simulator.Sequence` where several flat optical elements are passed by the photons in sequence and all elements are so close to each other, that this can be treated as a single interaction. An example is contamination on a CCD detector, which can be modeled as a Sequence of an `~marxs.optics.EnergyFilter` and a `~marxs.optics.FlatDetector`.
 
