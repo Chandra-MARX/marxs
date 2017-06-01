@@ -4,7 +4,6 @@ construction of the Pluecker coordinates from e.g. two points in space or a dire
 a point.
 '''
 import numpy as np
-from numpy.linalg import norm
 
 def angle_line_plane(p_line, h_plane):
     '''Compute angle between normal to plane and line
@@ -116,7 +115,7 @@ def point_dir2plane(h_point, h_dir):
         Lines in Pluecker coordinates
     '''
     h_plane = np.empty(4)
-    h_dir_n = h_dir / norm(h_dir)
+    h_dir_n = h_dir / np.linalg.norm(h_dir)
     h_plane[:3] = h_dir_n[:3]
     h_plane[3] = - np.dot(h_point, h_dir_n) / h_point[3]
     return h_plane
