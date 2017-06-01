@@ -20,6 +20,7 @@ class PerfectLens(FlatOpticalElement):
 
     display = {'color': (0., 0.5, 0.),
                'opacity': 0.5,
+               'shape': 'box'
     }
 
     loc_coos_name = ['mirror_x', 'mirror_y']
