@@ -3,6 +3,7 @@
 
 New Features
 ^^^^^^^^^^^^
+- Add ability to plot cylinders in Mayavi (for support struts) [#147]
 
 API Changes
 ^^^^^^^^^^^
@@ -16,6 +17,8 @@ API Changes
 
 Bug fixes
 ^^^^^^^^^
+- Added missing keywords in display dict for some objects and fixed exception when plotting
+  things that are not objects. Discovered and fixed as part of [#147].
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

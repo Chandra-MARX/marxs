@@ -20,7 +20,7 @@ from . import utils
 # The following import fails on headless servers (Travis, readthedocs).
 # from mayavi import mlab
 # Thus, I've moved the import statement into the individual functions, so that
-# this module can still be imported when Travis or readthedocs to build the documentation.
+# this module can still be imported when Travis or readthedocs build the documentation.
 
 doc_plot='''
     {__doc__}
@@ -93,6 +93,18 @@ def box(obj, display, viewer=None):
     b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
                         color=display['color'])
     return b
+
+@format_doc(doc_plot)
+def cylinder(obj, display, viewer=None):
+    '''Plot a rectangular box for an object.'''
+    from mayavi import mlab
+
+    x0 = obj.geometry('center') - obj.geometry('v_x')
+    x1 = obj.geometry('center') + obj.geometry('v_x')
+    c = mlab.plot3d([x0[0], x1[0]], [x0[1], x1[1]], [x0[2], x1[2]], color=display['color'],
+                    tube_radius=np.linalg.norm(obj.geometry('v_y')),
+                    tube_sides=display.get('tube_sides', 20))
+    return c
 
 def plot_rays(data, scalar=None, viewer=None,
               kwargssurface={'colormap': 'Accent', 'line_width': 1, 'opacity': .4}):
@@ -169,6 +181,7 @@ plot_registry = {'triangulation': triangulation,
                  'surface': surface,
                  'box': box,
                  'container': container,
+                 'cylinder': cylinder,
                  }
 
 

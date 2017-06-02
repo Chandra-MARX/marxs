@@ -16,6 +16,16 @@ class MARXSVisualizationWarning(Warning):
     pass
 
 
+def get_obj_name(obj):
+    '''Return printable name for objects or functions.'''
+    if hasattr(obj, 'name'):
+        return obj.name
+    elif hasattr(obj, 'func_name'):
+        return obj.func_name
+    else:
+        return str(obj)
+
+
 def plot_object_general(plot_registry, obj, display=None, **kwargs):
     '''Look up a plottig routine for an object and execute it.
 
@@ -47,7 +57,7 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
         if hasattr(obj, 'display') and (obj.display is not None):
             display = obj.display
         else:
-            warnings.warn('Skipping {0}: No display dictionary found.'.format(obj.name),
+            warnings.warn('Skipping {0}: No display dictionary found.'.format(get_obj_name(obj)),
                            MARXSVisualizationWarning)
             return None
 
@@ -62,10 +72,10 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
                 out = plot_registry[s](obj, display,  **kwargs)
                 break
         else:
-            warnings.warn('Skipping {0}: No function to plot {1}'.format(obj.name, shape),
+            warnings.warn('Skipping {0}: No function to plot {1}.'.format(get_obj_name(obj), shape),
                           MARXSVisualizationWarning)
     else:
-        warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(obj.name),
+        warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(get_obj_name(obj)),
                        MARXSVisualizationWarning)
     return out
 

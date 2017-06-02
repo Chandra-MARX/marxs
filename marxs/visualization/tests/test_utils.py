@@ -2,7 +2,9 @@
 import numpy as np
 import pytest
 
-from ..utils import plane_with_hole, get_color, color_tuple_to_hex, format_saved_positions
+from ..utils import (plane_with_hole, get_color, color_tuple_to_hex,
+                     format_saved_positions, MARXSVisualizationWarning)
+from ..mayavi import plot_object
 
 def test_hole_round():
     '''Ensure that plane around the inner hole closes properly at the last point.'''
@@ -84,3 +86,60 @@ def test_empty_format_saved_positions():
         d = format_saved_positions(a)
 
     assert 'contains no data' in str(e.value)
+
+def test_no_display_warnings():
+    '''Check that warnings are emitted without for classes, functions, and others'''
+    class NoDisplay(object):
+        pass
+
+    with pytest.warns(MARXSVisualizationWarning) as record:
+        plot_object(NoDisplay())
+
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert 'No display dictionary found.' in record[0].message.args[0]
+
+    def f():
+        pass
+
+    with pytest.warns(MARXSVisualizationWarning) as record:
+        plot_object(f)
+
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert 'No display dictionary found.' in record[0].message.args[0]
+
+
+    with pytest.warns(MARXSVisualizationWarning) as record:
+        plot_object(range)
+
+    assert len(record) == 1
+    assert 'No display dictionary found' in record[0].message.args[0]
+
+def test_warning_unknownshape():
+    '''Test warning (and no crash) for plotting stuff of unknown shape.'''
+    class Display():
+        display = {'shape': 'cilinder'}
+
+    with pytest.warns(MARXSVisualizationWarning) as record:
+        plot_object(Display())
+
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert 'No function to plot cilinder.' in record[0].message.args[0]
+
+def test_warning_noshapeset():
+    '''Test warning (and no crash) for plotting stuff of unknown shape.'''
+    class Display():
+        display = {'form': 'cilinder'}
+
+    with pytest.warns(MARXSVisualizationWarning) as record:
+        plot_object(Display())
+
+    # check that only one warning was raised
+    assert len(record) == 1
+    # check that the message matches
+    assert '"shape" not set in display dict.' in record[0].message.args[0]

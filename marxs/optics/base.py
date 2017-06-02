@@ -15,13 +15,17 @@ class OpticalElement(SimulationSequenceElement):
     This class cannot be used to instanciate an optical element directly, rather it serves as a
     base class from with other optical elements will be derived.
 
-    At the very minumum, any derived class needs to implement either `process_photon` or
-    `process_photons`. If the interaction with the photons (e.g. scattering of a mirror surface)
-    can be implemented in a vectorized way using numpy array operations, the derived class should
-    overwrite `process_photons` (`process_photon` is not used in this case).
-    If no vectorized implementation is available, it is sufficient to overwrite `process_photon`.
-    Marxs will call `process_photons`, which (if not overwritten) contains a simple for-loop to
-    loop over all photons in the array and call `process_photon` on each of them.
+    At the very minumum, any derived class needs to implement `__call__` which
+    typically calls `intersect` and either `process_photon` or
+    `process_photons`. If the interaction with the photons (e.g. scattering of
+    a mirror surface) can be implemented in a vectorized way using numpy array
+    operations, the derived class should overwrite `process_photons`
+    (`process_photon` is not used in this case).  If no vectorized
+    implementation is available, it is sufficient to overwrite
+    `process_photon`.  Marxs will call `process_photons`, which (if not
+    overwritten) contains a simple for-loop to loop over all photons in the
+    array and call `process_photon` on each of them.
+
     '''
 
     def geometry(self, key):
@@ -148,8 +152,8 @@ class OpticalElement(SimulationSequenceElement):
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
     def __call__(self, photons):
-        intersect, interpos, intercoos = self.intersect(photons['dir'].data, photons['pos'].data)
-        return self.process_photons(photons, intersect, interpos, intercoos)
+        intersect_out = self.intersect(photons['dir'].data, photons['pos'].data)
+        return self.process_photons(photons, *intersect_out)
 
     def process_photons(self, photons, intersect, interpos, intercoos):
         '''Simulate interaction of optical element with photons - vectorized.

@@ -11,7 +11,7 @@ from ...import optics
 mirror_radii = np.array([[598.,610.],[481, 491], [424, 433], [315,322]])
 
 class Aperture(optics.MultiAperture):
-    '''Chandra openign aperture of four rings above the mirror shells.
+    '''Chandra opening aperture of four rings above the mirror shells.
     '''
     def __init__(self, **kwargs):
         if not 'id_col' in kwargs:
