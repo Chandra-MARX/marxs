@@ -138,11 +138,13 @@ class FixedPointing(PointingModel):
         photonsdir : np.array of shape (n, 4)
             Direction of photons
         polangle : np.array
-            Polarization angle in degree measured N through E.
+            Polarization angle measured N through E. If polangle has no
+            units, it is assumed to be specified in radian.
         time : np.array
             Time for each photons in sec
         '''
-        polangle = np.deg2rad(polangle)
+        if hasattr(polangle, "unit") and (polangle.unit is not None):
+            polangle = polangle.to(u.rad)
         north = SkyCoord(0., 90., unit='deg', frame=self.coords)
         northdir = e2h(north.transform_to(self.offset_coos).cartesian.xyz.T, 0)
         northdir = np.dot(self.reference_transform, northdir)

@@ -55,15 +55,16 @@ class FlatBrewsterMirror(FlatOpticalElement):
         p_v_s = np.einsum('ij,ij->i', polarization, v_s)
         p_v_p = np.einsum('ij,ij->i', polarization, v_p)
 
+        fresnel_refl_s, fresnel_refl_p = self.fresnel(photons, intersect, intersection, local)
+        # Calculate new intensity ~ (E_x)^2 + (E_y)^2
+        Es2 = fresnel_refl_s * p_v_s ** 2
+        Ep2 = fresnel_refl_p * p_v_p ** 2
+
         # parallel transport of polarization vector
         # v_s stays the same by definition
         new_v_p = np.cross(h2e(new_beam_dir), v_s)
-        new_pol = -p_v_s[:, np.newaxis] * v_s + p_v_p[:, np.newaxis] * new_v_p
+        new_pol = norm_vector(-Es2[:, np.newaxis] * v_s  + Ep2[:, np.newaxis] * new_v_p)
 
-        fresnel_refl_s, fresnel_refl_p = self.fresnel(photons, intersect, intersection, local)
-        # Calculate new intensity ~ (E_x)^2 + (E_y)^2
-        Es2 = fresnel_refl_s * np.einsum('ij,ij->i', polarization, v_s) ** 2
-        Ep2 = fresnel_refl_p * np.einsum('ij,ij->i', polarization, v_p) ** 2
 
         return {'dir': new_beam_dir,
                 'probability': Es2 + Ep2,
