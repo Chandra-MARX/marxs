@@ -1,5 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+import astropy.units as u
 
 from .utils import norm_vector, e2h
 
@@ -9,11 +10,11 @@ __all__ = ['polarization_vectors', 'Q_reflection', 'paralleltransport_matrix',
 
 
 def polarization_vectors(dir_array, angles):
-    '''Takes angle polarizations and converts them to vectors in the direction of polarization.
+    '''Converts polarization angles to vectors in the direction of polarization.
 
     Follows convention: Vector perpendicular to photon direction and closest to +y axis is
-    angle 0 for polarization direction, unless photon direction is parallel to the y axis, in
-    which case the vector closest to the +x axis is angle 0.
+    angle 0 for polarization direction, unless photon direction is parallel to the y axis,
+    in which case the vector closest to the +x axis is angle 0.
 
     Parameters
     ----------
@@ -48,6 +49,8 @@ def polarization_vectors(dir_array, angles):
     r = dir_array.copy()[:,0:3]
     r /= np.linalg.norm(r, axis=1)[:, np.newaxis]
     pol_convention_x = np.isclose(r[:,0], 0.) & np.isclose(r[:,2], 0.)
+    if hasattr(angles, "unit") and (angles.unit is not None):
+        angles = angles.to(u.rad)
     # polarization relative to positive y or x at 0
     v_1 = ~pol_convention_x[:, np.newaxis] * (y - r * np.dot(r, y)[:, np.newaxis])
     v_1 += pol_convention_x[:, np.newaxis] * (x - r * np.dot(r, x)[:, np.newaxis])

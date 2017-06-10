@@ -29,7 +29,7 @@ def test_polarization_direction():
     '''Test that a FixedPointing correctly assigns linear polarization vectors.'''
     s = PointSource(coords=SkyCoord(187.4, 0., unit='deg'))
     photons = s.generate_photons(5)
-    photons['polangle'] = [0., 90., 180., 270., 45.]
+    photons['polangle'] = (np.array([0., 90., 180., 270., 45.])) * u.deg.to(photons['polangle'].unit)
     point_x = FixedPointing(coords=SkyCoord(187.4, 0., unit='deg'))
     p_x = point_x(photons.copy())
     # For a simple polangle 0 = 180 and the direction does not matter.
@@ -53,7 +53,7 @@ def test_polarization_direction():
     s = PointSource(coords=SkyCoord(22.5, 0., unit='deg'))
     photons = s.generate_photons(5)
     photons['dec'] = [67., 23., 0., -45.454, -67.88]
-    photons['polangle'] = 90.
+    photons['polangle'] = (90. * u.deg).to(photons['polangle'].unit)
     point = FixedPointing(coords=SkyCoord(94.3, 23., unit='deg'))
     p = point(photons.copy())
     for i in range(1, len(p)):

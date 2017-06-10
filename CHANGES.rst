@@ -20,6 +20,11 @@ Bug fixes
 - Added missing keywords in display dict for some objects and fixed exception when plotting
   things that are not objects. Discovered and fixed as part of [#147].
 
+- Polarization after reflection from a mirror used to just parallel transport the vector.
+  and calculate the probability of the photon based on s and p polarization. This needs
+  to be applied to the outgoing polarization vector, too. [#148]
+
+
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Improved Documentation [#146]

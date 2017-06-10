@@ -26,7 +26,15 @@ class FlatBrewsterMirror(FlatOpticalElement):
     }
 
     def fresnel(self, photons, intersect, intersection, local):
-        '''The incident angle can easily be calculated from e_x and photons['dir'].'''
+        '''The incident angle can easily be calculated from e_x and photons['dir'].
+
+        Returns
+        -------
+        refl_s, refl_p : np.array or float
+            Reflection probability for s and p polarized photons.
+            Typically, the number will depend on the incident angle and energy
+            of each photon and thus the return value will be a vector.
+        '''
         return 1., 0.
 
     def specific_process_photons(self, photons, intersect, intersection, local):
@@ -55,15 +63,16 @@ class FlatBrewsterMirror(FlatOpticalElement):
         p_v_s = np.einsum('ij,ij->i', polarization, v_s)
         p_v_p = np.einsum('ij,ij->i', polarization, v_p)
 
+        fresnel_refl_s, fresnel_refl_p = self.fresnel(photons, intersect, intersection, local)
+        # Calculate new intensity ~ (E_x)^2 + (E_y)^2
+        Es2 = fresnel_refl_s * p_v_s ** 2
+        Ep2 = fresnel_refl_p * p_v_p ** 2
+
         # parallel transport of polarization vector
         # v_s stays the same by definition
         new_v_p = np.cross(h2e(new_beam_dir), v_s)
-        new_pol = -p_v_s[:, np.newaxis] * v_s + p_v_p[:, np.newaxis] * new_v_p
+        new_pol = norm_vector(-Es2[:, np.newaxis] * v_s  + Ep2[:, np.newaxis] * new_v_p)
 
-        fresnel_refl_s, fresnel_refl_p = self.fresnel(photons, intersect, intersection, local)
-        # Calculate new intensity ~ (E_x)^2 + (E_y)^2
-        Es2 = fresnel_refl_s * np.einsum('ij,ij->i', polarization, v_s) ** 2
-        Ep2 = fresnel_refl_p * np.einsum('ij,ij->i', polarization, v_p) ** 2
 
         return {'dir': new_beam_dir,
                 'probability': Es2 + Ep2,

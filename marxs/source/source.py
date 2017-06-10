@@ -100,8 +100,8 @@ class Source(SimulationSequenceElement):
           second column is the flux density.
           Given this table, the code assumes a piecewise flat spectrum. The "energy"
           values contain the **upper** limit of each bin, the "flux" array the flux density
-          in each bin. The first entry in the "flux" array is ignored, because the lower bound
-          of this bin is undefined.
+          in each bin. The first entry in the "flux" array is ignored, because the lower
+          bound of this bin is undefined.
           The code draws an energy from this spectrum for every photon created.
         - A function or callable object: This option allows for full customization. The
           function must take an array of photon times as input and return an equal length
@@ -109,7 +109,7 @@ class Source(SimulationSequenceElement):
 
     polarization: contant or ``None``, (2, N) `numpy.ndarray`, `dict <dict>`, `astropy.table.Table` or similar or callable.
         There are several different ways to set the polarization angle of the photons for a
-        polarized source. In all cases, the angle is given in degrees and is measured North
+        polarized source. In all cases, the angle is measured North
         through East. (We ignore the special case of a polarized source exactly on a pole.)
         The default value is ``None`` (unpolarized source).
 
@@ -197,7 +197,7 @@ class Source(SimulationSequenceElement):
             rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
             return rand(n)
         elif self.polarization is None:
-            return np.random.uniform(0, 360., n)
+            return np.random.uniform(0, 2 * np.pi, n)
         else:
             raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 
@@ -244,7 +244,7 @@ class Source(SimulationSequenceElement):
                                    'Host system running simulation')
         photons['time'].unit = u.s
         photons['energy'].unit = u.keV
-        photons['polangle'].unit = u.degree
+        photons['polangle'].unit = u.rad
         return photons
 
 
