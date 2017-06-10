@@ -2,9 +2,11 @@
 import numpy as np
 from astropy.table import Table
 from astropy.io import ascii
+from transforms3d import euler
 from ...math.utils import norm_vector
-from ..multiLayerMirror import MultiLayerMirror
+from ..multiLayerMirror import MultiLayerMirror, FlatBrewsterMirror
 
+import pytest
 
 def test_photon_reflection():
     ''' tests that three photons are accurately reflected
@@ -111,3 +113,28 @@ def test_photon_reflection2():
     # #expected_pol[1,0:3] = np.cross(photons['dir'][1,0:3] / np.linalg.norm(photons['dir'][1,0:3]), expected_pol[0,0:3])
     # for i in range(0, 2):
     #   assert np.allclose(np.array(photons['polarization'][i]), expected_pol[i]) or np.allclose(np.array(photons['polarization'][i]), -expected_pol[i])
+
+@pytest.mark.parametrize("angle,avgpol", [(0., 0.5), (np.pi/2, 0.)])
+def test_double_reflection(angle, avgpol):
+    '''Two mirrors
+
+    The first mirror polarizes the light and the second
+    one perfectly reflects that polarized light or perfectly absorbs it.
+    '''
+    pos = np.tile([1., 0., 0., 1.], (8, 1))
+    dir = np.tile([-1., 0., 0., 0.], (8, 1))
+
+    ang = np.arange(0, 2. * np.pi, np.pi / 4)
+    polarization = np.vstack([np.zeros(8), np.sin(ang), np.cos(ang), np.zeros(8)]).T
+
+    photons = Table({'pos': pos,
+                     'dir': dir,
+                     'energy': np.ones(8),
+                     'polarization': polarization,
+                     'probability': np.ones(8)})
+    ml1 = FlatBrewsterMirror(orientation=euler.euler2mat(np.pi / 4, 0, 0, 'szxy'))
+    ml2 = FlatBrewsterMirror(position=[0, 1, 0],
+                             orientation=euler.euler2mat(-np.pi / 4, angle, 0, 'szyx'))
+    photons = ml1(photons)
+    photons = ml2(photons)
+    assert np.isclose(np.mean(photons['probability']), avgpol)

@@ -26,7 +26,15 @@ class FlatBrewsterMirror(FlatOpticalElement):
     }
 
     def fresnel(self, photons, intersect, intersection, local):
-        '''The incident angle can easily be calculated from e_x and photons['dir'].'''
+        '''The incident angle can easily be calculated from e_x and photons['dir'].
+
+        Returns
+        -------
+        refl_s, refl_p : np.array or float
+            Reflection probability for s and p polarized photons.
+            Typically, the number will depend on the incident angle and energy
+            of each photon and thus the return value will be a vector.
+        '''
         return 1., 0.
 
     def specific_process_photons(self, photons, intersect, intersection, local):
