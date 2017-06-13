@@ -28,7 +28,7 @@ env:
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
-        - CONDA_DEPENDENCIES='scipy cffi sphinx matplotlib jsonschema'
+        - CONDA_DEPENDENCIES='scipy cffi matplotlib jsonschema'
         - DEBUG=True
     matrix:
         # Make sure that egg_info works without dependencies
