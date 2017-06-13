@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from ..utils import (plane_with_hole, get_color, color_tuple_to_hex,
-                     format_saved_positions, MARXSVisualizationWarning)
+                     MARXSVisualizationWarning)
 from ..mayavi import plot_object
 
 def test_hole_round():
@@ -60,32 +60,6 @@ def test_color_to_hex_bad_input():
     with pytest.raises(ValueError) as e:
         out = color_tuple_to_hex((1., 3., 0.3))
     assert 'Float values in color tuple' in str(e.value)
-
-def test_format_saved_positions():
-    '''Reformat saved positions and drop nearly identical values.'''
-    class A(object):
-        pass
-
-    pos0 = np.arange(20).reshape(5,4)
-    pos1 = pos0 + 1
-    pos2 = pos1 + 1e-4
-    pos = A()
-    pos.data = [pos0, pos1, pos2]
-
-    d = format_saved_positions(pos)
-    assert d.shape == (5, 2, 3)
-    assert np.allclose(d[0, 0, :], [0, 1./3, 2./3])
-
-def test_empty_format_saved_positions():
-    '''If the input contains no data, an error should be raised.'''
-    class A(object):
-        data = []
-
-    a = A()
-    with pytest.raises(ValueError) as e:
-        d = format_saved_positions(a)
-
-    assert 'contains no data' in str(e.value)
 
 def test_no_display_warnings():
     '''Check that warnings are emitted without for classes, functions, and others'''
