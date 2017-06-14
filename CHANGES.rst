@@ -15,6 +15,11 @@ API Changes
   all parameters as keyword arguments for consistency with the other elements in MARXS.
   [#144]
 
+- ``marxs.visualization.utils.format_saved_positions`` is now a method of
+  `~marxs.simulator.KeepCol` with the new name ``to_array()`` and the ``atol``
+  keyword can be switched off. This makes the function useful for columns that
+  are not positions, but e.g. polarization vectors. [#149]
+
 Bug fixes
 ^^^^^^^^^
 - Added missing keywords in display dict for some objects and fixed exception when plotting

@@ -87,7 +87,7 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   >>> import numpy as np
   >>> from mayavi import mlab
   >>> from astropy.coordinates import SkyCoord
-  >>> from marxs import source, simulator, visualization
+  >>> from marxs import source, simulator
   >>> from marxs.visualization.mayavi import plot_object, plot_rays
   >>> # object to save intermediate photons positions after every step of the simulaion
   >>> pos = simulator.KeepCol('pos')
@@ -99,7 +99,7 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   >>> photons = pointing(photons)
   >>> photons = instrum(photons)
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
-  >>> posdat = visualization.utils.format_saved_positions(pos)[ind, :, :]
+  >>> posdat = pos.to_array()[ind, :, :]
   >>> fig = mlab.figure()
   >>> obj = plot_object(instrum, viewer=fig)
   >>> rays = plot_rays(posdat, scalar=photons['energy'][ind])

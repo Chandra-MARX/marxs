@@ -7,6 +7,13 @@ from ..base import SimulationSequenceElement, _parse_position_keywords
 import transforms3d
 from transforms3d.utils import normalized_vector
 
+__all__ = ['SimulationSetupError',
+           'BaseContainer',
+           'Sequence',
+           'Parallel',
+           'ParallelCalculated',
+           'KeepCol',
+           ]
 
 class SimulationSetupError(Exception):
     pass
@@ -432,3 +439,43 @@ class KeepCol(object):
             raise KeyError('photon list has no column {0}.'.format(self.colname))
         else:
             self.data.append(photons[self.colname].copy())
+
+
+    def to_array(self, atol=None):
+        '''Format saved position columns as a single array.
+
+        `KeepCol` keeps the value of a column (e.g. the photon position)
+        at every step of the simulation. This function reformats that list of
+        columns for use graphical display programs.
+
+        Parameters
+        ----------
+        atol : float or None
+            Sometimes several consequtive elements record identical photon positions in
+            `keepcol`. Those are removed from the output to speed up rendering in 3D
+            programs.
+            ``atol`` sets the limit up to which two positions are considered *identical*.
+            See `np.allclose` for a detailed description of ``atol``.
+            Set to ``None`` to skip this step.
+
+        Returns
+        -------
+        pos : np.array
+            Array of shape (N, n, 3), where N is the number of photons and n the number of
+            unique photon positions in eukledian coordinates.
+        '''
+        if len(self.data) == 0:
+            raise ValueError('KeepCol object contains no data.')
+        d = np.dstack(self.data)
+        d = np.swapaxes(d, 1, 2)
+        d = h2e(d)
+        if atol is None:
+            return d
+        else:
+            ind = [0]
+            i = 1
+            for i in range(1, d.shape[1]):
+                if not np.allclose(d[:, ind[-1], :], d[:, i, :], atol=atol,
+                                   equal_nan=True):
+                    ind.append(i)
+            return d[:, ind, :]
