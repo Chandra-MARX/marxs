@@ -2,7 +2,6 @@
 import numpy as np
 from astropy.table import Column
 import astropy.units as u
-import astropy.coordinates as coord
 from astropy.coordinates import SkyCoord
 
 from ..base import SimulationSequenceElement
@@ -52,11 +51,8 @@ class FixedPointing(PointingModel):
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkySoord` (preferred)
-        Position of the source on the sky. If ``coords`` is not a
-        `~astropy.coordinates.SkyCoord` object itself, it is used to
-        initialize such an object. See `~astropy.coordinates.SkyCoord`
-        for a description of allowed input values.
+    coords : `astropy.coordinates.SkySoord`
+        Position of the source on the sky.
     roll : `~astropy.units.quantity.Quantity`
         ``roll = 0`` means: z axis points North (measured N -> E).
     reference_transform : np.array of shape (4, 4)
@@ -87,12 +83,7 @@ class FixedPointing(PointingModel):
     determines the position of the coordinate system.
     '''
     def __init__(self, **kwargs):
-        coords = kwargs.pop('coords')
-        if isinstance(coords, coord.SkyCoord):
-            self.coords = coords
-        else:
-            self.coords = coord.SkyCoord(coords)
-
+        self.coords = kwargs.pop('coords')
         if not self.coords.isscalar:
             raise ValueError("Coordinate must be scalar, not array.")
         self.roll = kwargs.pop('roll', 0. * u.rad)
