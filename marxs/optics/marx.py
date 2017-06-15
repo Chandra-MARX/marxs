@@ -2,12 +2,6 @@
 '''
 .. todo::
    Add a mechanism for unit conversion. This expects all distances in mm and all energies in keV.
-
-.. todo::
-   Do something about the effective areas. Can be read out after mirror is initialized.
-
-.. todo::
-   Make a setup.py parameter for the marxsource code and marx compiled binary location
 '''
 import os
 import numpy as np
