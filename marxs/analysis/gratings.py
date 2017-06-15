@@ -13,22 +13,26 @@ from .analysis import sigma_clipped_std
 class AnalysisError(Exception):
     pass
 
-def resolvingpower_per_order(gratings, photons, orders, detector=None, colname='det_x'):
-    '''Loop over grating orders and calculate the resolving power in every order.
+def resolvingpower_per_order(gratings, photons, orders, detector=None,
+                             colname='det_x'):
+    '''Calculate the resolving power in every grating order.
 
-    As input this function takes a Grating Array Structure (``gratings``) and a list of photons
-    ready to hit the grating, i.e. the photons have already passed through aperture and
-    mirror in e.g. a Chandra-like design. The function will take the same input photons and
-    send them through the gas looping over the grating orders. In each step of the loop all
-    photons are send to the same order, thus the statistical uncertainty on the measured
-    spectral resolving power (calculated as ``pos_x / FWHM_x``)
-    is the same for every order and is set by the number of photons in the input list.
+    As input this function takes a Grating Array Structure (``gratings``) and
+    a list of photons ready to hit the grating, i.e. the photons have already
+    passed through aperture and mirror in e.g. a Chandra-like design. The
+    function will take the same input photons and send them through the gas
+    looping over the grating orders. In each step of the loop all photons are
+    send to the same order, thus the statistical uncertainty on the measured
+    spectral resolving power (calculated as ``pos_x / FWHM_x``) is the same
+    for every order and is set by the number of photons in the input list.
 
-    As a side effect, the function that selects the grating orders for diffraction in ``gas``
-    will be changed. Pass a deep copy of the GAS if this could affect consecutive computations.
+    As a side effect, the function that selects the grating orders for
+    diffraction in ``gas`` will be changed. Pass a deep copy of the GAS if
+    this could affect consecutive computations.
 
-    Unlike `~marxs.analysis.gratings.resolvingpower_from_photonlist` this function ray-traces
-    the input photon list from the gratings to the detectors.
+    Unlike `~marxs.analysis.gratings.resolvingpower_from_photonlist` this
+    function ray-traces the input photon list from the gratings to the
+    detectors.
 
     Parameters
     ----------
@@ -40,17 +44,19 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None, colname='
     orders : np.array of type int
         Order numbers
     detector : marxs optical element or `marxs.design.RowlandTorus` or ``None``.
-        Photons are projected onto a detector. There are three ways to define this detector:
+        Photons are projected onto a detector. There are three ways to define
+        this detector:
 
-        - Pass in an instance of an optical element (e.g. a `marxs.optics.FlatDetector`).
-        - Pass in a `marxs.design.RowlandTorus`. This function will generate a detector that
-          follows the Rowland circle.
-        - ``None``. A flat detector in the yz plane is used, but the x position for this
-          detector is numerically optimized in each step.
+        - Pass in an instance of an optical element (e.g. a
+          `marxs.optics.FlatDetector`).
+        - Pass in a `marxs.design.RowlandTorus`. This function will generate
+          a detector that follows the Rowland circle.
+        - ``None``. A flat detector in the yz plane is used, but the x position
+          for this detector is numerically optimized in each step.
 
     colname : string
-        Name of the column the labels the dispersion direction. This is only used if a detector
-        instance is passed in explicitly.
+        Name of the column that labels the dispersion direction. This is only
+        used if a detector instance is passed in explicitly.
 
     Returns
     -------
@@ -111,14 +117,16 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None, colname='
 def weighted_per_order(data, orders, energy, gratingeff):
     '''Summarize a per-order table of a quantity such as spectral resolution.
 
-    `marxs.analysis.fwhm_per_order` produces a set of data for each grating order,
-    most notably the spectral resolution achieved in every spectral order for every energy.
-    In practice, however, most orders see only a very small number of photons and will not
-    contribute significantly to the observed signal.
+    `marxs.analysis.fwhm_per_order` produces a set of data for each grating
+    order, most notably the spectral resolution achieved in every spectral
+    order for every energy. In practice, however, most orders see only a very
+    small number of photons and will not contribute significantly to the
+    observed signal.
 
-    This method provides one way to summarize the data by calculating the weighted mean
-    of the resolution for each energy, weighted by the probability of photons for be
-    diffracted into that order ( = the expected fraction).
+    This method provides one way to summarize the data by calculating the
+    weighted mean of the resolution for each energy, weighted by the
+    probability of photons for be diffracted into that order ( = the expected
+    fraction).
 
     Parameters
     ----------
@@ -154,16 +162,17 @@ def weighted_per_order(data, orders, energy, gratingeff):
     return np.ma.average(data, axis=0, weights=weights)
 
 
-def resolvingpower_from_photonlist(photons, orders, filterfunc=None, col='proj_x', zeropos=None,
-                    ordercol='order'):
+def resolvingpower_from_photonlist(photons, orders, filterfunc=None,
+                                   col='proj_x', zeropos=None,
+                                   ordercol='order'):
     '''Calculate the resolving power for several grating orders
 
-    If fewer than 20 photons are detected in a single order, this function returns
-    nan values.
+    If fewer than 20 photons are detected in a single order, this function
+    returns nan values.
 
-    Unlike `~marxs.analysis.gratings.resolvingpower_per_order` this method does not run
-    any ray-trace simulations. It just extract information from a photon list that is
-    passed in.
+    Unlike `~marxs.analysis.gratings.resolvingpower_per_order` this method does
+    not run any ray-trace simulations. It just extract information from a
+    photon list that is passed in.
 
     Parameters
     ----------
@@ -178,8 +187,9 @@ def resolvingpower_from_photonlist(photons, orders, filterfunc=None, col='proj_x
     col : string
         Column name for the column holding the dispersion coordinate.
     zeropos : float or ``None``
-        Value of column `col` where the zeroth order is found. If not given, this is
-        calculated (assuming the zeroth order photons are part of the event list).
+        Value of column `col` where the zeroth order is found. If not given,
+        this is calculated (assuming the zeroth order photons are part of the
+        event list).
     ordercol : string
         Name of column that lists grating order for each photon
 
