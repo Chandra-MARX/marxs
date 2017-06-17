@@ -99,7 +99,7 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   >>> photons = pointing(photons)
   >>> photons = instrum(photons)
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
-  >>> posdat = pos.to_array()[ind, :, :]
+  >>> posdat = pos.format_positions()[ind, :, :]
   >>> fig = mlab.figure()
   >>> obj = plot_object(instrum, viewer=fig)
   >>> rays = plot_rays(posdat, scalar=photons['energy'][ind])

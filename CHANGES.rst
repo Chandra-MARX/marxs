@@ -16,9 +16,14 @@ API Changes
   elements in MARXS. [#144]
 
 - ``marxs.visualization.utils.format_saved_positions`` is now a method of
-  `~marxs.simulator.KeepCol` with the new name ``to_array()`` and the ``atol``
-  keyword can be switched off. This makes the function useful for columns that
-  are not positions, but e.g. polarization vectors. [#149]
+  `~marxs.simulator.KeepCol` with the new name ``format_positions()`` and
+  the ``atol`` keyword can be switched off.
+  Additionally, `~marxs.simulator.KeepCol` now has a ``__array__`` method.
+  This makes the function useful for columns that
+  are not positions, but e.g. polarization vectors.
+  On the other hand, the ``plot_rays`` functions do not accept
+  `~marxs.simulator.KeepCol` objects directly as input any longer.
+  [#149, #152]
 
 - According to the docs, a pointing could be initialized with either a 
   `~astropy.coordiantes.SkyCoord` or a tuple that would initialize the

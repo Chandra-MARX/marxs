@@ -92,9 +92,6 @@ def materialspec(display, material):
     return ', '.join(spec)
 
 def _format_plot_rays_input(data, scalar, cmap, prop):
-    if hasattr(data, 'data') and isinstance(data.data, list):
-        data = utils.format_saved_positions(data)
-
     # The number of points per line
     N = data.shape[1]
     # number of lines
@@ -125,10 +122,9 @@ def plot_rays(data, outfile, scalar=None, cmap=None,
 
     Parameters
     ----------
-    data : np.array of shape(n, N, 3) or `marxs.simulator.KeepCol` object
+    data : np.array of shape(n, N, 3)
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Eukledian position vector.
-        This can also be a ``KeepCol('pos')`` object.
     scalar : None or nd.array of shape (n,) or (n, N)
         This quantity is used to color the rays. If ``None`` all rays will have the same
         color. If it has n elements, each ray will have exactly one color (e.g. color
