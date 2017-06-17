@@ -440,13 +440,18 @@ class KeepCol(object):
         else:
             self.data.append(photons[self.colname].copy())
 
+    def __array__(self):
+        return np.stack(self.data)
 
-    def to_array(self, atol=None):
+    def format_positions(self, atol=None):
         '''Format saved position columns as a single array.
 
         `KeepCol` keeps the value of a column (e.g. the photon position)
         at every step of the simulation. This function reformats that list of
-        columns for use graphical display programs.
+        columns for use graphical display programs. Note that `format_positions`
+        will only work for columns that store data in homogeneous coordinates,
+        for all other cases, simply call `numpy.asanyarray` on your `KeepCol`
+        object.
 
         Parameters
         ----------
@@ -466,6 +471,8 @@ class KeepCol(object):
         '''
         if len(self.data) == 0:
             raise ValueError('KeepCol object contains no data.')
+        if not self.data[0].ndim == 2 or self.data[0].shape[1] !=4:
+            raise ValueError('format_position only works for columns that store homogeneous coordinates.')
         d = np.dstack(self.data)
         d = np.swapaxes(d, 1, 2)
         d = h2e(d)
