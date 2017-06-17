@@ -40,6 +40,7 @@ The documentation for MARXS is split into several parts. After intalling MARXS i
    design
    newopticalelements
    visualization
+   examples
    utils
 
 **Contribute to MARXS development**
