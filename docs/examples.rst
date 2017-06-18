@@ -23,7 +23,7 @@ approximate as a monoenergetic point source (but see :ref:`sect-source-fluxenpol
   >>> light_pos = light.position.copy()
   >>> light_dir = light.dir.copy()
 
-These X-rays shine on a mirror (green rectangle in the figure below) at an angle very close to the `Brewster angle <https://en.wikipedia.org/wiki/Brewster%27s_angle>`_, where only photons that are s-polarized (perpendicular to the plane of reflection, *s* from German *s*enkrecht) are reflected::
+These X-rays shine on a mirror (green rectangle in the figure below) at an angle very close to the `Brewster angle <https://en.wikipedia.org/wiki/Brewster%27s_angle>`_, where only photons that are s-polarized (perpendicular to the plane of reflection, *s* from German senkrecht) are reflected::
 
   >>> import numpy as np
   >>> from marxs.optics import FlatBrewsterMirror, FlatDetector
