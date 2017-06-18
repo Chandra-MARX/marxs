@@ -47,6 +47,8 @@ Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Improved Documentation [#146]
 
+- Added polarization example to the documentation [#153]
+
 1.0 (14-Apr-2017)
 -----------------
 This is the first release intended to use. The Change log will begin starting 
