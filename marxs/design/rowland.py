@@ -38,29 +38,33 @@ except NameError:
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     '''Find the radius the photons coming from a single mirror shell have.
 
-    For nested Wolter Type I mirrors the ray of photons reflected from a single mirror
-    shell essentially form a cone in space. The tip of the cone is at the focal point
-    and the base is at the mirror. There is a certain thickness to this cone depending
-    on where exactly on the mirror the individual photon was reflected.
+    For nested Wolter Type I mirrors the ray of photons reflected from a single
+    mirror shell essentially form a cone in space. The tip of the cone is at
+    the focal point and the base is at the mirror. There is a certain thickness
+    to this cone depending on where exactly on the mirror the individual photon
+    was reflected.
 
-    This function takes a photon list of photons after passing through the mirror and
-    calculates the radius range that this photon cone covers at a specific distance from
-    the focal point. This information can help to design the placement of gratings.
+    This function takes a photon list of photons after passing through the
+    mirror and calculates the radius range that this photon cone covers at a
+    specific distance from the focal point. This information can help to design
+    the placement of gratings.
 
     Parameters
     ----------
     photons : `~astropy.table.Table`
         Photon list with position and direction of photons leaving the mirror
     mirror_shell : int
-        Select mirror shell to look at (uses column ``mirror_shell`` in ``photons``
-        for filtering).
+        Select mirror shell to look at (uses column ``mirror_shell`` in
+        ``photons`` for filtering).
     x : float
-        Distance along the optical axis (assumed to coincide with the x axis with focal point
-        at 0).
+        Distance along the optical axis (assumed to coincide with the x axis
+        with focal point at 0).
     percentile : list of floats
-        The radius is calculated at the given percentiles. ``50`` would give the median radius.
-        The default of ``[1, 99]`` gives a radius range excluding extrem outliers such as
-        stray rays scattered into the extreme wing of the PSF.
+        The radius is calculated at the given percentiles. ``50`` would give
+        the median radius. The default of ``[1, 99]`` gives a radius range
+        excluding extrem outliers such as stray rays scattered into the extreme
+        wing of the PSF.
+
     '''
     p = photons[:]
     mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e8, pixsize=1.)
@@ -73,14 +77,15 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
 class RowlandTorus(MarxsElement):
     '''Torus with y axis as symmetry axis.
 
-    Note that the origin of the torus is the focal point, which is **may or may not**
-    be the same as the center of the torus.
+    Note that the origin of the torus is the focal point, which is
+    **may or may not** be the same as the center of the torus.
 
     Parameters
     ----------
     R : float
-        Radius of Rowland torus. ``r`` determines the radius of the Rowland circle,
-        ``R`` is then used to rotate that circle around the axis of symmetry of the torus.
+        Radius of Rowland torus. ``r`` determines the radius of the Rowland
+        circle, ``R`` is then used to rotate that circle around the axis of
+        symmetry of the torus.
     r : float
         Radius of Rowland circle
     '''
@@ -105,12 +110,13 @@ class RowlandTorus(MarxsElement):
         Parameters
         ----------
         xyz : np.array of shape (N, 3) or (3)
-            Coordinates of points in euklidean space. The quartic is calculated for
-            those points.
+            Coordinates of points in euklidean space. The quartic is calculated
+            for those points.
         transform : bool
-            If ``True`` transform ``xyz`` from the global coordinate system into the
-            local coordinate system of the torus. If this transformation is done in the
-            calling function already, set to ``False``.
+            If ``True`` transform ``xyz`` from the global coordinate system
+            into the local coordinate system of the torus. If this
+            transformation is done in the calling function already, set to
+        ``False``.
 
         Returns
         -------
@@ -126,33 +132,36 @@ class RowlandTorus(MarxsElement):
         return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., [0,2]]**2).sum(axis=-1)
 
     def solve_quartic(self, x=None, y=None, z=None, interval=[0, 1], transform=True):
-        '''Solve the quartic for points on the Rowland torus in Cartesian coordinates.
+        '''Solve the quartic on the Rowland torus in Cartesian coordinates.
 
-        This method solves the quartic equation for positions on the Rowland Torus for
-        cases where two of the Cartesian coordinates are fixed (e.g. y and z) and the third
-        one (e.g. x) needs to be computed. This function is intended as a convenience for a
-        common use case. In more general cases, evaluate the :meth:`RowlandTorus.quartic` and
-        search for the roots of that function.
+        This method solves the quartic equation for positions on the Rowland
+        Torus for cases where two of the Cartesian coordinates are fixed
+        (e.g. y and z) and the third one (e.g. x) needs to be computed. This
+        function is intended as a convenience for a common use case. In more
+        general cases, evaluate the :meth:`RowlandTorus.quartic` and search for
+        the roots of that function.
 
         Parameters
         ----------
         x, y, z : float or None
-            Set two of these coordinates to fixed numbers. This method will solve for the
-            coordinate set to ``None``.
+            Set two of these coordinates to fixed numbers. This method will
+            solve for the coordinate set to ``None``.
             x, y, z are defined in the global coordinate system.
         interval : np.array
-            [min, max] for the search. The quartic can have up to four solutions because a
-            line can intersect a torus in four points and this interval must bracket one and only
-            one solution.
+            [min, max] for the search. The quartic can have up to four
+            solutions because a line can intersect a torus in four points and
+            this interval must bracket one and only one solution.
         transform : bool
-            If ``True`` transform ``xyz`` from the global coordinate system into the
-            local coordinate system of the torus. If this transformation is done in the
-            calling function already, set to ``False``.
+            If ``True`` transform ``xyz`` from the global coordinate system
+            into the local coordinate system of the torus. If this
+            transformation is done in the calling function already, set to
+            ``False``.
 
         Returns
         -------
         coo : float
             Value of the fitted coordinate.
+
         '''
         n_Nones = 0
         for i, c in enumerate([x, y, z]):
@@ -231,12 +240,14 @@ class RowlandTorus(MarxsElement):
         Parameters
         ----------
         xyzw : np.array of shape (N, 4)
-            Coordinates of points on the torus surface in homogeneous coordiantes.
+            Coordinates of points on the torus surface in homogeneous
+            coordiantes.
 
         transform : bool
-            If ``True`` transform ``xyz`` from the global coordinate system into the
-            local coordinate system of the torus. If this transformation is done in the
-            calling function already, set to ``False``.
+            If ``True`` transform ``xyz`` from the global coordinate system
+            into the local coordinate system of the torus. If this
+            transformation is done in the calling function already, set to
+            ``False``.
 
         intersectvalid : bool
             When ``r >=R`` the torus can intersect with itself. At these points,
@@ -282,8 +293,9 @@ class RowlandTorus(MarxsElement):
         Returns
         -------
         gradient : np.array
-            Gradient vector field in homogeneous coordinates. One vector corresponds to each
-            input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
+            Gradient vector field in homogeneous coordinates. One vector
+            corresponds to each input point. The shape of ``gradient`` is the
+            same as the shape of ``xyz``.
         '''
         if not ((theta.ndim == 1) and (phi.ndim == 1)):
             raise ValueError('theta and phi must be 1-d arrays.')
@@ -304,14 +316,15 @@ class RowlandTorus(MarxsElement):
         Parameters
         ----------
         xyzw : np.array of shape (N, 4)
-            Coordinates of points in euklidean space. The quartic is calculated for
-            those points. All points need to be on the surface of the torus.
+            Coordinates of points in euklidean space. The quartic is calculated
+            for those points. All points need to be on the surface of the torus.
 
         Returns
         -------
         gradient : np.array
-            Gradient vector field in euklidean coordinates. One vector corresponds to each
-            input point. The shape of ``gradient`` is the same as the shape of ``xyz``.
+            Gradient vector field in euklidean coordinates. One vector
+            corresponds to each input point. The shape of ``gradient`` is the
+            same as the shape of ``xyz``.
         '''
         if not len(xyzw.shape) == 2:
             raise ValueError('Shape of input array must be (N, 4).')
@@ -321,21 +334,22 @@ class RowlandTorus(MarxsElement):
     def xyz_from_radiusangle(self, radius, angle, interval):
         '''Get Cartesian coordiantes for radius, angle on the rowland circle.
 
-        y, z are calculated from the radius and angle of polar coordiantes in a plane;
-        then x is determined from the condition that the point lies on the Rowland circle.
-        The plane is perpendicular to the optical axis that defines the Rowland circle.
+        y, z are calculated from the radius and angle of polar coordiantes in a
+        plane; then x is determined from the condition that the point lies on
+        the Rowland circle.  The plane is perpendicular to the optical axis
+        that defines the Rowland circle.
 
         Parameters
         ----------
         radius, angle : float or np.array of shape (n,)
-            Polar coordinates in a plane perpendicular to the optical axis (where the
-            optical axis is parallel to the x-axis and goes through the origin of the
-            `RowlandTorus`.
+            Polar coordinates in a plane perpendicular to the optical axis
+            (where the optical axis is parallel to the x-axis and goes through
+            the origin of the `RowlandTorus`.
             ``angle=0`` conicides with the local y-axis.
         interval : np.array
-            [min, max] for the search. The quartic can have up to four solutions because a
-            line can intersect a torus in four points and this interval must bracket one and only
-            one solution.
+            [min, max] for the search. The quartic can have up to four
+            solutions because a line can intersect a torus in four points and
+            this interval must bracket one and only one solution.
 
         Returns
         -------
@@ -352,22 +366,25 @@ class RowlandTorus(MarxsElement):
 def design_tilted_torus(f, alpha, beta):
     '''Design a torus with specifications similar to Heilmann et al. 2010
 
-    A `RowlandTorus` is fully specified with the parameters ``r``, ``R`` and ``pos4d``.
-    However, in practice, these numbers might be derived from other values.
-    This function calculates the parameters of a RowlandTorus, based on a different
-    set of input values.
+    A `RowlandTorus` is fully specified with the parameters ``r``, ``R`` and
+    ``pos4d``.  However, in practice, these numbers might be derived from other
+    values.  This function calculates the parameters of a RowlandTorus, based
+    on a different set of input values.
 
     Parameters
     ----------
     f : float
         distance between focal point and on-axis grating. Should be as large as
-        possible given the limitations of the spacecraft to increase the resolution.
+        possible given the limitations of the spacecraft to increase the
+        resolution.
     alpha : float (in radian)
-        angle between optical axis and the line (on-axis grating - center of Rowland circle).
+        angle between optical axis and the line (on-axis grating - center of
+        Rowland circle).
         A typical value could be twice the blaze angle.
     beta : float (in radian)
-        angle between optical axis and the line (on-axis grating - hinge), where the hinge
-        is a point on the Rowland circle. The Rowland Torus will be constructed by rotating
+        angle between optical axis and the line (on-axis grating - hinge),
+        where the hinge is a point on the Rowland circle. The Rowland Torus
+        will be constructed by rotating
         the Rowland Circle around the axis (focal point - hinge).
         The center of the Rowland Torus will be the point where the line
         (on-axis grating - center of Rowland circle) intersects the line
@@ -376,8 +393,9 @@ def design_tilted_torus(f, alpha, beta):
     Returns
     -------
     R : float
-        Radius of Rowland torus. ``r`` determines the radius of the Rowland circle,
-        ``R`` is then used to rotate that circle around the axis of symmetry of the torus.
+        Radius of Rowland torus. ``r`` determines the radius of the Rowland
+        circle, ``R`` is then used to rotate that circle around the axis of
+        symmetry of the torus.
     r : float
         Radius of Rowland circle
     pos4d : np.array of shape (4, 4)
@@ -385,8 +403,8 @@ def design_tilted_torus(f, alpha, beta):
     Notes
     -----
     The geometry used here really needs to be explained in a figure.
-    However, some notes to explain at least the meaning of the symbols on the code
-    are in order:
+    However, some notes to explain at least the meaning of the symbols on the
+    code are in order:
 
     - Cat : position of on-axis CAT grating (where the Rowland circle intersects the on-axis beam)
     - H : position of hinge
@@ -420,10 +438,10 @@ class ElementPlacementError(Exception):
 class RowlandCircleArray(ParallelCalculated, OpticalElement):
     '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
-    When a `RowlandCircleArray` is initialized, it places a number of elements on the
-    Rowland circle. These elements could be any optical element, but the most
-    common use for this structure is an array of CCDs capturing a spread-out
-    grating spectrum like ACIS-S in Chandra.
+    When a `RowlandCircleArray` is initialized, it places a number of elements
+    on the Rowland circle. These elements could be any optical element, but the
+    most common use for this structure is an array of CCDs capturing a
+    spread-out grating spectrum like ACIS-S in Chandra.
 
     After generation, individual positions can be adjusted by hand by
     editing the attributes `elem_pos` or `elem_uncertainty`.
@@ -437,15 +455,17 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
     ----------
     rowland : RowlandTorus
     d_element : float
-        Size of the edge of each element, which is assumed to be flat and square.
-        ``d_element`` can be larger than the actual size of the optical element to
-        accommodate a minimum distance between elements from mounting structures.
+        Size of the edge of each element, which is assumed to be flat and
+        square. ``d_element`` can be larger than the actual size of the optical
+        element to accommodate a minimum distance between elements from
+        mounting structures.
     theta : list of floats
         Angle on the Rowland circle to be covered by detectors.
-        For a continuous array of detectors, this is just a list with two elements
-        ``[inner, outer]``. However, it is also possible to list more than one range
-        in a flat list, to e.g. set one detector in the focus to detect the zeroth
-        order and offset others: ``[inner_1, outer_1, inner_2, outer_2, ...]``.
+        For a continuous array of detectors, this is just a list with two
+        elements ``[inner, outer]``. However, it is also possible to list more
+        than one range in a flat list, to e.g. set one detector in the focus to
+        detect the zeroth order and offset others:
+        ``[inner_1, outer_1, inner_2, outer_2, ...]``.
     '''
 
     id_col = 'CCD_ID'
@@ -508,13 +528,14 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
 class LinearCCDArray(ParallelCalculated, OpticalElement):
     '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
-    When a `LinearCCDArray` is initialized, it places a number of elements on the
-    Rowland circle. These elements could be any optical element, but the most
-    common use for this structure is an array of CCDs capturing a spread-out
-    grating spectrum like ACIS-S in Chandra.
+    When a `LinearCCDArray` is initialized, it places a number of elements on
+    the Rowland circle. These elements could be any optical element, but the
+    most common use for this structure is an array of CCDs capturing a
+    spread-out grating spectrum like ACIS-S in Chandra.
 
-    After generation, individual positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for details.
+    After generation, individual positions can be adjusted by hand by editing
+    the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for
+    details.
 
     After any of the `elem_pos`, `elem_uncertainty` or
     `uncertainty` is changed, `generate_elements` needs to be
@@ -524,23 +545,26 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
     ----------
     rowland : RowlandTorus
     d_element : float
-        Size of the edge of each element, which is assumed to be flat and square.
-        (``d_element`` can be larger than the actual size of the optical element to
-        accommodate a minimum distance between elements from mounting structures.
+        Size of the edge of each element, which is assumed to be flat and
+        square. (``d_element`` can be larger than the actual size of the
+        optical element to accommodate a minimum distance between elements
+        from mounting structures.
     x_range: list of 2 floats
-        Minimum and maximum of the x coordinate that is searched for an intersection
-        with the torus. A line can intersect a torus in up to four points. ``x_range``
-        specififes the range for the numerical search for the intersection point.
+        Minimum and maximum of the x coordinate that is searched for an
+        intersection  with the torus. A line can intersect a torus in up to
+        four points. ``x_range`` specifies the range for the numerical search
+        for the intersection point.
     radius : list of floats
-        Inner and outer radius as measured in the yz-plane from the center of the
-        `LinearCCDArray`. Can be negative to place elements on both sides of the center
-        of the `LinearCCDArray`. Elements will be placed ``d_element`` apart; if a
-        non-integer number of elements is needed to cover the ``radius``, elements will
-        reach beyond the given numbers.
-        For a continuous array of detectors, this is just a list with two elements
-        ``[r_inner, r_outer]``. However, it is also possible to list more than one range
-        in a flat list, to e.g. set one detector in the focus to detect the zeroth
-        order and offset others: ``[r_inner_1, r_outer_1, r_inner_2, r_outer_2, ...]``.
+        Inner and outer radius as measured in the yz-plane from the center of
+        the `LinearCCDArray`. Can be negative to place elements on both sides
+        of the center of the `LinearCCDArray`. Elements will be placed
+        ``d_element`` apart; if a non-integer number of elements is needed to
+        cover the ``radius``, elements will reach beyond the given numbers.
+        For a continuous array of detectors, this is just a list with two
+        elements ``[r_inner, r_outer]``. However, it is also possible to list
+        more than one range in a flat list, to e.g. set one detector in the
+        focus to detect the zeroth order and offset others:
+        ``[r_inner_1, r_outer_1, r_inner_2, r_outer_2, ...]``.
     phi : floats
         Direction of line through the centers of all elements. :math:`\phi=0`
         is on the positive y axis. Angles are given in radian.
@@ -617,14 +641,16 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
         '''Distributes elements as evenly as possible along a radius.
 
         .. note::
-           Unlike `distribute_elements_on_arc`, this function will have elements reaching
-           beyond the limits of the radius, if the distance between inner and outer radius
-           is not an integer multiple of the element size.
+           Unlike `distribute_elements_on_arc`, this function will have
+           elements reaching beyond the limits of the radius, if the distance
+           between inner and outer radius is not an integer multiple of the
+           element size.
 
         Returns
         -------
         radii : np.ndarray
             Radii of the element *center* positions.
+
         '''
         radii = []
         for i in range(len(self.radius) // 2):
@@ -638,43 +664,49 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
 class GratingArrayStructure(LinearCCDArray):
     '''A collection of diffraction gratings on the Rowland torus.
 
-    When a ``GratingArrayStructure`` (GAS) is initialized, it places
-    elements in the space available on the Rowland circle, most
-    commonly, this class is used to place grating facets.
+    When a ``GratingArrayStructure`` (GAS) is initialized, it places elements
+    in the space available on the Rowland circle, most commonly, this class is
+    used to place grating facets.
 
     After generation, individual facet positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for details.
+    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for
+    details.
 
-    After any of the `elem_pos`, `elem_uncertainty` or
-    `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the facets on the GAS.
+    After any of the `elem_pos`, `elem_uncertainty` or `uncertainty` is
+    changed, `generate_elements` needs to be called to regenerate the facets on
+    the GAS.
 
     Parameters
     ----------
     rowland : RowlandTorus
     d_element : float
         Size of the edge of a element, which is assumed to be flat and square.
-        (``d_element`` can be larger than the actual size of the silicon membrane to
-        accommodate a minimum thickness of the surrounding frame.)
+        (``d_element`` can be larger than the actual size of the silicon
+        membrane to accommodate a minimum thickness of the surrounding frame.)
+
     x_range: list of 2 floats
-        Minimum and maximum of the x coordinate that is searched for an intersection
-        with the torus. A ray can intersect a torus in up to four points. ``x_range``
-        specififes the range for the numerical search for the intersection point.
+        Minimum and maximum of the x coordinate that is searched for an
+        intersection with the torus. A ray can intersect a torus in up to four
+        points. ``x_range`` specififes the range for the numerical search for
+        the intersection point.
+
     radius : list of 2 floats
         Inner and outer radius of the GAS as measured in the yz-plane from the
         origin.
+
     phi : list of 2 floats
-        Bounding angles for a segment covered by the GSA. :math:`\phi=0`
-        is on the positive y axis. The segment fills the space from ``phi1`` to
-        ``phi2`` in the usual mathematical way (counterclockwise).
-        Angles are given in radian. Note that ``phi[1] < phi[0]`` is possible if
-        the segment crosses the y axis.
+        Bounding angles for a segment covered by the GSA. :math:`\phi=0` is on
+        the positive y axis. The segment fills the space from ``phi1`` to
+        ``phi2`` in the usual mathematical way (counterclockwise).  Angles are
+        given in radian. Note that ``phi[1] < phi[0]`` is possible if the
+        segment crosses the y axis.
 
     Notes
     -----
-    This class derives from `LinearCCDArray`, which is a 1D arrangement of elements.
-    `GratingArrayStructure` also picks radii, but places several elements at
-    each radius.
+    This class derives from `LinearCCDArray`, which is a 1D arrangement of
+    elements.  `GratingArrayStructure` also picks radii, but places several
+    elements at each radius.
+
     '''
 
     tangent_to_torus = False
@@ -717,8 +749,9 @@ class GratingArrayStructure(LinearCCDArray):
 
         .. note::
 
-          Contrary to `distribute_elements_on_radius`, elements never stretch beyond the limits set by the ``phi`` parameter
-          of the GAS. If an arc segment is not wide enough to accommodate at least a single element,
+          Contrary to `distribute_elements_on_radius`, elements never stretch
+          beyond the limits set by the ``phi`` parameter of the GAS. If an arc
+          segment is not wide enough to accommodate at least a single element,
           it will go empty.
 
         Parameters
@@ -730,6 +763,7 @@ class GratingArrayStructure(LinearCCDArray):
         -------
         centerangles : array
             The phi angles for centers of the elements at ``radius``.
+
         '''
         # arc is most crowded on inner radius
         n = self.max_elements_on_arc(radius - self.d_element / 2)
@@ -754,9 +788,10 @@ class GratingArrayStructure(LinearCCDArray):
         Returns
         -------
         pos4d : list of arrays
-            List of affine transformations that bring an optical element centered
-            on the origin of the coordinate system with the active plane in the
-            yz-plane to the required facet position on the Rowland torus.
+            List of affine transformations that bring an optical element
+            centered on the origin of the coordinate system with the active
+            plane in the yz-plane to the required facet position on the Rowland
+            torus.
         '''
         pos4d = []
 
@@ -777,17 +812,16 @@ class GratingArrayStructure(LinearCCDArray):
 class RectangularGrid(ParallelCalculated, OpticalElement):
     '''A collection of diffraction gratings on the Rowland torus.
 
-    This class is similar to ``marxs.design.rowland.GratingArrayStructure`` but instead
-    of placing elements on concentric circles, they are placed to fill a rectangular
-    area.
+    This class is similar to ``marxs.design.rowland.GratingArrayStructure`` but
+    instead of placing elements on concentric circles, they are placed to fill
+    a rectangular area.
 
-    When a is initialized, it places
-    elements in the space available on the Rowland circle, most
-    commonly, this class is used to place grating facets.
+    When a is initialized, it places elements in the space available on the
+    Rowland circle, most commonly, this class is used to place grating facets.
 
     After generation, individual facet positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See `marxs.simulation.Parallel`
-    for details.
+    editing the attributes `elem_pos` or `elem_uncertainty`. See
+    `marxs.simulation.Parallel` for details.
 
     After any of the `elem_pos`, `elem_uncertainty` or
     `uncertainty` is changed, `generate_elements` needs to be
@@ -798,14 +832,16 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
     rowland : RowlandTorus
     d_element : float
         Size of the edge of a element, which is assumed to be flat and square.
-        (``d_element`` can be larger than the actual size of the silicon membrane to
-        accommodate a minimum thickness of the surrounding frame.)
+        (``d_element`` can be larger than the actual size of the silicon
+        membrane to accommodate a minimum thickness of the surrounding frame.)
     x_range: list of 2 floats
-        Minimum and maximum of the x coordinate that is searched for an intersection
-        with the torus. A ray can intersect a torus in up to four points. ``x_range``
-        specififes the range for the numerical search for the intersection point.
+        Minimum and maximum of the x coordinate that is searched for an
+        intersection with the torus. A ray can intersect a torus in up to four
+        points. ``x_range`` specififes the range for the numerical search for
+        the intersection point.
     y_range, z_range: lost of two floats
         limits of the rectangular area where gratings are placed.
+
     '''
 
     id_col = 'facet'
