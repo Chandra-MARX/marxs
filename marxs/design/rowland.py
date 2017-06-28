@@ -184,7 +184,7 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
-    def parameteric_surface(self, theta, phi):
+    def parametric_surface(self, theta, phi):
         '''Parametric representation of surface of torus.
 
         In contrast to `parametric` the input parameters here are 1-d arrays

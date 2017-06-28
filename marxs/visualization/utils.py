@@ -9,7 +9,6 @@ from __future__ import division
 import warnings
 import numpy as np
 
-from ..math import utils as mutils
 
 class MARXSVisualizationWarning(Warning):
     '''Warning class for MARXS objects missing from plotting'''
@@ -35,23 +34,23 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
     Parameters
     ----------
     plot_registry : dict
-        Keys are the names of the shape of an object and values in this dictionary
-        are functions that know how to plot this type of shape. The appropriate
-        plotting function is then called with the input `obj`, `display` and any
-        other keyword arguments.
-    obj : `marxs.base.MarxsElement`
+         Keys are the names of the shape of an object and values in this
+        dictionary are functions that know how to plot this type of shape. The
+        appropriate plotting function is then called with the input `obj`,
+        `display` and any other keyword arguments.
+     obj : `marxs.base.MarxsElement`
         The element that should be plotted.
     display : dict of None
-        Dictionary with display settings. If this is ``None``, ``obj.display`` is
-        used. If that is also ``None`` then the objects is skipped.
-    kwargs : other keyword arguments
+         Dictionary with display settings. If this is ``None``, ``obj.display``
+        is used. If that is also ``None`` then the objects is skipped.
+     kwargs : other keyword arguments
         These arguments are just passed through to the plotting function.
 
     Returns
     -------
     out : different
-        The output from the plotting function that was executed is passed through.
-        Different plotting backends return different kinds of output.
+        The output from the plotting function that was executed is passed
+        through.  Different plotting backends return different kinds of output.
     '''
     if display is None:
         if hasattr(obj, 'display') and (obj.display is not None):

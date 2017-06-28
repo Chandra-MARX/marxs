@@ -30,10 +30,12 @@ def test_resolvingpower_consistency():
     '''Compare different methods to measure the resolving power.
 
     This test only ensures consistency, not correctness. However, most of the
-    underlying static function are implemented in other packages and tested there.
+    underlying static function are implemented in other packages and tested
+    there.
 
-    This test requires a full pipeline to set up the input photons correctly and it
-    thus also serves as an integration test.
+    This test requires a full pipeline to set up the input photons correctly
+    and it thus also serves as an integration test.
+
     '''
     entrance = np.array([12000., 0., 0.])
     aper = CircleAperture(position=entrance, zoom=100)
