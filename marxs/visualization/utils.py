@@ -9,7 +9,6 @@ from __future__ import division
 import warnings
 import numpy as np
 
-from ..math import utils as mutils
 
 class MARXSVisualizationWarning(Warning):
     '''Warning class for MARXS objects missing from plotting'''
@@ -35,23 +34,23 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
     Parameters
     ----------
     plot_registry : dict
-        Keys are the names of the shape of an object and values in this dictionary
-        are functions that know how to plot this type of shape. The appropriate
-        plotting function is then called with the input `obj`, `display` and any
-        other keyword arguments.
+        Keys are the names of the shape of an object and values in this
+        dictionary are functions that know how to plot this type of shape. The
+        appropriate plotting function is then called with the input `obj`,
+        `display` and any other keyword arguments.
     obj : `marxs.base.MarxsElement`
         The element that should be plotted.
     display : dict of None
-        Dictionary with display settings. If this is ``None``, ``obj.display`` is
-        used. If that is also ``None`` then the objects is skipped.
+        Dictionary with display settings. If this is ``None``, ``obj.display``
+        is used. If that is also ``None`` then the objects is skipped.
     kwargs : other keyword arguments
         These arguments are just passed through to the plotting function.
 
     Returns
     -------
     out : different
-        The output from the plotting function that was executed is passed through.
-        Different plotting backends return different kinds of output.
+        The output from the plotting function that was executed is passed
+        through.  Different plotting backends return different kinds of output.
     '''
     if display is None:
         if hasattr(obj, 'display') and (obj.display is not None):
@@ -155,12 +154,12 @@ def plane_with_hole(outer, inner):
     Parameters
     ----------
     outer, inner : np.ndarray of shape (n, 3)
-        Coordinates in x,y,z of points that define the inner and outer boundary.
-        ``outer`` and ``inner`` can have a different number of points,
-        but points need to be listed in the same orientation (e.g. clockwise)
-        for both and the starting points need to have a similar angle as seen from the
-        center (e.g. for a plane with z=0, both ``outer`` and ``inner`` could list
-        a point close to the y-axis first.
+        Coordinates in x,y,z of points that define the inner and outer
+        boundary.  ``outer`` and ``inner`` can have a different number of
+        points, but points need to be listed in the same orientation
+        (e.g. clockwise) for both and the starting points need to have a
+        similar angle as seen from the center (e.g. for a plane with z=0, both
+        ``outer`` and ``inner`` could list a point close to the y-axis first.
 
     Returns
     -------
@@ -187,6 +186,7 @@ def plane_with_hole(outer, inner):
        [2, 3, 7],
        [3, 7, 4],
        [3, 0, 4]])
+
     '''
     n_out = outer.shape[0]
     n_in = inner.shape[0]

@@ -90,8 +90,8 @@ def box(obj, display, viewer=None):
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
     corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
-    b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2], triangles,
-                        color=display['color'])
+    b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2],
+                             triangles, color=display['color'])
     return b
 
 @format_doc(doc_plot)
@@ -101,7 +101,8 @@ def cylinder(obj, display, viewer=None):
 
     x0 = obj.geometry('center') - obj.geometry('v_x')
     x1 = obj.geometry('center') + obj.geometry('v_x')
-    c = mlab.plot3d([x0[0], x1[0]], [x0[1], x1[1]], [x0[2], x1[2]], color=display['color'],
+    c = mlab.plot3d([x0[0], x1[0]], [x0[1], x1[1]], [x0[2], x1[2]],
+                    color=display['color'],
                     tube_radius=np.linalg.norm(obj.geometry('v_y')),
                     tube_sides=display.get('tube_sides', 20))
     return c
@@ -116,16 +117,15 @@ def plot_rays(data, scalar=None, viewer=None,
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Eukledian position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
-        This quantity is used to color the rays. If ``None`` all rays will have the same
-        color. If it has n elements, each ray will have exactly one color (e.g. color
-        according to the energy of the ray), if it has n*N elements, rays will be
-        multicolored.
+        This quantity is used to color the rays. If ``None`` all rays will have
+        the same color. If it has n elements, each ray will have exactly one
+        color (e.g. color according to the energy of the ray), if it has n*N
+        elements, rays will be multicolored.
     viewer : ``mayavi.core.scene.Scene instance``.
-        If None, the source is not added
-        to any figure, and will be added automatically by the modules or filters.
-        If False, no figure will be created by modules or filters applied to the
-        source: the source can only be used for testing, or numerical algorithms,
-        not visualization.
+       If None, the source is not added to any figure, and will be added
+        automatically by the modules or filters.  If False, no figure will be
+        created by modules or filters applied to the source: the source can
+        only be used for testing, or numerical algorithms, not visualization.
     kwargssurface : dict
         keyword arguments for ``mayavi.mlab.pipeline.surface``
 
@@ -133,6 +133,7 @@ def plot_rays(data, scalar=None, viewer=None,
     -------
     out : mayavi ojects
         This just passes through the information returned from the mayavi calls.
+
     '''
     from mayavi import mlab
 
@@ -194,22 +195,24 @@ def plot_object(obj, display=None, viewer=None, **kwargs):
     obj : `marxs.base.MarxsElement`
         The element that should be plotted.
     display : dict of None
-        Dictionary with display settings. If this is ``None``, ``obj.display`` is
-        used. If that is also ``None`` then the objects is skipped.
+        Dictionary with display settings. If this is ``None``, ``obj.display``
+        is used. If that is also ``None`` then the objects is skipped.
     viewer : ``mayavi.core.scene.Scene``
-        If None, the source is not added
-        to any figure, and will be added automatically by the modules or filters.
-        If False, no figure will be created by modules or filters applied to the
-        source: the source can only be used for testing, or numerical algorithms,
-        not visualization.
+        If None, the source is not added to any figure, and will be added
+        automatically by the modules or filters.  If False, no figure will be
+        created by modules or filters applied to the source: the source can
+        only be used for testing, or numerical algorithms, not visualization.
     kwargs
-        All other parameters will be passed on to the individual plotting methed.
+        All other parameters will be passed on to the individual plotting
+        method.
 
     Parameters
     ----------
     out : mayavi object
         Return the result of a mayavi plotting method.
+
     '''
+    kwargs['viewer'] = viewer
     out = utils.plot_object_general(plot_registry, obj, display, **kwargs)
 
     if (out is not None) and not isinstance(out, list):

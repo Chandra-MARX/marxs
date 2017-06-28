@@ -41,6 +41,8 @@ Bug fixes
   polarization. This needs to be applied to the outgoing polarization vector,
   too. [#148]
 
+- Plotting of Rowland Torus failed in Mayavi due to typo. [#154]
+
 
 
 Other changes and additions
