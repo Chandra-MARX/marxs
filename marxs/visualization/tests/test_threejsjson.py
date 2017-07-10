@@ -2,16 +2,31 @@
 import tempfile
 import numpy as np
 import pytest
-
+import copy
 from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
 from ..threejsjson import plot_rays, plot_object, write
+from ..utils import MARXSVisualizationWarning
 
 try:
     import jsonschema
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
+
+
+def test_skip_plot():
+    '''Test that plot is skipped with no warning if explicitly
+    requested.'''
+    det = FlatDetector(zoom=2, position=[2., 3., 4.])
+    # First on does not exist, but second one should lead to skip
+    # with no warning
+    det.display = copy.copy(det.display)
+    det.display['shape'] = 'boxxx; None'
+    out = plot_object(det)
+
+    # check that only one warning was raised
+    assert out is None
 
 
 def test_box():
