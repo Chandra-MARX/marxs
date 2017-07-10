@@ -5,6 +5,8 @@ New Features
 ^^^^^^^^^^^^
 - Add ability to plot cylinders in Mayavi (for support struts) [#147]
 
+- Add shape `"None"` (as a string) to avoid plotting an object [#157]
+
 API Changes
 ^^^^^^^^^^^
 - Remove ``marxs.sources.LabPointSource``, which was just a special case of

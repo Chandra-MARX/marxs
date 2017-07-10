@@ -38,6 +38,8 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
         dictionary are functions that know how to plot this type of shape. The
         appropriate plotting function is then called with the input `obj`,
         `display` and any other keyword arguments.
+        If the shape is ``"None"`` (as a string), no plotting function is
+        called.
     obj : `marxs.base.MarxsElement`
         The element that should be plotted.
     display : dict of None
@@ -65,7 +67,9 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
         shape = display['shape']
         shapes = [s.strip() for s in shape.split(';')]
         for s in shapes:
-            if s in plot_registry:
+            if s == 'None':
+                break
+            elif s in plot_registry:
                 # turn into valid color tuple
                 display['color'] = get_color(display)
                 out = plot_registry[s](obj, display,  **kwargs)
