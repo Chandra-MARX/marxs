@@ -68,7 +68,7 @@ In this example, we use MARXS to explain how sub-aperturing works. Continuing th
 2d plot
 -------
 
-The ``hetg`` has several hundred gratings. We want to know how photons that go through a particular set of gratings are  distributed throughcompared to the total point-spread function. Therefore, we assign a color to every sector of gratings and in our plots, we color gratings in this sector and photons that passed through it accordingly.
+ We want to know how photons that go through a particular set of gratings are  distributed throughcompared to the total point-spread function. Therefore, we assign a color to every sector of gratings and in our plots, we color gratings in this sector and photons that passed through it accordingly.
 
 .. plot:: pyplots/vis_subaperturing.py
    :include-source:
