@@ -21,14 +21,15 @@ def sigma_clipped_std(data, **kwargs):
     return std
 
 
-def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipped_std,
+def find_best_detector_position(photons, col='det_x',
+                                objective_func=sigma_clipped_std,
                                 orientation=np.eye(3), **kwargs):
-    '''Numerically optimize the position of a detector to find the position of best focus.
+    '''Numerically find the position of best focus.
 
-    This routine places detectors at different positions and calculates the width of the
-    photon distribution for each position.
-    As a side effect, ``photons`` will be set to the intersection with the last try of
-    the detector position.
+    This routine places detectors at different positions and
+    calculates the width of the photon distribution for each position.
+    As a side effect, ``photons`` will be set to the intersection with
+    the last try of the detector position.
 
     Parameters
     ----------
@@ -37,19 +38,19 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
     col : string
         Column name of the photon distribution to be minimized.
         The default is set for detectors that look for a grating signal
-        (which is dispersed in ``det_y
-    `` direction).
+        (which is dispersed in ``det_y`` direction).
     objective_func : function
         Function that accepts a np.array as input and return the width.
     rotation : np.array of shape (3,3)
-        Rotation matrix for the detector. By default the detector is parallel to the yz plane
-        of the global coordinate system (see `pos4d`).
+        Rotation matrix for the detector. By default the detector is parallel
+        to the yz plane of the global coordinate system (see `pos4d`).
     kwargs : see `scipy.optimize.minimize`
         All other keyword argument will be passed to `scipy.optimize.minimize`.
     Returns
     -------
     opt : OptimizeResult
         see `scipy.optimize.minimize`
+
     '''
     def width(x, photons):
         mdet = FlatDetector(position=np.array([x, 0, 0]), orientation=orientation, zoom=1e5, pixsize=1.)
@@ -60,8 +61,7 @@ def find_best_detector_position(photons, col='det_x', objective_func=sigma_clipp
                                    **kwargs)
 
 
-
-def detected_fraction(photons, labels, filterfunc=None, col='order'):
+def detected_fraction(photons, labels, col='order'):
     '''Calculate the fraction of photons detected for some integer label
 
     While written for calculating Aeff per order, this can be used with any discrete
@@ -73,12 +73,8 @@ def detected_fraction(photons, labels, filterfunc=None, col='order'):
         Photon event list
     labels : np.array
         Numeric (integer) labels that are found in column ``col``. When, e.g.,
-        the effective area per order is calculated, this array should contain the
-        order numbers for which the calculation will be done.
-    filterfunc : callable or ``None``
-        If not ``None``, a function that takes the photon table and returns an
-        index array. This can be used, e.g. filter out photons that hit particular CCDs or
-        hot columns.
+        the effective area per order is calculated, this array should contain
+        the order numbers for which the calculation will be done.
     col : string
         Column name for the order column.
 

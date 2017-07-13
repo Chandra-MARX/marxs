@@ -162,7 +162,7 @@ def weighted_per_order(data, orders, energy, gratingeff):
     return np.ma.average(data, axis=0, weights=weights)
 
 
-def resolvingpower_from_photonlist(photons, orders, filterfunc=None,
+def resolvingpower_from_photonlist(photons, orders,
                                    col='proj_x', zeropos=None,
                                    ordercol='order'):
     '''Calculate the resolving power for several grating orders
@@ -180,10 +180,6 @@ def resolvingpower_from_photonlist(photons, orders, filterfunc=None,
         Photon event list
     orders : np.array
         Orders for which the resolving power will be calculated
-    filterfunc : callable or ``None``
-        If not ``None``, a function that takes the photon table and returns an
-        index array. This can be used, e.g. filter out photons that hit
-        particular CCDs or hot columns.
     col : string
         Column name for the column holding the dispersion coordinate.
     zeropos : float or ``None``
@@ -215,9 +211,6 @@ def resolvingpower_from_photonlist(photons, orders, filterfunc=None,
 
     for i, o in enumerate(orders):
         ind = (photons[ordercol] == o)
-        if filterfunc is not None:
-            ind = ind & filterfunc(photons)
-
         if ind.sum() > 20:
             meanpos, medianpos, stdpos = sigma_clipped_stats(photons[col][ind])
         else:
