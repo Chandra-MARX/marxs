@@ -85,13 +85,21 @@ We can also specify a spectrum, by giving binned energy and flux density values.
 .. plot:: pyplots/sourcespectrum.py
    :include-source:
 
+Two helpful hints:
 
-If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.table.Table` `read/write interface <https://astropy.readthedocs.org/en/stable/io/unified.html>`_ offers a convenient way to read it into python:
+- If the input spectrum is in some type of file, e.g. fits or ascii, the `astropy.table.Table` `read/write interface <https://astropy.readthedocs.org/en/stable/io/unified.html>`_ offers a convenient way to read it into python::
 
-    >>> from astropy.table import Table
-    >>> spectrum = Table.read('AGNspec.dat', format='ascii')  # doctest: +SKIP
-    >>> agn = PointSource(coords=SkyCoord("11h11m1s -2d3m2.3s", energy=spectrum)  # doctest: +SKIP
+      >>> from astropy.table import Table
+      >>> spectrum = Table.read('AGNspec.dat', format='ascii')  # doctest: +SKIP
+      >>> agn = PointSource(coords=SkyCoord("11h11m1s -2d3m2.3s", energy=spectrum)  # doctest: +SKIP
 
+- The normalization of the source flux is always is always given by the ``flux`` parameter, independent of the normalizion of ``spectrum['energy']``. If the input is a table and the flux density in that table is in units of photons/s/cm^2/keV, then it is easy to add all that up to set the flux parameter::
+
+    >>> flux = (spectrum['flux'][1:] * np.diff(spectrum['energy'])).sum()   # doctest: +SKIP
+    >>> agn = PointSource(coords=SkyCoord("11h11m1s -2d3m2.3s", energy=spectrum,
+    ...         flux=flux)  # doctest: +SKIP
+      
+    
 Lastly, "energy" can be a function that assigns energy values based on the timing of each photon. This allows for time dependent spectra. As an example, we show a function where the photon energy is 0.5 keV for times smaller than 5 s and 2 keV for larger times.
   
     >>> from marxs.source.source import Source

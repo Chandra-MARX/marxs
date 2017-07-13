@@ -49,9 +49,11 @@ Bug fixes
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Improved Documentation [#146]
+- Improve Documentation [#146]
 
-- Added polarization example to the documentation [#153]
+- Docs: Add polarization example [#153]
+
+- Docs: Add example to calculate flux from normalized spectrum [#160]
 
 - Add experiemental data for comparison to the polarization example [#158]
 
