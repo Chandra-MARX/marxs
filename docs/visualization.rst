@@ -99,15 +99,11 @@ On the plot, we see that photons from each sector (e.g. the sector that colors p
 
 Next, we want to show how the instrument that we use above looks in the 3d.
 Very similar to the previous example, we combine mirror, detector, and grating into `~marxs.simulator.Sequence`. We also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marxs.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
-Another changes compared to the 2d plotting is that we generate a lot fewer photons because the lines indicating the photon paths can obscure the gratings::
+Another change compared to the 2d plotting is that we generate a lot fewer photons because the lines indicating the photon paths can make the gratings hard to see in 3d if there are too many of them::
   
-.. doctest-requires:: mayavi
-
   >>> import numpy as np
-  >>> from mayavi import mlab
   >>> from astropy.coordinates import SkyCoord
   >>> from marxs import source, simulator
-  >>> from marxs.visualization.mayavi import plot_object, plot_rays
   >>> # object to save intermediate photons positions after every step of the simulaion
   >>> pos = simulator.KeepCol('pos')
   >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp], postprocess_steps=[pos])
@@ -119,11 +115,20 @@ Another changes compared to the 2d plotting is that we generate a lot fewer phot
   >>> photons = instrum(photons)
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
   >>> posdat = pos.format_positions()[ind, :, :]
+
+First, plot the objects that make up the instrument (aperture, mirror, gratings, detectors)::
+
+.. doctest-requires:: mayavi
+
+  >>> from mayavi import mlab
+  >>> from marxs.visualization.mayavi import plot_object, plot_rays
   >>> fig = mlab.figure(bgcolor=(1,1,1))
   >>> obj = plot_object(instrum, viewer=fig)
 
 Now, we plot the rays using their colorid and a global color map that matches the blue-red values that we assinged to the gratings already::
   
+.. doctest-requires:: mayavi
+
   >>> rays = plot_rays(posdat, scalar=photons['colorid'][ind],
   ...                  kwargssurface={'opacity': .5,
   ...                                 'line_width': 1,
@@ -131,6 +136,8 @@ Now, we plot the rays using their colorid and a global color map that matches th
 
 MARXS can also display non-physical objects. The following code will add a fraction of the Rowland torus::
 
+.. doctest-requires:: mayavi
+  
   >>> rowland.display['coo2'] = np.linspace(-.2, .2, 60)
   >>> obj = plot_object(rowland, viewer=fig)
 
