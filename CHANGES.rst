@@ -32,6 +32,10 @@ API Changes
   `~astropy.coordiantes.SkyCoord`. The later option was broken and has 
   been removed entirely. [#151]
 
+- Remove parameter ``filterfunc`` from `~marxs.analysis.gratings.resolvingpower_from_photonlist` and `~marxs.analysis.analysis.detected_fraction`.
+  Instead, the photon list can be filtered before calling these functions
+  just as easily. [#159]
+
 Bug fixes
 ^^^^^^^^^
 - Added missing keywords in display dict for some objects and fixed exception
