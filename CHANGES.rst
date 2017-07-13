@@ -53,6 +53,8 @@ Other changes and additions
 
 - Added polarization example to the documentation [#153]
 
+- Add experiemental data for comparison to the polarization example [#158]
+
 1.0 (14-Apr-2017)
 -----------------
 This is the first release intended to use. The Change log will begin starting 

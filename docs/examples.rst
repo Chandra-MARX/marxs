@@ -92,5 +92,7 @@ mirror on top of each other.
 We can now modify this script to use finer steps in angle and rotate the source around the full circle. In each step we record the number of photons detected and find that, indeed, it goes to zero when the two mirrors are located such that the s-polarized photons from the green mirror arrive with a parallel polarization on the blue mirror.
 
 .. plot:: pyplots/vis_pol.py
-   :include-source:
 
+The red circles in the plot mark experimental data from `Marshal et al. (2013) <http://adsabs.harvard.edu/abs/2013SPIE.8861E..1DM>`_ (error bars are smaller than plot symbols). In the lab, the distances between sources, mirrors, and detector are much longer than in our setup here. In the simulation, we set up the mirrors to work as if every photon hit with exactly the Brewster angle, while in practice the beam diverges visibly. In the lab, a more parallel beam can be achieved with larger distances between the components. We could change the coordiantes of the mirrors defined above to match the lab setup, but that would make the 3d display, which this example is meant to show-case, less appealing in the limited space of a website.
+
+While not an exact match, this plot in general verifies MARXS polarization calcualtions to experimental data.
