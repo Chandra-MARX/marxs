@@ -1,3 +1,18 @@
+1.2 (unreleased)
+----------------
+
+New Features
+^^^^^^^^^^^^
+
+API Changes
+^^^^^^^^^^^
+
+Bug fixes
+^^^^^^^^^
+
+Other changes and additions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 1.1 (15-Jul-2017)
 -----------------
 
@@ -48,7 +63,6 @@ Bug fixes
   too. [#148]
 
 - Plotting of Rowland Torus failed in Mayavi due to typo. [#154]
-
 
 
 Other changes and additions
