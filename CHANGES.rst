@@ -9,7 +9,9 @@ API Changes
 
 Bug fixes
 ^^^^^^^^^
-
+- `marxs.analysis.grating.resolvingpower_per_order` has been updated to ignore
+  photons with probability 0. [#162]
+  
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
