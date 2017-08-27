@@ -84,6 +84,8 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
         # if Rowland torus is tilted, might not be at phi=0.
         pg = photons.copy()
         pg = det(pg)
+        # Remove photons that miss a mirror etc.
+        pg = pg[pg['probability'] > 0.]
         zeropos, temp1, temp2 = sigma_clipped_stats(pg[col])
     else:
         det = detector
@@ -102,7 +104,8 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
 
         pg = photons.copy()
         pg = gratings(pg)
-        pg = pg[pg['order'] == order]  # Remove photons that slip between the gratings
+        # Remove photons that slip between the gratings
+        pg = pg[(pg['order'] == order) & (pg['probability'] > 0.)]
         if detector is None:
             xbest = find_best_detector_position(pg, objective_func=sigma_clipped_std)
             info['fit_results'].append(xbest)
