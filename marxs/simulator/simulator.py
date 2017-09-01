@@ -386,7 +386,7 @@ class ParallelCalculated(Parallel):
             rot_mat = np.zeros((3,3))
             rot_mat[:, 0] = n
             rot_mat[:, 1] = normalized_vector(p - n * np.dot(n, p))
-            rot_mat[:, 2] = normalized_vector(np.cross(n, rot_mat[1, :]))
+            rot_mat[:, 2] = normalized_vector(np.cross(n, rot_mat[:, 1]))
             pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
 
