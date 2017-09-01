@@ -1,8 +1,9 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+from transforms3d.affines import decompose
 
 from ...utils import generate_test_photons
-from .. import Parallel
+from .. import Parallel, ParallelCalculated
 from ...optics import FlatDetector as CCD
 from ...design import RowlandTorus, RowlandCircleArray
 
@@ -45,3 +46,17 @@ def test_parallel_calculated_normals():
     edge1 = e1.geometry('center') + e1.geometry('v_y')
     edge2 = e2.geometry('center') - e2.geometry('v_y')
     assert np.all(np.abs(edge1 - edge2) < 3.)
+
+def test_parallel_calculated_rotations():
+    '''Regression test #164: An index mix-up in calculate_elempos introduced
+    unintended zoom and shear in the elements.
+    '''
+    t = np.array([[0,0,0, 1]])
+    obj = ParallelCalculated(pos_spec=t,
+                             normal_spec=np.array([0, 0, 1, 1]),
+                             parallel_spec=np.array([.3, .4, .5, 1]),
+                             elem_class=CCD)
+    trans, rot, zoom, shear = decompose(obj.elem_pos[0])
+    assert np.allclose(t[0, :3], trans)
+    assert np.allclose(zoom, 1.)
+    assert np.allclose(shear, 0.)

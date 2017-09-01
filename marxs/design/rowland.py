@@ -816,7 +816,7 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
     instead of placing elements on concentric circles, they are placed to fill
     a rectangular area.
 
-    When a is initialized, it places elements in the space available on the
+    When initialized, it places elements in the space available on the
     Rowland circle, most commonly, this class is used to place grating facets.
 
     After generation, individual facet positions can be adjusted by hand by
