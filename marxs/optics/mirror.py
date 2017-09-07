@@ -10,12 +10,13 @@ from ..math.polarization import parallel_transport
 class PerfectLens(FlatOpticalElement):
     '''This describes an infinitely large lens that focusses all rays exactly.
 
-    This lens is just perfect, it has no astigmatism, no absorption, etc.
-    It is computationally cheap and if the details of the mirror are not important
-    to the simulation, a perfect lens might provide an approximation for
-    X-ray focussing. In many cases the ``PerfectLens`` will be combined with some blur
-    function (e.g. random scatter by 1 arsec) to achieve a simple approximation to some
-    mirror specification.
+    This lens is just perfect, it has no astigmatism, no absorption, etc.  It
+    is computationally cheap and if the details of the mirror are not important
+    to the simulation, a perfect lens might provide an approximation for X-ray
+    focussing. In many cases the ``PerfectLens`` will be combined with some
+    blur function (e.g. random scatter by 1 arsec) to achieve a simple
+    approximation to some mirror specification.
+
     '''
 
     display = {'color': (0., 0.5, 0.),
@@ -44,13 +45,13 @@ class ThinLens(FlatOpticalElement):
     This implements the so called "thin lens" approximation, see
     https://en.wikipedia.org/wiki/Thin_lens for details.
 
-    This class represents a lens that is (except for the thin lens approximation)
-    perfect: There is no absorption and no wavelength dependence of the refraction.
-    There is no physical material that allows to manufacture an X-ray lens in the same
-    shape as traditional glass lenses, but this class can  be used as an "effective"
-    model. It is computationally cheap and if the details of the mirror are not important
-    to the simulation, a thin lens might provide an approximation for
-    X-ray focussing.
+    This class represents a lens that is (except for the thin lens
+    approximation) perfect: There is no absorption and no wavelength dependence
+    of the refraction.  There is no physical material that allows to
+    manufacture an X-ray lens in the same shape as traditional glass lenses,
+    but this class can be used as an "effective" model. It is computationally
+    cheap and if the details of the mirror are not important to the simulation,
+    a thin lens might provide an approximation for X-ray focussing.
 
     Examples
     --------
@@ -71,6 +72,7 @@ class ThinLens(FlatOpticalElement):
     >>> mdet = optics.FlatDetector(pixsize=0.01, position=np.array([-9.6, 0, 0]), zoom=1e5)
     >>> photons = mdet(photons)
     >>> fig = plt.plot(photons['det_x'], photons['det_y'], 's')
+
     '''
 
     display = {'color': (0., 0.5, 0.),
