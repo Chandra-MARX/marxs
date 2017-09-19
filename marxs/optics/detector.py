@@ -7,7 +7,6 @@ from transforms3d.affines import decompose44, compose
 
 from .base import FlatOpticalElement, OpticalElement
 from ..math.utils import h2e
-from ..visualization.utils import get_color
 from ..utils import SimulationSetupWarning
 
 

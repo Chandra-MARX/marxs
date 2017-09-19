@@ -14,6 +14,10 @@ Bug fixes
 
 - An index mix-up in `marxs.simulator.ParallelCalculated.calculate_elempos` introduced
   unintended zoom and shear in the elements [#164].
+
+- [#159] left behind an undefined ``filterfunc``. This is fixed and a
+  regression test added [#165].
+
   
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

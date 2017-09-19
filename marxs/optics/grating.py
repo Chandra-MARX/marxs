@@ -10,7 +10,7 @@ from .base import FlatOpticalElement
 
 
 class OrderSelector(object):
-    '''Select from a list of order number independent of energy.
+    '''Select from a list of order numbers independent of energy.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ class OrderSelector(object):
     p : None or array
         Probability for a photon to end up in each order. The sum of all probabilities
         can be smaller than 1, if a certain fraction of photons is absorbed by
-        the grating. If this is ``None`` equal probability is assigned to all orders.
+        the grating. If this is ``None``, equal probability is assigned to all orders.
 
     Examples
     --------

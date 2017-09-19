@@ -174,7 +174,7 @@ def resolvingpower_from_photonlist(photons, orders,
     returns nan values.
 
     Unlike `~marxs.analysis.gratings.resolvingpower_per_order` this method does
-    not run any ray-trace simulations. It just extract information from a
+    not run any ray-trace simulations. It just extracts information from a
     photon list that is passed in.
 
     Parameters
@@ -203,8 +203,6 @@ def resolvingpower_from_photonlist(photons, orders,
     '''
     if zeropos is None:
         ind = (photons[ordercol] == 0)
-        if filterfunc is not None:
-            ind = ind & filterfunc(photons)
         if ind.sum() < 20:
             raise AnalysisError('Too few photons in list to determine position of order 0 automatically.')
         zeropos, medzeropos, stdzero = sigma_clipped_stats(photons[col][ind])
