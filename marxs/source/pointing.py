@@ -31,6 +31,7 @@ class PointingModel(SimulationSequenceElement):
         linecoords = Column(name='dir', length=len(photons),
                             shape=(4,))
         photons.add_column(linecoords)
+        photons['dir'].unit = u.mm
         # Leave everything unset, but chances are I will forget the 4th
         # component. Play safe here.
         photons['dir'][:, 3] = 0
