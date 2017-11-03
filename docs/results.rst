@@ -53,7 +53,7 @@ So, if you want to know the number of photons that are expected to reach a certa
 
 Another approach commonly used in Monte-Carlo ray-trace codes is to draw a random number, and if it is below 0.5, the photons is transmitted through the filter, above 0.5 it is discoarded. This can be done with a MARXS photon event list like this::
   
-  >>> pobs = photons[photons['probability'] < np.random.uniform(len(photons))]
+  >>> pobs = photons[photons['probability'] > np.random.uniform(size=len(photons))]
 
 However, that reduces the number of photons in the final distribution list and thus increases the random scatter in the results (which may be what you want, if you are looking for a list of detected photons that will have the same noise level as a real observation).
 
