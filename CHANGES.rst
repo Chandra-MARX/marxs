@@ -9,11 +9,15 @@ New Features
   value of a `marxs.simulator.Parallel` and adjust position of elements at
   the same time [#169].
 
+- Refactor `marxs.analysis.analysis.find_best_detector_position` to allow
+  for more general objective functions. [#171]
+
 API Changes
 ^^^^^^^^^^^
 
 Bug fixes
 ^^^^^^^^^
+
 - `marxs.analysis.gratings.resolvingpower_per_order` has been updated to ignore
   photons with probability 0. [#162]
 
@@ -23,6 +27,10 @@ Bug fixes
 - [#159] left behind an undefined ``filterfunc``. This is fixed and a
   regression test added [#165].
 
+- `marxs.analysis.analysis.find_best_detector_position` will now change the
+  detector position always along an axis perpendicular to the detector plane.
+  [#171]
+  
   
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -197,7 +197,7 @@ def resolvingpower_from_photonlist(photons, orders,
     res : np.array
         resolving power for each order
     pos : np.array
-        mean value or ``col`` for each order
+        mean value of ``col`` for each order
     std : np.array
         standard deviation of the distribution of ``col`` for each order
     '''
