@@ -10,7 +10,7 @@ def test_best_detector_position():
     # det_x is along the second axis
     out = find_best_detector_position(photons,
                                       objective_func_args={'colname': 'det_x'})
-    assert np.isclose(out.x[0], 1.0)
+    assert np.isclose(out.x, 1.0)
 
 
 def test_best_detector_position_rotated():
@@ -25,7 +25,7 @@ def test_best_detector_position_rotated():
                                       orientation=np.array([[ 0.,  1.,  0.],
                                                             [ 0.,  0.,  1.],
                                                             [ 1.,  0.,  0.]]))
-    assert np.isclose(out.x[0], 0.5)
+    assert np.isclose(out.x, 0.5)
 
 
 def test_best_detector_position_2d():
@@ -35,7 +35,7 @@ def test_best_detector_position_2d():
     photons['pos'].data[:, 1] = 0.5
     # det_x is along the second axis
     out = find_best_detector_position(photons, mean_width_2d, {})
-    assert np.isclose(out.x[0], 1.0)
+    assert np.isclose(out.x, 1.0)
 
 
 # from ..gratings import resolvingpower_per_order
