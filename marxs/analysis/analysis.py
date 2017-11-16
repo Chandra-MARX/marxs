@@ -78,7 +78,7 @@ def find_best_detector_position(photons,
         photons = mdet(photons)
         return objective_func(photons, **objective_func_args)
 
-    return scipy.optimize.minimize_scalar(width, args=(photons,), options={'maxiter': 20},
+    return scipy.optimize.minimize_scalar(width, args=(photons,), options={'maxiter': 20, 'disp': False},
                                    **kwargs)
 
 
