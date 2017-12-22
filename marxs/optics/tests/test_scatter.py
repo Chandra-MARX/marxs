@@ -39,3 +39,33 @@ def test_distribution_scatered_rays_turned():
     assert np.allclose(np.std(p['det_y']), np.arctan(0.1), rtol=0.1)
     # This is scatter perpendicular to the plane.
     assert np.allclose(np.std(p['det_x']), np.arctan(0.01), rtol=0.1)
+
+def test_scatter_0_01():
+    '''Test that scatter works if one or both scatter directions are set
+    to 0. These cases are special cased, so that need an extra test.'''
+    photons = generate_test_photons(500)
+    photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
+    rms = RadialMirrorScatter(inplanescatter=0, perpplanescatter=0.1)
+    det = FlatDetector(position=[-1, 0, 0], zoom=1000)
+
+    p = rms(photons)
+    p = det(p)
+
+    assert np.all(p['det_x'] == 1.0)
+    stat, pval = normaltest(p['det_y'])
+    assert pval > 0.5
+    assert np.allclose(np.std(p['det_y']), np.arctan(0.1), rtol=0.1)
+
+def test_scatter_0_0():
+    '''Test that scatter works if one or both scatter directions are set
+    to 0. These cases are special cased, so that need an extra test.'''
+    photons = generate_test_photons(500)
+    photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
+    rms = RadialMirrorScatter(inplanescatter=0, perpplanescatter=0.1)
+    det = FlatDetector(position=[-1, 0, 0], zoom=1000)
+
+    p = rms(photons)
+    p = det(p)
+
+    assert np.all(p['det_x'] == 1.0)
+    assert np.all(p['det_y'] == 0)
