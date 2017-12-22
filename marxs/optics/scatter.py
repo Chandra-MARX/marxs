@@ -45,12 +45,17 @@ class RadialMirrorScatter(FlatOpticalElement):
         center = self.pos4d[:-1, -1]
         radial = h2e(photons['pos'][intersect].data) - center
         perpplane = np.cross(h2e(photons['dir'][intersect].data), radial)
-        inplaneangle = np.random.normal(loc=0., scale=self.inplanescatter, size=n)
+        # np.random.normal does not work with scale=0
+        # so special case that here.
+        if self.inplanescatter != 0:
+            inplaneangle = np.random.normal(loc=0., scale=self.inplanescatter, size=n)
+            rot = axangle2mat(perpplane, inplaneangle)
+            outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'][intersect])), 0)
+        else:
+            inplaneangle = np.zeros(n)
+            outdir = photons['dir'][intersect]
 
-        rot = axangle2mat(perpplane, inplaneangle)
-        outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(photons['dir'][intersect])), 0)
-
-        if self.perpplanescatter !=0: # Works for 0 too, but waste of time to run
+        if self.perpplanescatter !=0:
             perpangle = np.random.normal(loc=0., scale=self.perpplanescatter, size=n)
             rot = axangle2mat(radial, perpangle)
             outdir = e2h(np.einsum('...ij,...i->...j', rot, h2e(outdir)), 0)
