@@ -25,6 +25,7 @@ class BaseAperture(object):
         photoncoords = table.Column(name='pos', length=len(photons), shape=(4,))
         photons.add_column(photoncoords)
         photons['pos'][:, 3] = 1
+        photons['pos'].unit = u.mm
 
     @property
     def area(self):

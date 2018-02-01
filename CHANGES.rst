@@ -3,17 +3,37 @@
 
 New Features
 ^^^^^^^^^^^^
+- Unit milimeter on ``"pos"`` and ``"dir"`` columns of photonlist. [#169]
+
+- Add method `marxs.simulator.Parallel.move_center` to change the ``pos4d``
+  value of a `marxs.simulator.Parallel` and adjust position of elements at
+  the same time. [#169]
+
+- Refactor `marxs.analysis.analysis.find_best_detector_position` to allow
+  for more general objective functions. [#171]
 
 API Changes
 ^^^^^^^^^^^
 
 Bug fixes
 ^^^^^^^^^
-- `marxs.analysis.grating.resolvingpower_per_order` has been updated to ignore
+
+- `marxs.analysis.gratings.resolvingpower_per_order` has been updated to ignore
   photons with probability 0. [#162]
 
 - An index mix-up in `marxs.simulator.ParallelCalculated.calculate_elempos` introduced
-  unintended zoom and shear in the elements [#164].
+  unintended zoom and shear in the elements. [#164]
+
+- [#159] left behind an undefined ``filterfunc``. This is fixed and a
+  regression test added. [#165]
+
+- `marxs.analysis.analysis.find_best_detector_position` will now change the
+  detector position always along an axis perpendicular to the detector plane.
+  [#171]
+
+- `marxs.optics.scatter.RadialMirrorScatter` now works with
+  ``inplanescatter=0`` which is useful for parameters studies. [#174]
+  
   
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -29,11 +49,12 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
-- Remove ``marxs.sources.LabPointSource``, which was just a special case of
-  `~marxs.sources.LabPointSourceCone`. Instead, set the default values of the
+- Remove ``marxs.source.LabPointSource``, which was just a special case of
+  `~marxs.source.LabPointSourceCone`. Instead, set the default values of the
   later so that it reproduces the behaviour of the former. [#144]
 
-- `~marxs.optics.MultiLayerEfficiency` and `~marxs.optics.MultiLayerMirror` now
+- `~marxs.optics.multiLayerMirror.MultiLayerEfficiency` and
+  `~marxs.optics.multiLayerMirror.MultiLayerMirror` now
   expect all parameters as keyword arguments for consistency with the other
   elements in MARXS. [#144]
 

@@ -10,7 +10,7 @@ from .base import FlatOpticalElement
 
 
 class OrderSelector(object):
-    '''Select from a list of order number independent of energy.
+    '''Select from a list of order numbers independent of energy.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ class OrderSelector(object):
     p : None or array
         Probability for a photon to end up in each order. The sum of all probabilities
         can be smaller than 1, if a certain fraction of photons is absorbed by
-        the grating. If this is ``None`` equal probability is assigned to all orders.
+        the grating. If this is ``None``, equal probability is assigned to all orders.
 
     Examples
     --------
@@ -108,22 +108,24 @@ class FlatGrating(FlatOpticalElement):
         grating period variation. The callable has to return a vector of lengths N
         that contains the grating constant for each photon in mm.
     order_selector : callable
-        A function or callable object that accepts arrays of photon energy, polarization
-        and the blaze angle
-        as input and returns arrays for grating order (integer)
-        and probability (float). The probabiliy expresses the chance that the photon passes
-        the grating and is not absorbed, e.g. if the probability that a photon at energy E ends
-        up in order=[-2, -1, 0, 1, 2] is [0, 0, .5, .3, .0] , then the returned probability for
-        all photons should be 0.8.
+        A function or callable object that accepts arrays of photon
+        energy, polarization and the blaze angle as input and returns
+        arrays for grating order (integer) and probability
+        (float). The probabiliy expresses the chance that the photon
+        passes the grating and is not absorbed, e.g. if the
+        probability that a photon at energy E ends up in order=[-2,
+        -1, 0, 1, 2] is [0, 0, .5, .3, .0] , then the returned
+        probability for all photons should be 0.8.
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. (*Default*: ``True`` )
     groove_angle : float
-        Angle between the local z axis and the direction of the grooves in radian.
-        (*Default*: ``0.``)
+        Angle between the local z axis and the direction of the
+        grooves in radian.  (*Default*: ``0.``)
 
     .. warning::
        Reflection gratings are untested so far!
+
     '''
 
     loc_coos_name = ['grat_y', 'grat_z']
@@ -133,21 +135,24 @@ class FlatGrating(FlatOpticalElement):
         '''Set sign convention for grating orders.
 
         This sets the following, somewhat arbitrary convention:
-        Positive grating orders will are displaced along the local :math:`\hat e_z` vector,
-        negative orders in the opposite direction. If the grating is rotated by :math:`-\pi`
-        the physical situation is the same, but the sign of the grating order will be reversed.
-        In this sense, the convention chosen is arbitrarily. However, it has some practical
-        advantages: The implementation is fast and all photons passing through the grating
-        in the same diffraction order are displaced in the same way. (Contrary to the
-        convention in :class:`CATGrating`.)
-        ``order_sign_convention`` has to be a callable that accepts an array
-        of eukledian direction vectors as input and returns ``+1``, ``-1``,
-        or an array filled with ``-1`` or ``+1``.
+        Positive grating orders will are displaced along the local
+        :math:`\hat e_z` vector, negative orders in the opposite
+        direction. If the grating is rotated by :math:`-\pi` the
+        physical situation is the same, but the sign of the grating
+        order will be reversed.  In this sense, the convention chosen
+        is arbitrarily. However, it has some practical advantages: The
+        implementation is fast and all photons passing through the
+        grating in the same diffraction order are displaced in the
+        same way. (Contrary to the convention in :class:`CATGrating`.)
+        ``order_sign_convention`` has to be a callable that accepts an
+        array of eukledian direction vectors as input and returns
+        ``+1``, ``-1``, or an array filled with ``-1`` or ``+1``.
 
         Parameters
         ----------
         p : np.array
             Array of Eucleadian direction vectors
+
         '''
         # -1 because n, l, d should be right-handed coordinate system
         # while n = e_x, l = e_x, and d = e_y would be left-handed.

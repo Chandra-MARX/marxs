@@ -136,7 +136,8 @@ class Source(SimulationSequenceElement):
           option allows full customization.  The function is called with two
           arrays (time and energy values) as input and must return an array of
           equal length that contains the polarization angles in degrees.
-          geomarea : `astropu.units.Quantity` Geometric opening area of
+
+    geomarea : `astropu.units.Quantity` Geometric opening area of
           telescope. Default is :math:`1 cm^2`.
 
     '''
@@ -236,6 +237,7 @@ class Source(SimulationSequenceElement):
         n = len(times)
         photons = Table([times, energies, pol, np.ones(n)],
                         names=['time', 'energy', 'polangle', 'probability'])
+        photons.meta['EXTNAME'] = 'EVENTS'
         photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
 
         #photons.meta['DATE-OBS'] =

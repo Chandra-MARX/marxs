@@ -38,8 +38,8 @@ doc_plot='''
         source: the source can only be used for testing, or numerical algorithms,
         not visualization.
 
-    Parameters
-    ----------
+    Returns
+    -------
     out : mayavi object
         Return the result of a mayavi plotting method.
 '''
@@ -206,8 +206,8 @@ def plot_object(obj, display=None, viewer=None, **kwargs):
         All other parameters will be passed on to the individual plotting
         method.
 
-    Parameters
-    ----------
+    Returns
+    -------
     out : mayavi object
         Return the result of a mayavi plotting method.
 

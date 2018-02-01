@@ -111,26 +111,25 @@ class Sequence(BaseContainer):
 class Parallel(BaseContainer):
     '''A container for several identical optical elements.
 
-    This object describes a set of similar elements that operate in parallel,
-    meaning that each photon will only interact with one of them (although that is
-    not enforced by the current implementation).
-    Examples for such an optical element would be the ACIS-I CCD detector on
-    Chandra, that consists for four CCD chips or the HETGS gratings that are
-    made up of many individual grating facets.
+    This object describes a set of similar elements that operate in
+    parallel, meaning that each photon will only interact with one of
+    them (although that is not enforced by the current
+    implementation).  Examples for such an optical element would be
+    the ACIS-I CCD detector on Chandra, that consists for four CCD
+    chips or the HETGS gratings that are made up of many individual
+    grating facets.
 
-    The `Parallel` class requires a description of the individual components
-    and a list of their positions.
-    This class has build-in support to simulate uncertainties in the manufacturing
-    process.
+    The `Parallel` class requires a description of the individual
+    components and a list of their positions.  This class has build-in
+    support to simulate uncertainties in the manufacturing process.
     After generation, individual positions can be adjusted by hand by
-    editing the ``elem_pos``.
-    Also, additional misalingments for each element can be introduced by
-    editing ``elem_uncertainty``. This attribute holds a list of affine
-    transformation matrices.
-    The global position and rotation of the combined element can be changed with
-    `uncertainty`, e.g. the represent the reproducibility of
-    inserting the gratings into the beam for separate observations or the positioning
-    of detectors on a detector wheel. The
+    editing the ``elem_pos``.  Also, additional misalingments for each
+    element can be introduced by editing ``elem_uncertainty``. This
+    attribute holds a list of affine transformation matrices.  The
+    global position and rotation of the combined element can be
+    changed with `uncertainty`, e.g. the represent the reproducibility
+    of inserting the gratings into the beam for separate observations
+    or the positioning of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
 
     All uncertainty matrices should only consist of translation and rotations
@@ -162,33 +161,37 @@ class Parallel(BaseContainer):
     elem_class : class
         Class of the individual elements
     elem_args : dict
-        Dictionary of keyword arguments that are used to initialize the individual
-        arguments. This can contain position related keywords as listed in `pos4d`;
-        those will be applied to *each* element (e.g. set the zoom for each of them).
-        Usually, the same arguments will be applied to all facets.
-        In the special case that the value of a dictionary entry is a list with the same
-        length as ``elem_pos``, one value of this list will be used for each element. This
-        makes it possible to specify e.g. different grating constants for individual facets.
-        (Note that this has to be a list. Other python types like tuple or np.array that behave
-        like lists in some contexts are not allowed here to avoid ambiguities.)
+        Dictionary of keyword arguments that are used to initialize
+        the individual arguments. This can contain position related
+        keywords as listed in `pos4d`; those will be applied to *each*
+        element (e.g. set the zoom for each of them).  Usually, the
+        same arguments will be applied to all facets.  In the special
+        case that the value of a dictionary entry is a list with the
+        same length as ``elem_pos``, one value of this list will be
+        used for each element. This makes it possible to specify
+        e.g. different grating constants for individual facets.  (Note
+        that this has to be a list. Other python types like tuple or
+        np.array that behave like lists in some contexts are not
+        allowed here to avoid ambiguities.)
     elem_pos : list of arrays or dictionary of lists
-        Gives the position of the individual elements in the local coordinate system of the
-        `Parallel` object. This can either be a list of
-        (4,4) np.arrays or a dictionary with entries of ``pos4d`` or ``position``,
-        ``orientation`` and ``zoom`` as explained in :ref:`pos4d` where each entry in the
-        dictionary is a list of values
-        ((3,3) matrices for ``orientation``, (3,) vectors for ``position`` etc.).
-        Sub-classes of `Parallel` can implement a method `calculate_elempos` to
-        determine the position of their elements automatically. In this case, they should set
-        ``elem_pos=None``.
+        Gives the position of the individual elements in the local
+        coordinate system of the `Parallel` object. This can either be
+        a list of (4,4) np.arrays or a dictionary with entries of
+        ``pos4d`` or ``position``, ``orientation`` and ``zoom`` as
+        explained in :ref:`pos4d` where each entry in the dictionary
+        is a list of values ((3,3) matrices for ``orientation``, (3,)
+        vectors for ``position`` etc.).  Sub-classes of `Parallel` can
+        implement a method `calculate_elempos` to determine the
+        position of their elements automatically. In this case, they
+        should set ``elem_pos=None``.
     id_num_offset : int
         ID numbers of generated elements start at this number.
 
     Examples
     --------
-    In this example we build up a detector made up of four CCDs. Each CCD is 10 mm * 10 mm
-    large and has a pixel size of 0.01 mm. The CCDs are set in a square with small spaces
-    in between.
+    In this example we build up a detector made up of four CCDs. Each
+    CCD is 10 mm * 10 mm large and has a pixel size of 0.01 mm. The
+    CCDs are set in a square with small spaces in between.
 
     >>> from marxs.simulator import Parallel
     >>> from marxs.optics import FlatDetector as CCD
@@ -196,9 +199,12 @@ class Parallel(BaseContainer):
     ...                   elem_pos={'position': [[0, -10.1, -10.1],[0, .1, -10.1],[0, -10.1, .1],[0, .1, .1]]},
     ...                   id_col='CCD_ID')
 
-    A column that notes which CCD was hit by each photon will be added to the photon table when it
-    is processed by ``photons = detect(photons)``. The name of this colum will be "CCD_ID".
-    (If the `id_col` argument is not passed, the name will be the generic "element".)
+    A column that notes which CCD was hit by each photon will be added
+    to the photon table when it is processed by ``photons = detect(photons)``.
+    The name of this colum will be "CCD_ID".  (If
+    the `id_col` argument is not passed, the name will be the generic
+    "element".)
+
     '''
 
     id_col = 'element'
@@ -247,6 +253,28 @@ class Parallel(BaseContainer):
         self.elem_uncertainty = [np.eye(4)] * len(self.elem_pos)
         self.generate_elements()
 
+    def move_center(self, change4d):
+        '''Move the relative origin of the coordinate system.
+
+        Individual element positions in ``elem_pos`` are relative to the
+        global ``pos4d`` of this object. This function changes the
+        ``pos4d`` and adjusts the ``elem_pos`` accordingly, so that the
+        elements still have the same position in global coordinates.
+
+        This function is useful when studying uncertainties. The attribute
+        ``uncertainty`` can be used to apply the same change to all elements.
+        Any rotation will be applied around the reference position contained
+        in ``pos4d``. Use this function to change that reference position.
+
+        Parameters
+        ----------
+        change4d : np.array of shape (4,4)
+            Homogeneous coordinate transformation matrix
+        '''
+        self.pos4d = np.dot(change4d, self.pos4d)
+        inv = np.linalg.inv(change4d)
+        self.elem_pos = [np.dot(inv, p) for p in self.elem_pos]
+        self.generate_elements()
 
     def generate_elements(self):
         '''Initialize all optical elements.
@@ -361,16 +389,19 @@ class ParallelCalculated(Parallel):
     def calculate_elempos(self):
         '''Calculate the position of elements based on some algorithm.
 
-        Classes derived from `ParallelCalculated` can overwrite this method if they want to
-        provide a way to calculate the pos4d matrices for the elements that make up this
+        Classes derived from `ParallelCalculated` can overwrite this
+        method if they want to provide a way to calculate the pos4d
+        matrices for the elements that make up this
         `ParallelCalculated` element.
 
         Returns
         -------
         pos4d : list of arrays
-            List of affine transformations that bring an optical element centered
-            on the origin of the coordinate system with the active plane in the
-            yz-plane to the required facet position on the Rowland torus.
+            List of affine transformations that bring an optical
+            element centered on the origin of the coordinate system
+            with the active plane in the yz-plane to the required
+            facet position on the Rowland torus.
+
         '''
         pos4d = []
 
