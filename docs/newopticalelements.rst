@@ -32,7 +32,9 @@ A more complicated way to achieve the same thing would be::
   >>> myabs2 = AbsorbAllPhotonsElement()
   >>> photons = myabs2(photons)
 
-In this simple case, a function might be sufficient but most optical elements are more complex. For example, they have a finite size, they cannot be vectorized and must loop thourgh the photons one-by-one, or they should offer the user some diagnostic to analyze the result of the ray-trace such as an index column that lists which CCD was hit or which mirror shell reflected a particular photon. For those cases, marxs provides base classes that do much of the work:
+In this simple case, a function might be sufficient but most optical elements
+are more complex. For example, they have a finite size, they cannot be
+vectorized and must loop over all photons one-by-one, or they should offer the user some diagnostic to analyze the result of the ray-trace such as an index column that lists which CCD was hit or which mirror shell reflected a particular photon. For those cases, marxs provides base classes that do much of the work:
 
 - `marxs.base.MarxsElement`
 - `marxs.base.SimulationSequenceElement`

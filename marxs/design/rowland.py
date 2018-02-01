@@ -1,16 +1,19 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 '''Tools for setting up instruments in the Rowland Torus geometry.
 
-This includes an object that represents the Rowland torus itself (imaginatively called
-`~marxs.design.rowland.RowlandTorus`, some helper functions used to set the right parameters
-for the torus and a few classes that are derived from `marxs.simulation.ParallelCalculated`,
-each placing elements such as gratings or detectors on the Rowland torus. There are many ways
-to do that, e.g. the limits can be defined in x,y,z coordiantes or in theta, phi coordinates
-on the torus, gratings can be ordered in concentric circles or pack densely in a rectoangular
-area etc. At this point, the different classes do not exploit all these possibilities, they
-merely give a few of many possible ways to set up an instrument.
+This includes an object that represents the Rowland torus itself (imaginatively
+called `~marxs.design.rowland.RowlandTorus`), some helper functions used to set
+the right parameters for the torus and a few classes that are derived from
+`marxs.simulation.ParallelCalculated`, each placing elements such as gratings
+or detectors on the Rowland torus. There are many ways to do that, e.g. the
+limits can be defined in x,y,z coordiantes or in theta, phi coordinates on the
+torus, gratings can be ordered in concentric circles or pack densely in a
+rectoangular area etc. At this point, the different classes do not exploit all
+these possibilities, they merely give a few of many possible ways to set up an
+instrument.
 
 These classes my be generalized in the future.
+
 '''
 
 from __future__ import division
@@ -27,7 +30,6 @@ from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
-from ..visualization.utils import get_color
 
 # Python 2 vs 3 (basestring does not exist in Python 3)
 try:

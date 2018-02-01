@@ -20,10 +20,11 @@ class FlatDetector(FlatOpticalElement):
     - ``detpix_x``, ``detpix_y``: Event position in detector coordinates, where
       (0, 0) is on the corner of the chip.
 
-    The (x,y) coordinate system on the chip is such that it falls on the (y,z) plane
-    of the global x,y,z coordinate system (it would be more logical to call the chip
-    system (y,z), but traditionally that is not how chip coordinates are named). The
-    pixel in the corner has coordinates (0, 0) in the pixel center.
+    The (x,y) coordinate system on the chip is such that it falls on the (y,z)
+    plane of the global x,y,z coordinate system (it would be more logical to
+    call the chip system (y,z), but traditionally that is not how chip
+    coordinates are named). The pixel in the corner has coordinates (0, 0) in
+    the pixel center.
 
     Parameters
     ----------
@@ -32,6 +33,7 @@ class FlatDetector(FlatOpticalElement):
 
     kwargs :
        see `args for optical elements`
+
     '''
 
     loc_coos_name = ['det_x', 'det_y']
@@ -64,12 +66,11 @@ class FlatDetector(FlatOpticalElement):
 class CircularDetector(OpticalElement):
     '''A detector shaped like a ring or tube.
 
-    This detector is shaped like a tube. The form is a circle in the xy plane and
-    and flat along the z-direction.
-    While most CCDs are flat in practice, the `CircularDetector` simulates a setup
-    that can follow the Rowland circle geometry exactly which is useful, e.g. to study
-    the resolution of a spectrograph without worrying about the details of the detector
-    geometry.
+    This detector is shaped like a tube. The form is a circle in the xy plane
+    and and flat along the z-direction.  While most CCDs are flat in practice,
+    the `CircularDetector` simulates a setup that can follow the Rowland circle
+    geometry exactly which is useful, e.g. to study the resolution of a
+    spectrograph without worrying about the details of the detector geometry.
 
     Parameters
     ----------
@@ -83,6 +84,7 @@ class CircularDetector(OpticalElement):
         This defines the center (pixel = 0) in radian. In other words:
         The output ``det_phi`` column has its zero position at ``phi_offset`` and
         values for ``phi`` are in the range [-pi, pi].
+
     '''
     loc_coos_name = ['det_phi', 'det_y']
 

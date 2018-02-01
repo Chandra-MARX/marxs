@@ -28,7 +28,7 @@ class Baffle(FlatOpticalElement):
         return photons
 
     def triangulate_inner_outer(self):
-        '''Return a triangulation of the bafflee hole embedded in a square.
+        '''Return a triangulation of the baffle hole embedded in a square.
 
         The size of the outer square is determined by the ``'outer_factor'`` element
         in ``self.display``.
