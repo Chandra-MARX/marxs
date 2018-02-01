@@ -24,7 +24,8 @@ env:
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        - NUMPY_VERSION=stable
+        #- NUMPY_VERSION=stable
+	- NUMPY_VERSION=1.13
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
