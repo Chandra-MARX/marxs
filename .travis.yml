@@ -24,7 +24,8 @@ env:
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        - NUMPY_VERSION=stable
+        #- NUMPY_VERSION=stable
+        - NUMPY_VERSION=1.13
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
@@ -86,9 +87,6 @@ matrix:
           env: SETUP_CMD='build_sphinx -w' NUMPY_VERSION=1.13
 
         # Try Astropy development version
-        - python: 2.7
-          env: ASTROPY_VERSION=development NUMPY_VERSION=1.13
-
         - python: 3.5
           env: ASTROPY_VERSION=development NUMPY_VERSION=1.13
         # - python: 2.7
