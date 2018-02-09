@@ -43,7 +43,8 @@ class FlatDetector(FlatOpticalElement):
     '''name for output columns that contain this pixel number.'''
 
     display = {'color': (1.0, 1.0, 0.),
-               'shape': 'box'}
+               'shape': 'box',
+               'box-half': '+x'}
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
