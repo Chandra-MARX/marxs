@@ -33,6 +33,10 @@ Bug fixes
 
 - `marxs.optics.scatter.RadialMirrorScatter` now works with
   ``inplanescatter=0`` which is useful for parameters studies. [#174]
+
+- Plot only "half-box" for elements such as mirrors where the optical
+  interaction occurs on a surface. [#178]
+
   
   
 Other changes and additions

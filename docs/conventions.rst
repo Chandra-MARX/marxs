@@ -31,8 +31,15 @@ All optical elements have some default location and position. Typically, their a
 the surface of a mirror or detector) is in the y-z plane. The center is at the origin of the
 coordiante system and the default size in each dimenstion is 1, measured from the center.
 Thus, e.g. the default definition for a `marxs.optics.detector.FlatDetector`, makes a detector surface with
-the following corners (in 3-d x,y,z coordinates): [0, -1, -1], [0, -1, 1], [0, 1, 1] and [0, 1, -1].
-This detector has the thickness 2 (from x=-1 to x=+1), but that only matters for display purposes, since the ray-trace
+the following corners (in 3-d x,y,z coordinates): [0, -1, -1], [0, -1, 1], [0,
+1, 1] and [0, 1, -1].
+Note that in a 3D visualization (see :ref:`visualization`), some elements might be shown with a thickness
+2 (from :math:`x=-1` to :math:`x=+1`), so that the "active surface" is in the middle of a box,
+while others might show the "active surface" as the edge of the box as in the
+sketch below. Details depend on the capabilities of the plotting backend
+(backends and options are listed in :ref:`sect-vis-api`).
+
+However, when running the ray-trace the code
 calculates the intersection with the "active surface" in the y-z plane independent of the
 thickeness in x-direction. There are exceptions to these defaults, those are noted in the description
 of the individual optical elements.
