@@ -6,7 +6,7 @@ from astropy.utils.metadata import enable_merge_strategies
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
-from ..visualization.utils import plane_with_hole
+from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
 from ..math.utils import anglediff, h2e
 from ..simulator import BaseContainer
 from .. import utils
@@ -79,6 +79,77 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         '''Return values in Eukledean space'''
         raise NotImplementedError
 
+    def xyz_square(self, r_factor):
+        '''Generate Eukledian positions for the corners of a square.
+
+        The square is centered on the center of the object and the edges are
+        given by ``v_y`` and ``v_z``.
+
+        Parameters
+        ----------
+        r_factor : float
+            Scaling factor for the square.
+
+        Returns
+        -------
+        box : np.array of shape (4, 3)
+            Eukledian coordinates of the corners of the square in 3d space.
+        '''
+        g = self.geometry
+        box = h2e(g('center')) + r_factor * np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
+                                                       h2e(-g('v_y')) + h2e(g('v_z')),
+                                                       h2e(-g('v_y')) - h2e(g('v_z')),
+                                                       h2e( g('v_y')) - h2e(g('v_z'))
+        ])
+        return box
+
+    def xyz_circle(self, r_factor, philim=[0, 2 * np.pi]):
+        '''Generate Eukledian positions along an ellipse.
+
+        The circle is centered on the center of the object and the semi-major
+        and minor axes are given by ``v_y`` and ``v_z``. Note that this function
+        is usually used to generate circle position, although ellipses are possible,
+        thus the name.
+
+        The circle (or ellipse) is approximated by a polygon with ``n_vertices``
+        vertices, where the value of ``n_vertices`` is taken from the ``self.display``
+        dictionary.
+
+        Parameters
+        ----------
+        r_factor : float
+            Scaling factor for the square.
+        phi_lim : list
+            Lower and upper limit for the angle phi to restrict the circle to a wedge.
+
+        Returns
+        -------
+        circle : np.array of shape (n, 3)
+            Eukledian coordinates of the corners of the square in 3d space.
+        '''
+
+        n = self.display.get('n_vertices', 90)
+        phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
+        v_y = r_factor * self.geometry('v_y')
+        v_z = r_factor * self.geometry('v_z')
+
+        x = np.cos(phi)
+        y = np.sin(phi)
+        # phi could be less then full circle
+        # wrap phi at lower bound (which could be negative).
+        # For the default [0, 2 pi] this is a no-op
+        phi = (phi - philim[0]) % (2 * np.pi)
+        ind = phi < anglediff(philim)
+        x[~ind] = 0
+        y[~ind] = 0
+
+        return h2e(self.geometry('center') + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+
+
+    def outer_shape(self):
+        '''Return values in Eukledian space.'''
+        return self.xyz_square(self.display.get('outer_factor', 3))
+
     def triangulate(self):
         '''Return a triangulation of the aperture hole embedded in a square.
 
@@ -92,13 +163,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         triangles : np.array
             Array of index numbers that define triangles
         '''
-        r_out = self.display.get('outer_factor', 3)
-        g = self.geometry
-        outer = h2e(g('center')) + r_out * np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
-                                                      h2e(-g('v_y')) + h2e(g('v_z')),
-                                                      h2e(-g('v_y')) - h2e(g('v_z')),
-                                                      h2e( g('v_y')) - h2e(g('v_z'))
-        ])
+        outer = self.outer_shape()
         inner = self.inner_shape()
         return plane_with_hole(outer, inner)
 
@@ -141,7 +206,11 @@ class CircleAperture(FlatAperture):
         Angles are given in radian. Use ``phi[1] < 0`` if the segment crosses
         the y axis. (Default is the full circle.)
     r_inner : float
-        Inner radius for ring-like apertures. Default is 0 (full circle).
+        Inner radius for ring-like apertures. Default is 0 (full circle). If
+        `r_inner` is non-zero, plotting the aperture will fill in the inner region.
+        If this is not desired because several `CircleApertures` are stacked into each other,
+        ``self.display['inner_factor']`` can be used to restrict the radius range where the
+        inner disk is displayed in a plot.
     '''
     def __init__(self, **kwargs):
         phi = kwargs.pop('phi', [0, 2. * np.pi])
@@ -177,37 +246,28 @@ class CircleAperture(FlatAperture):
         A_circ = np.pi * (np.linalg.norm(self.geometry('v_y'))**2 - self.r_inner**2)
         return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ * u.mm**2
 
-    def inner_shape(self, r_factor=1):
-        n = self.display.get('n_inner_vertices', 90)
-        phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
-        v_y = r_factor * self.geometry('v_y')
-        v_z = r_factor * self.geometry('v_z')
+    def outer_shape(self):
+        '''Return values in Eukledian space.'''
+        return self.xyz_circle(self.display.get('outer_factor', 3))
 
-        x = np.cos(phi)
-        y = np.sin(phi)
-        # phi could be less then full circle
-        # wrap phi at lower bound (which could be negative).
-        # For the default [0, 2 pi] this is a no-op
-        phi = (phi - self.phi[0]) % (2 * np.pi)
-        ind = phi < anglediff(self.phi)
-        x[~ind] = 0
-        y[~ind] = 0
-
-        return h2e(self.geometry('center') + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+    def inner_shape(self):
+        return self.xyz_circle(1, self.phi)
 
     def triangulate(self):
         xyz, triangles = super(CircleAperture, self).triangulate()
         if (self.r_inner > 0):
-            n_in = xyz.shape[0]
-            n = self.display.get('n_inner_vertices', 90)
-            new_xyz = self.inner_shape(r_factor = self.r_inner / np.linalg.norm(self.geometry('v_y')))
-            xyz = np.vstack([xyz, h2e(self.geometry('center')), new_xyz])
-            new_tri = np.zeros((n, 3))
-            new_tri[:, 0] = n_in
-            new_tri[:, 1] = np.arange(n_in + 1, n_in + n + 1)
-            new_tri[0, 2] = n_in + n
-            new_tri[1:, 2] = np.arange(n_in + 1, n_in + n)
-            triangles = np.vstack([triangles, new_tri])
+            inneredge = self.xyz_circle(self.r_inner /
+                                        np.linalg.norm(self.geometry('v_y')),
+                                        self.phi)
+            # Inner edge of the display. If we have several stacked apertures,
+            # we don't want to fill is all up to r=0.
+            innerdisplay = self.xyz_circle(self.display.get('inner_factor', 0)  *
+                                           self.r_inner /
+                                           np.linalg.norm(self.geometry('v_y')),
+                                           self.phi)
+            new_xyz, new_tri = plane_with_hole(inneredge, innerdisplay)
+            xyz, triangles = combine_disjoint_triangulations([xyz, new_xyz],
+                                                             [triangles, new_tri])
         return xyz, triangles
 
 

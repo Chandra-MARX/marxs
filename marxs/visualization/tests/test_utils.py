@@ -2,7 +2,8 @@
 import numpy as np
 import pytest
 
-from ..utils import (plane_with_hole, get_color, color_tuple_to_hex,
+from ..utils import (plane_with_hole, combine_disjoint_triangulations,
+                     get_color, color_tuple_to_hex,
                      MARXSVisualizationWarning)
 from ..mayavi import plot_object
 
@@ -28,6 +29,19 @@ def test_hole_round():
         assert set(tri[:, 1]) == set(np.arange(4 + n))
         # Check last point is always on inner rim
         assert set(tri[:, 2]) == set(np.arange(4, 4 + n))
+
+def test_stack_triangulations():
+    xyz = np.array([[-1. , -1. ,  0. ],
+                    [-1. ,  1. ,  0. ],
+                    [ 1. ,  1. ,  0. ],
+                    [ 1. , -1. ,  0. ]])
+    triangles = np.array([[0, 1, 2], [0, 2, 3]])
+    xyz_out, tri_out = combine_disjoint_triangulations([xyz, xyz + 5.3],
+                                                       [triangles, triangles])
+    assert np.all(xyz_out[:4, :] == xyz)
+    assert np.allclose(xyz_out[4:, :], xyz + 5.3)
+    assert np.all(tri_out[:2, :] == triangles)
+    assert np.all(tri_out[2:, :] == triangles + 4)
 
 def test_color_roundtrip():
     '''Test that the different color convertes are consistent.'''

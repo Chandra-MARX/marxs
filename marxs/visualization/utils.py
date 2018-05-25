@@ -209,3 +209,33 @@ def plane_with_hole(outer, inner):
             triangles[i, :] = [i_out, (i_out + 1) % n_out, n_out + (i_in % n_in)]
             i_out = (i_out + 1) % n_out
     return xyz, triangles
+
+
+def combine_disjoint_triangulations(list_xyz, list_triangles):
+    '''Combine two disjoint triangulations into one set of points
+
+    This function combines two entirely separate triangulations into one set
+    of point and triangles. Plotting the combined triangulation should have the
+    same effect as plotting each triangulation separately. This function is used
+    for plotting apertures where we have e.g. an open ring. This can be plotted
+    as an inner circle plus an outer shape with a hole in it.
+
+    Parameters
+    ----------
+    list_xyz : list of `np.array`
+        Each array holds xyz values for one triangulation
+    list_triangles : list of nd.array
+        Each array holds the list of the indices for one triangulation.
+
+    Returns
+    -------
+    xyz : nd.array
+        stacked ``outer`` and ``inner``.
+    triangles : nd.array
+        List of the indices. Each row has the index of three points in ``xyz``.
+    '''
+    xyz = np.vstack(list_xyz)
+    n_offset = np.cumsum([a.shape[0] for a in list_xyz])
+    n_offset -= n_offset[0]
+    triangles = np.vstack([list_triangles[i] + n_offset[i] for i in range(len(n_offset))])
+    return xyz, triangles

@@ -12,6 +12,10 @@ New Features
 - Refactor `marxs.analysis.analysis.find_best_detector_position` to allow
   for more general objective functions. [#171]
 
+- Update plotting for `marxs.optics.aperture.CircleAperture` to give more 
+  flexibility in plotting the inner part of a ring-like aperture. This is
+  needed for models or stacked, rind-like apertures. [#180]
+
 API Changes
 ^^^^^^^^^^^
 
