@@ -168,8 +168,8 @@ class FlatGrating(FlatOpticalElement):
 
         super(FlatGrating, self).__init__(**kwargs)
 
-        self._geometry['e_groove'] = np.array([0., math.sin(-groove), math.cos(-groove), 0.])
-        self._geometry['e_perp_groove'] = np.array([0., math.cos(-groove), -math.sin(-groove), 0.])
+        self.geometry._geometry['e_groove'] = np.array([0., math.sin(-groove), math.cos(-groove), 0.])
+        self.geometry._geometry['e_perp_groove'] = np.array([0., math.cos(-groove), -math.sin(-groove), 0.])
 
     def d(self, intercoos):
         '''Method that returns the grating constant at given positions.
@@ -187,10 +187,10 @@ class FlatGrating(FlatOpticalElement):
     def diffract_photons(self, photons, intersect, interpos, intercoos):
         '''Vectorized implementation'''
         p = norm_vector(h2e(photons['dir'].data[intersect]))
-        n = self.geometry('plane')[:3]
-        l = h2e(self.geometry('e_groove'))
+        n = self.geometry['plane'][:3]
+        l = h2e(self.geometry['e_groove'])
         # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry('e_perp_groove'))
+        d = -h2e(self.geometry['e_perp_groove'])
 
         wave = energy2wave / photons['energy'].data[intersect]
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
@@ -243,7 +243,7 @@ class CATGrating(FlatGrating):
         convention is only meaningful if the photons do not arrive perpendicular to the grating.
         '''
         # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry('e_perp_groove'))
+        d = -h2e(self.geometry['e_perp_groove'])
         dotproduct = np.dot(p, d)
         sign = np.sign(dotproduct)
         sign[sign == 0] = 1

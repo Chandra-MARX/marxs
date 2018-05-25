@@ -15,8 +15,9 @@ from ...utils import generate_test_photons
 
 def test_zeros_order():
     '''Photons diffracted into order 0 should just pass through'''
-    dir = random((10, 4)) * 10 - 5
-    photons = Table({'pos': random((10, 4)) * 10 - 5,
+    dir = random((10, 4))
+    dir[0, :] = dir[0, :] * 10  # make sure mostion is mostly along x so they hit grating
+    photons = Table({'pos': random((10, 4)) - 1,
                      'dir': dir,
                      'energy': random(10),
                      'polarization': polarization_vectors(dir, np.random.rand(10)),
@@ -30,7 +31,7 @@ def test_zeros_order():
     p = photons.copy()
     g0 = FlatGrating(d=1./500.,
                      order_selector=OrderSelector([0]),
-                     zoom=np.array([1., 5., 5.]))
+                     zoom=np.array([1., 50., 50.]))
     p = g0(p)
     # Direction unchanged
     d_in = h2e(photons['dir'])
@@ -47,7 +48,7 @@ def test_zeros_order():
 def test_translation_invariance():
     '''For homogeneous gratings, the diffraction eqn does not care where the ray hits.'''
     photons = generate_test_photons(2)
-    photons['dir'] = np.tile(np.array([1., 2., 3., 0.]), (2, 1))
+    photons['dir'] = np.tile(np.array([-1., 2., 3., 0.]), (2, 1))
     photons['polarization'] = polarization_vectors(photons['dir'], [2., 4.])
     pos = np.tile(np.array([1., 0., 0., 1.]), (2, 1))
     delta_pos = np.array([0, .23, -.34, 0.])
@@ -93,7 +94,7 @@ def test_angle_dependence():
 def test_order_dependence():
     '''For small theta, the change in direction is m * dtheta'''
     photons = Table({'pos': np.ones((5,4)),
-                     'dir': np.tile([1., 0, 0, 0], (5,1)),
+                     'dir': np.tile([-1., 0, 0, 0], (5,1)),
                      'energy': np.ones(5),
                      'polarization': np.tile([0.,1.,0.,0.], (5,1)),
                      'probability': np.ones(5),
@@ -112,7 +113,7 @@ def test_order_dependence():
 def test_energy_dependence():
     '''The grating angle should depend on the photon wavelength <-> energy.'''
     photons = Table({'pos': np.ones((5,4)),
-                     'dir': np.tile([1., 0, 0, 0], (5,1)),
+                     'dir': np.tile([-1., 0, 0, 0], (5,1)),
                      'energy': np.arange(1., 6),
                      'polarization': np.tile([0, 1., 0., 0.], (5, 1)),
                      'probability': np.ones(5),
@@ -145,7 +146,7 @@ def test_groove_direction():
     order1 = OrderSelector([1])
 
     g = FlatGrating(d=1./500, order_selector=order1)
-    assert np.allclose(np.dot(g.geometry('e_groove'), g.geometry('e_perp_groove')), 0.)
+    assert np.allclose(np.dot(g.geometry['e_groove'], g.geometry['e_perp_groove']), 0.)
     p = g(photons.copy())
 
     g1 = FlatGrating(d=1./500, order_selector=order1, groove_angle=.3)
@@ -320,7 +321,7 @@ def test_change_position_after_init():
     # Make grating at some point
     g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), position=trans)
     # then move it so that pos and groove direction match g1
-    g2.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
+    g2.geometry.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
     p2 = g2(photons.copy())
 
     assert np.allclose(p1['dir'], p2['dir'])
@@ -335,4 +336,4 @@ def test_gratings_are_independent():
     '''
     g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
     g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]))
-    assert not np.allclose(g1.geometry('e_groove'), g2.geometry('e_groove'))
+    assert not np.allclose(g1.geometry['e_groove'], g2.geometry['e_groove'])

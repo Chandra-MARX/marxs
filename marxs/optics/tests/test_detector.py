@@ -7,6 +7,7 @@ from ..detector import FlatDetector, CircularDetector
 from ...tests import closeornan
 from ...math.utils import h2e
 from ...design import RowlandTorus
+from ...math.geometry import Cylinder
 
 def test_pixelnumbers():
     pos = np.array([[0, 0., -0.25, 1.],
@@ -41,8 +42,8 @@ def test_CircularDetector_from_Rowland():
     very close to the Rowland torus.'''
     rowland = RowlandTorus(R=6e4, r=5e4, position=[123., 345., -678.],
                            orientation=transforms3d.euler.euler2mat(1, 2, 3, 'syxz'))
-    detcirc = CircularDetector.from_rowland(rowland, width=1e-6)
+    detcirc = CircularDetector(geometry=Cylinder.from_rowland(rowland, width=1e-6))
     phi = np.mgrid[0:2.*np.pi:360j]
-    points = detcirc.parametric_surface(phi)
+    points = detcirc.geometry.parametric_surface(phi)
     # Quartic < 1e5 is very close for these large values of r and R.
     assert np.max(np.abs(rowland.quartic(h2e(points)))) < 1e5

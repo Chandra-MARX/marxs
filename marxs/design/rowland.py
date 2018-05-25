@@ -68,7 +68,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
         wing of the PSF.
 
     '''
-    p = photons[:]
+    p = photons.copy()
     mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e8, pixsize=1.)
     p = mdet(p)
     ind = (p['probability'] > 0) & (p['mirror_shell'] == mirror_shell)

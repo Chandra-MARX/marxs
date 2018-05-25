@@ -129,11 +129,11 @@ def cylinder(obj, display, viewer=None):
     '''
     from mayavi import mlab
 
-    x0 = obj.geometry('center') - obj.geometry('v_x')
-    x1 = obj.geometry('center') + obj.geometry('v_x')
+    x0 = obj.geometry['center'] - obj.geometry['v_x']
+    x1 = obj.geometry['center'] + obj.geometry['v_x']
     c = mlab.plot3d([x0[0], x1[0]], [x0[1], x1[1]], [x0[2], x1[2]],
                     color=display['color'],
-                    tube_radius=np.linalg.norm(obj.geometry('v_y')),
+                    tube_radius=np.linalg.norm(obj.geometry['v_y']),
                     tube_sides=display.get('tube_sides', 20))
     return c
 

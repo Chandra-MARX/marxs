@@ -75,8 +75,8 @@ def find_best_detector_position(photons,
         mdet = FlatDetector(position=np.dot(orientation, np.array([x, 0, 0])),
                             orientation=orientation,
                             zoom=1e5, pixsize=1.)
-        photons = mdet(photons)
-        return objective_func(photons, **objective_func_args)
+        p = mdet(photons.copy())
+        return objective_func(p, **objective_func_args)
 
     return scipy.optimize.minimize_scalar(width, args=(photons,), options={'maxiter': 20, 'disp': False},
                                    **kwargs)

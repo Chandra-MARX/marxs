@@ -66,7 +66,7 @@ def test_list_elemargs():
     for p in [p0, p1, p2]:
         assert len(p.elements) == 2
         for e in p.elements:
-            assert np.linalg.norm(e.geometry('v_y')) == 3
+            assert np.linalg.norm(e.geometry['v_y']) == 3
         assert p.elements[0]._d == 0.001
         assert p.elements[1]._d == 0.002
 

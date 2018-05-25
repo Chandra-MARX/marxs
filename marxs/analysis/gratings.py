@@ -8,6 +8,7 @@ from ..optics import FlatDetector, CircularDetector, OrderSelector
 from ..design import RowlandTorus
 from . import (find_best_detector_position)
 from .analysis import sigma_clipped_std
+from ..math.geometry import Cylinder
 
 
 class AnalysisError(Exception):
@@ -77,7 +78,7 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
         col = 'det_x' # 0 at center, detpix_x is 0 in corner.
         zeropos = 0.
     elif isinstance(detector, RowlandTorus):
-        det = CircularDetector.from_rowland(detector, width=1e5)
+        det = CircularDetector(geometry=Cylinder.from_rowland(detector, width=1e5))
         info['method'] = 'Circular detector on Rowland circle'
         col = 'detpix_x'
         # Find position of order 0.

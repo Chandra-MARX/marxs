@@ -7,6 +7,7 @@ from astropy.table import Table, Row
 
 from ..math.pluecker import point_dir2plane, dir_point2line, intersect_line_plane
 from ..math.utils import e2h, h2e
+from ..math.geometry import Geometry, FinitePlane
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 class OpticalElement(SimulationSequenceElement):
@@ -32,32 +33,17 @@ class OpticalElement(SimulationSequenceElement):
         geometry = kwargs.pop('geometry', FinitePlane)
         if isinstance(geometry, Geometry):
             self.geometry = geometry
-        elif issubclass(geometry, Geomoetry):
+        elif issubclass(geometry, Geometry):
             self.geometry = geometry(kwargs)
 
         super(OpticalElement, self).__init__(**kwargs)
 
-    def intersect(self, dir, pos):
-        '''Calculate the intersection point between a ray and the element
+        if not hasattr(self, "loc_coos_name"):
+            self.loc_coos_name = self.geometry.loc_coos_name
 
-        Parameters
-        ----------
-        dir : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the direction of the ray
-        pos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of a point on the ray
-
-        Returns
-        -------
-        intersect :  boolean array of length N
-            ``True`` if an intersection point is found.
-        interpos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the intersection point. Values are set
-            to ``np.nan`` if no intersection point is found.
-        interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane.
-        '''
-        raise NotImplementedError
+    @property
+    def pos4d(self):
+        return self.geometry.pos4d
 
     def process_photon(self, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.
@@ -105,7 +91,7 @@ class OpticalElement(SimulationSequenceElement):
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
     def __call__(self, photons):
-        intersect_out = self.intersect(photons['dir'].data, photons['pos'].data)
+        intersect_out = self.geometry.intersect(photons['dir'].data, photons['pos'].data)
         return self.process_photons(photons, *intersect_out)
 
     def process_photons(self, photons, intersect, interpos, intercoos):

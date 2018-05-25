@@ -1,16 +1,17 @@
 import numpy as np
 from ...utils import generate_test_photons
 from ..analysis import find_best_detector_position, mean_width_2d
-
+from ...simulator import propagate
 
 def test_best_detector_position():
     photons = generate_test_photons(100)
     photons['dir'].data[:, 1] = np.random.rand(100)
     photons['pos'].data[:, 1] = 0.5
+    photons = propagate(photons, -10)
     # det_x is along the second axis
     out = find_best_detector_position(photons,
                                       objective_func_args={'colname': 'det_x'})
-    assert np.isclose(out.x, 1.0)
+    assert np.isclose(out.x, 1.)
 
 
 def test_best_detector_position_rotated():
@@ -19,6 +20,7 @@ def test_best_detector_position_rotated():
     photons['dir'].data[:, 0] = np.random.rand(100)
     photons['dir'].data[:, 2] = - 1
     photons['pos'].data[:, 2] = 0.5
+    photons = propagate(photons, -10)
     # det_x is along the second axis
     out = find_best_detector_position(photons,
                                       objective_func_args={'colname': 'det_x'},
@@ -33,6 +35,7 @@ def test_best_detector_position_2d():
     photons = generate_test_photons(100)
     photons['dir'].data[:, 2] = np.random.rand(100)
     photons['pos'].data[:, 1] = 0.5
+    photons = propagate(photons, -10)
     # det_x is along the second axis
     out = find_best_detector_position(photons, mean_width_2d, {})
     assert np.isclose(out.x, 1.0)

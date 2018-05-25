@@ -33,7 +33,7 @@ for i, angle in enumerate(angles):
     rotmat[:3, :3] = euler.euler2mat(angle, 0, 0, 'szxy')
     light.position = np.dot(rotmat, light_pos)
     light.dir = np.dot(rotmat, light_dir)
-    m1.pos4d = np.dot(rotmat, m1pos4d)
+    m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
     rays = light(10000)
     rays = experiment(rays)
     n_detected[i] = rays['probability'].sum()

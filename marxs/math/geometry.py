@@ -4,13 +4,18 @@ from copy import copy
 
 import numpy as np
 from astropy.table import Table, Row
-from transforms3d.affines import decompose44
+from transforms3d.affines import decompose44, compose
 
-from ..math.utils import e2h, h2e
+from .utils import e2h, h2e
+from .pluecker import point_dir2plane
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 
-class Geometry(object):
+class BaseGeometry(object):
+    pass
+
+
+class Geometry(BaseGeometry):
     _geometry = {}
     _display = {}
 
@@ -111,10 +116,6 @@ class FinitePlane(Geometry):
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
-    def __init__(self, **kwargs):
-        super(FinitePlane, self).__init__(kwargs)
-
-
     def intersect(self, dir, pos):
         '''Calculate the intersection point between a ray and the element
 
@@ -147,14 +148,17 @@ class FinitePlane(Geometry):
 
         forward = k >= 0  # with k < 0, rays would have to move backwards.
 
-        interpos = pos + k[:, None] * dir
+        if dir.ndim == 2:
+            interpos = pos + k[:, None] * dir  # broadcasting array
+        else:
+            interpos = pos + k * dir           # dir is a scalar
         vec_center_inter = interpos - self['center']
         interpos_local = np.vstack([np.dot(vec_center_inter, self['e_y']),
                                     np.dot(vec_center_inter, self['e_z'])]).T
 
         intersect = (~is_parallel & forward &
                      (np.abs(interpos_local[:, 0]) <= np.linalg.norm(self['v_y'])) &
-                     (np.abs(interpos_local[:, 0]) <= np.linalg.norm(self['v_z'])))
+                     (np.abs(interpos_local[:, 1]) <= np.linalg.norm(self['v_z'])))
         for i in [interpos, interpos_local]:
             if dir.ndim == 2:
                 i[~intersect, :3] = np.nan
@@ -204,10 +208,9 @@ class Cylinder(Geometry):
         self._phi_lim = value
         self._display['coo1'] = np.linspace(value[0], value[1], 50)
 
-    def __init__(self, **kwargs):
-        super(Cylinder, self).__init__(kwargs)
+    def __init__(self, kwargs={}):
         self.phi_lim = kwargs.pop('phi_lim', [-np.pi, np.pi])
-
+        super(Cylinder, self).__init__(kwargs)
 
     def __getitem__(self, value):
         if value == 'R':
@@ -233,7 +236,7 @@ class Cylinder(Geometry):
         # Step 2: Transform to global coordinate system
         pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
         # Step 3: Make detector
-        return cls(pos4d=pos4d_circ, phi_offset=-np.pi)
+        return cls({'pos4d': pos4d_circ, 'phi_offset': np.pi})
 
 
     def intersect(self, dir, pos, transform=True):

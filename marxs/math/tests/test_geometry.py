@@ -33,7 +33,7 @@ def test_intersect_plane_zoomed():
                     [-1., 0, 0.02, 0.],
                     [-2., -0.02, 0.023, 0.]])
 
-    plane = FinitePlane(zoom=[1, 5, 10])
+    plane = FinitePlane({'zoom': [1, 5, 10]})
     intersect, interpos, inter_local = plane.intersect(dir, pos)
     assert np.all(intersect == [True, True, False])
     assert np.all(interpos[0, :] == [0, 4, .8, 1])
@@ -48,7 +48,7 @@ def test_intersect_plane_moved():
                     [-1., 0, 0.02, 0.],
                     [-2., -0.02, 0.023, 0.]])
 
-    plane = FinitePlane(position=[4,5,6])
+    plane = FinitePlane({'position': [4,5,6]})
     intersect, interpos, inter_local = plane.intersect(dir, pos)
     assert np.all(intersect == [True, True, False])
     assert np.all(interpos[1, :] == [4, 4.1, 5.01, 1])
@@ -76,7 +76,7 @@ def test_intersect_tube_miss():
 
     # Repeat with a tube that's moved to make sure we did not mess up local and
     # global coordinates in the implementation
-    circ = Cylinder(position=[0.8, 0.8, 1.2])
+    circ = Cylinder({'position': [0.8, 0.8, 1.2]})
     intersect, interpos, inter_local = circ.intersect(np.array([[1., 0., .0, 0],
                                                                 [1., 0., 0., 0.]]),
                                                          np.array([[0., 0., 0., 1.],
@@ -94,7 +94,7 @@ def test_intersect_tube_rays_forward():
                     [-1., 0, 0.02, 0.],
                     [-2., -0.02, 0.023, 0.]])
 
-    circ = Cylinder(zoom=[1, 1, 1])
+    circ = Cylinder({'zoom': [1, 1, 1]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == [True, True, False])
     intersect, interpos, inter_local = circ.intersect(-dir, pos)
@@ -106,11 +106,11 @@ def test_intersect_tube_hitmiss_zoomed():
     dir = np.array([[-.1, 0., 0., 0], [-1., 0, 0.2, 0.]])
     pos = np.array([[20., 0., 0.8, 1.], [2., .0, 0.4, 1.]])
 
-    circ = Cylinder(zoom=[1, 1, 1])
+    circ = Cylinder({'zoom': [1, 1, 1]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
 
-    circ = Cylinder(zoom=[1, 1, .5])
+    circ = Cylinder({'zoom': [1, 1, .5]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == False)
     assert np.all(np.isnan(interpos))
@@ -140,7 +140,7 @@ def test_intersect_tube_2points_transformed():
     exp_interpos = np.array([[1., 0., 0.],
                              [np.sqrt(0.75), 0.5, 0.],
                              [1, 0., .3]])
-    circ = Cylinder(zoom=[1, 1., 5.])
+    circ = Cylinder({'zoom': [1, 1., 5.]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
     assert np.allclose(h2e(interpos), exp_interpos)
@@ -148,7 +148,7 @@ def test_intersect_tube_2points_transformed():
     # Rotate: interpos should be the same as in the unrotated case.
     # Beware of rotation direction!
     orient = transforms3d.axangles.axangle2mat([0, 0, 1], -.3)
-    circ = Cylinder(orientation=orient)
+    circ = Cylinder({'orientation': orient})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
     assert np.allclose(h2e(interpos), exp_interpos)
@@ -156,7 +156,7 @@ def test_intersect_tube_2points_transformed():
                                               [0., 0., 0.3]]).T)
 
     # Shift: inter_local is the same, but interpos changes
-    circ = Cylinder(position=[-.3, 0, 0])
+    circ = Cylinder({'position': [-.3, 0, 0]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
     assert np.allclose(h2e(interpos), np.array([[.7, 0, 0],
@@ -172,7 +172,7 @@ def test_intersect_tube_2points_outside():
     pos = np.array([[50., 0., 0., 1.], [10., .5, 0., 1.], [2, 0, .3, 1.]])
     dir = np.array([[-.1, 0., 0., 0], [-0.5, 0, 0., 0.], [-1., 0., 0., 0.]])
 
-    circ = Cylinder(phi_lim=[.6, np.pi])
+    circ = Cylinder({'phi_lim': [.6, np.pi]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == True)
     assert np.allclose(h2e(interpos), np.array([[-1., 0., 0.],
@@ -181,7 +181,7 @@ def test_intersect_tube_2points_outside():
     assert np.allclose(inter_local, np.array([[np.pi, np.pi - np.arcsin(0.5), np.pi],
                                               [0., 0., 0.3]]).T)
     # phi_lims that guarantee a miss
-    circ = Cylinder(phi_lim=[-.4, -.3])
+    circ = Cylinder({'phi_lim': [-.4, -.3]})
     intersect, interpos, inter_local = circ.intersect(dir, pos)
     assert np.all(intersect == False)
     assert np.all(np.isnan(interpos))
@@ -190,15 +190,15 @@ def test_intersect_tube_2points_outside():
 def test_phi_lim_verification():
     '''Check Errors for wrong phi_lim format.'''
     with pytest.raises(ValueError) as e:
-        circ = Cylinder(phi_lim=[-.4, -.3, .4])
+        circ = Cylinder({'phi_lim': [-.4, -.3, .4]})
     assert '[lower limit, upper limit]' in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        circ = Cylinder(phi_lim=[-.4, -.5])
+        circ = Cylinder({'phi_lim': [-.4, -.5]})
     assert '[lower limit, upper limit]' in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        circ = Cylinder(phi_lim=[-.4, 5])
+        circ = Cylinder({'phi_lim': [-.4, 5]})
     assert 'range -pi to +pi' in str(e.value)
 
 
@@ -206,7 +206,7 @@ def test_intersect_tube_2points_translation():
     '''Repeat test above with a tube that's moved and zoomed to make sure we
     did not mess up local and global coordinates in the implementation
     '''
-    circ = Cylinder(position=[0.8, 0.8, 1.2], zoom=[1, 1, 2])
+    circ = Cylinder({'position': [0.8, 0.8, 1.2], 'zoom': [1, 1, 2]})
     intersect, interpos, inter_local = circ.intersect(np.array([[1., 0., .0, 0],
                                                                 [1., 0., 0., 0.]]),
                                                          np.array([[0., 0., 0., 1.],
@@ -218,7 +218,7 @@ def test_intersect_tube_2points_translation():
 def test_tube_parametric():
     '''Generate points on surface using parametric. Then make rays for intersection
     which should return those points as intersection points.'''
-    circ = Cylinder(zoom=[2., 3., 4.])
+    circ = Cylinder({'zoom': [2., 3., 4.]})
     parametric = circ.parametric_surface(phi=[-.1, 0., 1.])
     parametric = parametric.reshape((6, 4))
     # select dir so that it's in the right direction to recover these points.

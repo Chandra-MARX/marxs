@@ -55,17 +55,17 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         return NotImplementedError
 
     def __call__(self, photons):
-        self.add_output_cols(photons, self.loc_coos_name)
+        self.add_output_cols(photons, self.geometry.loc_coos_name)
         # Add ID number to ID col, if requested
         if self.id_col is not None:
             photons[self.id_col] = self.id_num
         # Set position in different coordinate systems
         x, y = self.generate_local_xy(len(photons))
-        if self.loc_coos_name is not None:
-            photons[self.loc_coos_name[0]] = x
-            photons[self.loc_coos_name[1]] = y
-        photons['pos'] = self.geometry('center') + x.reshape((-1, 1)) * self.geometry('v_y') + y.reshape((-1, 1)) * self.geometry('v_z')
-        projected_area = np.dot(photons['dir'].data, - self.geometry('e_x'))
+        if self.geometry.loc_coos_name is not None:
+            photons[self.geometry.loc_coos_name[0]] = x
+            photons[self.geometry.loc_coos_name[1]] = y
+        photons['pos'] = self.geometry['center'] + x.reshape((-1, 1)) * self.geometry['v_y'] + y.reshape((-1, 1)) * self.geometry['v_z']
+        projected_area = np.dot(photons['dir'].data, - self.geometry['e_x'])
         # Photons coming in "through the back" would have negative probabilities.
         # Unlikely to ever come up, but just in case we clip to 0.
         photons['probability'] *= np.clip(projected_area, 0, 1.)
@@ -96,10 +96,10 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
             Eukledian coordinates of the corners of the square in 3d space.
         '''
         g = self.geometry
-        box = h2e(g('center')) + r_factor * np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
-                                                       h2e(-g('v_y')) + h2e(g('v_z')),
-                                                       h2e(-g('v_y')) - h2e(g('v_z')),
-                                                       h2e( g('v_y')) - h2e(g('v_z'))
+        box = h2e(g('center')) + r_factor * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                                       h2e(-g['v_y']) + h2e(g['v_z']),
+                                                       h2e(-g['v_y']) - h2e(g['v_z']),
+                                                       h2e( g['v_y']) - h2e(g['v_z'])
         ])
         return box
 
@@ -180,14 +180,14 @@ class RectangleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        return 4 * np.linalg.norm(self.geometry('v_y')) * np.linalg.norm(self.geometry('v_z')) * u.mm**2
+        return 4 * np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z']) * u.mm**2
 
     def inner_shape(self):
         g = self.geometry
-        return h2e(g('center')) + np.vstack([h2e( g('v_y')) + h2e(g('v_z')),
-                                             h2e(-g('v_y')) + h2e(g('v_z')),
-                                             h2e(-g('v_y')) - h2e(g('v_z')),
-                                             h2e( g('v_y')) - h2e(g('v_z'))])
+        return h2e(g['center']) + np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) + h2e(g['v_z']),
+                                             h2e(-g['v_y']) - h2e(g['v_z']),
+                                             h2e( g['v_y']) - h2e(g['v_z'])])
 
 
 class CircleAperture(FlatAperture):
@@ -223,17 +223,17 @@ class CircleAperture(FlatAperture):
         self.phi = phi
         self.r_inner = kwargs.pop('r_inner', 0.)
         super(CircleAperture, self).__init__(**kwargs)
-        if self.r_inner > np.linalg.norm(self.geometry('v_y')):
+        if self.r_inner > np.linalg.norm(self.geometry['v_y']):
             raise ValueError('r_inner must be less than size of full aperture.')
 
-        if not np.isclose(np.linalg.norm(self.geometry('v_y')),
-                          np.linalg.norm(self.geometry('v_z'))):
+        if not np.isclose(np.linalg.norm(self.geometry['v_y']),
+                          np.linalg.norm(self.geometry['v_z'])):
             raise GeometryError('Aperture does not have the same size in y, z direction.')
 
     def generate_local_xy(self, n):
         phi = np.random.uniform(self.phi[0], self.phi[1], n)
         # normalize r_inner
-        r_inner = self.r_inner / np.linalg.norm(self.geometry('v_y'))
+        r_inner = self.r_inner / np.linalg.norm(self.geometry['v_y'])
         r = np.sqrt(np.random.uniform(r_inner**2, 1., n))
 
         x = r * np.cos(phi)
@@ -243,7 +243,7 @@ class CircleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        A_circ = np.pi * (np.linalg.norm(self.geometry('v_y'))**2 - self.r_inner**2)
+        A_circ = np.pi * (np.linalg.norm(self.geometry['v_y'])**2 - self.r_inner**2)
         return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ * u.mm**2
 
     def outer_shape(self):
@@ -257,13 +257,13 @@ class CircleAperture(FlatAperture):
         xyz, triangles = super(CircleAperture, self).triangulate()
         if (self.r_inner > 0):
             inneredge = self.xyz_circle(self.r_inner /
-                                        np.linalg.norm(self.geometry('v_y')),
+                                        np.linalg.norm(self.geometry['v_y']),
                                         self.phi)
             # Inner edge of the display. If we have several stacked apertures,
             # we don't want to fill is all up to r=0.
             innerdisplay = self.xyz_circle(self.display.get('inner_factor', 0)  *
                                            self.r_inner /
-                                           np.linalg.norm(self.geometry('v_y')),
+                                           np.linalg.norm(self.geometry['v_y']),
                                            self.phi)
             new_xyz, new_tri = plane_with_hole(inneredge, innerdisplay)
             xyz, triangles = combine_disjoint_triangulations([xyz, new_xyz],
