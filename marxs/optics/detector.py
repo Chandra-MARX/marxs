@@ -31,6 +31,9 @@ class FlatDetector(FlatOpticalElement):
     pixsize : float
         size of pixels in mm
 
+    ignore_pixel_warning : bool
+        ignore warning if derived pixel number is not close to an integer
+
     kwargs :
        see `args for optical elements`
 
@@ -48,7 +51,7 @@ class FlatDetector(FlatOpticalElement):
                'shape': 'box',
                'box-half': '+x'}
 
-    def __init__(self, pixsize=1, **kwargs):
+    def __init__(self, pixsize=1, ignore_pixel_warning=False, **kwargs):
         self.pixsize = pixsize
         super(FlatDetector, self).__init__(**kwargs)
         t, r, zoom, s = decompose44(self.pos4d)
@@ -57,7 +60,7 @@ class FlatDetector(FlatOpticalElement):
         for i in (0, 1):
             z  = zoom[i + 1]
             self.npix[i] = int(np.round(2. * z / self.pixsize))
-            if np.abs(2. * z / self.pixsize - self.npix[i]) > 1e-2:
+            if (np.abs(2. * z / self.pixsize - self.npix[i]) > 1e-2) and not ignore_pixel_warning:
                 warnings.warn('Detector size is not an integer multiple of pixel size in direction {0}. It will be rounded.'.format('xy'[i]), SimulationSetupWarning)
             self.centerpix[i] = (self.npix[i] - 1) / 2
 

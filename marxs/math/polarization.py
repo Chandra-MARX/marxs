@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import astropy.units as u
+from numpy.core.umath_tests import inner1d
 
 from .utils import norm_vector, e2h
 
@@ -110,9 +111,10 @@ def paralleltransport_matrix(dir1, dir2, jones=np.eye(2), replace_nans=True):
     replace_nans : bool
         If ``True`` return an identity matrix for those rays with
         ``dir1=dir2``. In those cases, the local coordinate system is not well
-        defines and thus no Jones matrix can be applied. In MARXS ``dir1=dir2``
+        defined and thus no Jones matrix can be applied. In MARXS ``dir1=dir2``
         often happens if some photons in a list miss the optical element in
-        question - these photons just pass through.
+        question - these photons just pass through and their polarization vector
+        should be unchanged.
 
     Returns
     -------
@@ -120,21 +122,31 @@ def paralleltransport_matrix(dir1, dir2, jones=np.eye(2), replace_nans=True):
     '''
     dir1 = norm_vector(dir1)
     dir2 = norm_vector(dir2)
+
     jones_3 = np.eye(3)
     jones_3[:2, :2] = jones
+
+    pmat = np.zeros((dir1.shape[0], 3, 3))
     s = np.cross(dir1, dir2)
-    s = s / np.linalg.norm(s, axis=1)[:, None]
-    p_in = np.cross(dir1, s)
-    p_out = np.cross(dir2, s)
+    s_norm = np.linalg.norm(s, axis=1)
+    # Find dir values that remain unchanged
+    # For these the cross prodict will by 0
+    # and a numerical error is raised in s / norm(s)
+    # Expected output value for these depends on "replace_nans"
+    ind = np.isclose(s_norm, 0)
 
-    Oininv = np.array([s, p_in, dir1]).swapaxes(1, 0)
-    Oout = np.array([s, p_out, dir2]).swapaxes(1, 2).T
-    temp = np.einsum('...ij,kjl->kil', jones_3, Oininv)
-    pmat = np.einsum('ijk,ikl->ijl', Oout, temp)
+    if (~ind).sum() > 0:
 
-    if replace_nans:
-        ind = np.isnan(s[:, 0])
-        pmat[ind, :, :] = np.eye(3)[None, :, :]
+        s = s[~ind, :] / s_norm[~ind][:, None]
+        p_in = np.cross(dir1[~ind, :], s)
+        p_out = np.cross(dir2[~ind, :], s)
+        Oininv = np.array([s, p_in, dir1[~ind, :]]).swapaxes(1, 0)
+        Oout = np.array([s, p_out, dir2[~ind, :]]).swapaxes(1, 2).T
+        temp = np.einsum('...ij,kjl->kil', jones_3, Oininv)
+        pmat[~ind, :, :] = np.einsum('ijk,ikl->ijl', Oout, temp)
+
+    factor = 1 if replace_nans else np.nan
+    pmat[ind, :, :] = factor * np.eye(3)[None, :, :]
     return pmat
 
 def parallel_transport(dir_old, dir_new, pol_old, **kwargs):

@@ -18,7 +18,6 @@ These classes my be generalized in the future.
 
 from __future__ import division
 
-import warnings
 import numpy as np
 from scipy import optimize
 import transforms3d
@@ -254,7 +253,7 @@ class RowlandTorus(MarxsElement):
         intersectvalid : bool
             When ``r >=R`` the torus can intersect with itself. At these points,
             phi is not unique. If ``intersectvalid`` is true, those points will
-            be filled with on arbitrarily chosen valid value (0.), otherwise
+            be filled with an arbitrarily chosen valid value (0.), otherwise
             they will be nan.
 
         Returns
@@ -275,9 +274,11 @@ class RowlandTorus(MarxsElement):
         theta = np.arcsin(s * xyz[:, 1] / self.r) + (s < 0) * np.pi
 
         factor = self.R + self.r * np.cos(theta)
-        with warnings.catch_warnings():
-            phi = np.arctan2(xyz[:, 2] / factor, xyz[:, 0] / factor)
-        phi[factor == 0] = 0 if intersectvalid else np.nan
+        phi = np.zeros_like(factor)
+        ind = factor != 0
+        phi[ind] = np.arctan2(xyz[ind, 2] / factor[ind], xyz[ind, 0] / factor[ind])
+        if not intersectvalid:
+            phi[~factor] = np.nan
 
         return theta, phi
 
