@@ -78,7 +78,9 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
         col = 'det_x' # 0 at center, detpix_x is 0 in corner.
         zeropos = 0.
     elif isinstance(detector, RowlandTorus):
-        det = CircularDetector(geometry=Cylinder.from_rowland(detector, width=1e5))
+        det = CircularDetector(geometry=Cylinder.from_rowland(detector, width=1e5,
+                                                              rotation=np.pi,
+                                                              kwargs={'phi_lim':[-np.pi/2, np.pi/2]}))
         info['method'] = 'Circular detector on Rowland circle'
         col = 'detpix_x'
         # Find position of order 0.

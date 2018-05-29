@@ -1,14 +1,13 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-from functools import wraps
 from copy import copy, deepcopy
 
 import numpy as np
-from astropy.table import Table, Row
 from transforms3d.affines import decompose44, compose
+from transforms3d.axangles import axangle2mat
 
 from .utils import e2h, h2e
 from .pluecker import point_dir2plane
-from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..base import _parse_position_keywords
 
 
 class Geometry(object):
@@ -176,8 +175,9 @@ class Cylinder(Geometry):
         The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
         Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
         an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
-    pixsize : float
-        size of pixels in mm
+    phi_lim : list
+        If a cylinder does not cover the full circle, set ``phi_lim`` to the limits, e.g.
+        ``[-np.pi / 2, np.pi / 2]`` makes a "half-pipe".
     '''
     loc_coos_name = ['phi', 'y']
 
@@ -201,7 +201,7 @@ class Cylinder(Geometry):
 
     def __init__(self, kwargs={}):
         self.coos_limits = deepcopy(self.coos_limits)
-        self.coos_limits[0] = kwargs.pop('phi_lim', [-np.pi, np.pi])
+        self.coos_limits[0] = np.asanyarray(kwargs.pop('phi_lim', [-np.pi, np.pi]))
         super(Cylinder, self).__init__(kwargs)
 
     def __getitem__(self, value):
@@ -212,8 +212,15 @@ class Cylinder(Geometry):
             return super(Cylinder, self).__getitem__(value)
 
     @classmethod
-    def from_rowland(cls, rowland, width):
-        '''Generate a `CircularDetector` from a `RowlandTorus`.
+    def from_rowland(cls, rowland, width, rotation=0., kwargs={}):
+        '''Generate a `Cylinder` from a `RowlandTorus`.
+
+        According to the definition of the `marxs.design.rowland.RowlandTorus`
+        the origin phi=0 is at the "top". When this class method is used to
+        make a detector that catches all dispersed grating signal on the
+        Rowland torus, a ``rotation=np.pi`` places the center of the Cylinder
+        close to the center of the torus (the location of the focal point in
+        the standard Rowland geometry).
 
         Parameters
         ----------
@@ -222,14 +229,21 @@ class Cylinder(Geometry):
             Rowland Circle defined by ``rowland``.
         width : float
             Half-width of the tube in the flat direction (z-axis) in mm
+        rotation : float
+            Rotation angle of the Cylinder around its z-axis compared to the
+            phi=0 position of the Rowland torus.
+
         '''
-        # Step 1: Get position and size from Rowland torus
-        pos4d_circ = compose([rowland.R, 0, 0], np.eye(3), [rowland.r, rowland.r, width])
-        # Step 2: Transform to global coordinate system
+        # Step 1: Rotate around z axis
+        rot = axangle2mat(np.array([0, 0, 1.]), rotation)
+        # Step 2: Get position and size from Rowland torus
+        pos4d_circ = compose([rowland.R, 0, 0], rot, [rowland.r, rowland.r, width])
+        # Step 3: Transform to global coordinate system
         pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
-        # Step 3: Make detector
-        #### TBD: Check what rotation is needed ###
-        return cls({'pos4d': pos4d_circ})
+        # Step 4: Make detector
+        det_kwargs = {'pos4d': pos4d_circ}
+        det_kwargs.update(kwargs)
+        return cls(det_kwargs)
 
 
     def intersect(self, dir, pos, transform=True):
