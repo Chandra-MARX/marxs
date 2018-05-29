@@ -96,7 +96,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
             Eukledian coordinates of the corners of the square in 3d space.
         '''
         g = self.geometry
-        box = h2e(g('center')) + r_factor * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+        box = h2e(g['center']) + r_factor * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
                                                        h2e(-g['v_y']) + h2e(g['v_z']),
                                                        h2e(-g['v_y']) - h2e(g['v_z']),
                                                        h2e( g['v_y']) - h2e(g['v_z'])
@@ -130,8 +130,8 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
 
         n = self.display.get('n_vertices', 90)
         phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
-        v_y = r_factor * self.geometry('v_y')
-        v_z = r_factor * self.geometry('v_z')
+        v_y = r_factor * self.geometry['v_y']
+        v_z = r_factor * self.geometry['v_z']
 
         x = np.cos(phi)
         y = np.sin(phi)
@@ -143,7 +143,7 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         x[~ind] = 0
         y[~ind] = 0
 
-        return h2e(self.geometry('center') + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
+        return h2e(self.geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
 
 
     def outer_shape(self):
