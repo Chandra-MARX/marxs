@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import inspect
 import warnings
+from copy import deepcopy
 
 import numpy as np
 from transforms3d import affines
@@ -9,6 +10,7 @@ from transforms3d import affines
 from astropy.table import Column
 from astropy.extern.six import with_metaclass
 
+from ..visualization.utils import DisplayDict
 
 class GeometryError(Exception):
     pass
@@ -68,6 +70,7 @@ class MarxsElement(with_metaclass(DocMeta, object)):
 
         if len(kwargs) > 0:
             raise ValueError('Initialization arguments {0} not understood'.format(', '.join(kwargs.keys())))
+        self.display = DisplayDict(self, deepcopy(self.display))
 
     def describe(self):
         return OrderedDict(element=self.name)

@@ -25,8 +25,50 @@ def get_obj_name(obj):
         return str(obj)
 
 
+class DisplayDict(dict):
+    '''A dictionary to store how an element is displayed in plotting.
+
+    A dictionary of this type works just like a normal dictionary, except for an
+    additional look-up step for keys that are not found in the dictionary itself.
+    A ``DisplayDict`` is initialized with a reference to the object it describes
+    and any parameters accessed from ``DisplayDict`` that is not found in the
+    dictionary, will be searched in the objects geometry. This allows us to set
+    any and all display settings in the ``DisplayDict`` to custamize plotting in any
+    way, but for those values that are not set, fall back to the settings of the
+    geometry (e.g. the shape of an object is typically taken from the geometry,
+    while the color is not).
+
+    Parameters
+    ----------
+    parent : `marxs.base.MarxsElement`
+        Reference to the object that is described by this ``DisplayDict``
+    args, kwargs: see `dict`
+    '''
+    def __init__(self, parent, *args, **kwargs):
+        self.parent = parent
+        super(DisplayDict, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if (key not in self) and hasattr(self.parent, 'geometry'):
+            try:
+                return getattr(self.parent.geometry, key)
+            except AttributeError:
+                raise KeyError(key)
+        else:
+            return super(DisplayDict, self).__getitem__(key)
+
+    def get(self, k, d=None):
+        '''D.get(k[,d]) -> D[k] if k in D, else d.  d defaults to None.'''
+        try:
+            return self[k]
+        except:
+            KeyError
+            return d
+
+
+
 def plot_object_general(plot_registry, obj, display=None, **kwargs):
-    '''Look up a plottig routine for an object and execute it.
+    '''Look up a plotting routine for an object and execute it.
 
     This function is not meant to be called directly by the user, instead, it
     is designed to simplify the implementation of new plotting backends.
@@ -62,25 +104,25 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
                            MARXSVisualizationWarning)
             return None
 
-    out = None
-    if 'shape' in display:
+    try:
         shape = display['shape']
-        shapes = [s.strip() for s in shape.split(';')]
-        for s in shapes:
-            if s == 'None':
-                break
-            elif s in plot_registry:
-                # turn into valid color tuple
-                display['color'] = get_color(display)
-                out = plot_registry[s](obj, display,  **kwargs)
-                break
-        else:
-            warnings.warn('Skipping {0}: No function to plot {1}.'.format(get_obj_name(obj), shape),
-                          MARXSVisualizationWarning)
-    else:
+    except KeyError:
         warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(get_obj_name(obj)),
                        MARXSVisualizationWarning)
-    return out
+        return None
+
+    shapes = [s.strip() for s in shape.split(';')]
+    for s in shapes:
+        if s == 'None':
+            return None
+        elif s in plot_registry:
+            # turn into valid color tuple
+            display['color'] = get_color(display)
+            return plot_registry[s](obj, display,  **kwargs)
+    else:
+        warnings.warn('Skipping {0}: No function to plot {1}.'.format(get_obj_name(obj), shape),
+                          MARXSVisualizationWarning)
+        return None
 
 
 def get_color(d):

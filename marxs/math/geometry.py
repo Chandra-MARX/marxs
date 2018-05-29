@@ -1,6 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from functools import wraps
-from copy import copy
+from copy import copy, deepcopy
 
 import numpy as np
 from astropy.table import Table, Row
@@ -11,13 +11,11 @@ from .pluecker import point_dir2plane
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 
-class BaseGeometry(object):
-    pass
-
-
-class Geometry(BaseGeometry):
+class Geometry(object):
     _geometry = {}
-    _display = {}
+
+    shape = 'None'
+    n_points = 50
 
     def __init__(self, kwargs={}):
         self.pos4d = _parse_position_keywords(kwargs)
@@ -99,19 +97,13 @@ class Geometry(BaseGeometry):
         '''
         raise NotImplementedError
 
-    def display(self, key):
-        if key in self._display:
-            return self._display[key]
-        else:
-            return super(Geometry, self).display(key)
-
 
 class FinitePlane(Geometry):
     '''Base class for geometrically flat optical elements.
 
     '''
 
-    _display = {'shape': 'box'}
+    shape = 'box'
 
     loc_coos_name = ['y', 'z']
     '''name for output columns that contain the interaction point in local coordinates.'''
@@ -189,27 +181,27 @@ class Cylinder(Geometry):
     '''
     loc_coos_name = ['phi', 'y']
 
+    shape = 'surface'
+    coos_limits = [np.array([-np.pi, np.pi]), np.array([-1, 1])]
 
-    _display = {'shape': 'surface',
-               'coo1': np.linspace(-np.pi, np.pi, 50),
-               'coo2': [-1, 1]}
+    # This verification code does not fit here right now, but when I convert to traits
+    # later it might come in useful again and thus I keep it here as a comment.
+    # @property
+    # def phi_lim(self):
+    #     return self._phi_lim
 
-    @property
-    def phi_lim(self):
-        return self._phi_lim
-
-    @phi_lim.setter
-    def phi_lim(self, value):
-        if (len(value) != 2) or (value[0] > value[1]):
-            raise ValueError('phi_lim has the format [lower limit, upper limit]')
-        for v in value:
-            if (v < -np.pi) or (v > np.pi):
-                raise ValueError('phi_lim must be in range -pi to +pi.')
-        self._phi_lim = value
-        self._display['coo1'] = np.linspace(value[0], value[1], 50)
+    # @phi_lim.setter
+    # def phi_lim(self, value):
+    #     if (len(value) != 2) or (value[0] > value[1]):
+    #         raise ValueError('phi_lim has the format [lower limit, upper limit]')
+    #     for v in value:
+    #         if (v < -np.pi) or (v > np.pi):
+    #             raise ValueError('phi_lim must be in range -pi to +pi.')
+    #     self.coos_limits[0] = value
 
     def __init__(self, kwargs={}):
-        self.phi_lim = kwargs.pop('phi_lim', [-np.pi, np.pi])
+        self.coos_limits = deepcopy(self.coos_limits)
+        self.coos_limits[0] = kwargs.pop('phi_lim', [-np.pi, np.pi])
         super(Cylinder, self).__init__(kwargs)
 
     def __getitem__(self, value):
@@ -236,7 +228,8 @@ class Cylinder(Geometry):
         # Step 2: Transform to global coordinate system
         pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
         # Step 3: Make detector
-        return cls({'pos4d': pos4d_circ, 'phi_offset': np.pi})
+        #### TBD: Check what rotation is needed ###
+        return cls({'pos4d': pos4d_circ})
 
 
     def intersect(self, dir, pos, transform=True):
@@ -303,10 +296,10 @@ class Cylinder(Geometry):
             z_1 = xyz[i, 2] + a1 * dir[i, 2]
             z_2 = xyz[i, 2] + a2 * dir[i, 2]
             hit_1 = ((a1 >= 0) & (np.abs(z_1) <= 1.) &
-                     (phi_1 >= self.phi_lim[0]) & (phi_1 <= self.phi_lim[1]))
+                     (phi_1 >= self.coos_limits[0][0]) & (phi_1 <= self.coos_limits[0][1]))
             # Use hit_2 only if a2 is closer than hit_1
             hit_2 = ((a2 >= 0) & (a2 <= a1) & (np.abs(z_2) <= 1.) &
-                     (phi_2 >= self.phi_lim[0]) & (phi_2 <= self.phi_lim[1]))
+                     (phi_2 >= self.coos_limits[0][0]) & (phi_2 <= self.coos_limits[0][1]))
             intersect[i_ind] = hit_1 | hit_2
             # Set values into array from either point 1 or 2
             interpos_local[i_ind[hit_1], 0] = phi_1[hit_1]
@@ -329,7 +322,7 @@ class Cylinder(Geometry):
         return intersect, interpos, interpos_local
 
 
-    def parametric_surface(self, phi, z=np.array([-1, 1])):
+    def parametric_surface(self, phi=None, z=None):
         '''Parametric description of the tube.
 
         This is just another way to obtain the shape of the tube, e.g.
@@ -338,17 +331,20 @@ class Cylinder(Geometry):
         Parameters
         ----------
         phi : np.array
-            ``phi`` is the angle around the tube profile.
+            ``phi`` is the angle around the tube profile. Set to ``None`` to use the
+            extend of the element itself.
         z : np.array
-            The coordiantes along the radius coordinate.
+            The coordiantes along the radius coordinate. Set to ``None`` to use the
+            extend of the element itself.
 
         Returns
         -------
         xyzw : np.array
             Ring coordinates in global homogeneous coordinate system.
         '''
-        phi = np.asanyarray(phi)
-        z = np.asanyarray(z)
+        phi = np.linspace(self.coos_limits[0][0], self.coos_limits[0][1], self.n_points) \
+              if phi is None else np.asanyarray(phi)
+        z = self.coos_limits[1] if z is None else np.asanyarray(z)
         if (phi.ndim != 1) or (z.ndim != 1):
             raise ValueError('input parameters have 1-dim shape.')
         phi, z = np.meshgrid(phi, z)

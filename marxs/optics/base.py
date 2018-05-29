@@ -1,6 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from functools import wraps
-from copy import copy
+from copy import copy, deepcopy
 
 import numpy as np
 from astropy.table import Table, Row
