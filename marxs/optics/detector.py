@@ -3,10 +3,9 @@ from __future__ import division
 import warnings
 
 import numpy as np
-from transforms3d.affines import decompose44, compose
+from transforms3d.affines import decompose44
 
 from .base import FlatOpticalElement, OpticalElement
-from ..math.utils import h2e
 from ..utils import SimulationSetupWarning
 from ..math.geometry import Cylinder
 

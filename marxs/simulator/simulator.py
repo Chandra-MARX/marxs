@@ -530,5 +530,26 @@ class KeepCol(object):
             return d[:, ind, :]
 
 def propagate(photons, d):
+    '''Move photons along the rays.
+
+    This function moves all photons in the photon list by a specified amount
+    forwards or backwards along the ray.
+    Normally, photons only move forward in the simulation, but sometimes it
+    can be useful to reset the photons to an earlier position, e.g. to see
+    how the pattern on a detector changes for different detector positions.
+
+    Parameters
+    ----------
+    photons : `astropy.table.Table`
+        Photon table with pos and dir entries
+    d : float
+        Distance for the photons to move. Negative values move photons
+        backwards.
+
+    Returns
+    -------
+    photons : `astropy.table.Table`
+        Photon table with pos and dir entries
+    '''
     photons['pos'] = photons['pos'] + d * photons['dir']
     return photons
