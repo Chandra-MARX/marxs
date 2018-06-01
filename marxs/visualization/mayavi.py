@@ -54,7 +54,7 @@ def triangulation(obj, display, viewer=None):
     '''Plot a plane with an inner hole such as an aperture.'''
     from mayavi import mlab
 
-    xyz, triangles = obj.triangulate()
+    xyz, triangles = obj.triangulate(display)
     t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
 
@@ -65,12 +65,13 @@ def surface(surface, display, viewer=None):
     The parameter boundaries are taken from the ``coo1`` and ``coo2`` in the
     display dictionary. The plotting routine is generic. It calls the
     ``parametric_surface()`` method of the object that is plotted; see there
-    for a detailted description of parameters.
+    for a detailed description of parameters.
     '''
     from mayavi import mlab
 
     xyz = surface.parametric_surface(display.get('coo1', [-1, 1]),
-                                     display.get('coo2', [-1, 1]))
+                                     display.get('coo2', [-1, 1]),
+                                     display)
     xyz = mutils.h2e(xyz)
     x = xyz[..., 0]
     y = xyz[..., 1]

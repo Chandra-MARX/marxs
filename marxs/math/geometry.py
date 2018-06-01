@@ -8,6 +8,73 @@ from transforms3d.axangles import axangle2mat
 from .utils import e2h, h2e
 from .pluecker import point_dir2plane
 from ..base import _parse_position_keywords
+from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
+
+
+def xyz_square(geometry, r_factor=1):
+    '''Generate Eukledian positions for the corners of a square.
+
+    The square is centered on the center of the object and the edges are
+    given by ``v_y`` and ``v_z``.
+
+    Parameters
+    ----------
+    r_factor : float
+        Scaling factor for the square.
+
+    Returns
+    -------
+    box : np.array of shape (4, 3)
+        Eukledian coordinates of the corners of the square in 3d space.
+    '''
+    g = geometry
+    box = h2e(g['center']) + r_factor * np.vstack([h2e( g['v_y']) + h2e(g['v_z']),
+                                                   h2e(-g['v_y']) + h2e(g['v_z']),
+                                                   h2e(-g['v_y']) - h2e(g['v_z']),
+                                                   h2e( g['v_y']) - h2e(g['v_z'])
+                                               ])
+    return box
+
+def xyz_circle(geometry, r_factor=1, philim=[0, 2 * np.pi], n_vertices=90):
+    '''Generate Eukledian positions along an ellipse.
+
+    The circle is centered on the center of the object and the semi-major
+    and minor axes are given by ``v_y`` and ``v_z``. Note that this function
+    is usually used to generate circle position, although ellipses are possible,
+    thus the name.
+
+    The circle (or ellipse) is approximated by a polygon with ``n_vertices``
+    vertices, where the value of ``n_vertices`` is taken from the ``self.display``
+    dictionary.
+
+    Parameters
+    ----------
+    r_factor : float
+        Scaling factor for the square.
+    phi_lim : list
+        Lower and upper limit for the angle phi to restrict the circle to a wedge.
+
+    Returns
+    -------
+    circle : np.array of shape (n, 3)
+        Eukledian coordinates of the corners of the square in 3d space.
+    '''
+    n = n_vertices
+    phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
+    v_y = r_factor * geometry['v_y']
+    v_z = r_factor * geometry['v_z']
+
+    x = np.cos(phi)
+    y = np.sin(phi)
+    # phi could be less then full circle
+    # wrap phi at lower bound (which could be negative).
+    # For the default [0, 2 pi] this is a no-op
+    phi = (phi - philim[0]) % (2 * np.pi)
+    ind = phi < anglediff(philim)
+    x[~ind] = 0
+    y[~ind] = 0
+
+    return h2e(geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
 
 
 class Geometry(object):
@@ -159,6 +226,98 @@ class FinitePlane(Geometry):
 
         return intersect, interpos, interpos_local
 
+
+class PlaneWithHole(FinitePlane):
+
+    shape='triangulation'
+    outer_factor = 3
+    inner_factor = 0
+
+    def __init__(self, kwargs):
+        self._geometry['r_inner'] = kwargs.pop('r_inner', None)
+        super(PlaneWithHole, self).__init__(kwargs)
+
+    def triangulate(self, display={}):
+        '''Return a triangulation of the aperture hole embedded in a square.
+
+        The size of the outer square is determined by the ``'outer_factor'`` element
+        in ``self.display``.
+
+        Returns
+        -------
+        xyz : np.array
+            Numpy array of vertex positions in Eukeldian space
+        triangles : np.array
+            Array of index numbers that define triangles
+        '''
+        outer_disp = self.outer_display(display)
+        outer_shape = self.outer_shape(display)
+
+        xyz, triangles = plane_with_hole(outer_disp, outer_shape)
+
+        if not( self['r_inner'] is None):
+            inner_shape = self.inner_shape(display)
+            # Inner edge of the display. If we have several stacked apertures,
+            # we don't want to fill is all up to r=0.
+            inner_disp = self.inner_disp(display)
+            new_xyz, new_tri = plane_with_hole(inner_shape, inner_disp)
+            xyz, triangles = combine_disjoint_triangulations([xyz, new_xyz],
+                                                             [triangles, new_tri])
+
+        return xyz, triangles
+
+    def outer_shape(self, diplay):
+        raise NotImplementedError
+
+    def outer_display(self, diplay):
+        raise NotImplementedError
+
+    def inner_shape(self, diplay):
+        raise NotImplementedError
+
+    def inner_display(self, diplay):
+        raise NotImplementedError
+
+
+class RectangleHole(PlaneWithHole):
+    def outer_shape(self, display):
+        return xyz_square(self)
+
+    def outer_display(self, display):
+        return xyz_square(self, r_factor=display['outer_factor'])
+
+
+class CircularHole(PlaneWithHole):
+
+    def __init__(self, kwargs):
+        phi = kwargs.pop('phi', [0, 2. * np.pi])
+        if np.max(np.abs(phi)) > 10:
+            raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
+        if phi[0] > phi[1]:
+            raise ValueError('phi[1] must be greater than phi[0].')
+        if (phi[1] - phi[0]) > (2 * np.pi + 1e-6):
+            raise ValueError('phi[1] - phi[0] must be less than 2 pi.')
+        self.phi = phi
+
+        super(CircularHole, self).__init__(kwargs)
+
+    def outer_display(self, display):
+        '''Return values in Eukledian space.'''
+        return xyz_circle(self, r_factor=display['outer_factor'])
+
+    def outer_shape(self, display):
+        return xyz_circle(self, r_factor=1, philim=self.phi)
+
+    def inner_shape(self, display):
+        return xyz_circle(self,
+                          r_factor=self.r_inner/np.linalg.norm(self['v_y']),
+                          philim=self.phi)
+    def inner_display(self, display):
+        # Inner edge of the display. If we have several stacked apertures,
+        # we don't want to fill is all up to r=0.
+        return xyz_circle(self,
+                          r_factor=display['inner_factor'] * self.r_inner / np.linalg.norm(self['v_y']),
+                          philim=self.phi)
 
 class Cylinder(Geometry):
     '''A detector shaped like a ring or tube.
@@ -336,7 +495,7 @@ class Cylinder(Geometry):
         return intersect, interpos, interpos_local
 
 
-    def parametric_surface(self, phi=None, z=None):
+    def parametric_surface(self, phi=None, z=None, display={}):
         '''Parametric description of the tube.
 
         This is just another way to obtain the shape of the tube, e.g.
