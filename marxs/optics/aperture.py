@@ -8,6 +8,7 @@ from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
 from ..math.utils import anglediff, h2e
+from ..math.geometry import RectangleHole, CircularHole
 from ..simulator import BaseContainer
 from .. import utils
 
@@ -84,6 +85,9 @@ class RectangleAperture(FlatAperture):
     '''Select the position where a parallel ray from an astrophysical source starts the simulation.
 
     '''
+
+    default_geometry = RectangleHole
+
     def generate_local_xy(self, n):
         x = np.random.random(n) * 2. - 1.
         y = np.random.random(n) * 2. - 1.
@@ -116,6 +120,9 @@ class CircleAperture(FlatAperture):
         ``self.display['inner_factor']`` can be used to restrict the radius range where the
         inner disk is displayed in a plot.
     '''
+
+    default_geometry = CircularHole
+
     def __init__(self, **kwargs):
         super(CircleAperture, self).__init__(**kwargs)
         if self.geometry['r_inner'] > np.linalg.norm(self.geometry['v_y']):
@@ -126,9 +133,9 @@ class CircleAperture(FlatAperture):
             raise GeometryError('Aperture does not have the same size in y, z direction.')
 
     def generate_local_xy(self, n):
-        phi = np.random.uniform(self.phi[0], self.phi[1], n)
+        phi = np.random.uniform(self.geometry.phi[0], self.geometry.phi[1], n)
         # normalize r_inner
-        r_inner = self.r_inner / np.linalg.norm(self.geometry['v_y'])
+        r_inner = self.geometry['r_inner'] / np.linalg.norm(self.geometry['v_y'])
         r = np.sqrt(np.random.uniform(r_inner**2, 1., n))
 
         x = r * np.cos(phi)
@@ -138,8 +145,8 @@ class CircleAperture(FlatAperture):
     @property
     def area(self):
         '''Area covered by the aperture'''
-        A_circ = np.pi * (np.linalg.norm(self.geometry['v_y'])**2 - self.r_inner**2)
-        return (self.phi[1] - self.phi[0])  / (2 * np.pi) * A_circ * u.mm**2
+        A_circ = np.pi * (np.linalg.norm(self.geometry['v_y'])**2 - self.geometry['r_inner']**2)
+        return (self.geometry.phi[1] - self.geometry.phi[0])  / (2 * np.pi) * A_circ * u.mm**2
 
 
 class MultiAperture(BaseAperture, BaseContainer):

@@ -29,6 +29,7 @@ from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
+from ..math.geometry import Geometry
 
 # Python 2 vs 3 (basestring does not exist in Python 3)
 try:
@@ -75,7 +76,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     return np.percentile(r, percentile)
 
 
-class RowlandTorus(MarxsElement):
+class RowlandTorus(MarxsElement, Geometry):
     '''Torus with y axis as symmetry axis.
 
     Note that the origin of the torus is the focal point, which is
@@ -100,8 +101,9 @@ class RowlandTorus(MarxsElement):
     def __init__(self, R, r, **kwargs):
         self.R = R
         self.r = r
-        self.pos4d = _parse_position_keywords(kwargs)
-        super(RowlandTorus, self).__init__(**kwargs)
+        # super does not work, because the various classes have different signature
+        Geometry.__init__(self, kwargs)
+        MarxsElement.__init__(self, **kwargs)
 
     def quartic(self, xyz, transform=True):
         '''Quartic torus equation.
@@ -185,7 +187,7 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
-    def parametric_surface(self, theta, phi):
+    def parametric_surface(self, theta, phi, display):
         '''Parametric representation of surface of torus.
 
         In contrast to `parametric` the input parameters here are 1-d arrays

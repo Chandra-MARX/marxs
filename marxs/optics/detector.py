@@ -102,10 +102,10 @@ class CircularDetector(OpticalElement):
 
     centerpix = [0, 0]
 
+    default_geometry = Cylinder
+
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
-        if 'geometry' not in kwargs:
-            kwargs['geometry'] = Cylinder
         super(CircularDetector, self).__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):

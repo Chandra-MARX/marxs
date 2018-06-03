@@ -26,11 +26,14 @@ class OpticalElement(SimulationSequenceElement):
     `process_photon`.  Marxs will call `process_photons`, which (if not
     overwritten) contains a simple for-loop to loop over all photons in the
     array and call `process_photon` on each of them.
-
     '''
+
+    default_geometry = FinitePlane
+    '''If not geometry is passed in on initialization, an instance of this class will be used.'''
+
     def __init__(self, **kwargs):
 
-        geometry = kwargs.pop('geometry', FinitePlane)
+        geometry = kwargs.pop('geometry', self.default_geometry)
         if isinstance(geometry, Geometry):
             self.geometry = geometry
         elif issubclass(geometry, Geometry):

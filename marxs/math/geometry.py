@@ -5,7 +5,7 @@ import numpy as np
 from transforms3d.affines import decompose44, compose
 from transforms3d.axangles import axangle2mat
 
-from .utils import e2h, h2e
+from .utils import e2h, h2e, anglediff
 from .pluecker import point_dir2plane
 from ..base import _parse_position_keywords
 from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
@@ -87,6 +87,7 @@ class Geometry(object):
         self.pos4d = _parse_position_keywords(kwargs)
         #copy class attribute to instance attribute
         self._geometry = copy(self._geometry)
+        self.geometry = self
 
 
     def __getitem__(self, key):
@@ -234,7 +235,7 @@ class PlaneWithHole(FinitePlane):
     inner_factor = 0
 
     def __init__(self, kwargs):
-        self._geometry['r_inner'] = kwargs.pop('r_inner', None)
+        self._geometry['r_inner'] = kwargs.pop('r_inner', 0.)
         super(PlaneWithHole, self).__init__(kwargs)
 
     def triangulate(self, display={}):
@@ -255,11 +256,11 @@ class PlaneWithHole(FinitePlane):
 
         xyz, triangles = plane_with_hole(outer_disp, outer_shape)
 
-        if not( self['r_inner'] is None):
+        if self['r_inner'] > 0.:
             inner_shape = self.inner_shape(display)
             # Inner edge of the display. If we have several stacked apertures,
             # we don't want to fill is all up to r=0.
-            inner_disp = self.inner_disp(display)
+            inner_disp = self.inner_display(display)
             new_xyz, new_tri = plane_with_hole(inner_shape, inner_disp)
             xyz, triangles = combine_disjoint_triangulations([xyz, new_xyz],
                                                              [triangles, new_tri])
@@ -310,13 +311,13 @@ class CircularHole(PlaneWithHole):
 
     def inner_shape(self, display):
         return xyz_circle(self,
-                          r_factor=self.r_inner/np.linalg.norm(self['v_y']),
+                          r_factor=self['r_inner']/np.linalg.norm(self['v_y']),
                           philim=self.phi)
     def inner_display(self, display):
         # Inner edge of the display. If we have several stacked apertures,
         # we don't want to fill is all up to r=0.
         return xyz_circle(self,
-                          r_factor=display['inner_factor'] * self.r_inner / np.linalg.norm(self['v_y']),
+                          r_factor=display['inner_factor'] * self['r_inner'] / np.linalg.norm(self['v_y']),
                           philim=self.phi)
 
 class Cylinder(Geometry):

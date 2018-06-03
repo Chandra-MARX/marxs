@@ -39,13 +39,17 @@ class DocMeta(type):
         for k in dict:
             # for items that have a docstring (i.e. methods) that is empty
             if hasattr(dict[k], '__doc__') and dict[k].__doc__ is None:
-                for b in mro:
-                    # look if this b defines the method
-                    # (it might not in case of multiple inheritance)
-                    if hasattr(b, k) and (getattr(b, k).__doc__ is not None):
-                        # copy docstring if super method has one
-                        dict[k].__doc__ = getattr(b, k).__doc__
-                        break
+                # Some __doc__ strings cannot be rewitten in Python2, e.g. doc of a type
+                try:
+                    for b in mro:
+                        # look if this b defines the method
+                        # (it might not in case of multiple inheritance)
+                        if hasattr(b, k) and (getattr(b, k).__doc__ is not None):
+                            # copy docstring if super method has one
+                            dict[k].__doc__ = getattr(b, k).__doc__
+                            break
+                except AttributeError:
+                    pass
 
         return type.__new__(mcs, name, bases, dict)
 

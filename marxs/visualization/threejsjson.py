@@ -114,7 +114,7 @@ def box(obj, display):
 
 def triangulation(obj, display):
     '''Describe a plane with a hole, such as an aperture of baffle.'''
-    xyz, triangles = obj.triangulate()
+    xyz, triangles = obj.geometry.triangulate(display)
     out = {}
     out['n'] = 1
     out['name'] = str(obj.name)
