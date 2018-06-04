@@ -4,9 +4,10 @@
 import numpy as np
 
 from .base import OpticalElement, FlatOpticalElement
+from ..base import MarxsElement
+from ..math.geometry import NoGeometry
 
-
-class GlobalEnergyFilter(OpticalElement):
+class GlobalEnergyFilter(MarxsElement):
     '''Energy dependent filter that globally affects all photons.
 
     This element is used on all photons in the list, there is no geometrical
@@ -37,6 +38,7 @@ class GlobalEnergyFilter(OpticalElement):
     --------
     marxs.optics.filter.EnergyFilter
     '''
+
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
         super(GlobalEnergyFilter, self).__init__(**kwargs)

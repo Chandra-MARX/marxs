@@ -69,8 +69,8 @@ def surface(surface, display, viewer=None):
     '''
     from mayavi import mlab
 
-    xyz = surface.geometry.parametric_surface(display.get('coo1', [-1, 1]),
-                                              display.get('coo2', [-1, 1]),
+    xyz = surface.geometry.parametric_surface(display.get('coo1', None),
+                                              display.get('coo2', None),
                                               display)
     xyz = mutils.h2e(xyz)
     x = xyz[..., 0]

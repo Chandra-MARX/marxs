@@ -77,18 +77,23 @@ def xyz_circle(geometry, r_factor=1, philim=[0, 2 * np.pi], n_vertices=90):
     return h2e(geometry['center'] + x.reshape((-1, 1)) * v_y + y.reshape((-1, 1)) * v_z)
 
 
-class Geometry(object):
+class NoGeometry(object):
     _geometry = {}
+    shape = 'none'
 
-    shape = 'None'
+    def __init__(self, kwargs={}):
+        self.geometry = self
+
+
+class Geometry(NoGeometry):
+
     n_points = 50
 
     def __init__(self, kwargs={}):
         self.pos4d = _parse_position_keywords(kwargs)
         #copy class attribute to instance attribute
         self._geometry = copy(self._geometry)
-        self.geometry = self
-
+        super(Geometry, self).__init__(kwargs=kwargs)
 
     def __getitem__(self, key):
         '''This function wraps access to the pos4d matrix.

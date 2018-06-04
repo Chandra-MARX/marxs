@@ -62,7 +62,7 @@ class MarxsElement(with_metaclass(DocMeta, object)):
     representation such as a "Rowland Torus".
     '''
 
-    display = {}
+    display = {'shape': 'none'}
     'Dictionary for display specifications, e.g. color'
 
     def __init__(self, **kwargs):
