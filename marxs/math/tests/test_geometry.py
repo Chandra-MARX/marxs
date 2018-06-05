@@ -1,7 +1,9 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+from numpy.core.umath_tests import inner1d
 from astropy.table import Table
 import transforms3d
+import transforms3d.euler
 import pytest
 
 from ..geometry import Cylinder, FinitePlane
@@ -53,7 +55,6 @@ def test_intersect_plane_moved():
     assert np.all(intersect == [True, True, False])
     assert np.all(interpos[1, :] == [4, 4.1, 5.01, 1])
     assert np.allclose(inter_local[1, :], [-0.9, -.99])
-
 
 def test_intersect_tube_miss():
     '''Rays passing at larger radius or through the center miss the tube.'''
@@ -226,3 +227,18 @@ def test_tube_parametric():
     dir = np.tile([1, 0, 0, 0], (6, 1))
     intersect, interpos, inter_local = circ.intersect(dir, parametric)
     assert np.allclose(parametric, interpos)
+
+@pytest.mark.parametrize("geom", [FinitePlane, Cylinder])
+def test_local_coordsys(geom):
+    '''Ensure local coordiante systems are orthonormal'''
+    rot = transforms3d.euler.euler2mat(*(np.pi * 2 * np.random.rand(3)))
+    g = geom({'rotation': rot,
+              'position': np.random.rand(3)})
+
+    x, y, z = g.get_local_euklid_bases(np.random.rand(5, 2))
+
+    assert np.allclose(inner1d(x, y), 0)
+    assert np.allclose(inner1d(x, z), 0)
+
+    for vec in [x, y, z]:
+        assert np.allclose(np.linalg.norm(vec, axis=1), 1.)

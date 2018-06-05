@@ -169,6 +169,21 @@ class Geometry(NoGeometry):
         '''
         raise NotImplementedError
 
+    def get_local_euklid_bases(self, interpos_local):
+        '''Obtain a local eukledian base at a set of positions.
+
+        Parameters
+        ----------
+        interpos_local : `numpy.ndarray` of shape (N, 2)
+            coordinates in the coordiante system of the geometry (e.g. (x, y), or
+            (r, phi)).
+
+        Returns
+        -------
+        e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
+            Vectors pointing in direction 1, 2, and normal to the surface.
+        '''
+        raise NotImplementedError
 
 class FinitePlane(Geometry):
     '''Base class for geometrically flat optical elements.
@@ -231,6 +246,27 @@ class FinitePlane(Geometry):
                 i[:3] = np.nan
 
         return intersect, interpos, interpos_local
+
+    def get_local_euklid_bases(self, interpos_local):
+        '''Obtain a local eukledian base at a set of positions.
+
+        Parameters
+        ----------
+        interpos_local : `numpy.ndarray` of shape (N, 2)
+            coordinates in the coordiante system of the geometry (e.g. (x, y), or
+            (r, phi)).
+
+        Returns
+        -------
+        e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
+            Vectors pointing in direction 1, 2, and normal to the surface.
+        '''
+
+        n = interpos_local.shape[0]
+        x = np.tile(self['e_x'], (n, 1))
+        y = np.tile(self['e_y'], (n, 1))
+        z = np.tile(self['e_z'], (n, 1))
+        return y, z, x
 
 
 class PlaneWithHole(FinitePlane):
@@ -344,7 +380,7 @@ class Cylinder(Geometry):
         If a cylinder does not cover the full circle, set ``phi_lim`` to the limits, e.g.
         ``[-np.pi / 2, np.pi / 2]`` makes a "half-pipe".
     '''
-    loc_coos_name = ['phi', 'y']
+    loc_coos_name = ['phi', 'z']
 
     shape = 'surface'
     coos_limits = [np.array([-np.pi, np.pi]), np.array([-1, 1])]
@@ -532,3 +568,28 @@ class Cylinder(Geometry):
         w = np.ones_like(z)
         coos = np.array([x, y, z, w]).T
         return np.einsum('...ij,...j', self.pos4d, coos)
+
+    def get_local_euklid_bases(self, interpos_local):
+        '''Obtain a local eukledian base at a set of positions.
+
+        Parameters
+        ----------
+        interpos_local : `numpy.ndarray` of shape (N, 2)
+            coordinates in the coordiante system of the geometry (e.g. (x, y), or
+            (r, phi)).
+
+        Returns
+        -------
+        e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
+            Vectors pointing in direction 1, 2, and normal to the surface.
+        '''
+
+        phi = interpos_local[:, 0]
+        zeros = np.zeros_like(phi)
+        e_phi = np.array([-np.sin(phi), np.cos(phi), zeros, zeros]).T
+        e_z = np.tile(np.dot(self.pos4d, self['e_z']), (interpos_local.shape[0], 1))
+        e_n = np.array([np.cos(phi), np.sin(phi), zeros, zeros]).T
+        phi = np.einsum('...ij,...j', self.pos4d, e_phi)
+        phi = np.einsum('...ij,...j', self.pos4d, e_n)
+        # e_z is already in the local coordinate system
+        return e_phi, e_z, e_n
