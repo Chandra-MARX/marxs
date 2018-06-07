@@ -146,7 +146,8 @@ def test_groove_direction():
     order1 = OrderSelector([1])
 
     g = FlatGrating(d=1./500, order_selector=order1)
-    assert np.allclose(np.dot(g.geometry['e_groove'], g.geometry['e_perp_groove']), 0.)
+    e_groove, e_perp_groove, n = g.e_groove_coos(np.ones((2,1)))
+    assert np.isclose(np.dot(e_groove[0, :], e_perp_groove[0, :]), 0.)
     p = g(photons.copy())
 
     g1 = FlatGrating(d=1./500, order_selector=order1, groove_angle=.3)
@@ -213,7 +214,9 @@ def test_CAT_order_convention():
     gm = CATGrating(d=1./5000, order_selector=OrderSelector([-5]), zoom=2)
     m5 = gm(photons.copy())
     for g in [gm, gp]:
-        assert np.all(g.order_sign_convention(h2e(photons['dir'])) == np.array([1, -1, -1, 1, 1]))
+        e_groove, e_perp, n = g.e_groove_coos(np.zeros((5, 2)))
+        signs = g.order_sign_convention(photons['dir'], e_perp)
+        assert np.all(signs == np.array([1, 1, 1, -1, -1]))
     assert np.all(p5['dir'][1:3, 1] > 0)
     assert np.all(p5['dir'][3:, 1] < 0)
     assert np.all(m5['dir'][1:3, 1] < 0)
@@ -336,4 +339,6 @@ def test_gratings_are_independent():
     '''
     g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
     g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]))
-    assert not np.allclose(g1.geometry['e_groove'], g2.geometry['e_groove'])
+    groove1, perp1, n1 = g1.e_groove_coos(np.array([[-1, 2.3]]))
+    groove2, perp2, n2 = g2.e_groove_coos(np.array([[-1, 2.3]]))
+    assert not np.allclose(groove1, groove2)

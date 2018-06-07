@@ -26,10 +26,9 @@ def test_groove_dir():
     '''Regression test: Groove direction was not set correctly from input table.'''
     hetg = HETG()
     for i in range(len(hetg.elements)):
-        a = hetg.elements[i].geometry['e_groove'][:3]
-        b = np.array([hetg.hess['xul'][i], hetg.hess['yul'][i], hetg.hess['zul'][i]])
-        c = hetg.elements[i].geometry['e_perp_groove'][:3]
-        d = np.array([hetg.hess['xud'][i], hetg.hess['yud'][i], hetg.hess['zud'][i]])
+        a, c, n = hetg.elements[i].e_groove_coos(np.zeros((1, 2)))
+        b = np.array([hetg.hess['xul'][i], hetg.hess['yul'][i], hetg.hess['zul'][i], 0])
+        d = np.array([hetg.hess['xud'][i], hetg.hess['yud'][i], hetg.hess['zud'][i], 0])
         # all a normalized
         for x in [a, b, c, d]:
             assert np.allclose(np.linalg.norm(x), 1., atol=1e-4)

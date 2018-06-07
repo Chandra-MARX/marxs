@@ -242,3 +242,6 @@ def test_local_coordsys(geom):
 
     for vec in [x, y, z]:
         assert np.allclose(np.linalg.norm(vec, axis=1), 1.)
+
+    # Check it's a right-handed coordinage system
+    assert np.allclose(np.cross(x[:, :3], y[:, :3]), z[:, :3])
