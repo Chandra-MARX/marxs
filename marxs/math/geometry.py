@@ -5,7 +5,7 @@ import numpy as np
 from transforms3d.affines import decompose44, compose
 from transforms3d.axangles import axangle2mat
 
-from .utils import e2h, h2e, anglediff
+from .utils import e2h, h2e, anglediff, angle_between
 from .pluecker import point_dir2plane
 from ..base import _parse_position_keywords
 from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
@@ -511,10 +511,10 @@ class Cylinder(Geometry):
             z_1 = xyz[i, 2] + a1 * dir[i, 2]
             z_2 = xyz[i, 2] + a2 * dir[i, 2]
             hit_1 = ((a1 >= 0) & (np.abs(z_1) <= 1.) &
-                     (phi_1 >= self.coos_limits[0][0]) & (phi_1 <= self.coos_limits[0][1]))
+                     angle_between(phi_1, self.coos_limits[0][0], self.coos_limits[0][1]))
             # Use hit_2 only if a2 is closer than hit_1
             hit_2 = ((a2 >= 0) & (a2 <= a1) & (np.abs(z_2) <= 1.) &
-                     (phi_2 >= self.coos_limits[0][0]) & (phi_2 <= self.coos_limits[0][1]))
+                     angle_between(phi_2, self.coos_limits[0][0], self.coos_limits[0][1]))
             intersect[i_ind] = hit_1 | hit_2
             # Set values into array from either point 1 or 2
             interpos_local[i_ind[hit_1], 0] = phi_1[hit_1]
