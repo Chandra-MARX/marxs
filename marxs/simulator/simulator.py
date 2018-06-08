@@ -529,6 +529,31 @@ class KeepCol(object):
                     ind.append(i)
             return d[:, ind, :]
 
+
+class Propagator(SimulationSequenceElement):
+    def __init__(self, **kwargs):
+        '''Move photons along the rays.
+
+        This element moves all photons in the photon list by a specified amount
+        forwards or backwards along the ray.
+        Normally, photons only move forward in the simulation, but sometimes it
+        can be useful to reset the photons to an earlier position, e.g. to see
+        how the pattern on a detector changes for different detector positions.
+
+        Parameters
+        ----------
+        distance : float
+            Distance for the photons to move. Negative values move photons
+            backwards.
+        '''
+        self.distance = kwargs.pop('distance')
+        super(Propagator, self).__init__(**kwargs)
+
+    def __call__(self, photons):
+        photons['pos'] = photons['pos'] + self.distance * photons['dir']
+        return photons
+
+
 def propagate(photons, d):
     '''Move photons along the rays.
 
