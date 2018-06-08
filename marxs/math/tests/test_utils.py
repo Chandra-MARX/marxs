@@ -48,3 +48,4 @@ def test_angle_between():
     assert np.all(utils.angle_between(np.array([-.1, 0., 6.1, .2, 6.5]), 5., 1.))
     assert utils.angle_between(2., 6., 1.) == False
     assert utils.angle_between(4., 1., 2.) == False
+    assert utils.angle_between(-.5, .5, -3.1) == False

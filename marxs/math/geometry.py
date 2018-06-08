@@ -5,7 +5,7 @@ import numpy as np
 from transforms3d.affines import decompose44, compose
 from transforms3d.axangles import axangle2mat
 
-from .utils import e2h, h2e, anglediff, angle_between
+from .utils import e2h, h2e, anglediff, angle_between, norm_vector
 from .pluecker import point_dir2plane
 from ..base import _parse_position_keywords
 from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
@@ -487,7 +487,10 @@ class Cylinder(Geometry):
         # Solve quadratic equation in steps. a12 = (-xr +- sqrt(xr - r**2(x**2 - R**2)))
         xy = xyz[:, :2]
         r = dir[:, :2]
-        underroot = (np.einsum('ij,ij->i', xy, r))**2 - np.sum(r**2, axis=1) * (np.sum(xy**2, axis=1) - 1.)
+        c = np.sum(xy**2, axis=1) - 1.
+        b = 2 * np.sum(xy * r, axis=1)
+        a = np.sum(r**2, axis=1)
+        underroot = b**2 - 4 * a * c
         # List of intersect in xy plane.
         intersect = (underroot >= 0)
         i = intersect  # just a shorthand because it's used so much below
@@ -499,10 +502,9 @@ class Cylinder(Geometry):
 
         if intersect.sum() > 0:
             i_ind = intersect.nonzero()[0]
-            b = np.sum(xy[i] * r[i], axis=1)
-            denom = np.sum(r[i]**2, axis=1)
-            a1 = (- b + np.sqrt(underroot[i])) / denom
-            a2 = (- b - np.sqrt(underroot[i])) / denom
+            denom = 2 * a[i]
+            a1 = (- b[i] + np.sqrt(underroot[i])) / denom
+            a2 = (- b[i] - np.sqrt(underroot[i])) / denom
             xy_1 = xy[i, :] + a1[:, np.newaxis] * r[i, :]
             phi_1 = np.arctan2(xy_1[:, 1], xy_1[:, 0])
             xy_2 = xy[i, :] + a2[:, np.newaxis] * r[i, :]
@@ -512,9 +514,11 @@ class Cylinder(Geometry):
             z_2 = xyz[i, 2] + a2 * dir[i, 2]
             hit_1 = ((a1 >= 0) & (np.abs(z_1) <= 1.) &
                      angle_between(phi_1, self.coos_limits[0][0], self.coos_limits[0][1]))
-            # Use hit_2 only if a2 is closer than hit_1
-            hit_2 = ((a2 >= 0) & (a2 <= a1) & (np.abs(z_2) <= 1.) &
+            hit_2 = ((a2 >= 0) & (np.abs(z_2) <= 1.) &
                      angle_between(phi_2, self.coos_limits[0][0], self.coos_limits[0][1]))
+            # If both 1 and 2 are hits, use the closer one
+            hit_1[hit_2 & (a2 < a1)] = False
+            hit_2[hit_1 & (a2 >= a1)] = False
             intersect[i_ind] = hit_1 | hit_2
             # Set values into array from either point 1 or 2
             interpos_local[i_ind[hit_1], 0] = phi_1[hit_1]
@@ -559,7 +563,8 @@ class Cylinder(Geometry):
         '''
         phi = np.linspace(self.coos_limits[0][0], self.coos_limits[0][1], self.n_points) \
               if phi is None else np.asanyarray(phi)
-        z = self.coos_limits[1] if z is None else np.asanyarray(z)
+        trans, rot, zoom, shear = decompose44(self.pos4d)
+        z = self.coos_limits[1] if z is None else np.asanyarray(z) / zoom[2]
         if (phi.ndim != 1) or (z.ndim != 1):
             raise ValueError('input parameters have 1-dim shape.')
         phi, z = np.meshgrid(phi, z)
@@ -587,9 +592,10 @@ class Cylinder(Geometry):
         phi = interpos_local[:, 0]
         zeros = np.zeros_like(phi)
         e_phi = np.array([-np.sin(phi), np.cos(phi), zeros, zeros]).T
-        e_z = np.tile(np.dot(self.pos4d, self['e_z']), (interpos_local.shape[0], 1))
+        e_z = np.tile(self['e_z'], (interpos_local.shape[0], 1))
         e_n = np.array([np.cos(phi), np.sin(phi), zeros, zeros]).T
-        phi = np.einsum('...ij,...j', self.pos4d, e_phi)
-        phi = np.einsum('...ij,...j', self.pos4d, e_n)
+
+        e_phi = np.einsum('...ij,...j', self.pos4d, e_phi)
+        e_n = np.einsum('...ij,...j', self.pos4d, e_n)
         # e_z is already in the local coordinate system
-        return e_phi, e_z, e_n
+        return norm_vector(e_phi), e_z, norm_vector(e_n)

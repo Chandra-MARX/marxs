@@ -24,7 +24,7 @@ import transforms3d
 from transforms3d.utils import normalized_vector
 
 from ..optics.base import OpticalElement
-from ..base import _parse_position_keywords, MarxsElement
+from ..base import MarxsElement
 from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.utils import e2h, h2e, anglediff
