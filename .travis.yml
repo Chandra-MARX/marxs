@@ -1,7 +1,6 @@
 language: python
 
 python:
-    - 2.7
     - 3.6
 
 sudo: false
@@ -24,8 +23,7 @@ env:
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        #- NUMPY_VERSION=stable
-        - NUMPY_VERSION=1.13
+        - NUMPY_VERSION=stable
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
@@ -77,30 +75,28 @@ install:
 matrix:
     include:
 
-        # Do a coverage test in Python 2.
-        - python: 2.7
-          env: SETUP_CMD='test --coverage' NUMPY_VERSION=1.13
+        # Do a coverage test in Python 3.
+        - python: 3.6
+          env: SETUP_CMD='test --coverage'
 
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
-        - python: 2.7
-          env: SETUP_CMD='build_sphinx -w' NUMPY_VERSION=1.13
+        - python: 3.6
+          env: SETUP_CMD='build_sphinx -w'
 
         # Try Astropy development version
-        - python: 3.5
-          env: ASTROPY_VERSION=development NUMPY_VERSION=1.13
-        # - python: 2.7
-        #   env: ASTROPY_VERSION=lts
-        # - python: 3.5
+        - python: 3.6
+          env: ASTROPY_VERSION=development
+	# The LTS version uses legacy numpy formatting for table column
+	# and that makes one of the doctests fail.
+	# The next LTS is not far, so I stop supporting the old one for now
+	# although it probably still works.
+        #- python: 3.6
         #  env: ASTROPY_VERSION=lts
 
-        # Try older numpy versions
-        - python: 2.7
-          env: NUMPY_VERSION=1.10 NUMPY_VERSION=1.13
-
         # Try numpy pre-release
-        # - python: 3.5
-        #   env: NUMPY_VERSION=prerelease
+        - python: 3.6
+          env: NUMPY_VERSION=prerelease
 
 
 script:

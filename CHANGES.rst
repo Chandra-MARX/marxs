@@ -45,6 +45,8 @@ Bug fixes
   
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Examples are now written for numpy >= 1.14 (which changed some printing
+  formats). [#182]
 
 1.1 (15-Jul-2017)
 -----------------
