@@ -18,6 +18,20 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
+- The geometry of a class is now defined as a separate object from the new
+  `marxs.math.geometry` module. Before, the geometry was backed into the 
+  optical components itself which led to significant code duplication. The new
+  scheme allows to make e.g. cylindrical and flat gratings with the same 
+  gratings objects. However, not all geometries work with all objects and there
+  is currently no way to check automatically - the user has to use caution or
+  check the code. [#182]
+
+- Geometry objects provide item access like this
+  ``detector.geometry['center']`` instead of a function interface with
+  ``(...)``. [#182]
+
+
+
 
 Bug fixes
 ^^^^^^^^^
