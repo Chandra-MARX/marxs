@@ -87,8 +87,12 @@ matrix:
         # Try Astropy development version
         - python: 3.6
           env: ASTROPY_VERSION=development
-        - python: 3.6
-          env: ASTROPY_VERSION=lts
+	# The LTS version uses legacy numpy formatting for table column
+	# and that makes one of the doctests fail.
+	# The next LTS is not far, so I stop supporting the old one for now
+	# although it probably still works.
+        #- python: 3.6
+        #  env: ASTROPY_VERSION=lts
 
         # Try numpy pre-release
         - python: 3.6
