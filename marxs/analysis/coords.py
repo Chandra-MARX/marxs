@@ -29,7 +29,7 @@ class ProjectOntoPlane(FlatOpticalElement):
     >>> photons['proj_x'].data
     array([ 3., -1.])
     >>> photons['proj_y'].data
-    array([ 3., 0.])
+    array([3., 0.])
     '''
 
     loc_coos_name = ['proj_x', 'proj_y']

@@ -34,8 +34,8 @@ class RandomArbitraryPdf(object):
     >>> np.random.seed(0)
     >>> a = RandomArbitraryPdf(np.array([1,2,3]), np.array([0.2,1,6]))
     >>> a(10)
-    array([ 2.79172504,  2.52889492,  2.56804456,  2.92559664,  2.07103606,
-            2.0871293 ,  2.0202184 ,  2.83261985,  2.77815675,  2.87001215])
+    array([2.79172504, 2.52889492, 2.56804456, 2.92559664, 2.07103606,
+           2.0871293 , 2.0202184 , 2.83261985, 2.77815675, 2.87001215])
 
     As you can see, in this case the chance to draw from the 1-2 interval is only
     1/7 and it did not happen this time.
