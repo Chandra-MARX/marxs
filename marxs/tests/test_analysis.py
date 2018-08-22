@@ -20,7 +20,7 @@ def test_detector_position():
     n = 1000
     convergent_point = np.array([3., 5., 7.])
     pos = np.random.rand(n, 3) * 100. + 10.
-    dir = pos - convergent_point[np.newaxis, :]
+    dir = - pos + convergent_point[np.newaxis, :]
     photons = Table({'pos': e2h(pos, 1), 'dir': e2h(dir, 0),
                      'energy': np.ones(n), 'polarization': np.ones(n), 'probability': np.ones(n)})
     opt = find_best_detector_position(photons)

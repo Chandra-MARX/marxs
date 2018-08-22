@@ -401,7 +401,7 @@ class DiskSource(RadialDistributionSource):
                           np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
         super(DiskSource, self).__init__(**kwargs)
 
-class GaussSource(RadialDistributionSource):
+class GaussSource(AstroSource):
     '''Astrophysical source with a Gaussian brightness profile.
 
     This source uses a small angle approximation which is valid for radii less than
@@ -413,10 +413,26 @@ class GaussSource(RadialDistributionSource):
         Gaussian sigma setting the width of the distribution
     '''
     def __init__(self, **kwargs):
-        kwargs['func_par'] = kwargs.pop('sigma')
-        # Note: rand is in interavall [0..1[, so 1-rand is the same except for edges
-        kwargs['radial_distribution'] = lambda n: self.func_par * np.sqrt(np.log(np.random.rand(n)))
+        self.sigma = kwargs.pop('sigma')
         super(GaussSource, self).__init__(**kwargs)
+
+    def generate_photons(self, exposuretime):
+        '''Photon positions are generated in a frame that is centered on the
+        coordinates set in ``coords``, then they get transformed into the global sky
+        system.
+        '''
+        photons = super(GaussSource, self).generate_photons(exposuretime)
+
+        relative_frame = SkyOffsetFrame(origin=self.coords)
+        n = len(photons)
+        relative_coords = SkyCoord(np.random.normal(scale=self.sigma.value, size=n) * self.sigma.unit,
+                                   np.random.normal(scale=self.sigma.value, size=n) * self.sigma.unit,
+                                   frame=relative_frame)
+        origin_coord = relative_coords.transform_to(self.coords)
+        self.set_pos(photons, origin_coord)
+
+        return photons
+
 
 class SymbolFSource(AstroSource):
     '''Source shaped like the letter F.

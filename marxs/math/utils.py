@@ -156,7 +156,6 @@ def norm_vector(vec):
     length2 = np.sum(vec * vec, axis=-1)
     return vec / np.sqrt(length2)[:, None]
 
-
 def anglediff(phi):
     '''Angle range covered by phi, accounting for 2 pi properly
 
@@ -170,3 +169,40 @@ def anglediff(phi):
         # If anglediff == 2 pi exactly, presumably the user want to cover the full circle.
         anglediff = anglediff % (2. * np.pi)
     return anglediff
+
+def angle_between(angle, border1, border2):
+    '''Test if an angle is between two others
+
+    Since angles are cyclic, a simple numerical comparison is not
+    sufficient, e.g. 355 deg is in the interval [350 deg, 10 deg] even though
+    numerically 355 is not less then 10.
+
+    Parameters
+    ----------
+    angle : float or np.array
+        Angle array (in rad)
+    border1 : float
+        Lower border of interval (inclusive) in radian
+    border2 : float
+        Higher border of interval (inclusive) in radian
+
+    Returns
+    -------
+    comparison : bool of same shape as ``angle``
+        Result of the comparison
+
+    Example
+    -------
+
+    >>> from marxs.math.utils import angle_between
+    >>> angle_between(-0.1, -0.2, 6)
+    True
+    '''
+    twopi = 2 * np.pi
+    b1 = (twopi + (border1 % twopi)) % twopi
+    b2 = (twopi + (border2 % twopi)) % twopi
+    ang = (twopi + (angle % twopi)) % twopi
+    if b1 < b2:
+        return (b1 <= ang) & (ang <= b2)
+    else:
+        return (b1 <= ang) | (ang <= b2)

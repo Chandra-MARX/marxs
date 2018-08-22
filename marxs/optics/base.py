@@ -1,12 +1,13 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from functools import wraps
-from copy import copy
+from copy import copy, deepcopy
 
 import numpy as np
 from astropy.table import Table, Row
 
 from ..math.pluecker import point_dir2plane, dir_point2line, intersect_line_plane
 from ..math.utils import e2h, h2e
+from ..math.geometry import Geometry, FinitePlane
 from ..base import SimulationSequenceElement, _parse_position_keywords
 
 class OpticalElement(SimulationSequenceElement):
@@ -25,86 +26,31 @@ class OpticalElement(SimulationSequenceElement):
     `process_photon`.  Marxs will call `process_photons`, which (if not
     overwritten) contains a simple for-loop to loop over all photons in the
     array and call `process_photon` on each of them.
-
     '''
 
-    def geometry(self, key):
-        '''This function wraps access to the pos4d matrix.
+    default_geometry = FinitePlane
+    '''If not geometry is passed in on initialization, an instance of this class will be used.'''
 
-        This is mostly a convenience method that gives access to vectors from the
-        ``pos4d`` matrix in familiar terms with string labels:
-
-        - ``center``: The ``center`` is the origin of the local coordiante system
-          of the optical elemement. Typically, if will be the center of the
-          active plane, e.g. the center of the mirror surface.
-        - :math:`\hat v_{y,z}`: The box stretches in the y and z direction for
-          :math:`\pm \hat v_y` and :math:`\pm \hat v_z`. In optics, the relevant
-          interaction often happens on a surface, e.g. the surface of a mirror or
-          of a reflection grating. In the defaul configuration, this surface is in
-          the yz-plane.
-        - :math:`\hat v_x`: The thickness of the box is not as important in many
-          cases,
-          but is useful to e.g. render the geometry or to test if elements collide.
-          The box reaches from the yz-plane down to :math:`- \hat v_x`. Note, that
-          this definition means the size parallel to the y and z axis is
-          :math:`2 |\hat v_{y,z}|`, but only :math:`1 |\hat v_{x}|`.
-        - :math:`\hat e_{x,y,z}`: When an object is initialized, it automatically
-          adds unit vectors in the
-          direction of :math:`\hat v_{x,y,z}` called :math:`\hat e_{x,y,z}`.
-        - ``plane``: It also adds the homogeneous coordinates of the active plane
-          as ``plane``.
-        - Other labels get looked up in ``self._geometry`` and if the resulting
-          value is a 4-d vector, it gets transformed with ``pos4d``.
-
-        Not all these labels make sense for every optical element (e.g. a curved
-        mirror does not really have a "plane").
-        Access through this method is slower than direct indexing of ``self.pos4d``.
-        '''
-
-        if key == 'center':
-            return self.pos4d[:, 3]
-        elif key in ['v_x', 'e_x']:
-            val = self.pos4d[:, 0]
-        elif key in ['v_y', 'e_y']:
-            val = self.pos4d[:, 1]
-        elif key in ['v_z', 'e_z']:
-            val = self.pos4d[:, 2]
-        elif key == 'plane':
-            return point_dir2plane(self.geometry('center'), self.geometry('e_x'))
-        else:
-            val = self._geometry[key]
-            if isinstance(val, np.ndarray) and (val.shape[-1] == 4):
-                val = np.dot(self.pos4d, val)
-        if key[:2] == 'e_':
-            return val / np.linalg.norm(val)
-        else:
-            return val
+    # SimulationSequenceElement has display none, but now we have a geometry
+    # so we don't need that default here.
+    display = {}
 
     def __init__(self, **kwargs):
-        self.pos4d = _parse_position_keywords(kwargs)
+
+        geometry = kwargs.pop('geometry', self.default_geometry)
+        if isinstance(geometry, Geometry):
+            self.geometry = geometry
+        elif issubclass(geometry, Geometry):
+            self.geometry = geometry(kwargs)
+
         super(OpticalElement, self).__init__(**kwargs)
 
-    def intersect(self, dir, pos):
-        '''Calculate the intersection point between a ray and the element
+        if not hasattr(self, "loc_coos_name"):
+            self.loc_coos_name = self.geometry.loc_coos_name
 
-        Parameters
-        ----------
-        dir : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the direction of the ray
-        pos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of a point on the ray
-
-        Returns
-        -------
-        intersect :  boolean array of length N
-            ``True`` if an intersection point is found.
-        interpos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the intersection point. Values are set
-            to ``np.nan`` if no intersection point is found.
-        interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane.
-        '''
-        raise NotImplementedError
+    @property
+    def pos4d(self):
+        return self.geometry.pos4d
 
     def process_photon(self, dir, pos, energy, polarization):
         '''Simulate interaction of optical element with a single photon.
@@ -152,7 +98,7 @@ class OpticalElement(SimulationSequenceElement):
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
     def __call__(self, photons):
-        intersect_out = self.intersect(photons['dir'].data, photons['pos'].data)
+        intersect_out = self.geometry.intersect(photons['dir'].data, photons['pos'].data)
         return self.process_photons(photons, *intersect_out)
 
     def process_photons(self, photons, intersect, interpos, intercoos):
@@ -217,67 +163,7 @@ class OpticalElement(SimulationSequenceElement):
 
 
 class FlatOpticalElement(OpticalElement):
-    '''Base class for geometrically flat optical elements.
-
-    Compared with `OpticalElement` this adds methods to make the implementation of
-    flat elements easier. It adds a default `geometry`, a fast, vectorized method `intersect`,
-    and a template to `process_photons`.
-
-    Derived classes have the option to implement their own `process_photons` or, alternatively,
-    they can implement a function called
-    ``specific_process_photons(self, photons, intersect, interpos, intercoos)`` that returns a dictionary
-    of the form ``{'column name': value, ...}`` where value is an array that holds one value for
-    each photon that intersects the optical element. In the special case of ``probability`` the
-    return value should only contain the probability assigned in **this** element. This value
-    will be multiplied with the previous probabilities of each photon automatically.
-    '''
-
-    display = {'shape': 'box'}
-    _geometry = {}
-
-    loc_coos_name = ['y', 'z']
-    '''name for output columns that contain the interaction point in local coordinates.'''
-
-    def __init__(self, *args, **kwargs):
-        super(FlatOpticalElement, self).__init__(*args, **kwargs)
-        #copy class attribute to instance attribute
-        self._geometry = copy(self._geometry)
-
-    def intersect(self, dir, pos):
-        '''Calculate the intersection point between a ray and the element
-
-        Parameters
-        ----------
-        dir : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the direction of the ray
-        pos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of a point on the ray
-
-        Returns
-        -------
-        intersect :  boolean array of length N
-            ``True`` if an intersection point is found.
-        interpos : `numpy.ndarray` of shape (N, 4)
-            homogeneous coordinates of the intersection point. Values are set
-            to ``np.nan`` if no intersection point is found.
-        interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane
-            (not normalized to the dimensions of the element in question, but
-            in absolute units).
-        '''
-        plucker = dir_point2line(h2e(dir), h2e(pos))
-        interpos =  intersect_line_plane(plucker, self.geometry('plane'))
-        vec_center_inter = - h2e(self.geometry('center')) + h2e(interpos)
-        ey = np.dot(vec_center_inter, h2e(self.geometry('e_y')))
-        ez = np.dot(vec_center_inter, h2e(self.geometry('e_z')))
-        intersect = ((np.abs(ey) <= np.linalg.norm(self.geometry('v_y'))) &
-                     (np.abs(ez) <= np.linalg.norm(self.geometry('v_z'))))
-        if dir.ndim == 2:
-            interpos[~intersect, :3] = np.nan
-        # input of single photon.
-        elif (dir.ndim == 1) and not intersect:
-            interpos[:3] = np.nan
-        return intersect, interpos, np.vstack([ey, ez]).T
+    pass
 
 
 class FlatStack(FlatOpticalElement):

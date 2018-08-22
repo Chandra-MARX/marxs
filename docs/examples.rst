@@ -65,7 +65,7 @@ We now turn the combination of X-ray source and first mirror around the y-axis (
   ...   rotmat[:3, :3] = euler.euler2mat(angle, 0, 0, 'szxy')
   ...   light.position = np.dot(rotmat, light_pos)
   ...   light.dir = np.dot(rotmat, light_dir)
-  ...   m1.pos4d = np.dot(rotmat, m1pos4d)
+  ...   m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
   ...   rays = light(100)
   ...   pos.data = []
   ...   pos(rays)

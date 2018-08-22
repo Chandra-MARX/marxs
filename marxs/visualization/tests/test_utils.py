@@ -4,7 +4,8 @@ import pytest
 
 from ..utils import (plane_with_hole, combine_disjoint_triangulations,
                      get_color, color_tuple_to_hex,
-                     MARXSVisualizationWarning)
+                     MARXSVisualizationWarning,
+                     DisplayDict)
 from ..mayavi import plot_object
 
 def test_hole_round():
@@ -131,3 +132,38 @@ def test_warning_noshapeset():
     assert len(record) == 1
     # check that the message matches
     assert '"shape" not set in display dict.' in record[0].message.args[0]
+
+def test_DiplayDict():
+    '''Simple mock-up using a DisplayDict variable.'''
+    class A(object):
+        pass
+
+    a = A()
+    b = A()
+    b.geometry = A()
+    b.geometry.value = 5
+
+    a.display = DisplayDict(a, r=7)
+    b.display = DisplayDict(b, value_1='w')
+
+    assert a.display['r'] == 7
+    assert b.display['value_1'] == 'w'
+    assert b.display['value'] == 5
+    # value is set in display and in geometry
+    b.display['value'] = 6
+    assert b.display['value'] == 6
+    assert b.geometry.value == 5
+    # values added to geometry later
+    b.geometry.value2 = 'q'
+    assert b.display['value2'] == 'q'
+    # Make sure there is the right error only when used on an object without geomtry
+    with pytest.raises(KeyError) as e:
+        temp = a.display['q']
+    # Make sure there is the right error if something is not found
+    with pytest.raises(KeyError) as e:
+        temp = b.display['1']
+
+    # get works, too
+    assert b.display.get('value') == 6
+    assert a.display.get('qwer') is None
+    assert a.display.get('asdf', 5) == 5

@@ -34,18 +34,18 @@ def test_pos4d_no_transformation():
     '''
     oe = marxs.optics.aperture.RectangleAperture()
     assert np.all(oe.pos4d == np.eye(4))
-    assert np.all(oe.geometry('center') == np.array([0, 0, 0, 1]))
-    assert np.all(oe.geometry('e_y') == np.array([0, 1, 0, 0]))
-    assert np.all(oe.geometry('e_z') == np.array([0, 0, 1, 0]))
+    assert np.all(oe.geometry['center'] == np.array([0, 0, 0, 1]))
+    assert np.all(oe.geometry['e_y'] == np.array([0, 1, 0, 0]))
+    assert np.all(oe.geometry['e_z'] == np.array([0, 0, 1, 0]))
 
 
 def test_pos4d_rotation():
     rotation = axangle2aff(np.array([1, 1, 0]), np.deg2rad(90))
     oe = marxs.optics.aperture.RectangleAperture(orientation=rotation[:3,:3])
     assert np.all(oe.pos4d == rotation)
-    assert np.all(oe.geometry('center') == np.array([0, 0, 0, 1]))
-    assert np.allclose(oe.geometry('e_y'), np.array([.5, .5, 1. / np.sqrt(2), 0]))
-    assert np.allclose(oe.geometry('e_z'), np.array([1., -1, 0, 0]) / np.sqrt(2))
+    assert np.all(oe.geometry['center'] == np.array([0, 0, 0, 1]))
+    assert np.allclose(oe.geometry['e_y'], np.array([.5, .5, 1. / np.sqrt(2), 0]))
+    assert np.allclose(oe.geometry['e_z'], np.array([1., -1, 0, 0]) / np.sqrt(2))
 
 
 def test_pos4d_translation():
@@ -53,9 +53,9 @@ def test_pos4d_translation():
     expectedpos4d = np.eye(4)
     expectedpos4d[:3, 3] = np.array([-2, 3, 4.3])
     assert np.all(oe.pos4d == expectedpos4d)
-    assert np.all(oe.geometry('center') == np.array([-2, 3, 4.3, 1]))
-    assert np.all(oe.geometry('e_y') == np.array([0, 1, 0, 0]))
-    assert np.all(oe.geometry('e_z') == np.array([0, 0, 1, 0]))
+    assert np.all(oe.geometry['center'] == np.array([-2, 3, 4.3, 1]))
+    assert np.all(oe.geometry['e_y'] == np.array([0, 1, 0, 0]))
+    assert np.all(oe.geometry['e_z'] == np.array([0, 0, 1, 0]))
 
 
 
@@ -123,9 +123,9 @@ def test_FlatStack():
                                 elements=[marxs.optics.EnergyFilter, marxs.optics.FlatDetector],
                                 keywords=[{'filterfunc': lambda x: 0.5},{}])
     # Check all layers are at the same position
-    assert np.allclose(fs.geometry('center'), np.array([0, 5, 0, 1]))
-    assert np.allclose(fs.elements[0].geometry('center'), np.array([0, 5, 0, 1]))
-    assert np.allclose(fs.elements[1].geometry('center'), np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.elements[0].geometry['center'], np.array([0, 5, 0, 1]))
+    assert np.allclose(fs.elements[1].geometry['center'], np.array([0, 5, 0, 1]))
     assert np.allclose(fs.pos4d, fs.elements[1].pos4d)
 
     p = generate_test_photons(5)

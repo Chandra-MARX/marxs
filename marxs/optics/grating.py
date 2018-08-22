@@ -2,6 +2,7 @@
 '''Gratings and efficiency files'''
 import math
 import numpy as np
+from numpy.core.umath_tests import inner1d
 
 from ..math.utils import norm_vector, h2e, e2h
 from ..math.polarization import parallel_transport
@@ -131,7 +132,7 @@ class FlatGrating(FlatOpticalElement):
     loc_coos_name = ['grat_y', 'grat_z']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
-    def order_sign_convention(self, p):
+    def order_sign_convention(self, p, e_perp_groove):
         '''Set sign convention for grating orders.
 
         This sets the following, somewhat arbitrary convention:
@@ -152,7 +153,8 @@ class FlatGrating(FlatOpticalElement):
         ----------
         p : np.array
             Array of Eucleadian direction vectors
-
+        e_perp_groove : np.array
+            Array of local groove directions at the positions where the photons hit
         '''
         # -1 because n, l, d should be right-handed coordinate system
         # while n = e_x, l = e_x, and d = e_y would be left-handed.
@@ -164,12 +166,34 @@ class FlatGrating(FlatOpticalElement):
         if 'd' not in kwargs:
             raise ValueError('Input parameter "d" (Grating constant) is required.')
         self._d = kwargs.pop('d')
-        groove = kwargs.pop('groove_angle', 0.)
+        groove_angle = kwargs.pop('groove_angle', 0.)
 
         super(FlatGrating, self).__init__(**kwargs)
 
-        self._geometry['e_groove'] = np.array([0., math.sin(-groove), math.cos(-groove), 0.])
-        self._geometry['e_perp_groove'] = np.array([0., math.cos(-groove), -math.sin(-groove), 0.])
+        self.geometry._geometry['groove_angle'] = groove_angle
+
+    def e_groove_coos(self, intercoos):
+        '''Get coordiante orthonormal coordinate system along groove direction.
+
+        Parameters
+        ----------
+         intercoos : `numpy.ndarray` of shape (N, 2)
+            coordinates in the coordiante system of the geometry (e.g. (x, y), or
+            (r, phi)).
+
+        Returns
+        -------
+        e_groove, e_perp_groove, n : `numpy.ndarray` of shape (N, 4)
+            Vectors pointing along the groove direction (parallel to the surface),
+            perpendicular to the groove direction (parallel to surface),
+            and normal to surface.
+        '''
+
+        groove = self.geometry['groove_angle']
+        ex, ey, en = self.geometry.get_local_euklid_bases(intercoos)
+        e_groove = math.sin(-groove) * ex + math.cos(-groove) * ey
+        e_perp_groove = math.cos(-groove) * ex - math.sin(-groove) * ey
+        return e_groove, e_perp_groove, en
 
     def d(self, intercoos):
         '''Method that returns the grating constant at given positions.
@@ -184,37 +208,47 @@ class FlatGrating(FlatOpticalElement):
         else:
             return self._d(intercoos)
 
+    def blaze_angle_modifier(self, intercoos):
+        '''Modify blaze angle
+
+        In `diffract_photons` the blaze angle is calculated relative to the surface
+        of the grating. In cases where that number has to be modified (e.g. when the grating
+        bars are not perpendicualr to the surface) the blaze angle can be modified by
+        overriding this function.
+        '''
+        return np.zeros(intercoos.shape[0])
+
     def diffract_photons(self, photons, intersect, interpos, intercoos):
         '''Vectorized implementation'''
-        p = norm_vector(h2e(photons['dir'].data[intersect]))
-        n = self.geometry('plane')[:3]
-        l = h2e(self.geometry('e_groove'))
+        p = norm_vector(photons['dir'].data[intersect])
+        l, d, n = self.e_groove_coos(intercoos[intersect])
         # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry('e_perp_groove'))
+        d = - d
 
         wave = energy2wave / photons['energy'].data[intersect]
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
         # -> this is the blaze angle
-        p_perp_to_grooves = norm_vector(p - np.dot(p, l)[:, np.newaxis] * l)
+        p_perp_to_grooves = norm_vector(p - inner1d(p, l)[:, None] * l)
         # Use abs here so that blaze angle is always in 0..pi/2
         # independent of the relative orientation of p and n.
-        blazeangle = np.arccos(np.abs(np.dot(p_perp_to_grooves, n)))
+        blazeangle = np.arccos(np.abs(inner1d(p_perp_to_grooves, n)))
+        blazeangle += self.blaze_angle_modifier(intercoos[intersect, :])
         m, prob = self.order_selector(photons['energy'].data[intersect],
                                       photons['polarization'].data[intersect],
                                       blazeangle)
 
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
-        sign = self.order_sign_convention(p)
-        p_d = np.dot(p, d) + sign * m * wave / self.d(intercoos[intersect, :])
-        p_l = np.dot(p, l)
+        sign = self.order_sign_convention(p, d)
+        p_d = inner1d(p, d) + sign * m * wave / self.d(intercoos[intersect, :])
+        p_l = inner1d(p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = np.sqrt(1. - p_d**2 - p_l**2)
         # Check if the photons have same direction compared to normal before
-        direction = np.sign(np.dot(p, n), dtype=np.float)
+        direction = np.sign(inner1d(p, n), dtype=np.float)
         if not self.transmission:
             direction *= -1
-        dir = e2h(p_d[:, None] * d[None, :] + p_l[:, None] * l[None, :] + (direction * p_n)[:, None] * n[None, :], 0)
+        dir = p_d[:, None] * d + p_l[:, None] * l + (direction * p_n)[:, None] * n
         return dir, m, prob, blazeangle
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
@@ -236,15 +270,13 @@ class CATGrating(FlatGrating):
     '''
 
 
-    def order_sign_convention(self, p):
+    def order_sign_convention(self, p, e_perp_groove):
         '''Convention to chose the sign for CAT grating orders
 
         Blazing happens on the side of the negative orders. Obviously, this
         convention is only meaningful if the photons do not arrive perpendicular to the grating.
         '''
-        # Minus sign here because we want n, l, d to be a right-handed coordinate system
-        d = -h2e(self.geometry('e_perp_groove'))
-        dotproduct = np.dot(p, d)
+        dotproduct = inner1d(p, e_perp_groove)
         sign = np.sign(dotproduct)
         sign[sign == 0] = 1
         return sign

@@ -79,8 +79,8 @@ def test_parallel_calculated_normals():
     e1 = det.elements[0]
     e2 = det.elements[1]
     # These two edges should be close together:
-    edge1 = e1.geometry('center') + e1.geometry('v_y')
-    edge2 = e2.geometry('center') - e2.geometry('v_y')
+    edge1 = e1.geometry['center'] + e1.geometry['v_y']
+    edge2 = e2.geometry['center'] - e2.geometry['v_y']
     assert np.all(np.abs(edge1 - edge2) < 3.)
 
 def test_parallel_calculated_rotations():

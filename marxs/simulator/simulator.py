@@ -3,6 +3,7 @@ import numpy as np
 from transforms3d.affines import decompose44
 
 from ..math.utils import translation2aff, zoom2aff, mat2aff, e2h, h2e
+from ..math.geometry import Geometry
 from ..base import SimulationSequenceElement, _parse_position_keywords
 import transforms3d
 from transforms3d.utils import normalized_vector
@@ -218,8 +219,18 @@ class Parallel(BaseContainer):
     of detectors on a detector wheel. The
     uncertainty is expressed as an affine transformation matrix.
     '''
+
+    @property
+    def pos4d(self):
+        return self.geometry.pos4d
+
     def __init__(self, **kwargs):
-        self.pos4d = _parse_position_keywords(kwargs)
+        geometry = kwargs.pop('geometry', Geometry)
+        if isinstance(geometry, Geometry):
+            self.geometry = geometry
+        elif issubclass(geometry, Geometry):
+            self.geometry = geometry(kwargs)
+
         self.id_num_offset = kwargs.pop('id_num_offset', 0)
         self.elem_class = kwargs.pop('elem_class')
         # Need to operate on a copy here, to avoid changing elem_args of outer level
@@ -271,7 +282,7 @@ class Parallel(BaseContainer):
         change4d : np.array of shape (4,4)
             Homogeneous coordinate transformation matrix
         '''
-        self.pos4d = np.dot(change4d, self.pos4d)
+        self.geometry.pos4d = np.dot(change4d, self.pos4d)
         inv = np.linalg.inv(change4d)
         self.elem_pos = [np.dot(inv, p) for p in self.elem_pos]
         self.generate_elements()
@@ -517,3 +528,53 @@ class KeepCol(object):
                                    equal_nan=True):
                     ind.append(i)
             return d[:, ind, :]
+
+
+class Propagator(SimulationSequenceElement):
+    def __init__(self, **kwargs):
+        '''Move photons along the rays.
+
+        This element moves all photons in the photon list by a specified amount
+        forwards or backwards along the ray.
+        Normally, photons only move forward in the simulation, but sometimes it
+        can be useful to reset the photons to an earlier position, e.g. to see
+        how the pattern on a detector changes for different detector positions.
+
+        Parameters
+        ----------
+        distance : float
+            Distance for the photons to move. Negative values move photons
+            backwards.
+        '''
+        self.distance = kwargs.pop('distance')
+        super(Propagator, self).__init__(**kwargs)
+
+    def __call__(self, photons):
+        photons['pos'] = photons['pos'] + self.distance * photons['dir']
+        return photons
+
+
+def propagate(photons, d):
+    '''Move photons along the rays.
+
+    This function moves all photons in the photon list by a specified amount
+    forwards or backwards along the ray.
+    Normally, photons only move forward in the simulation, but sometimes it
+    can be useful to reset the photons to an earlier position, e.g. to see
+    how the pattern on a detector changes for different detector positions.
+
+    Parameters
+    ----------
+    photons : `astropy.table.Table`
+        Photon table with pos and dir entries
+    d : float
+        Distance for the photons to move. Negative values move photons
+        backwards.
+
+    Returns
+    -------
+    photons : `astropy.table.Table`
+        Photon table with pos and dir entries
+    '''
+    photons['pos'] = photons['pos'] + d * photons['dir']
+    return photons

@@ -35,8 +35,10 @@ class ProjectOntoPlane(FlatOpticalElement):
     loc_coos_name = ['proj_x', 'proj_y']
     '''name for output columns of the projected position in plane coordinates.'''
 
+    display = {'shape': 'None'}
+
     def __call__(self, photons):
-        vec_center_inter = - h2e(self.geometry('center')) + h2e(photons['pos'])
-        photons[self.loc_coos_name[0]] = np.dot(vec_center_inter, h2e(self.geometry('e_y')))
-        photons[self.loc_coos_name[1]] = np.dot(vec_center_inter, h2e(self.geometry('e_z')))
+        vec_center_inter = - h2e(self.geometry['center']) + h2e(photons['pos'])
+        photons[self.loc_coos_name[0]] = np.dot(vec_center_inter, h2e(self.geometry['e_y']))
+        photons[self.loc_coos_name[1]] = np.dot(vec_center_inter, h2e(self.geometry['e_z']))
         return photons

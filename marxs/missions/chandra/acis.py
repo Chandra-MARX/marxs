@@ -22,6 +22,7 @@ class ACISChip(FlatDetector):
         self.TDET = TDET['ACIS']
         self.ODET = ODET['ACIS']
         self.pixsize_in_rad = np.deg2rad(PIXSIZE['ACIS'])
+        kwargs['ignore_pixel_warning'] = True
         super(ACISChip, self).__init__(**kwargs)
 
     @property

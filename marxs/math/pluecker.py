@@ -74,7 +74,7 @@ def intersect_line_plane(p_line, h_plane):
     '''Intersect a line in Pluecker coordinates with a plane in homogeneous coordinates.
 
     This function returns the position of the intersection.
-    If the line is parallel (but not idendical) to the plane that intersection
+    If the line is parallel (but not identical) to the plane that intersection
     happens "at infinity" and thus the last component of the intersection
     coordinate is 0. If the line is in the plane, then all components of the
     return vector are 0.

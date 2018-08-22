@@ -213,7 +213,7 @@ def box(obs, display, outfile):
 @format_doc(doc_plot)
 def triangulation(obj, display, outfile):
     '''Output commands for a plane with an inner hole.'''
-    xyz, triangles = obj.triangulate()
+    xyz, triangles = obj.geometry.triangulate(display)
     materialspec = materialspec(display, 'MeshStandardMaterial')
     outfile.write('// {}\n'.format(obj.name))
     outfile.write('var geometry = new THREE.BufferGeometry(); \n')

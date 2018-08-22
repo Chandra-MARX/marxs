@@ -200,10 +200,10 @@ def test_disk_distribution(diskclass, diskpar):
     s = diskclass(coords=SkyCoord(213., -10., unit=u.deg), **diskpar)
     photons = s.generate_photons(1e5)
 
-    n = np.empty(10)
+    n = np.empty(20)
     for i in range(len(n)):
         circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
-                       (- 10. + np.random.uniform(-0.1, .1))*u.degree)
+                       (- 10. + np.random.uniform(-0.1, .1)) * u.degree)
         d = circ.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
         n[i] = (d < 5. * u.arcmin).sum()
     s, p = normaltest(n)

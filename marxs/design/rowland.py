@@ -18,18 +18,18 @@ These classes my be generalized in the future.
 
 from __future__ import division
 
-import warnings
 import numpy as np
 from scipy import optimize
 import transforms3d
 from transforms3d.utils import normalized_vector
 
 from ..optics.base import OpticalElement
-from ..base import _parse_position_keywords, MarxsElement
+from ..base import MarxsElement
 from ..optics import FlatDetector
 from ..math.rotations import ex2vec_fix
 from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
+from ..math.geometry import Geometry
 
 # Python 2 vs 3 (basestring does not exist in Python 3)
 try:
@@ -68,7 +68,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
         wing of the PSF.
 
     '''
-    p = photons[:]
+    p = photons.copy()
     mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e8, pixsize=1.)
     p = mdet(p)
     ind = (p['probability'] > 0) & (p['mirror_shell'] == mirror_shell)
@@ -76,7 +76,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     return np.percentile(r, percentile)
 
 
-class RowlandTorus(MarxsElement):
+class RowlandTorus(MarxsElement, Geometry):
     '''Torus with y axis as symmetry axis.
 
     Note that the origin of the torus is the focal point, which is
@@ -101,8 +101,9 @@ class RowlandTorus(MarxsElement):
     def __init__(self, R, r, **kwargs):
         self.R = R
         self.r = r
-        self.pos4d = _parse_position_keywords(kwargs)
-        super(RowlandTorus, self).__init__(**kwargs)
+        # super does not work, because the various classes have different signature
+        Geometry.__init__(self, kwargs)
+        MarxsElement.__init__(self, **kwargs)
 
     def quartic(self, xyz, transform=True):
         '''Quartic torus equation.
@@ -186,7 +187,7 @@ class RowlandTorus(MarxsElement):
             raise Exception('Intersection with torus not found.')
         return val_out
 
-    def parametric_surface(self, theta, phi):
+    def parametric_surface(self, theta, phi, display):
         '''Parametric representation of surface of torus.
 
         In contrast to `parametric` the input parameters here are 1-d arrays
@@ -254,7 +255,7 @@ class RowlandTorus(MarxsElement):
         intersectvalid : bool
             When ``r >=R`` the torus can intersect with itself. At these points,
             phi is not unique. If ``intersectvalid`` is true, those points will
-            be filled with on arbitrarily chosen valid value (0.), otherwise
+            be filled with an arbitrarily chosen valid value (0.), otherwise
             they will be nan.
 
         Returns
@@ -275,9 +276,11 @@ class RowlandTorus(MarxsElement):
         theta = np.arcsin(s * xyz[:, 1] / self.r) + (s < 0) * np.pi
 
         factor = self.R + self.r * np.cos(theta)
-        with warnings.catch_warnings():
-            phi = np.arctan2(xyz[:, 2] / factor, xyz[:, 0] / factor)
-        phi[factor == 0] = 0 if intersectvalid else np.nan
+        phi = np.zeros_like(factor)
+        ind = factor != 0
+        phi[ind] = np.arctan2(xyz[ind, 2] / factor[ind], xyz[ind, 0] / factor[ind])
+        if not intersectvalid:
+            phi[~factor] = np.nan
 
         return theta, phi
 

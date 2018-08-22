@@ -54,7 +54,7 @@ def triangulation(obj, display, viewer=None):
     '''Plot a plane with an inner hole such as an aperture.'''
     from mayavi import mlab
 
-    xyz, triangles = obj.triangulate()
+    xyz, triangles = obj.geometry.triangulate(display)
     t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
     return t
 
@@ -65,12 +65,13 @@ def surface(surface, display, viewer=None):
     The parameter boundaries are taken from the ``coo1`` and ``coo2`` in the
     display dictionary. The plotting routine is generic. It calls the
     ``parametric_surface()`` method of the object that is plotted; see there
-    for a detailted description of parameters.
+    for a detailed description of parameters.
     '''
     from mayavi import mlab
 
-    xyz = surface.parametric_surface(display.get('coo1', [-1, 1]),
-                                     display.get('coo2', [-1, 1]))
+    xyz = surface.geometry.parametric_surface(display.get('coo1', None),
+                                              display.get('coo2', None),
+                                              display)
     xyz = mutils.h2e(xyz)
     x = xyz[..., 0]
     y = xyz[..., 1]
@@ -129,11 +130,11 @@ def cylinder(obj, display, viewer=None):
     '''
     from mayavi import mlab
 
-    x0 = obj.geometry('center') - obj.geometry('v_x')
-    x1 = obj.geometry('center') + obj.geometry('v_x')
+    x0 = obj.geometry['center'] - obj.geometry['v_x']
+    x1 = obj.geometry['center'] + obj.geometry['v_x']
     c = mlab.plot3d([x0[0], x1[0]], [x0[1], x1[1]], [x0[2], x1[2]],
                     color=display['color'],
-                    tube_radius=np.linalg.norm(obj.geometry('v_y')),
+                    tube_radius=np.linalg.norm(obj.geometry['v_y']),
                     tube_sides=display.get('tube_sides', 20))
     return c
 

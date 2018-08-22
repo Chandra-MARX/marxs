@@ -56,7 +56,7 @@ class FlatBrewsterMirror(FlatOpticalElement):
         # - p is p polarization (in the plane of incidence)
 
         # First, make basis vectors.
-        v_s = np.cross(beam_dir, self.geometry('e_x')[0:3])
+        v_s = np.cross(beam_dir, self.geometry['e_x'][0:3])
         v_s /= np.linalg.norm(v_s, axis=1)[:, np.newaxis]
         v_p = np.cross(beam_dir, v_s)
 
@@ -125,8 +125,8 @@ class MultiLayerEfficiency(FlatOpticalElement):
         tested_polarized_fraction = np.interp(photons['energy'], polarizedFile['Photon energy'] / 1000, polarizedFile['Polarization'])
 
         # find probability of being reflected due to position
-        local_x = local[:, 0] / np.linalg.norm(self.geometry('v_y'))
-        local_coords_in_file = reflectFile['X(mm)'] / np.linalg.norm(self.geometry('v_y')) - 1
+        local_x = local[:, 0] / np.linalg.norm(self.geometry['v_y'])
+        local_coords_in_file = reflectFile['X(mm)'] / np.linalg.norm(self.geometry['v_y']) - 1
         # interpolate 'Peak lambda', 'Peak' [reflectivity], and 'FWHM(nm)' to the actual photon positions
         peak_wavelength = np.interp(local_x, local_coords_in_file, reflectFile['Peak lambda'])
         max_refl = np.interp(local_x, local_coords_in_file, reflectFile['Peak']) / tested_polarized_fraction
