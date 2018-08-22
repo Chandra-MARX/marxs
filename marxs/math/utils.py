@@ -198,10 +198,11 @@ def angle_between(angle, border1, border2):
     >>> angle_between(-0.1, -0.2, 6)
     True
     '''
-    b1 = border1 % (2 * np.pi)
-    b2 = border2 % (2 * np.pi)
-    ang = angle % (2 * np.pi)
-    if b1 <= b2:
+    twopi = 2 * np.pi
+    b1 = (twopi + (border1 % twopi)) % twopi
+    b2 = (twopi + (border2 % twopi)) % twopi
+    ang = (twopi + (angle % twopi)) % twopi
+    if b1 < b2:
         return (b1 <= ang) & (ang <= b2)
     else:
         return (b1 <= ang) | (ang <= b2)

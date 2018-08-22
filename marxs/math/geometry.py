@@ -362,11 +362,11 @@ class CircularHole(PlaneWithHole):
                           philim=self.phi)
 
 class Cylinder(Geometry):
-    '''A detector shaped like a ring or tube.
+    '''A Geometry shaped like a ring or tube.
 
-    This detector is shaped like a tube. The form is a circle in the xy plane
-    and and flat along the z-direction.  While most CCDs are flat in practice,
-    the `CircularDetector` simulates a setup that can follow the Rowland circle
+    This object is shaped like a tube. The form is a circle in the xy plane
+    and and flat along the z-direction.  This can be used, for example to
+    simulate a setup that can follow the Rowland circle
     geometry exactly which is useful, e.g. to study the resolution of a
     spectrograph without worrying about the details of the detector geometry.
 
@@ -374,11 +374,12 @@ class Cylinder(Geometry):
     ----------
     position, orientation, zoom, pos4d : see description of `pos4d`
         The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
-        Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
-        an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
+        Use ``zoom[0] == zoom[1]`` to make a circular tube.
+        ``zoom[0] != zoom[1]`` gives an elliptical profile.
+        ``zoom[2]`` sets the extension in the z direction.
     phi_lim : list
-        If a cylinder does not cover the full circle, set ``phi_lim`` to the limits, e.g.
-        ``[-np.pi / 2, np.pi / 2]`` makes a "half-pipe".
+        If a cylinder does not cover the full circle, set ``phi_lim`` to the
+        limits, e.g. ``[-np.pi / 2, np.pi / 2]`` makes a "half-pipe".
     '''
     loc_coos_name = ['phi', 'z']
 

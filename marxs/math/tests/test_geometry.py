@@ -1,15 +1,12 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from numpy.core.umath_tests import inner1d
-from astropy.table import Table
 import transforms3d
 import transforms3d.euler
 import pytest
 
 from ..geometry import Cylinder, FinitePlane
-from ...tests import closeornan
 from ...math.utils import h2e
-from ...design import RowlandTorus
 
 
 def test_intersect_plane_forwards():

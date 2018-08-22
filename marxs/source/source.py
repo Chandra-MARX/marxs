@@ -425,8 +425,8 @@ class GaussSource(AstroSource):
 
         relative_frame = SkyOffsetFrame(origin=self.coords)
         n = len(photons)
-        relative_coords = SkyCoord(np.random.normal(scale=self.sigma, size=n) * self.sigma.unit,
-                                   np.random.normal(scale=self.sigma, size=n) * self.sigma.unit,
+        relative_coords = SkyCoord(np.random.normal(scale=self.sigma.value, size=n) * self.sigma.unit,
+                                   np.random.normal(scale=self.sigma.value, size=n) * self.sigma.unit,
                                    frame=relative_frame)
         origin_coord = relative_coords.transform_to(self.coords)
         self.set_pos(photons, origin_coord)

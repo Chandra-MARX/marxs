@@ -159,10 +159,9 @@ def test_DiplayDict():
     # Make sure there is the right error only when used on an object without geomtry
     with pytest.raises(KeyError) as e:
         temp = a.display['q']
-    # Make sure there is the right error is something is not found
+    # Make sure there is the right error if something is not found
     with pytest.raises(KeyError) as e:
         temp = b.display['1']
-    assert '1' in e.value.message
 
     # get works, too
     assert b.display.get('value') == 6
