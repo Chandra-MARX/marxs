@@ -37,16 +37,16 @@ env:
 
 
 before_install:
-  - wget ftp://space.mit.edu/pub/cxc/marx/v5.1/marx-dist-5.1.0.tar.gz
-  - tar -xvf marx-dist-5.1.0.tar.gz
+  - wget ftp://space.mit.edu/pub/cxc/marx/v5.3/marx-dist-5.3.3.tar.gz
+  - tar -xvf marx-dist-5.3.3.tar.gz
   - pwd
-  - cd marx-5.1.0 && ./configure --prefix=$TRAVIS_BUILD_DIR/marx/ CFLAGS="-O2 -g -fPIC" && make && make install
+  - cd marx-5.3.3 && ./configure --prefix=$TRAVIS_BUILD_DIR/marx/ CFLAGS="-O2 -g -fPIC" && make && make install
   - cd ..
 
 install:
 
     # Set the location the MARX c code and compiled version in setup.cfg
-    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.1.0/|g' setup.cfg
+    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.3.3/|g' setup.cfg
     - sed -i.bak 's|libdir =|libdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx/lib/|g' setup.cfg
 
     # We now use the ci-helpers package to set up our testing environment.
@@ -87,10 +87,10 @@ matrix:
         # Try Astropy development version
         - python: 3.6
           env: ASTROPY_VERSION=development
-	# The LTS version uses legacy numpy formatting for table column
-	# and that makes one of the doctests fail.
-	# The next LTS is not far, so I stop supporting the old one for now
-	# although it probably still works.
+        # The LTS version uses legacy numpy formatting for table column
+        # and that makes one of the doctests fail.
+        # The next LTS is not far, so I stop supporting the old one for now
+        # although it probably still works.
         #- python: 3.6
         #  env: ASTROPY_VERSION=lts
 
