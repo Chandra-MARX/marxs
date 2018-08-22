@@ -6,8 +6,6 @@ from astropy.utils.metadata import enable_merge_strategies
 
 from .base import FlatOpticalElement
 from ..base import GeometryError
-from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
-from ..math.utils import anglediff, h2e
 from ..math.geometry import RectangleHole, CircularHole
 from ..simulator import BaseContainer
 from .. import utils
@@ -63,13 +61,13 @@ class FlatAperture(BaseAperture, FlatOpticalElement):
         # Set position in different coordinate systems
         x, y = self.generate_local_xy(len(photons))
         if self.geometry.loc_coos_name is not None:
-            photons[self.geometry.loc_coos_name[0]] = x
-            photons[self.geometry.loc_coos_name[1]] = y
+            photons[self.geometry.loc_coos_name[0]][:] = x
+            photons[self.geometry.loc_coos_name[1]][:] = y
         photons['pos'] = self.geometry['center'] + x.reshape((-1, 1)) * self.geometry['v_y'] + y.reshape((-1, 1)) * self.geometry['v_z']
         projected_area = np.dot(photons['dir'].data, - self.geometry['e_x'])
         # Photons coming in "through the back" would have negative probabilities.
         # Unlikely to ever come up, but just in case we clip to 0.
-        photons['probability'] *= np.clip(projected_area, 0, 1.)
+        photons['probability'][:] *= np.clip(projected_area, 0, 1.)
 
         return photons
 
