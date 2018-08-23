@@ -38,9 +38,10 @@ The source flux can just be a number, giving the total counts / second / mm^2 (i
      >>> from astropy.coordinates import SkyCoord
      >>> star = PointSource(coords=SkyCoord("23h12m2.3s -3d4m12.3s"), flux=5.)
      >>> photons = star.generate_photons(20)
+     >>> photons['time'].format='4.1f'
      >>> print(photons['time'][:6])
      time
-      s
+      s  
      ----
       0.0
       0.2
