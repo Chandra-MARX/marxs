@@ -14,6 +14,8 @@ __all__ = ['SimulationSetupError',
            'Parallel',
            'ParallelCalculated',
            'KeepCol',
+           'Propagator',
+           'propagate'
            ]
 
 class SimulationSetupError(Exception):
@@ -45,9 +47,57 @@ class BaseContainer(SimulationSequenceElement):
                 p(photons)
         return photons
 
-    def intersect(self, photons, **kwargs):
-        raise NotImplementedError
+    def elements_of_class(self, cls, subclass_ok=False, stop_at_first=False):
+        '''Walk a hirachy of simulation elements to all elements of a class.
 
+        This walks the hiracy of `marxs.simulator.Sequence` and
+        `marxs.simulator.Parallel` objects. It descends depth-first.
+        Typically, this function is used to
+        find, e.g. all detectors of an instrument or all gratings.
+
+        If `stop_at_first` is set it descends depth-first only until
+        it find an object of type `cls`. When it does, it adds that object to
+        the output list and returns to the next higher level, continuing
+        the search for the remaining elements of that list. This sounds more
+        complicated than it is in practice.
+        Only if container types such as `marxs.simulator.Parallel` are searched
+        for this becomes more complex. The search does not descend any deeper
+        if a matching element is found. For example, if it finds a
+        `~marxs.simulator.Parallel` object, where the elements of this object
+        contain other `~marxs.simulator.Parallel` objects it will only return
+        the top level one.
+
+        Parameters
+        ----------
+        cls : class
+            The class searched for, e.g. `marxs.optics.FlatDetector` to find all
+            detectors.
+        subclass_ok : bool
+            Controls if subclasses of `cls` count as match.
+        stop_at_first : bool
+            Controls if the search continues along a branch after a match is found.
+
+        Returns
+        -------
+        out : list
+            Python list of all objects found.
+        '''
+        if subclass_ok:
+            compfunc = lambda a, b: isinstance(a, b)
+        else:
+            compfunc = lambda a, b: type(a) == b
+        a = []
+        if compfunc(self, cls):
+            a += [self]
+            if stop_at_first:
+                return a
+
+        for e in self.elements:
+            if compfunc(e, cls):
+                a += [e]
+            elif hasattr(e, 'elements_of_class'):
+                a += e.elements_of_class(cls, subclass_ok)
+        return a
 
 class Sequence(BaseContainer):
     '''A `Sequence` is a container that summarizes several optical elements.

@@ -2,7 +2,38 @@ import numpy as np
 from astropy.table import Table
 import pytest
 
-from ..simulator import KeepCol
+from ..simulator import KeepCol, Sequence, Parallel, BaseContainer
+from ...optics import FlatDetector
+
+f1 = FlatDetector()
+f2 = FlatDetector()
+f3 = FlatDetector()
+s_l2 = Sequence(elements=[f2, f3])
+
+mission = Sequence(elements=[f1, s_l2])
+
+def test_seach_all():
+    '''Check full search finding all elements.'''
+    assert [mission, s_l2] == mission.elements_of_class(Sequence)
+    assert [] == mission.elements_of_class(BaseContainer)
+    assert [mission, s_l2] == mission.elements_of_class(BaseContainer,
+                                                        subclass_ok=True)
+    assert [f1, f2, f3] == mission.elements_of_class(FlatDetector)
+    assert [f1, f2, f3] == mission.elements_of_class(FlatDetector, subclass_ok=True)
+
+def test_seach_top():
+    '''Check top search finding all elements.'''
+    assert [mission] == mission.elements_of_class(Sequence, stop_at_first=True)
+    assert [] == mission.elements_of_class(BaseContainer, stop_at_first=True)
+    assert [mission] == mission.elements_of_class(BaseContainer,
+                                                  subclass_ok=True,
+                                                  stop_at_first=True)
+    assert [f1, f2, f3] == mission.elements_of_class(FlatDetector,
+                                                     stop_at_first=True)
+    assert [f1, f2, f3] == mission.elements_of_class(FlatDetector,
+                                                     subclass_ok=True,
+                                                     stop_at_first=True)
+
 
 def test_format_saved_positions():
     '''Reformat saved positions and drop nearly identical values.'''
