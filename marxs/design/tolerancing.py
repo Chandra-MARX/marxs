@@ -11,19 +11,26 @@ from ..analysis.gratings import resolvingpower_from_photonlist as resol
 from ..analysis.gratings import AnalysisError
 
 
-def oneormorelements(func):
-    '''XXX'''
-    @warps(func)
+def oneormoreelements(func):
+    '''Decorator for functions that modify optical elements.
+
+    The functions in this module are written to work on a single optical
+    element. This decorator allows them to accept a list of elements or
+    a single element.
+    '''
+    @wraps(func)
     def func_wrapper(elements, *args, **kwargs):
-        if isinstance(e, collections.Iterable):
+        if isinstance(elements, collections.Iterable):
             for e in elements:
                 func(e, *args, **kwargs)
         else:
             func(elements, *args, **kwargs)
 
+    return func_wrapper
 
-@oneormorelements
-def wiggleelements(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
+
+@oneormoreelements
+def wiggle(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
     '''Move and rotate elements around principal axes.
 
     Parameters
@@ -35,12 +42,12 @@ def wiggleelements(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
     rx, ry, rz : float
         accuracy of grating positioning. Rotation around x, y, z (in rad) - Gaussian sigma, not FWHM!
     '''
-    e.elem_uncertainty = genfacun(len(e.elements), [dx, dy, dz], [rx, ry, rz]))
+    e.elem_uncertainty = genfacun(len(e.elements), [dx, dy, dz], [rx, ry, rz])
     e.generate_elements()
 
 
-@oneormorelements
-def moveglobalparallel(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
+@oneormoreelements
+def moveglobal(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
     '''Move and rotate origin of the whole `marxs.simulator.Parallel` object.
 
     Parameters
@@ -53,13 +60,13 @@ def moveglobalparallel(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
         Rotation around x, y, z (in rad)
     '''
     e.uncertainty = affines.compose([dx, dy, dz],
-                                    euler.euler2mat([rx, ry, rz], 'sxyz'),
+                                    euler.euler2mat(rx, ry, rz, 'sxyz'),
                                     np.ones(3))
     e.generate_elements()
 
 
-@oneormorelements
-def moveelements(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
+@oneormoreelements
+def moveindividual(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
     '''Move and rotate all elements of `marxs.simulator.Parallel` object.
 
     Parameters
@@ -72,72 +79,62 @@ def moveelements(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
         Rotation around x, y, z (in rad)
     '''
     e.elem_uncertainty = [affines.compose((dx, dy, dz),
-                                          euler.euler2mat((rx, ry, rz), 'sxyz'),
+                                          euler.euler2mat(rx, ry, rz, 'sxyz'),
                                           np.ones(3))] * len(e.elements)
     e.generate_elements()
 
-@oneormorelements
-def vary_period(elements, period_mean, period_sigma):
+
+@oneormoreelements
+def varyperiod(element, period_mean, period_sigma):
     '''Randomly draw different grating periods for different gratings
 
     This function needs to be called with gratings as parameters, e.g.
 
     >>> from marxs.optics import CATGrating
-    >>> from marxs.design.tolerancing import PeriodVariation
-    >>> dvar = PeriodVariation()
-    >>> grating = CATGrating()
-    >>> dvar([grating], [2e-4, 1e-5])
+    >>> from marxs.design.tolerancing import varyperiod
+    >>> grating = CATGrating(order_selector=None, d=0.001)
+    >>> varyperiod(grating, 2e-4, 1e-5)
 
     and the parameters are expected to have two components:
     center and sigma of a Gaussian distribution for grating contstant d.
 
     Parameters
     ----------
-    elements :`marxs.optics.FlatGrating` or similar (or list of those elements)
+    element :`marxs.optics.FlatGrating` or similar (or list of those elements)
         Elements where uncertainties will be set
     period_mean : float
         Center of Gaussian (in mm)
     period_sigma : float
         Sigma of Gaussian (in mm)
     '''
-    if not hasattr(e, '_d'):
-        raise ValueError('Object {} does not have grating period `_d` attribute.'.format(e))
-    e._d = np.random.normal(period_mean, period_sigma)
+    if not hasattr(element, '_d'):
+        raise ValueError(f'Object {element} does not have grating period `_d` attribute.')
+    element._d = np.random.normal(period_mean, period_sigma)
 
 
-@oneormorelements
-class CATFlatnessVariation(ParallelUncertainty):
-    '''Modify OrderSelector for a grating
-
-    This class needs to be instantiated with the gratings, e.g.
-
-    >>> dvar = PeriodVariation(elements, CATGrating) # doctest: +SKIP
-
-    and the parameters are expected to have one components:
-    sigma of a Gaussian distribution for non-flatness for
-    blaze look-up.
+@oneormoreelements
+def varyorderselector(element, orderselector, *args, **kwargs):
+    '''Modify the OrderSelector for a grating
 
     Parameters
     ----------
-    See `ParallelUncertainty` for an explanation of most parameters.
-
+    element :`marxs.optics.FlatGrating` or similar (or list of those elements)
+        Elements where the OrderSelector will be changed
     orderselector : class
         This should be a subclass of `InterpolateRalfTable` which determines how
         the order will be selected. In the case of the default class, the blaze
         angle of an incoming photons will be modified randomly to represent
         small-scale deviations from the flatness of the gratings.
+    args, kwargs :
+        All other parameters are used to initialize the OrderSelector
     '''
-    def __init__(self, orderselector):
-        self.orderselector = orderselector
-
-    def __call__(self, elements, parameters):
-        order_selector = self.orderselector(parameters[0])
-        for e in elements:
-            e.order_selector = order_selector
+    if not hasattr(element, 'order_selector'):
+        raise ValueError(f'Object {element} does not have an order_selector attribute.')
+    element.order_selector = order_selector(*args, **kwargs)
 
 
-@oneormorelements
-def scattervariation(elements):
+@oneormoreelements
+def varyscatter(element, inplanescatter, perplanescatter):
     '''Change the scatter properties of an SPO
 
     Parameters
@@ -149,8 +146,12 @@ def scattervariation(elements):
     perpplanescatter : float
         new value for perpplanescater of mirror
     '''
-    e.inplanescatter = inplanescatter
-    e.perpplanescatter = perplanescatter
+    if not hasattr(element, 'inplanescatter'):
+         raise ValueError(f'Object {element} does not have an inplanescatter attribute.')
+    if not hasattr(element, 'perpplanescatter'):
+         raise ValueError(f'Object {element} does not have an perpplanescatter attribute.')
+    element.inplanescatter = inplanescatter
+    element.perpplanescatter = perplanescatter
 
 
 class CaptureResAeff(object):
