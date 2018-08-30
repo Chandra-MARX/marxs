@@ -16,6 +16,9 @@ New Features
   flexibility in plotting the inner part of a ring-like aperture. This is
   needed for models or stacked, rind-like apertures. [#180]
 
+- Add new module `marxs.design.tolerancing` to estimate alignment tolerances.
+  [#186]
+
 API Changes
 ^^^^^^^^^^^
 - The geometry of a class is now defined as a separate object from the new

@@ -2,7 +2,9 @@ import numpy as np
 
 from ...utils import generate_test_photons
 from ...optics import ThinLens, FlatGrating, FlatDetector, OrderSelector
-from ..gratings import resolvingpower_from_photonlist
+from ..gratings import (resolvingpower_from_photonlist,
+                        effectivearea_from_photonlist,
+                        )
 
 def test_resolvingpower_from_photonlist():
     '''Regression test.
@@ -33,3 +35,16 @@ def test_resolvingpower_from_photonlist():
     resy, posy, stdy = resolvingpower_from_photonlist(p, orders, col='det_y', zeropos=0)
     assert np.all(resy < 1.)
     assert np.allclose(posy, 0, atol=1e-4)
+
+
+def test_aeff_from_photonlist():
+    '''Check the effective area calculation'''
+    p = generate_test_photons(5)
+    p['a'] = [0, 1, 2, 2, 1]
+    p['probability'] = [.1, 1., 1., .3, .5]
+    # orders in random order, just in case
+    aeff = effectivearea_from_photonlist(p, [2, 1, 0, -1], 5,
+                                         A_geom=2., ordercol='a')
+    assert aeff[3] == 0
+    assert np.isclose(aeff[2], .04)
+    assert np.isclose(aeff[1], .6)
