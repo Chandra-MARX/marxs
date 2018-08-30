@@ -1,0 +1,6 @@
+-r pip-requirements
+astropy
+transforms3d
+matplotlib
+sphinx-astropy
+
