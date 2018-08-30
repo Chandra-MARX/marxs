@@ -7,6 +7,7 @@ Requirements
 
 MARXS has few hard requirements:
 
+- MARXS requires Python version > 3.6.
 - `numpy <http://www.numpy.org/>`_
 - `astropy`_
 - `transforms3d <https://matthew-brett.github.io/transforms3d/>`_
@@ -17,12 +18,15 @@ Numpy and astropy are best installed with a package manager such as conda. See t
 
 The following Python packages are strongly recommended, but most parts of MARXS will work without them:
 
-- scipy
+- `scipy <http://www.numpy.org/>`_
 - matplotlib
-- mayavi (for 3 D output)
+- `mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (for 3 D output)
 - jsonschema
 
-Again, these are all available through common package managers such as conda, ``apt-get`` etc.
+Again, all but mayavi are available through common package managers such as
+conda, ``apt-get`` etc. For `mayavi
+<https://docs.enthought.com/mayavi/mayavi/>`_ see `the mayavi installation
+instructions <https://docs.enthought.com/mayavi/mayavi/installation.html#installing-with-pip>`_.
   
 In addition MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
   

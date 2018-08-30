@@ -6,7 +6,6 @@
 import os
 import numpy as np
 from astropy.table import Table, Column, join
-from astropy.extern import six
 import astropy.units as u
 
 from ..math.utils import h2e, e2h
@@ -71,10 +70,7 @@ class MarxMirror(OpticalElement, BaseAperture):
             raise IOError('MARX parameter file {0} does NOT exist.'.format(parfile))
         else:
             self.parfile = parfile
-        if six.PY2:
-            self.cparfile = marx.pf_open_parameter_file(parfile, 'r')
-        else:
-            self.cparfile = marx.pf_open_parameter_file(bytes(parfile, 'utf8'), bytes('r', 'utf8'))
+        self.cparfile = marx.pf_open_parameter_file(bytes(parfile, 'utf8'), bytes('r', 'utf8'))
         out = marx.marx_mirror_init(self.cparfile)
         if out < 0:
             raise MarxError('Mirror cannot be initialized. Probably missing parameters or syntax error in {0}.'.format(parfile))
