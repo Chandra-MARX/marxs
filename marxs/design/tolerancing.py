@@ -7,7 +7,8 @@ from transforms3d import affines, euler
 from astropy.table import Table
 from ..simulator import Parallel
 from .uncertainties import generate_facet_uncertainty as genfacun
-from ..analysis.gratings import resolvingpower_from_photonlist as resol
+from ..analysis.gratings import (resolvingpower_from_photonlist,
+                                 effectivearea_from_photonlist)
 from ..analysis.gratings import AnalysisError
 
 
@@ -113,14 +114,14 @@ def varyperiod(element, period_mean, period_sigma):
 
 
 @oneormoreelements
-def varyorderselector(element, orderselector, *args, **kwargs):
+def varyorderselector(element, order_selector, *args, **kwargs):
     '''Modify the OrderSelector for a grating
 
     Parameters
     ----------
     element :`marxs.optics.FlatGrating` or similar (or list of those elements)
         Elements where the OrderSelector will be changed
-    orderselector : class
+    order_selector : class
         This should be a subclass of `InterpolateRalfTable` which determines how
         the order will be selected. In the case of the default class, the blaze
         angle of an incoming photons will be modified randomly to represent
@@ -154,83 +155,113 @@ def varyscatter(element, inplanescatter, perplanescatter):
     element.perpplanescatter = perplanescatter
 
 
-class CaptureResAeff(object):
-    '''Capture resolving power and effective area for a tolerancing simulation.
+def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
+                   parameters, analyzefunc):
+    '''Run tolerancing calculations for a range of parameters
 
-    Instances of this class can be called with a list of input parameters for
-    a tolerancing simulation and a resulting photon list. The photon list
-    will be analysed for resolving power and effective area in a number of
-    relevant orders.
-    Every instance of this object has a ``tab`` attribute and every time the
-    instance is called it adds one row of data to the table.
+    This function takes an instrument configuration and a function to change
+    one aspect of it. For every change it runs a simulations and calculates a
+    figure of merit. As the name indicates, this function is designed to derive
+    alignment tolerances for certain instrument parts but it might be general
+    enough for other parameter studies in instrument design.
 
     Parameters
     ----------
-    n_parameters : int
-        Parameters will be stored in a vector-valued column called
-        "Parameters". To generate this column in the correct size,
-        ``n_parameters`` specifies the number of parameters.
+    photons_in : `astropy.table.Table`
+        Input photons list. To speed up the computation, it is useful if photon
+        list has been run through all elements of the instrument that are
+        located before the first element that is toleranced here.
+    instrum : `marxs.simulator.Sequence` object
+        An instance of the instrument which contains all elements that
+        `photons_in` still have to pass. This can include elements that are
+        toleranced in this run and those that are located behind them.
+    wigglefunc : callable
+        Function that modifies the `instrum` with the following calling signature:
+        ``wigglefunc(wiggleparts, pars)`` where ``pars`` is one dict from
+        `parameters`. Note that this function is called with `wiggleparts` which
+        can be the same as `instrum` or just a subset.
+    wiggleparts :  `marxs.base.SimulationSequenceElement` instance
+        Element which is modified by `wigglefunc`. Typically this is a subset of
+        `instrum`. For example, to tolerance the mirror alignments
+        `wiggleparts` would just be the mirror objects, while `instrum` would
+        contain all the parts of the instrument that the photons need to run
+        though up to the detector.
+    parameters : list of dicts
+        List of parameter values for calls to `wigglefunc`.
+    analyzefunc : callable function or object
+        This is called
+
+
+    Returns
+    -------
+    result : list of dicts
+        Each dict contains parameters and results for one run.
+
+    Notes
+    -----
+    The format of input and output as lists of dicts is chosen because this
+    would work well for a parallel version of this function which could have
+    the same interface when it is implemented.
+    '''
+    out = []
+    for i, pars in enumerate(parameters):
+        print(f'Working on simulation {i}/{len(parameters)}')
+        wigglefunc(wiggleparts, **pars)
+        photons = instrum(photons_in.copy())
+        pars.update(analyzefunc(photons))
+        out.append(pars)
+
+    return out
+
+
+class CaptureResAeff():
+    '''Capture resolving power and effective area for a tolerancing simulation.
+
+    Instances of this class can be called with a photon list for a tolerancing
+    simulation. The photon list will be analysed for resolving power and
+    effective area in a number of relevant orders.
+
+    This is implemented as a class and not a simple function. When the class is
+    initialized a number of parameters that are true for any to the
+    analysis (e.g. the names of certain columns) are set and saved in the class
+    instance.
+
+    The implementation of this class is geared towards instruments with
+    gratings but can also serve as an example how a complex analysis that
+    derives several different parameters can be implemented.
+
+    Results for effective area and resolving power are reported on a per order
+    basis and also summarized for all grating orders combined and the zeroth
+    order separately.
+
+    Parameters
+    ----------
     A_geom : number
         Geometric area of aperture for the simulations that this instance
         will analyze.
-    on_detector_test : callable
-        A function that can be called on a photon table and returns a
-        boolean array with elements set to ``True`` for photons that hit
-        the detector.
+    order_col : string
+        Column names for grating orders
+    orders : array
+        Order numbers to consider in the analysis
+    dispersion_coord : string
+        Dispersion coordinate for
+        `marxs.analysis.gratings.resolvingpower_from_photonlist`
+
     '''
-    orders = np.arange(-15, 5)
+    def __init__(self, A_geom=1, order_col='order',
+                 orders=np.arange(-10, 11), dispersion_coord='det_x'):
+        self.A_geom = A_geom
+        self.order_col = order_col
+        self.orders = np.asanyarray(orders)
+        self.dispersion_coord = dispersion_coord
 
-    order_col = 'order'
-    '''Column names for grating orders'''
-
-    dispersion_coord = 'proj_x'
-    '''Dispersion coordinate for
-    `marxs.analysis.gratings.resolvingpower_from_photonlist`'''
-
-    def __init__(self, n_parameters, Ageom=1):
-        self.Ageom = Ageom
-        form = '{}f4'.format(len(self.orders))
-        self.tab = Table(names=['Parameters', 'Aeff0', 'Aeffgrat', 'Rgrat', 'Aeff', 'R'],
-                         dtype=['{}f4'.format(n_parameters),
-                                float, float, float, form, form]
-                         )
-        for c in ['Aeff', 'Aeffgrat', 'Aeff']:
-            self.tab[c].unit = Ageom.unit
-
-    def find_photon_number(self, photons):
-        '''Find the number of photons in the simulation.
-
-        This method simply returns the length of the photons list which
-        works if it has not been pre-filtered in any step.
-
-        Subclasses can implement other ways, e.g. to inspect the header for a
-        keyword.
-
-        Parameters
-        ----------
-        photons : `astropy.table.Table`
-            Photon list
-
-        Returns
-        -------
-        n : int
-            Number of photons
-        '''
-        return len(photons)
-
-    def calc_result(self, filtered, n_photons):
+    def __call__(self, photons):
         '''Calculate Aeff and R for an input photon list.
 
         Parameters
         ----------
         photons : `astropy.table.Table`
-            Photon list. This photon list should already be filtered
-            and contain only "good" photons, i.e. photons that hit a
-            detector and have a non-zero probability.
-        n_photons : number
-            In order to calculate the effective area, the function needs
-            to calculate the fraction of detected photons and to do that
-            the total number of simulated photons needs to be passed in.
+            Photon list.
 
         Returns
         -------
@@ -238,56 +269,32 @@ class CaptureResAeff(object):
             Dictionary with per-order Aeff and R, as well as values
             summed over all grating orders.
         '''
-        aeff = np.zeros(len(self.orders))
-        disporders = self.orders != 0
-
-        if len(filtered) == 0:
+        aeff = effectivearea_from_photonlist(photons, self.orders, len(photons),
+                                             self.A_geom, self.order_col)
+        try:
+            ind = (np.isfinite(photons[self.dispersion_coord]) &
+                   (photons['probability'] > 0))
+            res, pos, std = resolvingpower_from_photonlist(photons, self.orders,
+                                                           col=self.dispersion_coord,
+                                                           zeropos=None,
+                                                           ordercol=self.order_col)
+        except AnalysisError:
+            # Something did not work, e.g. too few photons to find zeroth order
             res = np.nan * np.ones(len(self.orders))
-            avggratres = np.nan
-        else:
-            try:
-                res, pos, std = resol(filtered, self.orders,
-                                      col=self.dispersion_coord,
-                                      zeropos=None, ordercol=self.order_col)
-            except AnalysisError:
-                # Something did not work, e.g. too few photons to find zeroth order
-                res = np.nan * np.ones(len(self.orders))
 
-            for i, o in enumerate(self.orders):
-                aeff[i] = filtered['probability'][filtered[self.order_col] == o].sum()
-            aeff = aeff / n_photons * self.Ageom
-            # Division by 0 causes more nans, so filter those out
-            # Also, res is nan if less than 20 photons are detected
-            # so we need to filter those out, too.
-            ind = disporders & (aeff > 0) & np.isfinite(res)
-            if ind.sum() == 0:  # Dispersed spectrum misses detector
-                avggratres = np.nan
-            else:
-                avggratres = np.average(res[ind],
-                                        weights=aeff[ind] / aeff[ind].sum())
+        disporders = self.orders != 0
         # The following lines work for an empty photon list, too.
         aeffgrat = np.sum(aeff[disporders])
         aeff0 = np.sum(aeff[~disporders])
+
+        # Division by 0 causes more nans, so filter those out
+        # Also, res is nan if less than 20 photons are detected
+        # so we need to filter those out, too.
+        ind = disporders & (aeff > 0) & np.isfinite(res)
+        if ind.sum() == 0:  # Dispersed spectrum misses detector
+            avggratres = np.nan
+        else:
+            avggratres = np.average(res[ind],
+                                    weights=aeff[ind] / aeff[ind].sum())
         return {'Aeff0': aeff0, 'Aeffgrat': aeffgrat, 'Aeff': aeff,
                 'Rgrat': avggratres, 'R': res}
-
-    def __call__(self, parameters, photons, n_photons):
-        out = self.calc_result(photons, n_photons)
-        out['Parameters'] = parameters
-        self.tab.add_row(out)
-
-
-def singletolerance(photons_in, instrum_before,
-                    wigglefunc, wigglepars,
-                    instrum_after, derive_result):
-    photons = instrum_before(photons_in.copy())
-    for i, pars in enumerate(wigglepars):
-        print('Working on {}/{}'.format(i, len(wigglepars)))
-        instrum = wigglefunc(pars)
-        p_out = instrum(photons.copy())
-        p_out = instrum_after(p_out)
-        if 'det_x' in p_out.colnames:
-            ind = np.isfinite(p_out['det_x']) & (p_out['probability'] > 0)
-        else:
-            ind = []
-        derive_result(pars, p_out[ind], len(p_out))

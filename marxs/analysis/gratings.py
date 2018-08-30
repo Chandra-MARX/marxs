@@ -223,3 +223,34 @@ def resolvingpower_from_photonlist(photons, orders,
         std[i] = stdpos
     res = np.abs(pos - zeropos) / (std * 2.3548)
     return res, pos, std
+
+
+def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1.,
+                                   ordercol='order'):
+    '''Calculate the effective area several grating orders
+
+    This is based on the probabilities of the photons in the list, so
+    this photons list must already account for all instrument
+    components, for example, do not forgot to set the probability to 0
+    for photons that falls into a chip gap.
+
+    Parameters
+    ----------
+    photons : `astropy.table.Table`
+        Photon event list
+    orders : np.array
+        Orders for which the resolving power will be calculated
+    A_geom : number
+        Geometric area of aperture that was used for photon list.
+    ordercol : string
+        Name of column that lists grating order for each photon
+
+    Returns
+    -------
+    aeff : np.array
+        effective area for each order
+    '''
+    aeff = np.zeros(len(orders))
+    for i, o in enumerate(orders):
+        aeff[i] = photons['probability'][photons[ordercol] == o].sum()
+    return aeff / n_photons * A_geom
