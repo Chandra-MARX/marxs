@@ -86,6 +86,42 @@ def moveindividual(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
 
 
 @oneormoreelements
+def varyattribute(element, **kwargs):
+    '''Modify the attributes of an element.
+
+    This function modifies the attributes of an object. The keyword arguments
+    are name and value of the attributes to be changed. This can be used for
+    a wide variety of MARXS objects where the value of a parameter is stored
+    as an instance attribute.
+
+    Parameters
+    ----------
+    element : object
+        Some optical component.
+    keywords : it depends
+
+    Example
+    -------
+    In a `marxs.optics.RadialMirrorScatter` object, the width of the scattering
+    can be modified like this:
+
+    >>> from marxs.optics import RadialMirrorScatter
+    >>> from marxs.design.tolerancing import varyattribute
+    >>> rms = RadialMirrorScatter(inplanescatter=1e-5, perpplanescatter=0)
+    >>> varyattribute(rms, inplanescatter=2e-5)
+
+    It is usually easy to see which attributes of a
+    `marxs.simulator.SimulationSequenceElement` are relevant to be changed in
+    tolerancing simulations when looking at the attributes or the implementation
+    of those elements.
+    '''
+    for key, val in kwargs.items():
+        if not hasattr(element, key):
+            raise ValueError(f'Object {element} does not have {key} attribute.')
+        setattr(element, key, val)
+
+
+@oneormoreelements
 def varyperiod(element, period_mean, period_sigma):
     '''Randomly draw different grating periods for different gratings
 
@@ -132,27 +168,6 @@ def varyorderselector(element, order_selector, *args, **kwargs):
     if not hasattr(element, 'order_selector'):
         raise ValueError(f'Object {element} does not have an order_selector attribute.')
     element.order_selector = order_selector(*args, **kwargs)
-
-
-@oneormoreelements
-def varyscatter(element, inplanescatter, perplanescatter):
-    '''Change the scatter properties of an SPO
-
-    Parameters
-    ----------
-    elements :`marxs.optics.RadialMirrorScatter` or list of those elements
-        Elements where uncertainties will be set
-    inplanescatter : float
-        new value for inplanescatter of mirror
-    perpplanescatter : float
-        new value for perpplanescater of mirror
-    '''
-    if not hasattr(element, 'inplanescatter'):
-         raise ValueError(f'Object {element} does not have an inplanescatter attribute.')
-    if not hasattr(element, 'perpplanescatter'):
-         raise ValueError(f'Object {element} does not have an perpplanescatter attribute.')
-    element.inplanescatter = inplanescatter
-    element.perpplanescatter = perplanescatter
 
 
 def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
