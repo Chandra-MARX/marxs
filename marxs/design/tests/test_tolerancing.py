@@ -3,7 +3,7 @@ import pytest
 
 from ..tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual,
-                           varyperiod, varyorderselector, varyscatter,
+                           varyperiod, varyorderselector, varyattribute,
                            run_tolerances, CaptureResAeff
                            )
 from ...optics import FlatGrating, OrderSelector, RadialMirrorScatter
@@ -103,7 +103,7 @@ def test_wiggle():
     assert np.std(diff[:, 0, 3]) > np.std(diff[:, 1, 3])
 
 
-@pytest.mark.parametrize('function', [varyperiod, varyorderselector, varyscatter])
+@pytest.mark.parametrize('function', [varyperiod, varyorderselector])
 def test_errormessage(function):
     '''Check that check is performed for right type of object.
     Some function just set an attribute and there is no function call after
@@ -134,9 +134,21 @@ def test_gratings_d():
 def test_scatter():
     '''Check that the right properties are set.'''
     scat = RadialMirrorScatter(inplanescatter=1., perpplanescatter=.1)
-    varyscatter(scat, 2., .2)
+    varyattribute(scat, inplanescatter=2., perpplanescatter=.2)
     assert scat.inplanescatter == 2.
     assert scat.perpplanescatter == .2
+
+
+def test_errormessage_attribute():
+    '''Test error message for generic attributechanger'''
+    with pytest.raises(ValueError) as e:
+        # All functions accept two parameters.
+        # Error should be raised before they are used, so the value does not
+        # matter
+        varyattribute(gsa, attributenotpresent=1., notpresenteither=2.)
+
+    assert 'does not have' in str(e.value)
+
 
 
 def test_orderselector():
