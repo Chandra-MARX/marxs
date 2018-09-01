@@ -191,8 +191,8 @@ def angle_between(angle, border1, border2):
     comparison : bool of same shape as ``angle``
         Result of the comparison
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from marxs.math.utils import angle_between
     >>> angle_between(-0.1, -0.2, 6)
