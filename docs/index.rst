@@ -55,6 +55,7 @@ The documentation for MARXS is split into several parts. After intalling MARXS i
 .. toctree::
    :maxdepth: 2
 
+   support
    changelog
    credits
    licenses

@@ -1,0 +1,26 @@
+If you use MARXS for work/research presented in a publication (whether
+directly, or as a dependency to another package), we recommend and encourage
+a citation of the following paper:
+
+  https://ui.adsabs.harvard.edu/#abs/2017AJ....154..243G/abstract
+    
+The recommended BibTeX entry for the above citation is:
+
+@ARTICLE{2017AJ....154..243G,
+   author = {{G{\"u}nther}, H.~M. and {Frost}, J. and {Theriault-Shay}, A.
+	},
+    title = "{MARXS: A Modular Software to Ray-trace X-Ray Instrumentation}",
+  journal = {\aj},
+archivePrefix = "arXiv",
+   eprint = {1710.05226},
+ primaryClass = "astro-ph.IM",
+ keywords = {instrumentation: polarimeters, instrumentation: spectrographs, methods: numerical, telescopes},
+     year = 2017,
+    month = dec,
+   volume = 154,
+      eid = {243},
+    pages = {243},
+      doi = {10.3847/1538-3881/aa943b},
+   adsurl = {http://adsabs.harvard.edu/abs/2017AJ....154..243G},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}

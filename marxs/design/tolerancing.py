@@ -100,8 +100,8 @@ def varyattribute(element, **kwargs):
         Some optical component.
     keywords : it depends
 
-    Example
-    -------
+    Examples
+    --------
     In a `marxs.optics.RadialMirrorScatter` object, the width of the scattering
     can be modified like this:
 
