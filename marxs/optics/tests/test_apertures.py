@@ -81,6 +81,11 @@ def test_MultiAperture():
     assert (p['aper'] == 0).sum() + (p['aper'] == 1).sum() == 1000
     # Most photons go through the bigger aperture
     assert (p['pos'][1:] > 1).sum() > 650
+    # Regression: Check apertures are not sorted in time [#189]
+    ind1 = (p['aper'] == 0).nonzero()[0]
+    ind2 = (p['aper'] == 1).nonzero()[0]
+    assert not np.max(ind1) <  np.min(ind2)
+    assert not np.min(ind1) > np.max(ind2)
 
 def test_geomarea_projection():
     '''When a ray sees the aperture under an angle the projected aperture size

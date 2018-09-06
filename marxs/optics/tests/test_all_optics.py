@@ -20,7 +20,8 @@ from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
 
 from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
-from ..base import _parse_position_keywords, FlatStack
+from ..base import FlatStack
+from ...base import _parse_position_keywords
 from ...design import (RowlandTorus, GratingArrayStructure,
                        LinearCCDArray, RowlandCircleArray,
                        RectangularGrid)

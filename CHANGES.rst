@@ -58,6 +58,10 @@ Bug fixes
 - Plot only "half-box" for elements such as mirrors where the optical
   interaction occurs on a surface. [#178]
 
+- With `marxs.optics.MultiAperture` photons would always be sorted by aperture
+  number. To fix this, apertures now behave more like other optical elements
+  and use ``process_photons``. [#189]
+
   
   
 Other changes and additions
