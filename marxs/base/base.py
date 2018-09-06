@@ -18,12 +18,12 @@ class DocMeta(type):
     '''Metaclass to inherit docstrings when reqired.
 
     When a derived class overwrites a method that was already defined in its
-    base class, the new method usually has the same purpose as the original method
-    and often uses the same parameters, too, although the implementation differs
-    slightly.
-    In this case, it should have the same docstring, too.
-    This metaclass will look for methods that are undocumented and add the docstring
-    of the appropriate parent method to them.
+    base class, the new method usually has the same purpose as the original
+    method and often uses the same parameters, too, although the implementation
+    differs slightly.  In this case, it should have the same docstring, too.
+    This metaclass will look for methods that are undocumented and add the
+    docstring of the appropriate parent method to them.
+
     '''
     def __new__(mcs, name, bases, dict):
         # make a class here with the same method resolution order
@@ -94,30 +94,31 @@ class SimulationSequenceElement(MarxsElement):
         dir : `numpy.ndarray`
             4-d direction vector of ray in homogeneous coordinates
         pos : `numpy.ndarray`
-            4-d position of last interaction pf the photons with any optical element in
-            homogeneous coordinates. Together with ``dir`` this determines the equation
-            of the ray.
+            4-d position of last interaction pf the photons with any optical
+            element in homogeneous coordinates. Together with ``dir`` this
+            determines the equation of the ray.
         energy : float
             Photon energy in keV.
         polarization : float
             Polarization angle of the photons.
         probability : float
-            Probability that the photon continues. Set to 0 if the photon is absorbed, to 1 if it
-            passes the optical element and to number between 0 and 1 to express a probability that
-            the photons passes.
+            Probability that the photon continues. Set to 0 if the photon is
+            absorbed, to 1 if it passes the optical element and to number
+            between 0 and 1 to express a probability that the photons passes.
     '''
 
     id_col = None
     '''String that names an id column for output.
 
-    Set this to a string to add an automatic numbering to the output. This is especially useful
-    if there are several identical optical components that are used in parallel, e.g. there
-    are four identical CCDs. Setting ``id_col = "CCD_ID"`` and passing an ``id_num=1, 2, 3, 4``
-    keyword respectively to each CCD
-    will add a column ``CCD_ID`` with a value of 1,2,3, or 4 for each photon hitting one of those
-    CCDs.
+    Set this to a string to add an automatic numbering to the output. This is
+    especially useful if there are several identical optical components that
+    are used in parallel, e.g. there are four identical CCDs. Setting ``id_col
+    = "CCD_ID"`` and passing an ``id_num=1, 2, 3, 4`` keyword respectively to
+    each CCD will add a column ``CCD_ID`` with a value of 1,2,3, or 4 for each
+    photon hitting one of those CCDs.
 
     Currently, this will not work with all optical elements.
+
     '''
 
     def __init__(self, **kwargs):
@@ -130,7 +131,8 @@ class SimulationSequenceElement(MarxsElement):
     def add_output_cols(self, photons, colnames=[]):
         '''Add output columns of the correct format (currently: float) to the photon array.
 
-        This function takes the column names that are added to ``photons`` from several sources:
+        This function takes the column names that are added to ``photons`` from
+        several sources:
 
         - `id_col` (if not ``None``)
         - `output_columns`
@@ -141,8 +143,8 @@ class SimulationSequenceElement(MarxsElement):
         photons : `astropy.table.Table`
             Table columns are added to.
         colnames : list of strings
-            Column names to be added; in addition several object properties can be used to
-            set the column names, see description above.
+            Column names to be added; in addition several object properties can
+            be used to set the column names, see description above.
         '''
         temp = np.empty(len(photons))
         temp[:] = np.nan

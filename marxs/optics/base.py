@@ -1,20 +1,18 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from functools import wraps
-from copy import copy, deepcopy
 
 import numpy as np
 from astropy.table import Table, Row
 
-from ..math.pluecker import point_dir2plane, dir_point2line, intersect_line_plane
-from ..math.utils import e2h, h2e
 from ..math.geometry import Geometry, FinitePlane
-from ..base import SimulationSequenceElement, _parse_position_keywords
+from ..base import SimulationSequenceElement
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
 
-    This class cannot be used to instanciate an optical element directly, rather it serves as a
-    base class from with other optical elements will be derived.
+    This class cannot be used to instanciate an optical element directly,
+    rather it serves as a base class from with other optical elements will be
+    derived.
 
     At the very minumum, any derived class needs to implement `__call__` which
     typically calls `intersect` and either `process_photon` or
@@ -26,6 +24,7 @@ class OpticalElement(SimulationSequenceElement):
     `process_photon`.  Marxs will call `process_photons`, which (if not
     overwritten) contains a simple for-loop to loop over all photons in the
     array and call `process_photon` on each of them.
+
     '''
 
     default_geometry = FinitePlane
@@ -67,9 +66,9 @@ class OpticalElement(SimulationSequenceElement):
         dir : `numpy.ndarray`
             4-d direction vector of ray in homogeneous coordinates
         pos : `numpy.ndarray`
-            4-d position of last interaction pf the photons with any optical element in
-            homogeneous coordinates. Together with ``dir`` this determines the equation
-            of the ray.
+            4-d position of last interaction pf the photons with any optical
+            element in homogeneous coordinates. Together with ``dir`` this
+            determines the equation of the ray.
         energy : float
             Photon energy in keV.
         polarization : float
@@ -80,25 +79,27 @@ class OpticalElement(SimulationSequenceElement):
         dir : `numpy.ndarray`
             4-d direction vector of ray in homogeneous coordinates
         pos : `numpy.ndarray`
-            4-d position of last interaction pf the photons with any optical element in
-            homogeneous coordinates. Together with ``dir`` this determines the equation
-            of the ray.
+            4-d position of last interaction pf the photons with any optical
+            element in homogeneous coordinates. Together with ``dir`` this
+            determines the equation of the ray.
         energy : float
             Photon energy in keV.
         polarization : float
             Polarization angle of the photons.
         probability : float
-            Probability that the photon passes this optical element. Set to 0 if the
-            photon is absorbed, to 1 if it passes and to number between 0 and 1 to
-            express a probability that the photons passes.
+            Probability that the photon passes this optical element. Set to 0
+            if the photon is absorbed, to 1 if it passes and to number between
+            0 and 1 to express a probability that the photons passes.
         other : floats
             One number per entry in `output_columns`.
+
         '''
         raise NotImplementedError
         return dir, pos, energy, polarization, probability, any, other, output, columns
 
     def __call__(self, photons):
-        intersect_out = self.geometry.intersect(photons['dir'].data, photons['pos'].data)
+        intersect_out = self.geometry.intersect(photons['dir'].data,
+                                                photons['pos'].data)
         return self.process_photons(photons, *intersect_out)
 
     def process_photons(self, photons, intersect, interpos, intercoos):
@@ -110,9 +111,13 @@ class OpticalElement(SimulationSequenceElement):
         ----------
         photons: `astropy.table.Table` or `astropy.table.Row`
             Table with photon properties
-        intersect, interpos, intercoos : array (N, 4)
-            The array ``interpos`` contains the intersection points in the global
-            coordinate system, ``intercoos`` in a local coordiante system (2d in most cases).
+        intersect : array
+            Boolean array marking which photons should be processed by this
+            element.
+        interpos, intercoos : array (N, 4)
+            The array ``interpos`` contains the intersection points in the
+            global coordinate system, ``intercoos`` in a local coordiante
+            system (2d in most cases).
 
         Returns
         -------
@@ -122,17 +127,9 @@ class OpticalElement(SimulationSequenceElement):
             cases this might not be possible and the returned Table may be
             a copy. Do not rely on either - use ``photons.copy()`` if you want
             to ensure you are working with an independent copy.
+
         '''
         if intersect.sum() > 0:
-            self.add_output_cols(photons, self.loc_coos_name)
-            # Add ID number to ID col, if requested
-            if self.id_col is not None:
-                photons[self.id_col][intersect] = self.id_num
-            # Set position in different coordinate systems
-            photons['pos'][intersect] = interpos[intersect]
-            photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
-            photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
-
             if hasattr(self, "specific_process_photons"):
                 outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
                 self.add_output_cols(photons, list(outcols.keys()))
@@ -159,6 +156,15 @@ class OpticalElement(SimulationSequenceElement):
             else:
                 raise AttributeError('Optical element must have one of three: specific_process_photons, process_photon, or override process_photons.')
 
+            self.add_output_cols(photons, self.loc_coos_name)
+            # Add ID number to ID col, if requested
+            if self.id_col is not None:
+                photons[self.id_col][intersect] = self.id_num
+            # Set position in different coordinate systems
+            photons['pos'][intersect] = interpos[intersect]
+            photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
+            photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+
         return photons
 
 
@@ -170,24 +176,26 @@ class FlatStack(FlatOpticalElement):
     '''Convenience class for several flat, stacked optical elements.
 
     This class is meant to simplify the specification of a single physical
-    element, that fullfills several logical functions, e.g. a detector can be seen
-    as a a sequence of a contamination layer (which modifies the probability of a photon
-    reaching the CCD), a QE filter (which modifies the probability of detecting the photon),
-    and the pixelated CCD (which sorts the photons in pixels). All these things can be
-    approximated as happening in the same physical spotlocation, and thus it is convenient to
-    treat all three functions as one element.
+    element, that fullfills several logical functions, e.g. a detector can be
+    seen as a a sequence of a contamination layer (which modifies the
+    probability of a photon reaching the CCD), a QE filter (which modifies the
+    probability of detecting the photon), and the pixelated CCD (which sorts
+    the photons in pixels). All these things can be approximated as happening
+    in the same physical spotlocation, and thus it is convenient to treat all
+    three functions as one element.
 
     Parameters
     ----------
     elements : list of classes
         List of class names specifying the layers in the stack
     keywords : list of dicts
-        Dictionaries specifying the properties of each layer (do not set the position
-        of individual elements)
+        Dictionaries specifying the properties of each layer (do not set the
+        position of individual elements)
 
     Examples
     --------
-    In this example, we will define a single flat CCD with a QE of 0.5 for all energies.
+    In this example, we will define a single flat CCD with a QE of 0.5 for all
+    energies.
 
     >>> from marxs.optics import FlatStack, EnergyFilter, FlatDetector
     >>> myccd = FlatStack(position=[0, 2, 2], zoom=2,
@@ -216,9 +224,10 @@ class FlatStack(FlatOpticalElement):
             coordinate system, ``intercoos`` in the local (y,z) system of the grating.
         '''
         if intersect.sum() > 0:
-            # This line calls FlatOpticalElement.process_photons to add ID cols and local coos
-            # if requested (this could also be done by any of the contained sequence elements,
-            # but we want the user to be able to specify that for either of them).
+            # This line calls FlatOpticalElement.process_photons to add ID cols
+            # and local coos if requested (this could also be done by any of
+            # the contained sequence elements, but we want the user to be able
+            # to specify that for either of them).
             photons = super(FlatStack, self).process_photons(photons, intersect, interpos, intercoos)
             for e in self.elements:
                 photons = e.process_photons(photons, intersect, interpos, intercoos)
