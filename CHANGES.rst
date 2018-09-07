@@ -33,6 +33,9 @@ API Changes
   ``detector.geometry['center']`` instead of a function interface with
   ``(...)``. [#182]
 
+- Remove ``utils.MergeIdentical`` merge strategy since it is not longer used
+  after #189. [#191]
+
 
 
 
