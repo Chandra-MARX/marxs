@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.stats import normaltest
 
-from ..scatter import RadialMirrorScatter
+from ..scatter import RadialMirrorScatter, RandomGaussianScatter
 from ..detector import FlatDetector
 from ...utils import generate_test_photons
 
@@ -67,3 +67,59 @@ def test_scatter_0_0():
 
     assert np.all(p['det_x'] == 1.0)
     assert np.all(p['det_y'] == 0)
+
+
+def test_gaussscatter_0():
+    '''Test that scatter works if scatter sigma set
+    to 0. This case is special cased, so that needs an extra test.'''
+    photons = generate_test_photons(500)
+    photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
+    rms = RandomGaussianScatter(scatter=0)
+    det = FlatDetector(position=[-1, 0, 0], zoom=1000)
+
+    p = rms(photons)
+    p = det(p)
+
+    assert np.all(p['det_x'] == 1.0)
+    assert np.all(p['det_y'] == 0)
+
+
+def test_gaussiandistribution_of_scattered_rays():
+    '''Check that scattered rays have a normal distribution.'''
+    photons = generate_test_photons(500)
+    photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
+    rms = RandomGaussianScatter(scatter=1e-5)
+    det = FlatDetector(position=[-1, 0, 0], zoom=1000)
+
+    p = rms(photons)
+    p = det(p)
+    # Calculate distance from undisturbed position
+    d = np.sqrt((p['det_x'] - np.mean(p['det_x']))**2 +
+                (p['det_y'] - np.mean(p['det_y']))**2)
+    d = d * np.sign(p['det_x'] - np.mean(p['det_x']))
+
+    stat, pval = normaltest(d)
+    assert pval > 0.02
+    assert np.isclose(np.std(d), 1e-5, rtol=0.1)
+
+
+def test_scatteredfunction():
+    '''Check that scattered rays have a normal distribution.'''
+    photons = generate_test_photons(500)
+    photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
+    photons['time'] = np.arange(len(photons), dtype=float) / 500.
+
+    def timescatter(photons, intersect, interpos, intercoos):
+        return photons['time']
+
+    rms = RandomGaussianScatter(scatter=timescatter)
+    det = FlatDetector(position=[-1, 0, 0], zoom=1000)
+
+    p = rms(photons)
+    p = det(p)
+    # Calculate distance from undisturbed position
+    d = np.sqrt((p['det_x'] - np.mean(p['det_x']))**2 +
+                (p['det_y'] - np.mean(p['det_y']))**2)
+    d = d * np.sign(p['det_x'] - np.mean(p['det_x']))
+
+    assert np.std(d[:200]) < 2 * np.std(d[:300])

@@ -1,10 +1,11 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-'''This module contains tests that are done for all opticial elements as opposed to tests that
-apply to one class of elements only (e.g. gratings).
-Tests here include simple things that guarantee that all elements comply with the MARXS interface
-(e.g. each element must return a name and description) and more complex consistency checks
-that are required for every type of optical element (e.g. the polarization vector must be
-perpendicular to the photon propagation direction in each an every case).
+'''This module contains tests that are done for all opticial elements as
+opposed to tests that apply to one class of elements only (e.g. gratings).
+Tests here include simple things that guarantee that all elements comply with
+the MARXS interface (e.g. each element must return a name and description) and
+more complex consistency checks that are required for every type of optical
+element (e.g. the polarization vector must be perpendicular to the photon
+propagation direction in each and every case).
 '''
 from collections import OrderedDict
 import copy
@@ -29,7 +30,7 @@ from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra.hess import HETG
-from ..scatter import RadialMirrorScatter
+from ..scatter import RadialMirrorScatter, RandomGaussianScatter
 from ..filter import EnergyFilter
 
 
@@ -73,6 +74,7 @@ all_oe = [ThinLens(focallength=100),
           Sequence(elements=[]),
           HETG(),
           RadialMirrorScatter(inplanescatter=0.1),
+          RandomGaussianScatter(scatter=.1),
           # not a useful filterfunc, but OK for testing with a few other dependencies
           EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
           FlatStack(elements=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
