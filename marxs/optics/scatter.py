@@ -77,8 +77,14 @@ class RandomGaussianScatter(FlatOpticalElement):
 
     Parameters
     ----------
-    scatter : float
-        sigma of Gaussian for the scatter [in radian]
+    scatter : float or callable
+        This this is a number, scattering angles will be drawn from a Gaussian
+        with the given sigma [in radian]. For a variable scatter, this can be a
+        function with the following call signature: ``angle = func(photons,
+        intersect, interpos, intercoos)``. The function should return an array
+        of angles, containing one angle for each intersecting photon. A function
+        passed in for this parameter can makes the scattering time, location, or
+        energy-dependent.
     '''
     scattername = 'scatter'
 
@@ -104,8 +110,10 @@ class RandomGaussianScatter(FlatOpticalElement):
             guessvec[ind, 0] = 1
             guessvec[~ind, 1] = 1
             perpvec = np.cross(pdir, guessvec)
-
-            angle = np.random.normal(loc=0., scale=self.scatter, size=n)
+            if callable(self.scatter):
+                angle = self.scatter(photons, intersect, interpos, intercoos)
+            else:
+                angle = np.random.normal(loc=0., scale=self.scatter, size=n)
             rot = axangle2mat(perpvec, angle)
             outdir = np.einsum('...ij,...i->...j', rot, pdir)
             # Now rotate result by up to 2 pi to randomize direction
