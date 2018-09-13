@@ -7,7 +7,6 @@ from .base import FlatOpticalElement
 from ..base import GeometryError
 from ..math.geometry import RectangleHole, CircularHole
 from ..simulator import BaseContainer
-from .. import utils
 
 
 class BaseAperture(object):
@@ -99,6 +98,7 @@ class RectangleAperture(FlatAperture):
     def area(self):
         '''Area covered by the aperture'''
         return 4 * np.linalg.norm(self.geometry['v_y']) * np.linalg.norm(self.geometry['v_z']) * u.mm**2
+
 
 class CircleAperture(FlatAperture):
     '''Select the position where a parallel ray from an astrophysical source starts the simulation.

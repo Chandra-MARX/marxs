@@ -19,6 +19,8 @@ New Features
 - Add new module `marxs.design.tolerancing` to estimate alignment tolerances.
   [#186]
 
+- Add class `marxs.optics.scatter.RandomGaussianScatter`. [#192]
+
 API Changes
 ^^^^^^^^^^^
 - The geometry of a class is now defined as a separate object from the new
