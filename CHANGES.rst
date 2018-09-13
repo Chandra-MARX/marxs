@@ -21,6 +21,10 @@ New Features
 
 - Add class `marxs.optics.scatter.RandomGaussianScatter`. [#192]
 
+- The column names for blaze and order written by
+  `marxs.optics.gratings.FlatGrating` can now be configured. [#195]
+
+
 API Changes
 ^^^^^^^^^^^
 - The geometry of a class is now defined as a separate object from the new

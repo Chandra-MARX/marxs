@@ -317,6 +317,7 @@ def test_change_position_after_init():
     photons = generate_test_photons(5)
 
     g1 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), groove_angle=.3)
+    g1.order_name = 'one'
     p1 = g1(photons.copy())
 
     pos3d = axangles.axangle2mat([1,0,0], .3)
@@ -325,10 +326,16 @@ def test_change_position_after_init():
     g2 = FlatGrating(d=1./500, order_selector=OrderSelector([1]), position=trans)
     # then move it so that pos and groove direction match g1
     g2.geometry.pos4d = affines.compose(np.zeros(3), pos3d, 25.*np.ones(3))
+    g2.blaze_name = 'myblaze'
     p2 = g2(photons.copy())
 
     assert np.allclose(p1['dir'], p2['dir'])
     assert np.allclose(p1['pos'], p2['pos'])
+
+    # Check naming of the grating output columns
+    assert np.all(p1['one'] == 1)
+    assert 'myblaze' in p2.colnames
+
 
 def test_gratings_are_independent():
     '''Regression test: Some grating properties are stored in a dict.
