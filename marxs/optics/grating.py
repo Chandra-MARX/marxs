@@ -132,6 +132,12 @@ class FlatGrating(FlatOpticalElement):
     loc_coos_name = ['grat_y', 'grat_z']
     '''name for output columns that contain the interaction point in local coordinates.'''
 
+    order_name = 'order'
+    '''Column name for diffraction order. If set to ``None`` this is not added to the photon list.'''
+
+    blaze_name = 'blaze'
+    '''Column name for blaze angle. If set to ``None`` this is not added to the photon list.'''
+
     def order_sign_convention(self, p, e_perp_groove):
         '''Set sign convention for grating orders.
 
@@ -256,8 +262,13 @@ class FlatGrating(FlatOpticalElement):
         dir, m, p, blaze = self.diffract_photons(photons, intersect, interpos, intercoos)
         pol = parallel_transport(photons['dir'].data[intersect, :], dir,
                                  photons['polarization'].data[intersect, :])
-        return {'dir': dir, 'probability': p, 'order': m, 'blaze': blaze,
-                'polarization': pol}
+        out = {'dir': dir, 'probability': p, 'polarization': pol}
+        if self.order_name is not None:
+            out[self.order_name] = m
+        if self.blaze_name is not None:
+            out[self.blaze_name] = blaze
+        return out
+
 
 class CATGrating(FlatGrating):
     '''Critical-Angle-Transmission Grating
