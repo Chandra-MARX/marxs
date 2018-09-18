@@ -52,7 +52,7 @@ def test_change_parallel_elements(function):
     '''Check that parameters work and elements are in fact changed.
     More detailed checks that the type of change is correct are
     implemented as separate tests, but those tests don't check out
-    every parameter/
+    every parameter.
     '''
     g = gsa()
     function(g, 0., 0., 0.)
@@ -183,7 +183,10 @@ def test_runtolerances():
     assert out[1]['meanorder'] == 1
     # check parameters are in output
     assert out[1]['orderlist'] == [1, 2]
-
+    # check original parameters is still intact and can be used again
+    # Regression test: If results are inserted into the same dict
+    # 'meanorder' will appear with is not valid for varyorderselector
+    assert 'meanorder' not in parameters[0]
 
 def test_capture_res_aeff():
     '''Test the captures res/aeff class.

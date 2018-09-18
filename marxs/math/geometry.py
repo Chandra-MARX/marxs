@@ -365,7 +365,7 @@ class Cylinder(Geometry):
     '''A Geometry shaped like a ring or tube.
 
     This object is shaped like a tube. The form is a circle in the xy plane
-    and and flat along the z-direction.  This can be used, for example to
+    and flat along the z-direction.  This can be used, for example to
     simulate a setup that can follow the Rowland circle
     geometry exactly which is useful, e.g. to study the resolution of a
     spectrograph without worrying about the details of the detector geometry.
