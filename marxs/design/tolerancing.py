@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
 import collections
+from copy import copy
 
 import numpy as np
 from transforms3d import affines, euler
@@ -223,8 +224,9 @@ def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
         print(f'Working on simulation {i}/{len(parameters)}')
         wigglefunc(wiggleparts, **pars)
         photons = instrum(photons_in.copy())
-        pars.update(analyzefunc(photons))
-        out.append(pars)
+        cpars = copy(pars)
+        cpars.update(analyzefunc(photons))
+        out.append(cpars)
 
     return out
 

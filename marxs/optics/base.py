@@ -28,7 +28,7 @@ class OpticalElement(SimulationSequenceElement):
     '''
 
     default_geometry = FinitePlane
-    '''If not geometry is passed in on initialization, an instance of this class will be used.'''
+    '''If no geometry is specified on initialization, an instance of this class will be used.'''
 
     # SimulationSequenceElement has display none, but now we have a geometry
     # so we don't need that default here.
