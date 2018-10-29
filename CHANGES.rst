@@ -44,7 +44,6 @@ API Changes
 
 
 
-
 Bug fixes
 ^^^^^^^^^
 
@@ -71,7 +70,9 @@ Bug fixes
   number. To fix this, apertures now behave more like other optical elements
   and use ``process_photons``. [#189]
 
-  
+- `marxs.optics.FlatStack` now inherits from `marxs.simulator.BaseContainer`.
+  [#196]
+
   
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
