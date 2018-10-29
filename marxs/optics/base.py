@@ -6,6 +6,7 @@ from astropy.table import Table, Row
 
 from ..math.geometry import Geometry, FinitePlane
 from ..base import SimulationSequenceElement
+from ..simulator import BaseContainer
 
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
@@ -172,7 +173,7 @@ class FlatOpticalElement(OpticalElement):
     pass
 
 
-class FlatStack(FlatOpticalElement):
+class FlatStack(FlatOpticalElement, BaseContainer):
     '''Convenience class for several flat, stacked optical elements.
 
     This class is meant to simplify the specification of a single physical
