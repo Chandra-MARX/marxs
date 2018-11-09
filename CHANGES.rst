@@ -24,6 +24,9 @@ New Features
 - The column names for blaze and order written by
   `marxs.optics.gratings.FlatGrating` can now be configured. [#195]
 
+- Add a number of helper functions (incl. plotting) to 
+  `marxs.design.tolerancing`. [#199]
+
 
 API Changes
 ^^^^^^^^^^^
