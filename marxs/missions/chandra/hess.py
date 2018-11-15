@@ -35,6 +35,12 @@ class HETG(Parallel):
                                'groove_angle': groove_ang.tolist()}
         super(HETG, self).__init__(**kwargs)
 
+        # I would like to put the center of the HETG on its hinge point.
+        # Unfortunately, I don't know that hinge point very well, so I'm guessing a little.
+        move = np.eye(4)
+        move[:, 3] = [8600., 580 * np.cos(np.deg2rad(30)),
+                      580 * np.sin(np.deg2rad(30)), 1.]
+
     def calculate_elempos(self):
         '''Read position of facets from file.
 
