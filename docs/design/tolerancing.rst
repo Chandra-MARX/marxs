@@ -161,8 +161,22 @@ Example: The Chandra HETG
 
 Let's look at an example of tolerancing for a single element. We simulate the Chandra/HETG instruments. The HETG consists of a few hundred grating facets, hel in place by a support structure (HESS). This HESS can swing in and out of the beam around a hinge. In this example, we study what happens if the entire HESS with all gratings is translated or rotated around the hinge.
 
-We make a few simplifications compared to the real Chandra to simplify and speed up the simulations. First, the do not use the `~marxs.missions.chandra.LissajousDither` pattern, but just assume a fixed pointing. This simulation is not about pointing stability or dother patters, it's about the HESS. Similarly, we assume a detector with infinite spatial resolution. With dither and sub-pixel repositioning the real accuracy in Chandra is already better than the size of the PSF, so that's OK.
+We make a few simplifications compared to the real Chandra to simplify and speed up the simulations. First, the do not use the `~marxs.missions.chandra.LissajousDither` pattern, but just assume a fixed pointing. This simulation is not about pointing stability or dother patters, it's about the HESS. Similarly, we assume a detector with infinite spatial resolution. With dither and sub-pixel repositioning the real accuracy in Chandra is already better than the size of the PSF, so that's OK::
 
+    >>> import astropy.units as u
+    >>> from astropy.coordinates import SkyCoord
+    >>> from marxs.source import PointSource, FixedPointing
+    >>> from marxs.missions import chandra
+    >>> coords = SkyCoord(278. * u.deg, -77. * u.deg)
+    >>> src = PointSource(coords=coords)
+    >>> pnt = FixedPointing(coords=coords)
+
+Define the elements that Chandra is made of::
+
+    >>> aper = chandra.Aperture()
+    >>> hrma = chandra.HRMA()
+    >>> hetg = chandra.HETG()
+    >>> acis = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
 
 We want to concentrate on the first diffration order. To speed up the computation, we tweka the grating efficiency such that the vast majority of photons ends up in either order -1 or +1. This will lead to an effective area that is far larger than in reality, but the *relative* change of effective area is still the same, i.e. if a misalignment of x mm leads to a 10% loss of effective area, that should still be true. We just get there much faster because we do not have to simulate as many source photons to build up sufficient signal. Such a cheat may not be acceptable in all situations, but since we might be running hundreds or thousands of simulations it's worthwhile to think about ways to speed them up::
 
@@ -180,6 +194,36 @@ The HETG has two parts with different grating constants and spectral traces on t
     ...     return photons
 
 
+Then, we import from the `marxs.design.tolerancing` module::
+  
+    >>> from marxs.design.tolerancing import (moveglobal, run_tolerances_for_energies,
+    ...                                       CaptureResAeff, generate_6d_wigglelist,
+    ...                                       load_and_plot)
+
+Next, we generate input for the function that will move the HESS
+around in our simulation. We do seven steps for every translation
+direction (-15, -5, -1, 0, 1, 5 and 15 mm) and nine teps for every
+rotation::
+  
+    >>> changeglobal, changeind = generate_6d_wigglelist([0., 1., 5., 15.] * u.mm,
+    ...                                                  [0., 1., 5., 10., 30.] * u.arcmin)
+    >>> resaeff = CaptureResAeff(A_geom=aper.area.to(u.cm**2), orders=[-1, 0, 1], dispersion_coord='tdetx')
+
+So, let's run it:
+
+.. doctest-skip::
+   
+    >>> from marxs.simulator import Sequence
+    >>> res = run_tolerances_for_energies(src, [1.5, 4.] * u.keV,
+    ...                                   Sequence(elements=[pnt, aper, hrma, onlyMEG]),
+    ...                                   Sequence(elements=[hetg, acis]),
+    ...                                   moveglobal, hetg,
+    ...                                   changeglobal,
+    ...                                   resaeff,
+    ...                                   t_source=10000)
+
+We save the results in a file named ``wiggle_global.fits`` and then make a quick-look plot. We use normal `matplotlib.pyplot` commands to modify the plot appearance slightly.
+   
 .. plot:: pyplots/chandra_tolerancing.py
    :include-source:	  
 
