@@ -1,6 +1,10 @@
 from marxs.design.tolerancing import load_and_plot
 
-tab, fig = load_and_plot('pyplots/wiggle_global.fits', ['dx', 'dy', 'dz', 'rx', 'ry', 'rz'])
+# In this example, we use a file that's included in MARXS for test purposes
+from astropy.utils.data import get_pkg_data_filename
+filename = get_pkg_data_filename('data/wiggle_global.fits', 'marxs.design.tests')
+
+tab, fig = load_and_plot(filename, ['dx', 'dy', 'dz', 'rx', 'ry', 'rz'])
 
 fig.axes[0].legend()
 

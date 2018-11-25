@@ -6,6 +6,7 @@ import pytest
 import astropy.units as u
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
+from astropy.utils.data import get_pkg_data_filename
 
 from ..tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual,
@@ -367,3 +368,13 @@ def test_plot_6dof():
         name = os.path.join(tmpdirname, 'var_global.fits')
         tab.write(name)
         fig, ax = load_and_plot(name, ['dd', 'rr'], R_col='R')
+
+@pytest.mark.skipif('not HAS_MPL')
+def test_plot_6dof_real_file():
+    '''Repeat previous test with static data file. This is a more realistic file
+    but it takes too long to generate every time. This file is used in the docs
+    in design/tolerancing (see docs/pyplot/chandra_tolerancing) so if this test
+    breaks, the docs will likely have to be changed, too.
+    '''
+    filename = get_pkg_data_filename('data/wiggle_global.fits', 'marxs.design.tests')
+    fig, ax = load_and_plot(filename)

@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import inspect
 from functools import wraps
 import collections
