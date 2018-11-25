@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 from transforms3d import affines, euler
 from astropy.table import Table
+from astropy import table
 import astropy.units as u
 from ..simulator import Parallel
 from .uncertainties import generate_facet_uncertainty as genfacun
@@ -310,7 +311,7 @@ class CaptureResAeff():
         try:
             ind = (np.isfinite(photons[self.dispersion_coord]) &
                    (photons['probability'] > 0))
-            res, pos, std = resolvingpower_from_photonlist(photons, self.orders,
+            res, pos, std = resolvingpower_from_photonlist(photons[ind], self.orders,
                                                            col=self.dispersion_coord,
                                                            zeropos=None,
                                                            ordercol=self.order_col)
@@ -404,22 +405,21 @@ def run_tolerances_for_energies(source, energies,
         results from ``analyzefunc`` for a single run.
 
     '''
-
-    waves = energies.to(u.Angstroem, equivalencies=u.spectral())
+    wave = energies.to(u.Angstrom, equivalencies=u.spectral())
     outtabs = []
 
     for i, e in enumerate(energies):
         source.energy = e.to(u.keV).value
-        photons_in = src.generate_photons(t_source)
+        photons_in = source.generate_photons(t_source)
         photons_in = instrum_before(photons_in)
         data = run_tolerances(photons_in, instrum_remaining,
                               wigglefunc, wiggleparts,
                               parameters, analyzefunc)
         # convert tab into a table.
         # astropy.tables has problems with Quantities as input
-        tab = table.Table([{d: data[i][d].value
-                            if isinstance(data[i][d], u.Quantity) else data[i][d]
-                            for d in data[i]} for i in range(len(data))])
+        tab = Table([{d: data[i][d].value
+                      if isinstance(data[i][d], u.Quantity) else data[i][d]
+                      for d in data[i]} for i in range(len(data))])
         tab['energy'] = e
         tab['wave'] = wave[i]
         outtabs.append(tab)
@@ -480,7 +480,7 @@ def generate_6d_wigglelist(trans, rot,
     changeglobal = np.zeros((n_trans * 2 * 3 + n_rot  * 2 * 3, 6))
     for i in range(3):
         changeglobal[i * n_trans: (i + 1) * n_trans, i] = trans.to(u.mm).value
-        changeglobal[n + i * n_rot: n + (i + 1) * n_rot, i + 3] = rot.to(u.degree).value
+        changeglobal[n + i * n_rot: n + (i + 1) * n_rot, i + 3] = rot.to(u.rad).value
 
     half = changeglobal.shape[0] / 2
     changeglobal[int(half):, :] = - changeglobal[:int(half), :]
@@ -573,7 +573,7 @@ def plot_wiggle(tab, par, parlist, ax, axt=None,
         else:
             raise ValueError("Don't know how to plot {}. Parameter names should start with 'd' for shifts and 'r' for rotations.".format(par))
 
-        ax.plot(x, g[R_col], label='{:2.0f} $\AA$'.format(key[0]), lw=1.5)
+        ax.plot(x, g[R_col], label='{:3.1f} $\AA$'.format(key[0]), lw=1.5)
         axt.plot(x, g[Aeff_col], ':', label='{:2.0f} $\AA$'.format(key[0]), lw=2)
     ax.set_ylabel('Resolving power (solid lines)')
     axt.set_ylabel('$A_{eff}$ [cm$^2$] (dotted lines)')
