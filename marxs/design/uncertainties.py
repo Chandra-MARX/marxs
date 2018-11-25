@@ -2,6 +2,8 @@
 import numpy as np
 from transforms3d import affines, euler
 
+__all__ = ['generate_facet_uncertainty']
+
 def generate_facet_uncertainty(n, xyz, angle_xyz):
     '''Generate 4d matrices that represent facet misalignment.
 

@@ -1,14 +1,36 @@
+import os
+import tempfile
+
 import numpy as np
 import pytest
+import astropy.units as u
+from astropy.table import Table
+from astropy.coordinates import SkyCoord
+from astropy.utils.data import get_pkg_data_filename
 
 from ..tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual,
                            varyperiod, varyorderselector, varyattribute,
-                           run_tolerances, CaptureResAeff
+                           run_tolerances, CaptureResAeff,
+                           generate_6d_wigglelist,
+                           select_1dof_changed,
+                           plot_wiggle, load_and_plot,
+                           run_tolerances_for_energies,
                            )
-from ...optics import FlatGrating, OrderSelector, RadialMirrorScatter
+from ...optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
+                       RectangleAperture, ThinLens, FlatDetector)
+
 from ...design import RowlandTorus, GratingArrayStructure
 from ...utils import generate_test_photons
+from ...source import PointSource, FixedPointing
+from ...simulator import Sequence
+
+try:
+    import matplotlib.pyplot as plt
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
+
 
 mytorus = RowlandTorus(0.5, 0.5, position=[1.5, 0, -3])
 
@@ -109,7 +131,7 @@ def test_errormessage(function):
     Some function just set an attribute and there is no function call after
     that that would fail or do anything if called with the wrong type of object.
     Thus, it's very simple to call these with an object where it does not make
-    any sense to apply them. SO, they have some error check. Here, we check
+    any sense to apply them. So, they have some error check. Here, we check
     this check.
     '''
     with pytest.raises(ValueError) as e:
@@ -183,10 +205,49 @@ def test_runtolerances():
     assert out[1]['meanorder'] == 1
     # check parameters are in output
     assert out[1]['orderlist'] == [1, 2]
-    # check original parameters is still intact and can be used again
+    # check original parameter is still intact and can be used again
     # Regression test: If results are inserted into the same dict
-    # 'meanorder' will appear with is not valid for varyorderselector
+    # 'meanorder' will appear which is not valid for varyorderselector
     assert 'meanorder' not in parameters[0]
+
+def test_run_tolerances_for_energies():
+    '''For this test, we need to define an instrument. The instrument is not very
+    realistic (an X-ray mirror with r=0 won't work), but the point here is just to
+    check the tolerancing for several energies. To make that calculation reasonably
+    fast, we need to keep the number of elements in the optical system small.
+    '''
+    coords = SkyCoord(12. * u.deg, -45 * u.deg)
+    src = PointSource(coords=coords)
+    pnt = FixedPointing(coords=coords)
+    aper = RectangleAperture(position=[5000, 0, 0], zoom=[1, 10, 10])
+    lens = ThinLens(position=[4900, 0, 0], zoom=[1, 10, 10], focallength=4900)
+    grat = FlatGrating(d=.002, order_selector=OrderSelector([0, 1]),
+                       position=[4800, 0, 0], zoom=[1, 10, 10])
+    det = FlatDetector(zoom=[1, 100, 100])
+    instrum = Sequence(elements=[pnt, aper, lens, grat, det])
+
+    parameters = [{'period_mean': 0.003, 'period_sigma': 0.},
+                  {'period_mean': 0.004, 'period_sigma': 0.}]
+
+    res = run_tolerances_for_energies(src, [.1, 1] * u.keV,
+                                      Sequence(elements=[pnt, aper, lens]),
+                                      Sequence(elements=[grat, det]),
+                                      varyperiod, grat,
+                                      parameters,
+                                      CaptureResAeff(orders=[0, 1, 2]),
+                                      reset={'period_mean': 0.005,
+                                             'period_sigma': 0.},
+                                      t_source=1000)
+    # Check the reset worked
+    assert grat._d == 0.005
+    # Check both energy have been calculated
+    assert 1 in res['energy']
+    assert .1 in res['energy']
+    assert len(res) == 4
+    # check results are reasonable
+    assert np.all(res['R'].data[:, 0] == 0)
+    assert not np.any(np.isfinite(res['R'].data[:, 2]))
+    assert res['R'].data[2, 1] > res['R'].data[0, 1]
 
 def test_capture_res_aeff():
     '''Test the captures res/aeff class.
@@ -209,3 +270,111 @@ def test_capture_res_aeff():
     assert np.isclose(out['Aeffgrat'], 7.5)
     assert len(out['R']) == 3
     assert np.isnan(out['R'][1])
+
+def test_capture_res_aeff_filter():
+    '''Ensure that photons with probability 0 will be ignored.
+    '''
+    p = generate_test_photons(200)
+    p['probability'] = 0
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = -100
+    p['xpos'][50:] = np.random.normal(scale=1, size=150)
+
+    resaeff = CaptureResAeff(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos')
+    out = resaeff(p)
+    assert np.all(out['Aeff'] == 0)
+    assert out['Aeff0'] == 0
+    assert out['Aeffgrat'] == 0
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][2])
+
+
+
+def test_6dlist():
+    '''Check the list of dicts in 3 translations dof and 3 rotations'''
+    cglob, cind = generate_6d_wigglelist([0, 1.] * u.cm, [0., 1.] * u.degree,
+                            names=['x', 'y', 'z', 'rx', 'ry', 'rz'])
+    assert len(cind) == 7
+    assert len(cglob) == 13
+    assert set(cind[5].keys()) == set(['x', 'y', 'z', 'rx', 'ry', 'rz'])
+
+    tab = Table(cind)
+    for col in ['x', 'y', 'z']:
+        assert np.max(tab[col]) == 10
+        assert np.min(tab[col]) == 0
+
+    for col in ['x', 'y', 'z']:
+        assert np.max(tab[col]) == 10
+        assert np.min(tab[col]) == 0
+
+    tab = Table(cglob)
+    for col in tab.colnames:
+        assert - np.min(tab[col]) == np.max(tab[col])
+
+def test_6d_warning():
+    with pytest.warns(UserWarning):
+        cglob, cind = generate_6d_wigglelist([1.] * u.cm, [0., 1.] * u.degree)
+
+def test_find_changed():
+    '''Test that we find the row where only one parameter was changed.'''
+    tab = Table({'par1': [-1, -1, 0, 0, 0, 1],
+                 'par2': [-1,  0, 0, 3, 0, 0],
+                 'id':   [ 0,  1, 2, 3, 4, 5]})
+    t = select_1dof_changed(tab, 'par1', parlist=['par1', 'par2'])
+    assert set(t['id']) == set([1, 2, 4, 5])
+
+@pytest.mark.skipif('not HAS_MPL')
+def test_plot_wiggle():
+    '''Test that wiggle plot works. This does not test that the result
+    looks correct, only that running through the plot function does not
+    raise any errors.
+    This is one of the few plotting functions in the entire package, so
+    setting up the infrastructure to compare output pixel-by-pixel does not
+    seem worth it as this point.
+    '''
+    fig, ax = plt.subplots()
+
+    tab = Table({'wave': [1, 1],
+                 'dd': [0, 1],
+                 'Rgrat': [500, 500],
+                 'Aeff': [20, 50]})
+    plot_wiggle(tab, 'dd', ['dd'], ax, Aeff_col='Aeff')
+
+@pytest.mark.skipif('not HAS_MPL')
+def test_plot_wiggle_exception():
+    '''Test that exception is raised for parameters not plotted.
+    '''
+    fig, ax = plt.subplots()
+
+    tab = Table({'wave': [1, 1],
+                 'qwe': [0, 1],
+                 'Rgrat': [500, 500],
+                 'Aeff': [20, 50]})
+    with pytest.raises(ValueError, match='Parameter names should start with'):
+        plot_wiggle(tab, 'qwe', ['qwe'], ax, Aeff_col='Aeff')
+
+@pytest.mark.skipif('not HAS_MPL')
+def test_plot_6dof():
+
+    tab = Table({'wave': [1, 1, 2, 2, 1, 1, 1, 1],
+                 'dd': [0, 1, 0, 2, 0, 0, 0, 0],
+                 'rr': [0, 0, 0, 0, 2, 4, 6, 8],
+                 'R': np.random.rand(8),
+                 'Aeffgrat': np.arange(8)})
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        name = os.path.join(tmpdirname, 'var_global.fits')
+        tab.write(name)
+        fig, ax = load_and_plot(name, ['dd', 'rr'], R_col='R')
+
+@pytest.mark.skipif('not HAS_MPL')
+def test_plot_6dof_real_file():
+    '''Repeat previous test with static data file. This is a more realistic file
+    but it takes too long to generate every time. This file is used in the docs
+    in design/tolerancing (see docs/pyplot/chandra_tolerancing) so if this test
+    breaks, the docs will likely have to be changed, too.
+    '''
+    filename = get_pkg_data_filename('data/wiggle_global.fits', 'marxs.design.tests')
+    fig, ax = load_and_plot(filename)

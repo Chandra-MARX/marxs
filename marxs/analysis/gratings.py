@@ -240,6 +240,8 @@ def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1.,
         Photon event list
     orders : np.array
         Orders for which the resolving power will be calculated
+    n_photons : int
+        Number of photons originally simulated
     A_geom : number
         Geometric area of aperture that was used for photon list.
     ordercol : string

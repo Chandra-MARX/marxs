@@ -191,7 +191,7 @@ class Parallel(BaseContainer):
     called to regenerate the positions of the individual elements using
 
     - the global position of ``Parallel.pos4d``
-    - the position of each element ``Parallel.elem_pos`` relativ to the global position
+    - the position of each element ``Parallel.elem_pos`` relative to the global position
     - the global uncertainty `uncertainty`.
     - the uncertainty for individual facets.
 
@@ -345,7 +345,7 @@ class Parallel(BaseContainer):
         called to regenerate the positions of the individual elements using
 
         - the global position of ``Parallel.pos4d``
-        - the position of each element ``Parallel.elem_pos`` relativ to the global position
+        - the position of each element ``Parallel.elem_pos`` relative to the global position
         - the global uncertainty `uncertainty`.
         - the uncertainty for individual facets.
         '''

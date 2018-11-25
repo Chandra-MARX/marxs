@@ -4,7 +4,7 @@
 This includes an object that represents the Rowland torus itself (imaginatively
 called `~marxs.design.rowland.RowlandTorus`), some helper functions used to set
 the right parameters for the torus and a few classes that are derived from
-`marxs.simulation.ParallelCalculated`, each placing elements such as gratings
+`marxs.simulator.ParallelCalculated`, each placing elements such as gratings
 or detectors on the Rowland torus. There are many ways to do that, e.g. the
 limits can be defined in x,y,z coordiantes or in theta, phi coordinates on the
 torus, gratings can be ordered in concentric circles or pack densely in a
@@ -12,8 +12,7 @@ rectoangular area etc. At this point, the different classes do not exploit all
 these possibilities, they merely give a few of many possible ways to set up an
 instrument.
 
-These classes my be generalized in the future.
-
+These classes may be generalized in the future.
 '''
 
 from __future__ import division
@@ -31,11 +30,10 @@ from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
 from ..math.geometry import Geometry
 
-# Python 2 vs 3 (basestring does not exist in Python 3)
-try:
-    basestring
-except NameError:
-    basestring = str
+__all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
+           'RowlandTorus',
+           'ElementPlacementError', 'GratingArrayStructure', 'LinearCCDArray',
+           'RectangularGrid', 'RowlandCircleArray']
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
     '''Find the radius the photons coming from a single mirror shell have.
