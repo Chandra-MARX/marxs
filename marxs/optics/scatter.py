@@ -12,6 +12,7 @@ unchanged, but a small random change is added to the direction vector.
 
 '''
 import numpy as np
+from warnings import warn
 
 from ..math.utils import e2h, h2e, norm_vector
 from ..math.rotations import axangle2mat
@@ -89,7 +90,13 @@ class RandomGaussianScatter(FlatOpticalElement):
     scattername = 'scatter'
 
     def __init__(self, **kwargs):
-        self.scatter = kwargs.pop('scatter') # in rad
+        if 'scatter' in kwargs:
+            if hasattr(self, 'scatter'):
+                warn('Overriding class level "scatter" definition.')
+                self.scatter = kwargs.pop('scatter') # in rad
+        else:
+            if not hasattr(self, 'scatter'):
+                raise ValueError('Keyword "scatter" missing.')
         super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
