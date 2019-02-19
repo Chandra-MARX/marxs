@@ -27,6 +27,8 @@ New Features
 - Add a number of helper functions (incl. plotting) to 
   `marxs.design.tolerancing`. [#199]
 
+- Add a module to simulate CAT gratings manufactures in MIT's SNL. [#202]
+
 
 API Changes
 ^^^^^^^^^^^
@@ -45,6 +47,14 @@ API Changes
 - Remove ``utils.MergeIdentical`` merge strategy since it is not longer used
   after #189. [#191]
 
+- `~astropy.units.Quantity` is used in more places, and thus
+  the base classes need to accept quantities as output from 
+  "specific_process_photons". This change requires some care and thus 
+  is done gradually only where needed at this point. [#202]
+
+- `~marxs.optics.RandomGaussianScatter` can be initialized without setting 
+  scatter, provided that its already defined a class level variable (e.g.
+  for subclasses). [#202]
 
 
 Bug fixes

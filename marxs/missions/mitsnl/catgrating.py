@@ -51,7 +51,7 @@ is independent from the grating membrane itself (which is not true, but a valid 
 approximation.)
 '''
 
-l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.916 * u.mm, 'barwidth': 0.05 * u.mm}
+l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.mm}
 '''Dimensions of L2 support'''
 
 qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
@@ -290,7 +290,8 @@ class L2Diffraction(RandomGaussianScatter):
     at higher orders can be safely neglected. The only thing that does
     happen is a slight broadening due to the single-slit function, and again,
     only the core of that matters. So, we simply approximate this here with
-    simple Gaussian Scattering.
+    simple Gaussian Scattering using the radius of the Airy disk as estimate
+    for the broadening sigma.
     '''
     scattername = 'L2Diffraction'
     def __init__(self, l2_dims=l2_dims, **kwargs):
@@ -299,7 +300,9 @@ class L2Diffraction(RandomGaussianScatter):
 
     def scatter(self, photons, intersect, interpos, intercoos):
         wave = (photons['energy'].data[intersect] * u.keV).to(u.mm, equivalencies=u.spectral())
-        sigma = 0.4 * np.arcsin(wave / self.innerfree)
+        # 1.22 from Airy disk formula https://en.wikipedia.org/wiki/Airy_disk
+        # 0.4 is approx factor between sigma and r(fist minimum)
+        sigma = 1.22 * 0.4 * np.arcsin(wave / self.innerfree)
         return np.random.normal(size=intersect.sum()) * sigma
 
 
