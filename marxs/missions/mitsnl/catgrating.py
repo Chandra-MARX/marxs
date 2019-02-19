@@ -14,18 +14,18 @@ import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
 from astropy.table import Table
 
-from marxs.base import SimulationSequenceElement
 from marxs.optics import (CATGrating,
                           OrderSelector, FlatStack,
-                          OpticalElement)
+                          FlatOpticalElement)
 from marxs.math.utils import norm_vector, h2e
 from marxs.optics.scatter import RandomGaussianScatter
 from marxs import energy2wave
 
-__all__ = ['l1transtab', 'l1orderselector', 'l2dims', 'qualityfactor', 'd', 'd_L1',
+__all__ = ['l1transtab', 'l1_order_selector', 'l2_dims',
+           'qualityfactor', 'd', 'd_L1',
            'load_table2d',
            'InterpolateEfficiencyTable',
-           'Qualityfactor',
+           'QualityFactor',
            'L1',
            'L2Abs',
            'L2Diffraction',
@@ -42,10 +42,8 @@ d_L1 = 0.005
 l1transtab = Table.read(get_pkg_data_filename('SiTransmission.csv'), format='ascii.ecsv')
 '''Transmission through 1 mu of Si'''
 
-l1orderselector = OrderSelector(orderlist=np.array([-4, -3, -2, -1, 0,
-                                                    1, 2, 3, 4]),
-                                p=np.array([0.006, 0.0135, 0.022, 0.028, 0.861,
-                                            0.028, 0.022, 0.0135, 0.006]))
+l1_order_selector = OrderSelector(orderlist=np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]),
+                                  p=np.array([0.006, 0.0135, 0.022, 0.028, 0.861, 0.028, 0.022, 0.0135, 0.006]))
 '''Simple order selector for diffraction on L1.
 
 The numbers here are calculated for the 2018 Arcus gratings assuming the L1 structure
@@ -53,7 +51,7 @@ is independent from the grating membrane itself (which is not true, but a valid 
 approximation.)
 '''
 
-l2dims = {'bardepth': 0.5 * u.mm, 'period': 0.916 * u.mm, 'barwidth': 0.05 * u.mm}
+l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.916 * u.mm, 'barwidth': 0.05 * u.mm}
 '''Dimensions of L2 support'''
 
 qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
@@ -185,7 +183,7 @@ class InterpolateEfficiencyTable(object):
         return orders[ind_orders], totalprob
 
 
-class QualityFactor(SimulationSequenceElement):
+class QualityFactor(FlatOpticalElement):
     '''Scale probabilites of theoretical curves to measured values.
 
     All gratings look better in theory than in practice. This grating quality
@@ -194,24 +192,13 @@ class QualityFactor(SimulationSequenceElement):
     '''
 
     def __init__(self, qualityfactor=qualityfactor, **kwargs):
-        self.sigma = qualityfactor['sigma']
-        self.d = qualityfactor['d']
+        self.factor = np.exp(- (2 * np.pi * qualityfactor['sigma'] /
+                                qualityfactor['d'])**2)
         super().__init__(**kwargs)
 
-    def process_photons(self, photons):
-        ind = np.isfinite(photons['order'])
-        photons['probability'][ind] = photons['probability'][ind] * np.exp(- (2 * np.pi * self.sigma / self.d)**2)**(photons['order'][ind]**2)
+    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+        return {'probability': self.factor**(photons['order'][intersect]**2)}
         return photons
-
-
-def catsupportbars(photons):
-    '''Metal structure that holds grating facets will absorb all photons
-    that do not pass through a grating facet.
-
-    We might want to call this L3 support ;-)
-    '''
-    photons['probability'][photons['facet'] < 0] = 0.
-    return photons
 
 
 class L1(CATGrating):
@@ -222,23 +209,26 @@ class L1(CATGrating):
     CAT gratings of this class determine (statistically) if a photon
     passes through the grating bars or the L1 support.
     The L1 support is simplified as solid Si layer of 4 mu thickness.
-    '''
-    l1transmission = l1transmission
 
+    Parameters
+    ----------
+    relativearea : float
+        Relative open area (i.e. area not covered by L1 supports)
+    depth : `astropy.units.Quantity`
+        Depth of grating bars
+    '''
     blaze_name = 'blaze_L1'
     order_name = 'order_L1'
 
-    def __init__(self, transmission=None, depth=None, relativearea=.81):
+    def __init__(self, depth=None, relativearea=.81, **kwargs):
         self.relativearea = relativearea
-        if transmission is None:
-            if depth is None:
-                raise ValueError('Either transmission of bar depth for Si bars have to be given.')
-            else:
-                energy = l1transtab['energy'].to(u.keV, equivalencies=u.spectral())
-                trans = np.exp(np.ln(l1transtab['transmission']) * depth / 1 * u.mu))
-            self.transmission = interp1d(energy, trans)
-        else:
-            self.transmission = transmission
+        energy = l1transtab['energy'].to(u.keV, equivalencies=u.spectral())
+        trans = np.exp(np.log(l1transtab['transmission']) * depth / (1 * u.mu))
+        self.transfunc = interp1d(energy, trans)
+
+        if 'd' not in kwargs:
+            kwargs['d'] = d
+        super().__init__(**kwargs)
 
 
     def specific_process_photons(self, photons, intersect,
@@ -256,7 +246,7 @@ class L1(CATGrating):
         catresult['dir'][l1] = photons['dir'].data[ind, :]
         catresult['polarization'][l1] = photons['polarization'].data[ind, :]
         catresult['order_L1'][l1] = 0
-        catresult['probability'][l1] = self.transmission(photons['energy'][ind])
+        catresult['probability'][l1] = self.transfunc(photons['energy'][ind])
         return catresult
 
 
@@ -274,10 +264,10 @@ class L2Abs(FlatOpticalElement):
     directly from the dimensions.
 
     '''
-    def __init__(l2dims=l2dmins, **kwargs):
-        self.bardepth = l2dims['bardepth']
-        self.period = l2dims['period']
-        self.barwidth = l2dims['barwidth']
+    def __init__(self, l2_dims=l2_dims, **kwargs):
+        self.bardepth = l2_dims['bardepth']
+        self.period = l2_dims['period']
+        self.barwidth = l2_dims['barwidth']
         super().__init__(**kwargs)
         self.innerfree = self.period - self.barwidth
 
@@ -303,12 +293,12 @@ class L2Diffraction(RandomGaussianScatter):
     simple Gaussian Scattering.
     '''
     scattername = 'L2Diffraction'
-    def __init__(self, l2dims=l2dims, **kwargs):
-        self.innerfree = l2dims['period'] - l2dims['barwidth']
+    def __init__(self, l2_dims=l2_dims, **kwargs):
+        self.innerfree = l2_dims['period'] - l2_dims['barwidth']
         super().__init__(**kwargs)
 
     def scatter(self, photons, intersect, interpos, intercoos):
-        wave = energy2wave / photons['energy'].data[intersect]
+        wave = (photons['energy'].data[intersect] * u.keV).to(u.mm, equivalencies=u.spectral())
         sigma = 0.4 * np.arcsin(wave / self.innerfree)
         return np.random.normal(size=intersect.sum()) * sigma
 
@@ -332,9 +322,9 @@ class NonParallelCATGrating(CATGrating):
         Blaze angle at center of grating, ``0`` means grating bars are
         perpendicular to element surface. [rad]
     '''
-    def __init__(self, d_blaze_mm=0, blaze_center=0, **kwargs):
-        self.d_blaze_mm = kwargs.pop('d_blaze_mm')
-        self.blaze_center = kwargs.pop('blaze_center')
+    def __init__(self, **kwargs):
+        self.d_blaze_mm = kwargs.pop('d_blaze_mm', 0)
+        self.blaze_center = kwargs.pop('blaze_center', 0)
         super().__init__(**kwargs)
 
     def blaze_angle_modifier(self, intercoos):
@@ -347,6 +337,16 @@ class NonParallelCATGrating(CATGrating):
         return self.blaze_center + intercoos[:, 0] * self.d_blaze_mm
 
 
+def catsupportbars(photons):
+    '''Metal structure that holds grating facets will absorb all photons
+    that do not pass through a grating facet.
+
+    We might want to call this L3 support ;-)
+    '''
+    photons['probability'][photons['facet'] < 0] = 0.
+    return photons
+
+
 class CATL1L2Stack(FlatStack):
     '''SNL fabricated CAT grating
 
@@ -354,16 +354,16 @@ class CATL1L2Stack(FlatStack):
     These include the grating membrane and the absorption and diffraction due
     to the L1 and L2 support.
     Approximations are done for all those elements, see the individial classes
-    for more details. Except for `orderselector` all other parameters are set with
+    for more details. Except for `order_selector` all other parameters are set with
     defaults defined in module level variables.
 
     Parameters
     ----------
-    orderselector : `marxs.optics.OrderSelector`
+    order_selector : `marxs.optics.OrderSelector`
         Order selector for the grating membrane
     groove_angle : float
         Goove angle of grating bars (in rad). Default: 0
-    l1orderselector : `marxs.optics.OrderSelector`
+    l1_order_selector : `marxs.optics.OrderSelector`
         Order selector for L1 dispersion (cross-dispersion direction for grating)
     qualityfactor : dict
         Parameterization of grating quality scaling factor. See model level variable
@@ -372,22 +372,23 @@ class CATL1L2Stack(FlatStack):
         Dimensions of L2 support. See module level variable for format.
     '''
     def __init__(self, **kwargs):
-       kwargs['elements'] = [CATGrating,
-                             Qualityfactor,
-                             L1,
-                             L2Abs,
-                             L2Diffraction,
-       ]
-       groove_angle = kwargs.pop('groove_angle', 0.)
-       l2dims = kwargs.pop('l2dims', l2dims)
-       kwargs['keywords'] = [{'order_selector': kwargs.pop('orderselector'),
-                              'd': kwargs.pop('d', d),
-                              'groove_angle': groove_angle},
-                             {'qualityfactor': kwargs.pop('qualityfactor', qualityfactor)}
-                             {'d': kwargs.pop('d_L1', d_L1),
-                              'order_selector': kwargs.pop('l1orderselector', l1orderselector),
-                              'groove_angle': np.pi / 2. + groove_angle},
-                             {'l2dims': l2dims},
-                             {'l2dims': l2dims}
-       ]
-       super().__init__(**kwargs)
+        kwargs['elements'] = [CATGrating,
+                              QualityFactor,
+                              L1,
+                              L2Abs,
+                              L2Diffraction,
+                          ]
+        groove_angle = kwargs.pop('groove_angle', 0.)
+        l2dim = kwargs.pop('l2_dims', l2_dims)
+        kwargs['keywords'] = [{'order_selector': kwargs.pop('order_selector'),
+                               'd': kwargs.pop('d', d),
+                               'groove_angle': groove_angle},
+                              {'qualityfactor': kwargs.pop('qualityfactor', qualityfactor)},
+                              {'d': kwargs.pop('d_L1', d_L1),
+                               'order_selector': kwargs.pop('l1_order_selector', l1_order_selector),
+                               'groove_angle': np.pi / 2. + groove_angle,
+                               'depth': kwargs.pop('depth', 4 * u.mu)},
+                              {'l2_dims': l2dim},
+                              {'l2_dims': l2dim}
+                          ]
+        super().__init__(**kwargs)

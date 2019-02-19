@@ -93,7 +93,7 @@ class RandomGaussianScatter(FlatOpticalElement):
         if 'scatter' in kwargs:
             if hasattr(self, 'scatter'):
                 warn('Overriding class level "scatter" definition.')
-                self.scatter = kwargs.pop('scatter') # in rad
+            self.scatter = kwargs.pop('scatter') # in rad
         else:
             if not hasattr(self, 'scatter'):
                 raise ValueError('Keyword "scatter" missing.')

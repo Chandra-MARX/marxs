@@ -136,7 +136,7 @@ class OpticalElement(SimulationSequenceElement):
                 self.add_output_cols(photons, list(outcols.keys()))
                 for col in outcols:
                     if col == 'probability':
-                        photons[col][intersect] *= outcols[col]
+                        photons[col][intersect] *= np.asarray(outcols[col])
                     else:
                         photons[col][intersect] = outcols[col]
 
@@ -177,12 +177,12 @@ class FlatStack(FlatOpticalElement, BaseContainer):
     '''Convenience class for several flat, stacked optical elements.
 
     This class is meant to simplify the specification of a single physical
-    element, that fullfills several logical functions, e.g. a detector can be
+    element that fullfills several logical functions, e.g. a detector can be
     seen as a a sequence of a contamination layer (which modifies the
     probability of a photon reaching the CCD), a QE filter (which modifies the
     probability of detecting the photon), and the pixelated CCD (which sorts
     the photons in pixels). All these things can be approximated as happening
-    in the same physical spotlocation, and thus it is convenient to treat all
+    in the same physical location, and thus it is convenient to treat all
     three functions as one element.
 
     Parameters

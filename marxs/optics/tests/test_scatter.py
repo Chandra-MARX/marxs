@@ -131,7 +131,8 @@ def test_scatterarg_missing():
     with pytest.raises(ValueError) as e:
         rms = RandomGaussianScatter()
 
-    assert 'Keyword "scatter" missing.' == e.value.message
+    assert 'Keyword "scatter" missing.' in str(e.value)
+
 
 def test_derivedScatterClass():
     '''Check that overriding defaul scatters works.'''
