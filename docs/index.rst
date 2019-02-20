@@ -7,7 +7,7 @@ The documentation for MARXS is split into several parts. After intalling MARXS i
 
 .. note:: 
 
-   MARXS has been used to simulate two instruments (ARCUS and REDSoX), but is still under
+   MARXS has been used to simulate several instruments (e.g. ARCUS and Lynx), but is still under
    rapid develoment. We will try to mimimize API changes from now on, but will implement those
    as necessary (e.g. the astropy units system will be used on more places in the future to
    reduce unit mismatches). The :ref:`changelog` will always contain a full list of changes

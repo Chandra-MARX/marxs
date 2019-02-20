@@ -19,10 +19,10 @@ New Features
 - Add new module `marxs.design.tolerancing` to estimate alignment tolerances.
   [#186]
 
-- Add class `marxs.optics.scatter.RandomGaussianScatter`. [#192]
+- Add class `marxs.optics.RandomGaussianScatter`. [#192]
 
 - The column names for blaze and order written by
-  `marxs.optics.gratings.FlatGrating` can now be configured. [#195]
+  `marxs.optics.FlatGrating` can now be configured. [#195]
 
 - Add a number of helper functions (incl. plotting) to 
   `marxs.design.tolerancing`. [#199]
@@ -123,8 +123,8 @@ API Changes
   [#149, #152]
 
 - According to the docs, a pointing could be initialized with either a 
-  `~astropy.coordiantes.SkyCoord` or a tuple that would initialize the
-  `~astropy.coordiantes.SkyCoord`. The later option was broken and has 
+  `~astropy.coordinates.SkyCoord` or a tuple that would initialize the
+  `~astropy.coordinates.SkyCoord`. The later option was broken and has 
   been removed entirely. [#151]
 
 - Remove parameter ``filterfunc`` from `~marxs.analysis.gratings.resolvingpower_from_photonlist` and `~marxs.analysis.analysis.detected_fraction`.

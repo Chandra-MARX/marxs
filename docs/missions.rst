@@ -18,3 +18,5 @@ Reference/API
 
 .. automodapi:: marxs.missions.chandra
    :skip: HRMA
+
+.. automodapi:: marxs.missions.mitsnl.catgrating
