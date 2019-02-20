@@ -4,5 +4,6 @@ def get_package_data():
     # to deal with a directory hierarchy of files, so just explicitly list.
     return {
         'marxs.missions.mitsnl': ['SiTransmission.csv',
+                                  'tests/grating_efficiency.csv',
                          ]
     }

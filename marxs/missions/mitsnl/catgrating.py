@@ -276,11 +276,15 @@ class L2Abs(FlatOpticalElement):
 
         p3 = norm_vector(h2e(photons['dir'].data[intersect]))
         angle = np.arccos(np.abs(np.dot(p3, self.geometry['plane'][:3])))
-        # Area is filled by L2 bars + area shadowed by L2 bars
-        shadowarea = 3. * (self.period**2 - self.innerfree**2) + 2 * self.innerfree * self.bardepth * np.sin(angle)
-        shadowfraction = shadowarea /  (3. * self.period**2)
 
-        return {'probability': 1. - shadowfraction}
+        # fractional area NOT covered by the hexagon structure
+        openfraction = (self.innerfree / self.period)**2
+        # fractional area shadowed by inclined hexagon structure
+        shadowarea = (self.bardepth * self.innerfree * np.sin(angle))
+        totalarea = self.period**2 / 2 * np.sqrt(3)
+        shadowfraction = shadowarea / totalarea
+
+        return {'probability': openfraction - shadowfraction}
 
 
 class L2Diffraction(RandomGaussianScatter):

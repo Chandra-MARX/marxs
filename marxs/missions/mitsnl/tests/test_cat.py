@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import astropy.units as u
+from astropy.utils.data import get_pkg_data_filename
 from transforms3d.euler import euler2mat
 
 from ..catgrating import *
@@ -61,6 +62,7 @@ def test_L2_Abs():
     photons = l2(photons)
     assert np.isclose(photons['probability'], 0.81, rtol=0.02)
 
+
 def test_L2_Abs_angle():
     '''Test that that shadow area increases with angle.
     The comparison number was calculated by H. M. Guenther in response
@@ -74,4 +76,23 @@ def test_L2_Abs_angle():
     l2 = L2Abs(l2_dims=l2_dims, orientation=euler2mat(np.deg2rad(1.8), 0, 0, 'szxy'))
     p2 = l2(generate_test_photons(1))
 
-    assert np.isclose(p2['probability'][0] / p1['probability'][0], 0.979)
+    assert np.isclose(p2['probability'][0] / p1['probability'][0], 0.979, rtol=1e-3)
+
+
+def test_efficiency_table():
+    '''Test that the efficiency is read in in the right format.'''
+    efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    orders, interpprobs = efftab.probabilities(np.array([0.5, 0.5, 1, 1]),
+                                               np.ones(4),
+                                               np.deg2rad([1., 2., 1., 2.]))
+    assert np.allclose(interpprobs.sum(axis=0), [.8, .8, 1., 1.], rtol=1e-4)
+    assert np.allclose(interpprobs[:, 0], [.3, .3, .2], rtol=1e-4)
+
+
+def test_efficiency_table_in_use():
+    '''Use table in a optical element'''
+    efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    cat = CATGrating(order_selector=efftab, d=0.001)
+    photons = generate_test_photons(500)
+    photons = cat(photons)
+    assert np.isclose((photons['order']==0).sum(), len(photons) / 2, rtol=.05)
