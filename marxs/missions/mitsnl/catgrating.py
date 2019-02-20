@@ -4,9 +4,10 @@
 The MIT Kavli Institute for Astrophysics and Space Research
 `Space Nanotechnology Laboratory`_ produces elements for astronomical
 instruments in space. One particular field of research are critical
-angle transmission (CAT) gratings, see e.g.
+angle transmission (CAT) gratings, see e.g. `Heilmann et al. (2015)`_
 
 .. _Space Nanotechnology Laboratory: http://snl.mit.edu/
+.. _Heilmann et al. (2015): http://dx.doi.org/10.1117/12.2188525
 '''
 import numpy as np
 from scipy.interpolate import RectBivariateSpline, interp1d
