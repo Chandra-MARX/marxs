@@ -10,6 +10,7 @@ angle transmission (CAT) gratings, see e.g. `Heilmann et al. (2015)`_
 .. _Heilmann et al. (2015): http://dx.doi.org/10.1117/12.2188525
 '''
 import numpy as np
+from numpy.core.umath_tests import inner1d
 from scipy.interpolate import RectBivariateSpline, interp1d
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
@@ -18,9 +19,9 @@ from astropy.table import Table
 from marxs.optics import (CATGrating,
                           OrderSelector, FlatStack,
                           FlatOpticalElement)
-from marxs.math.utils import norm_vector, h2e
+from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
-from marxs import energy2wave
+
 
 __all__ = ['l1transtab', 'l1_order_selector', 'l2_dims',
            'qualityfactor', 'd', 'd_L1',
@@ -57,6 +58,11 @@ l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.m
 
 qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
 '''Scaling of grating efficiencies, parameterized as a Debye-Waller factor'''
+
+
+class DataFileFormatException(Exception):
+    '''Exception for grating efficiency files not matching expected format.'''
+    pass
 
 
 def load_table2d(filename):
@@ -275,8 +281,9 @@ class L2Abs(FlatOpticalElement):
     def specific_process_photons(self, photons, intersect,
                                  interpos, intercoos):
 
-        p3 = norm_vector(h2e(photons['dir'].data[intersect]))
-        angle = np.arccos(np.abs(np.dot(p3, self.geometry['plane'][:3])))
+        p3 = norm_vector(photons['dir'].data[intersect])
+        ex, ey, en = self.geometry.get_local_euklid_bases(intercoos)
+        angle = np.arccos(np.abs(inner1d(p3, en)))
 
         # fractional area NOT covered by the hexagon structure
         openfraction = (self.innerfree / self.period)**2

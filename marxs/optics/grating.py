@@ -119,14 +119,11 @@ class FlatGrating(FlatOpticalElement):
         probability for all photons should be 0.8.
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
-        reflection grating. (*Default*: ``True`` )
+        reflection grating. (*Default*: ``True`` ) **Warning: Reflection
+        gratings have not yet been tested**
     groove_angle : float
         Angle between the local z axis and the direction of the
         grooves in radian.  (*Default*: ``0.``)
-
-    .. warning::
-       Reflection gratings are untested so far!
-
     '''
 
     loc_coos_name = ['grat_y', 'grat_z']

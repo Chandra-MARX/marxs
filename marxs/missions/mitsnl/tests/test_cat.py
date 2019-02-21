@@ -1,4 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
+import pytest
 import numpy as np
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
@@ -96,3 +97,9 @@ def test_efficiency_table_in_use():
     photons = generate_test_photons(500)
     photons = cat(photons)
     assert np.isclose((photons['order']==0).sum(), len(photons) / 2, rtol=.05)
+
+
+def test_efficiency_table_wrong_format():
+    '''Try to load a datafile with mission rows.'''
+    with pytest.raises(DataFileFormatException):
+        efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency_broken.csv'), k=2)
