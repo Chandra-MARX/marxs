@@ -5,5 +5,6 @@ def get_package_data():
     return {
         'marxs.missions.mitsnl': ['SiTransmission.csv',
                                   'tests/grating_efficiency.csv',
+                                  'tests/grating_efficiency_broken.csv',
                          ]
     }
