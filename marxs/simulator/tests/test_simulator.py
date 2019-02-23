@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 import pytest
 
-from ..simulator import KeepCol, Sequence, Parallel, BaseContainer
+from ..simulator import KeepCol, Sequence, BaseContainer
 from ...optics import FlatDetector
 
 f1 = FlatDetector()

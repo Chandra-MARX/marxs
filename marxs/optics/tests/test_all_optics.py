@@ -13,6 +13,7 @@ import copy
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+from astropy import units as u
 import transforms3d.axangles
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
@@ -30,6 +31,10 @@ from ..baffle import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra.hess import HETG
+from ...missions.mitsnl.catgrating import (QualityFactor, L1,
+                                           L2Abs, L2Diffraction,
+                                           CATL1L2Stack,
+                                           NonParallelCATGrating)
 from ..scatter import RadialMirrorScatter, RandomGaussianScatter
 from ..filter import EnergyFilter
 
@@ -65,7 +70,6 @@ all_oe = [ThinLens(focallength=100),
                                      'order_selector': OrderSelector([-1, 0])},
                           d_element=0.1, x_range=[0.8, 1.1], y_range=[0, 0.1],
                           z_range=[0, 0.1]),
-
           Baffle(),
           # MLMirror assumes 45 deg angle and will return nan otherwise
           MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt',
@@ -78,6 +82,14 @@ all_oe = [ThinLens(focallength=100),
           # not a useful filterfunc, but OK for testing with a few other dependencies
           EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
           FlatStack(elements=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
+          # elements in MIT SNL
+          # Most of them have defaults for all parameters
+          QualityFactor(),
+          L1(depth=1*u.mu, order_selector=OrderSelector([0])),
+          L2Abs(),
+          L2Diffraction(),
+          CATL1L2Stack(order_selector=OrderSelector([2])),
+          NonParallelCATGrating(order_selector=OrderSelector([2]), d=0.0001),
           ]
 
 # Each elements will be used multiple times.
@@ -95,6 +107,7 @@ mypointing = FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
 masterphotons = mypointing(masterphotons)
 myslit = RectangleAperture()
 masterphotons = myslit(masterphotons)
+masterphotons['order'] = 0
 
 
 @pytest.fixture(autouse=True)
@@ -196,6 +209,7 @@ class TestOpticalElementInterface:
             photons.remove_column('pos')
         p = elem(photons)
         assert all(item in p.meta.items() for item in meta_in.items())
+
 
 def test_parse_position_keywords_zoom_dimension():
     '''test proper error messages for zoom keyword'''

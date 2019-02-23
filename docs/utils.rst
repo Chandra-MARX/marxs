@@ -6,6 +6,8 @@ This module contains simple utility functions that are used in several of MARXS 
 
 .. automodapi:: marxs.math
 
+.. automodapi:: marxs.math.geometry
+		
 .. automodapi:: marxs.math.pluecker
 
 .. automodapi:: marxs.math.polarization

@@ -150,6 +150,7 @@ General optical elements
 -   `marxs.optics.ThinLens`
 -   `marxs.optics.MarxMirror`
 -   `marxs.optics.RadialMirrorScatter`
+-   `marxs.optics.RandomGaussianScatter`
 -   `marxs.optics.GlobalEnergyFilter`
 -   `marxs.optics.EnergyFilter`
 -   `marxs.optics.FlatDetector`

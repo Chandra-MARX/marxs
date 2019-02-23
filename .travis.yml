@@ -27,7 +27,7 @@ env:
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='transforms3d'
-        - CONDA_DEPENDENCIES='scipy cffi matplotlib jsonschema'
+        - CONDA_DEPENDENCIES='scipy cffi matplotlib jsonschema pyyaml'
         - DEBUG=True
     matrix:
         # Make sure that egg_info works without dependencies
@@ -37,16 +37,16 @@ env:
 
 
 before_install:
-  - wget ftp://space.mit.edu/pub/cxc/marx/v5.3/marx-dist-5.3.3.tar.gz
-  - tar -xvf marx-dist-5.3.3.tar.gz
+  - wget https://github.com/Chandra-MARX/marx/archive/v5.4.0.tar.gz
+  - tar -xvf v5.4.0.tar.gz
   - pwd
-  - cd marx-5.3.3 && ./configure --prefix=$TRAVIS_BUILD_DIR/marx/ CFLAGS="-O2 -g -fPIC" && make && make install
+  - cd marx-5.4.0 && ./configure --prefix=$TRAVIS_BUILD_DIR/marx/ CFLAGS="-O2 -g -fPIC" && make && make install
   - cd ..
 
 install:
 
     # Set the location the MARX c code and compiled version in setup.cfg
-    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.3.3/|g' setup.cfg
+    - sed -i.bak 's|srcdir =|srcdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx-5.4.0/|g' setup.cfg
     - sed -i.bak 's|libdir =|libdir = '"$(echo $TRAVIS_BUILD_DIR)"'/marx/lib/|g' setup.cfg
 
     # We now use the ci-helpers package to set up our testing environment.

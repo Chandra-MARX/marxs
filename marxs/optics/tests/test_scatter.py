@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from scipy.stats import normaltest
+import pytest
 
 from ..scatter import RadialMirrorScatter, RandomGaussianScatter
 from ..detector import FlatDetector
@@ -123,3 +124,25 @@ def test_scatteredfunction():
     d = d * np.sign(p['det_x'] - np.mean(p['det_x']))
 
     assert np.std(d[:200]) < 2 * np.std(d[:300])
+
+
+def test_scatterarg_missing():
+    '''Scatter argument is required, unless overriden by a derived class.'''
+    with pytest.raises(ValueError) as e:
+        rms = RandomGaussianScatter()
+
+    assert 'Keyword "scatter" missing.' in str(e.value)
+
+
+def test_derivedScatterClass():
+    '''Check that overriding defaul scatters works.'''
+    class Derived(RandomGaussianScatter):
+        scatter = 1
+
+    # This should work without scatter keyword
+    rms = Derived()
+
+    # This should raise a warning, but set the value
+    with pytest.warns(UserWarning, match="Overriding class level"):
+        rms = Derived(scatter=5)
+    assert rms.scatter == 5

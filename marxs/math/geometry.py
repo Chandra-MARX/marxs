@@ -10,6 +10,13 @@ from .pluecker import point_dir2plane
 from ..base import _parse_position_keywords
 from ..visualization.utils import plane_with_hole, combine_disjoint_triangulations
 
+__all__ = ['xyz_square', 'xyz_circle',
+           'NoGeometry', 'Geometry',
+           'FinitePlane', 'PlaneWithHole',
+           'RectangleHole', 'CircularHole',
+           'Cylinder',
+           ]
+
 
 def xyz_square(geometry, r_factor=1):
     '''Generate Eukledian positions for the corners of a square.
