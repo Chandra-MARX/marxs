@@ -178,11 +178,21 @@ def test_disk_radius():
     assert np.max(d.arcmin <= 10.)
     assert np.min(d.arcmin >= 0.8)
 
-@pytest.mark.parametrize("diskclass,diskpar",
-                         [(DiskSource, {'a_outer': 30. * u.arcmin}),
-                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}),
-                          (GaussSource, {'sigma': 1.5 * u.deg})])
-def test_disk_distribution(diskclass, diskpar):
+def test_sphericaldisk_radius():
+    pos = SkyCoord(12. * u.degree, -23.*u.degree)
+    s = SphericalDiskSource(coords=pos, a_inner=50.* u.arcsec,
+                   a_outer=10. * u.arcmin)
+
+    photons = s.generate_photons(1e4)
+    d = pos.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
+    assert np.max(d.arcmin <= 10.)
+    assert np.min(d.arcmin >= 0.8)
+
+@pytest.mark.parametrize("diskclass,diskpar,n_expected",
+                         [(DiskSource, {'a_outer': 30. * u.arcmin}, 2800),
+                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}, 2800),
+                          (GaussSource, {'sigma': 1.5 * u.deg}, 150)])
+def test_disk_distribution(diskclass, diskpar, n_expected):
     '''This is a separate test from test_disk_radius, because it's a simpler
     to write if we don't have to worry about the inner hole.
 
@@ -210,3 +220,6 @@ def test_disk_distribution(diskclass, diskpar):
     # assert a p value here that is soo small that it's never going to be hit
     # by chance.
     assert p > .05
+    # better: Test number of expected photons matches
+    # Allow large variation so that this is not triggered by chance
+    assert np.isclose(n.mean(), n_expected, rtol=.2)

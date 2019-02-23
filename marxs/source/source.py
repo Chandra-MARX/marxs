@@ -377,9 +377,18 @@ class SphericalDiskSource(RadialDistributionSource):
     def __init__(self, **kwargs):
         kwargs['func_par'] = [kwargs.pop('a_outer'),
                               kwargs.pop('a_inner', 0. * u.rad)]
-        kwargs['radial_distribution'] = lambda n: np.arcsin(np.cos(self.func_par[1]) +
-                          np.random.rand(n) * (np.cos(self.func_par[0]) - np.cos(self.func_par[1])))
+        kwargs['radial_distribution'] = self.radial_distribution
         super(SphericalDiskSource, self).__init__(**kwargs)
+
+    def radial_distribution(self, n):
+        '''Radial distribution function.
+
+        See http://6degreesoffreedom.co/circle-random-sampling/ for an explanation
+        of how to derive the formula. Note however, that here we use sin instead of cos
+        because we measure the angle from the top.
+        '''
+        u = np.random.rand(n)
+        return np.arccos(np.cos(self.func_par[1]) * (1. - u) + u * np.cos(self.func_par[0]))
 
 class DiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
