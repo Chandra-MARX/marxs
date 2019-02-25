@@ -282,7 +282,7 @@ class L2Abs(FlatOpticalElement):
                                  interpos, intercoos):
 
         p3 = norm_vector(photons['dir'].data[intersect])
-        ex, ey, en = self.geometry.get_local_euklid_bases(intercoos)
+        ex, ey, en = self.geometry.get_local_euklid_bases(intercoos[intersect, :])
         angle = np.arccos(np.abs(inner1d(p3, en)))
 
         # fractional area NOT covered by the hexagon structure
