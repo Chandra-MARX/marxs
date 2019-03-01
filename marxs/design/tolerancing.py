@@ -465,11 +465,10 @@ def generate_6d_wigglelist(trans, rot,
     step size for larger distances, going up to a misalignment of 10 mm in
     linear translation and 2 degrees in rotation::
 
-        >>> import numpy as np
         >>> import astropy.units as u
         >>> from marxs.design.tolerancing import generate_6d_wigglelist
-        >>> trans = np.array([0., .1, .2, .4, .7]) * u.cm
-        >>> rot = np.deg2rad([0., 2., 5., 10., 20]) * u.arcmin
+        >>> trans = [0., .1, .2, .4, .7] * u.cm
+        >>> rot = [0., 2., 5., 10., 20] * u.arcmin
         >>> lglob, lind = generate_6d_wigglelist(trans, rot)
 
     '''
