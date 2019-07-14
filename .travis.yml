@@ -109,7 +109,7 @@ matrix:
         # may run for a long time
         - os: linux
           env: SETUP_CMD='build_docs -w'
-               CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
+               PIP_DEPENDENCIES="$PIP_DEPENDENCIES sphinx-astropy"
 
         # Now try Astropy dev with the latest Python and LTS with and 3.x.
         - os: linux
