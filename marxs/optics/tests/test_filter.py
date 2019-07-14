@@ -24,7 +24,7 @@ def test_energyfilter_error(filterclass):
         f = filterclass(filterfunc=lambda x: np.ones_like(x) * prob)
         with pytest.raises(ValueError) as e:
             temp = f(photons)
-        assert 'Probabilities returned by filterfunc' in str(e)
+        assert 'Probabilities returned by filterfunc' in str(e.value)
 
 def test_difference_between_global_and_flat_filters():
     '''The global filter does not have a position in space, it just filters all
