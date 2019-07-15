@@ -378,7 +378,7 @@ def test_impossible_LinearCCDArray():
     with pytest.raises(ElementPlacementError) as e:
         ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
                               radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
-    assert 'No intersection with Rowland' in str(e)
+    assert 'No intersection with Rowland' in str(e.value)
 
 def test_RowlandCircleArrayone():
     '''Test an array of one element in default position'''

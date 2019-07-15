@@ -282,14 +282,15 @@ class AstroSource(Source):
     def set_pos(self, photons, coo):
         '''Set Ra, Dec of photons in table
 
-        This function write Ra, Dec to a table. It is defined here to make the way
-        `astropy.coordinates.SkyCoord` objects are stored more uniform.
-        Currently, mixin columns in tables have some disadvantages, e.g. they
-        cause errors on writing and on stacking. Thus, we store the coordinates
-        as plain numbers. Since that format is not unique (e.g. units could be deg or rad),
-        system could be ICRS, FK4, FK5 or other this conversion is done here for all
-        astrononimcal sources.
-        This also makes it easier to change that design in the future.
+        This function write Ra, Dec to a table. It is defined here to
+        make the way `astropy.coordinates.SkyCoord` objects are stored
+        more uniform.  Currently, mixin columns in tables have some
+        disadvantages, e.g. they cause errors on writing and on
+        stacking. Thus, we store the coordinates as plain
+        numbers. Since that format is not unique (e.g. units could be
+        deg or rad), system could be ICRS, FK4, FK5 or other this
+        conversion is done here for all astrononimcal sources.  This
+        also makes it easier to change that design in the future.
 
         Parameters
         ----------
@@ -297,6 +298,7 @@ class AstroSource(Source):
             Photon table. Columns ``ra`` and ``dec`` will be added or overwritten.
         coo : `astropy.coords.SkyCoord`
             Photon coordinates
+
         '''
         photons['ra'] = coo.icrs.ra.deg
         photons['dec'] = coo.icrs.dec.deg
