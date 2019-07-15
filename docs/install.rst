@@ -14,6 +14,8 @@ MARXS has few hard requirements:
 
 Numpy and astropy are best installed with a package manager such as conda. See the `astropy installation instructions for a detailed discussion <https://astropy.readthedocs.io/en/stable/install.html>`_. ``transforms3d`` is easily installed with::
 
+.. code-block:: bash
+
     pip install transforms3d
 
 The following Python packages are strongly recommended, but most parts of MARXS will work without them:
@@ -74,12 +76,11 @@ cost of extra difficulty of linking them into shared objects. Since `classic mar
 not meant to be used a library for external functions (like this python
 module), the default installation settings are tuned for performance.
 On some architectures (tested on 32-bit Ubuntu GNU/Linux) linking the static
-libraries works, on other you might see an error like this::
-
-    relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC
-
+libraries works, on other you might see an error like this: ``relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC``.
 In that case, simply recompile and install `classic marx`_ as position independent
 code (PIC). In the `classic marx`_ source code directory:: 
+
+.. code-block:: bash
 
     make distclean
     ./configure --prefix=/path/to/your/instalation/ CFLAGS="-O2 -g -fPIC"
