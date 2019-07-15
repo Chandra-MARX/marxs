@@ -1,0 +1,17 @@
+name: marxs
+
+channels:
+    - astropy
+
+dependencies:
+    - python>=3.6
+    - astropy
+    - Cython
+    - cffi
+    - matplotlib
+    - numpy
+    - sphinx-astropy
+    - jsonschema
+    - pyyaml
+    - pip:
+        - transforms3d
