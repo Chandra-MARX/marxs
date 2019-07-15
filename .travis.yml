@@ -35,7 +35,7 @@ env:
         - EVENT_TYPE='pull_request push'
         - PIP_DEPENDENCIES='transforms3d'
         - CONDA_DEPENDENCIES='scipy cffi matplotlib jsonschema pyyaml'
-        - CONDA_DEPENDENCIES_DOC=''
+        - CONDA_DEPENDENCIES_DOC='sphinx-astropy'
         - DEBUG=True
         # Conda packages for affiliated packages are hosted in channel
         # "astropy" while builds for astropy LTS with recent numpy versions
@@ -109,7 +109,7 @@ matrix:
         # may run for a long time
         - os: linux
           env: SETUP_CMD='build_docs -w'
-               PIP_DEPENDENCIES="$PIP_DEPENDENCIES sphinx-astropy"
+               PIP_DEPENDENCIES="`echo $PIP_DEPENDENCIES sphinx-astropy`"
 
         # Now try Astropy dev with the latest Python and LTS with and 3.x.
         - os: linux
