@@ -85,7 +85,7 @@ all_oe = [ThinLens(focallength=100),
           # elements in MIT SNL
           # Most of them have defaults for all parameters
           QualityFactor(),
-          L1(depth=1*u.mu, order_selector=OrderSelector([0])),
+          L1(order_selector=OrderSelector([0])),
           L2Abs(),
           L2Diffraction(),
           CATL1L2Stack(order_selector=OrderSelector([2])),

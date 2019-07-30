@@ -23,8 +23,9 @@ from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
 
 
-__all__ = ['l1transtab', 'l1_order_selector', 'l2_dims',
-           'qualityfactor', 'd', 'd_L1',
+__all__ = ['l1transtab', 'l1_order_selector',
+           'l1_dims', 'l2_dims',
+           'qualityfactor', 'd',
            'load_table2d',
            'InterpolateEfficiencyTable',
            'QualityFactor',
@@ -38,9 +39,6 @@ __all__ = ['l1transtab', 'l1_order_selector', 'l2_dims',
 d = 0.0002
 '''Spacing of grating bars'''
 
-d_L1 = 0.005
-'''Spacing of L1 support bars'''
-
 l1transtab = Table.read(get_pkg_data_filename('SiTransmission.csv'), format='ascii.ecsv')
 '''Transmission through 1 mu of Si'''
 
@@ -53,8 +51,11 @@ is independent from the grating membrane itself (which is not true, but a valid 
 approximation.)
 '''
 
+l1_dims = {'bardepth': 0.04 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0001 * u.mm}
+'''Dimensions of L1 support bars running perpendicular to the grating bars'''
+
 l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.mm}
-'''Dimensions of L2 support'''
+'''Dimensions of hexagonal L2 support'''
 
 qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
 '''Scaling of grating efficiencies, parameterized as a Debye-Waller factor'''
@@ -207,6 +208,11 @@ class QualityFactor(FlatOpticalElement):
         return {'probability': self.factor**(photons['order'][intersect]**2)}
         return photons
 
+def check_lx_dims(lx_dims):
+    '''Check that dimensions in l1_dims or l2_dims make sense'''
+    if not (lx_dims['barwidth'] < lx_dims['period']):
+        raise ValueError('Period of grating must be larger than bar width.')
+
 
 class L1(CATGrating):
     '''A CAT grating representing only the L1 structure
@@ -227,14 +233,13 @@ class L1(CATGrating):
     blaze_name = 'blaze_L1'
     order_name = 'order_L1'
 
-    def __init__(self, depth=None, relativearea=.81, **kwargs):
-        self.relativearea = relativearea
+    def __init__(self, l1_dims=l1_dims, **kwargs):
+        check_lx_dims(l1_dims)
+        self.openfraction = 1 - l1_dims['barwidth'] / l1_dims['period']
         energy = l1transtab['energy'].to(u.keV, equivalencies=u.spectral())
-        trans = np.exp(np.log(l1transtab['transmission']) * depth / (1 * u.mu))
+        trans = np.exp(np.log(l1transtab['transmission']) * l1_dims['bardepth'] / (1 * u.micrometer))
         self.transfunc = interp1d(energy, trans)
-
-        if 'd' not in kwargs:
-            kwargs['d'] = d
+        kwargs['d'] = l1_dims['period'].to(u.mm).value
         super().__init__(**kwargs)
 
 
@@ -248,7 +253,7 @@ class L1(CATGrating):
         # and then re-set numbers for a small fraction here.
         # That, way, I don't have to duplicate the blaze calculation and no
         # crazy tricks are necessary to keep the indices correct.
-        l1 = np.random.rand(intersect.sum()) > self.relativearea
+        l1 = np.random.rand(intersect.sum()) > self.openfraction
         ind = intersect.nonzero()[0][l1]
         catresult['dir'][l1] = photons['dir'].data[ind, :]
         catresult['polarization'][l1] = photons['polarization'].data[ind, :]
@@ -272,6 +277,7 @@ class L2Abs(FlatOpticalElement):
 
     '''
     def __init__(self, l2_dims=l2_dims, **kwargs):
+        check_lx_dims(l2_dims)
         self.bardepth = l2_dims['bardepth']
         self.period = l2_dims['period']
         self.barwidth = l2_dims['barwidth']
@@ -307,13 +313,14 @@ class L2Diffraction(RandomGaussianScatter):
     '''
     scattername = 'L2Diffraction'
     def __init__(self, l2_dims=l2_dims, **kwargs):
+        check_lx_dims(l2_dims)
         self.innerfree = l2_dims['period'] - l2_dims['barwidth']
         super().__init__(**kwargs)
 
     def scatter(self, photons, intersect, interpos, intercoos):
         wave = (photons['energy'].data[intersect] * u.keV).to(u.mm, equivalencies=u.spectral())
         # 1.22 from Airy disk formula https://en.wikipedia.org/wiki/Airy_disk
-        # 0.4 is approx factor between sigma and r(fist minimum)
+        # 0.4 is approx factor between sigma and r (first minimum)
         sigma = 1.22 * 0.4 * np.arcsin(wave / self.innerfree)
         return np.random.normal(size=intersect.sum()) * sigma
 
@@ -383,6 +390,8 @@ class CATL1L2Stack(FlatStack):
     qualityfactor : dict
         Parameterization of grating quality scaling factor. See model level variable
         for format.
+    l1dims : dict
+        Dimensions of L1 support. See module level variable for format.
     l2dims : dict
         Dimensions of L2 support. See module level variable for format.
     '''
@@ -395,14 +404,14 @@ class CATL1L2Stack(FlatStack):
                           ]
         groove_angle = kwargs.pop('groove_angle', 0.)
         l2dim = kwargs.pop('l2_dims', l2_dims)
+        l1dim = kwargs.pop('l1_dims', l1_dims)
         kwargs['keywords'] = [{'order_selector': kwargs.pop('order_selector'),
                                'd': kwargs.pop('d', d),
                                'groove_angle': groove_angle},
                               {'qualityfactor': kwargs.pop('qualityfactor', qualityfactor)},
-                              {'d': kwargs.pop('d_L1', d_L1),
+                              {'l1_dims': l1dim,
                                'order_selector': kwargs.pop('l1_order_selector', l1_order_selector),
-                               'groove_angle': np.pi / 2. + groove_angle,
-                               'depth': kwargs.pop('depth', 4 * u.mu)},
+                               'groove_angle': np.pi / 2. + groove_angle},
                               {'l2_dims': l2dim},
                               {'l2_dims': l2dim}
                           ]
