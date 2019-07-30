@@ -145,8 +145,8 @@ matrix:
         # Do a PEP8 test with flake8
         # (do allow to fail unless your code completely compliant)
         - os: linux
-           stage: Initial tests
-           env: MAIN_CMD='flake8 marxs --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
+          stage: Initial tests
+          env: MAIN_CMD='flake8 marxs --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 script:
    - python setup.py $SETUP_CMD
