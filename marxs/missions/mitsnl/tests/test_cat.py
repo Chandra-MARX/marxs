@@ -101,7 +101,7 @@ def test_efficiency_table_in_use():
     '''Use table in a optical element'''
     efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
     cat = CATGrating(order_selector=efftab, d=0.001)
-    photons = generate_test_photons(500)
+    photons = generate_test_photons(5000)
     photons = cat(photons)
     assert np.isclose((photons['order']==0).sum(), len(photons) / 2, rtol=.05)
 
