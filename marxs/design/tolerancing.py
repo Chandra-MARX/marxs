@@ -136,6 +136,8 @@ def varyattribute(element, **kwargs):
     of those elements.
     '''
     for key, val in kwargs.items():
+        # check is needed because key could be misspelled so that we set an attribute
+        # that did not exist before and that is never used
         if not hasattr(element, key):
             raise ValueError(f'Object {element} does not have {key} attribute.')
         setattr(element, key, val)

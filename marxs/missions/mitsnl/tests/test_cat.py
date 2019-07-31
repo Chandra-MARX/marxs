@@ -6,7 +6,7 @@ from astropy.utils.data import get_pkg_data_filename
 from transforms3d.euler import euler2mat
 
 from ..catgrating import *
-from ..catgrating import DataFileFormatException
+from ..catgrating import DataFileFormatException, check_lx_dims
 from marxs.optics import CATGrating, OrderSelector, FlatDetector
 from marxs.optics.scatter import RandomGaussianScatter
 from marxs.utils import generate_test_photons
@@ -25,15 +25,21 @@ def test_nonparallelCATGrating_simplifies_to_CATGrating():
     p2 = npcat(photons)
     assert np.all(p1['dir'] == p2['dir'])
 
+def test_check():
+    '''Make sure check raises Exception for unphysical parameters'''
+    with pytest.raises(ValueError):
+        check_lx_dims({'barwidth': 1, 'period': 1})
 
 def test_scalingSitransparancy():
     '''The module has data for 1 mu Si and scales that to the depth of the
     grating. Test against known-good coefficient from CXRO.'''
-    photons = generate_test_photons(1)
-    cat = L1(order_selector=OrderSelector([-5]), relativearea=0.,
-             depth=4*u.mu, d=0.00001)
+    photons = generate_test_photons(100)
+    cat = L1(order_selector=OrderSelector([-5]),
+             l1_dims = {'bardepth': 0.004 * u.mm,
+                        'period': 0.0001 * u.mm,
+                        'barwidth': 0.00009 * u.mm})
     photons = cat(photons)
-    assert np.isclose(photons['probability'][0], 0.22458, rtol=1e-4)
+    assert np.isclose(np.median(photons['probability']), 0.22458, rtol=1e-4)
 
 
 def test_L2_broadening():
@@ -95,7 +101,7 @@ def test_efficiency_table_in_use():
     '''Use table in a optical element'''
     efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
     cat = CATGrating(order_selector=efftab, d=0.001)
-    photons = generate_test_photons(500)
+    photons = generate_test_photons(5000)
     photons = cat(photons)
     assert np.isclose((photons['order']==0).sum(), len(photons) / 2, rtol=.05)
 
