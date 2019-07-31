@@ -29,6 +29,8 @@ New Features
 
 - Add a module to simulate CAT gratings manufactures in MIT's SNL. [#202]
 
+- Make MIT SNL grating specification more flexible. [#210]
+
 
 API Changes
 ^^^^^^^^^^^
