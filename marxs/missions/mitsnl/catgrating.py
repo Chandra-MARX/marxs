@@ -51,7 +51,7 @@ is independent from the grating membrane itself (which is not true, but a valid 
 approximation.)
 '''
 
-l1_dims = {'bardepth': 0.04 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0001 * u.mm}
+l1_dims = {'bardepth': 0.004 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0009 * u.mm}
 '''Dimensions of L1 support bars running perpendicular to the grating bars'''
 
 l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.mm}
@@ -390,9 +390,9 @@ class CATL1L2Stack(FlatStack):
     qualityfactor : dict
         Parameterization of grating quality scaling factor. See model level variable
         for format.
-    l1dims : dict
+    l1_dims : dict
         Dimensions of L1 support. See module level variable for format.
-    l2dims : dict
+    l2_dims : dict
         Dimensions of L2 support. See module level variable for format.
     '''
     def __init__(self, **kwargs):
