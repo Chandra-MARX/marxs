@@ -124,8 +124,8 @@ class RandomGaussianScatter(FlatOpticalElement):
             rot = axangle2mat(perpvec, angle)
             outdir = np.einsum('...ij,...i->...j', rot, pdir)
             # Now rotate result by up to 2 pi to randomize direction
-            angle = np.random.uniform(size=n) * 2 * np.pi
-            rot = axangle2mat(pdir, angle)
+            angle2 = np.random.uniform(size=n) * 2 * np.pi
+            rot = axangle2mat(pdir, angle2)
             outdir = e2h(np.einsum('...ij,...i->...j', rot, outdir), 0)
             pol = parallel_transport(photons['dir'].data[intersect, :], outdir,
                                      photons['polarization'].data[intersect, :])

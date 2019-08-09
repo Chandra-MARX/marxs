@@ -51,7 +51,7 @@ is independent from the grating membrane itself (which is not true, but a valid 
 approximation.)
 '''
 
-l1_dims = {'bardepth': 0.04 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0001 * u.mm}
+l1_dims = {'bardepth': 0.004 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0009 * u.mm}
 '''Dimensions of L1 support bars running perpendicular to the grating bars'''
 
 l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.mm}
@@ -225,10 +225,7 @@ class L1(CATGrating):
 
     Parameters
     ----------
-    relativearea : float
-        Relative open area (i.e. area not covered by L1 supports)
-    depth : `astropy.units.Quantity`
-        Depth of grating bars
+    l1_dims : dict
     '''
     blaze_name = 'blaze_L1'
     order_name = 'order_L1'
@@ -390,12 +387,15 @@ class CATL1L2Stack(FlatStack):
     qualityfactor : dict
         Parameterization of grating quality scaling factor. See model level variable
         for format.
-    l1dims : dict
+    l1_dims : dict
         Dimensions of L1 support. See module level variable for format.
-    l2dims : dict
+    l2_dims : dict
         Dimensions of L2 support. See module level variable for format.
     '''
-    def __init__(self, **kwargs):
+    def __init__(self, l1_dims=l1_dims, l2_dims=l2_dims,
+                 l1_order_selector=l1_order_selector,
+                 qualityfactor=qualityfactor,
+                 **kwargs):
         kwargs['elements'] = [CATGrating,
                               QualityFactor,
                               L1,
@@ -403,16 +403,14 @@ class CATL1L2Stack(FlatStack):
                               L2Diffraction,
                           ]
         groove_angle = kwargs.pop('groove_angle', 0.)
-        l2dim = kwargs.pop('l2_dims', l2_dims)
-        l1dim = kwargs.pop('l1_dims', l1_dims)
         kwargs['keywords'] = [{'order_selector': kwargs.pop('order_selector'),
                                'd': kwargs.pop('d', d),
                                'groove_angle': groove_angle},
-                              {'qualityfactor': kwargs.pop('qualityfactor', qualityfactor)},
-                              {'l1_dims': l1dim,
-                               'order_selector': kwargs.pop('l1_order_selector', l1_order_selector),
+                              {'qualityfactor': qualityfactor},
+                              {'l1_dims': l1_dims,
+                               'order_selector': l1_order_selector,
                                'groove_angle': np.pi / 2. + groove_angle},
-                              {'l2_dims': l2dim},
-                              {'l2_dims': l2dim}
+                               {'l2_dims': l2_dims},
+                               {'l2_dims': l2_dims}
                           ]
         super().__init__(**kwargs)
