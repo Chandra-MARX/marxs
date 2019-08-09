@@ -225,10 +225,7 @@ class L1(CATGrating):
 
     Parameters
     ----------
-    relativearea : float
-        Relative open area (i.e. area not covered by L1 supports)
-    depth : `astropy.units.Quantity`
-        Depth of grating bars
+    l1_dims : dict
     '''
     blaze_name = 'blaze_L1'
     order_name = 'order_L1'
@@ -395,7 +392,10 @@ class CATL1L2Stack(FlatStack):
     l2_dims : dict
         Dimensions of L2 support. See module level variable for format.
     '''
-    def __init__(self, **kwargs):
+    def __init__(self, l1_dims=l1_dims, l2_dims=l2_dims,
+                 l1_order_selector=l1_order_selector,
+                 qualityfactor=qualityfactor,
+                 **kwargs):
         kwargs['elements'] = [CATGrating,
                               QualityFactor,
                               L1,
@@ -403,16 +403,14 @@ class CATL1L2Stack(FlatStack):
                               L2Diffraction,
                           ]
         groove_angle = kwargs.pop('groove_angle', 0.)
-        l2dim = kwargs.pop('l2_dims', l2_dims)
-        l1dim = kwargs.pop('l1_dims', l1_dims)
         kwargs['keywords'] = [{'order_selector': kwargs.pop('order_selector'),
                                'd': kwargs.pop('d', d),
                                'groove_angle': groove_angle},
-                              {'qualityfactor': kwargs.pop('qualityfactor', qualityfactor)},
-                              {'l1_dims': l1dim,
-                               'order_selector': kwargs.pop('l1_order_selector', l1_order_selector),
+                              {'qualityfactor': qualityfactor},
+                              {'l1_dims': l1_dims,
+                               'order_selector': l1_order_selector,
                                'groove_angle': np.pi / 2. + groove_angle},
-                              {'l2_dims': l2dim},
-                              {'l2_dims': l2dim}
+                               {'l2_dims': l2_dims},
+                               {'l2_dims': l2_dims}
                           ]
         super().__init__(**kwargs)
