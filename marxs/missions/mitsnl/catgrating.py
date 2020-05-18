@@ -54,7 +54,7 @@ approximation.)
 l1_dims = {'bardepth': 0.004 * u.mm, 'period': 0.005 * u.mm, 'barwidth': 0.0009 * u.mm}
 '''Dimensions of L1 support bars running perpendicular to the grating bars'''
 
-l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.966 * u.mm, 'barwidth': 0.1 * u.mm}
+l2_dims = {'bardepth': 0.5 * u.mm, 'period': 0.9622504 * u.mm, 'barwidth': 0.0962250 * u.mm}
 '''Dimensions of hexagonal L2 support'''
 
 qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
