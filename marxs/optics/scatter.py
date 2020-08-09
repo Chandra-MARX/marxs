@@ -13,6 +13,7 @@ unchanged, but a small random change is added to the direction vector.
 '''
 import numpy as np
 from warnings import warn
+import astropy.units as u
 
 from ..math.utils import e2h, h2e, norm_vector
 from ..math.rotations import axangle2mat
@@ -30,15 +31,15 @@ class RadialMirrorScatter(FlatOpticalElement):
 
     Parameters
     ----------
-    inplanescatter : float
-        sigma of Gaussian for in-plane scatter [in radian]
-    perpplanescatter : float
+    inplanescatter : `astropy.Quantity`
+        sigma of Gaussian for in-plane scatter
+    perpplanescatter : `astropy.Quantity`
         sigma of Gaussian for scatter perpendicular to the plane of reflection
-        [in radian] (default = 0)
+        (default = 0)
     '''
     def __init__(self, **kwargs):
-        self.inplanescatter = kwargs.pop('inplanescatter') # in rad
-        self.perpplanescatter = kwargs.pop('perpplanescatter', 0.) # in rad
+        self.inplanescatter = kwargs.pop('inplanescatter').to(u.rad).value
+        self.perpplanescatter = kwargs.pop('perpplanescatter', 0.).to(u.rad).value
         super(RadialMirrorScatter, self).__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
@@ -46,6 +47,7 @@ class RadialMirrorScatter(FlatOpticalElement):
         center = self.pos4d[:-1, -1]
         radial = h2e(photons['pos'][intersect].data) - center
         perpplane = np.cross(h2e(photons['dir'][intersect].data), radial)
+
         # np.random.normal does not work with scale=0
         # so special case that here.
         if self.inplanescatter != 0:
@@ -78,14 +80,14 @@ class RandomGaussianScatter(FlatOpticalElement):
 
     Parameters
     ----------
-    scatter : float or callable
+    scatter : `astropy.Quantitiy` or callable
         This this is a number, scattering angles will be drawn from a Gaussian
-        with the given sigma [in radian]. For a variable scatter, this can be a
+        with the given sigma. For a variable scatter, this can be a
         function with the following call signature: ``angle = func(photons,
-        intersect, interpos, intercoos)``. The function should return an array
-        of angles, containing one angle for each intersecting photon. A function
-        passed in for this parameter can makes the scattering time, location, or
-        energy-dependent.
+        intersect, interpos, intercoos)``. The function should return an
+        `astropy.Quantity` array, containing one angle for each intersecting
+        photon. A function passed in for this parameter can makes the
+        scattering time, location, or energy-dependent.
     '''
     scattername = 'scatter'
 
@@ -103,7 +105,9 @@ class RandomGaussianScatter(FlatOpticalElement):
         n = intersect.sum()
         # np.random.normal does not work with scale=0
         # so special case that here.
-        if self.scatter == 0:
+        with u.set_enabled_equivalencies(u.dimensionless_angles()):
+            scatterzero = self.scatter == 0
+        if scatterzero:
             angle = np.zeros(n)
             out = {}
         else:
@@ -118,9 +122,12 @@ class RandomGaussianScatter(FlatOpticalElement):
             guessvec[~ind, 1] = 1
             perpvec = np.cross(pdir, guessvec)
             if callable(self.scatter):
-                angle = self.scatter(photons, intersect, interpos, intercoos)
+                angle = self.scatter(photons, intersect,
+                                     interpos, intercoos).to(u.rad).value
             else:
-                angle = np.random.normal(loc=0., scale=self.scatter, size=n)
+                angle = np.random.normal(loc=0.,
+                                         scale=self.scatter.to(u.rad).value,
+                                         size=n)
             rot = axangle2mat(perpvec, angle)
             outdir = np.einsum('...ij,...i->...j', rot, pdir)
             # Now rotate result by up to 2 pi to randomize direction

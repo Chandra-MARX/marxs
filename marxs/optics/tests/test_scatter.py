@@ -1,5 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+import astropy.units as u
 from scipy.stats import normaltest
 import pytest
 
@@ -11,7 +12,7 @@ def test_distribution_of_scattered_rays():
     '''Check that scattered rays have a normal distribution.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
-    rms = RadialMirrorScatter(inplanescatter=0.1)
+    rms = RadialMirrorScatter(inplanescatter=0.1 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -22,7 +23,7 @@ def test_distribution_of_scattered_rays():
     assert pval > 0.5
     assert np.allclose(np.std(p['det_x']), np.arctan(0.1), rtol=0.1)
 
-def test_distribution_scatered_rays_turned():
+def test_distribution_scatered_rays_turned(inplanescatter, perrplanescatter):
     '''Test that the in-plane scattering plane is correctly calculated.
 
     The photons are positioned 90 deg from the example above.
@@ -30,7 +31,8 @@ def test_distribution_scatered_rays_turned():
     from the test above.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 0., 1., 1.]), (500, 1))
-    rms = RadialMirrorScatter(inplanescatter=0.1, perpplanescatter=0.01)
+    rms = RadialMirrorScatter(inplanescatter=0.1 * u.rad,
+                              perpplanescatter=0.01 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -46,7 +48,8 @@ def test_scatter_0_01():
     to 0. These cases are special cased, so that need an extra test.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
-    rms = RadialMirrorScatter(inplanescatter=0, perpplanescatter=0.1)
+    rms = RadialMirrorScatter(inplanescatter=0 * u.rad,
+                              perpplanescatter=0.1 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -60,7 +63,8 @@ def test_scatter_0_0():
     to 0. These cases are special cased, so that need an extra test.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
-    rms = RadialMirrorScatter(inplanescatter=0, perpplanescatter=0)
+    rms = RadialMirrorScatter(inplanescatter=0 * u.rad,
+                              perpplanescatter=0 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -75,7 +79,7 @@ def test_gaussscatter_0():
     to 0. This case is special cased, so that needs an extra test.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
-    rms = RandomGaussianScatter(scatter=0)
+    rms = RandomGaussianScatter(scatter=0 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -89,7 +93,7 @@ def test_gaussiandistribution_of_scattered_rays():
     '''Check that scattered rays have a normal distribution.'''
     photons = generate_test_photons(500)
     photons['pos'] = np.tile(np.array([0., 1., 0., 1.]), (500, 1))
-    rms = RandomGaussianScatter(scatter=1e-5)
+    rms = RandomGaussianScatter(scatter=1e-5 * u.rad)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
 
     p = rms(photons)
@@ -111,7 +115,7 @@ def test_scatteredfunction():
     photons['time'] = np.arange(len(photons), dtype=float) / 500.
 
     def timescatter(photons, intersect, interpos, intercoos):
-        return photons['time']
+        return photons['time'] * u.degree
 
     rms = RandomGaussianScatter(scatter=timescatter)
     det = FlatDetector(position=[-1, 0, 0], zoom=1000)
@@ -135,14 +139,14 @@ def test_scatterarg_missing():
 
 
 def test_derivedScatterClass():
-    '''Check that overriding defaul scatters works.'''
+    '''Check that overriding default scatter works.'''
     class Derived(RandomGaussianScatter):
-        scatter = 1
+        scatter = 1 * u.arcsec
 
     # This should work without scatter keyword
     rms = Derived()
 
     # This should raise a warning, but set the value
     with pytest.warns(UserWarning, match="Overriding class level"):
-        rms = Derived(scatter=5)
-    assert rms.scatter == 5
+        rms = Derived(scatter=5 * u.arcsec)
+    assert rms.scatter == (5 * arcsec).to(u.rad).value
