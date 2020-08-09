@@ -39,7 +39,7 @@ class RadialMirrorScatter(FlatOpticalElement):
     '''
     def __init__(self, **kwargs):
         self.inplanescatter = kwargs.pop('inplanescatter').to(u.rad).value
-        self.perpplanescatter = kwargs.pop('perpplanescatter', 0.).to(u.rad).value
+        self.perpplanescatter = kwargs.pop('perpplanescatter', 0. * u.rad).to(u.rad).value
         super(RadialMirrorScatter, self).__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):

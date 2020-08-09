@@ -16,7 +16,7 @@ def test_nonparallelCATGrating_simplifies_to_CATGrating():
     should match a CAT grating exactly.'''
     photons = generate_test_photons(50)
     # Mix the photons up a little
-    scat = RandomGaussianScatter(scatter=0.01)
+    scat = RandomGaussianScatter(scatter=0.01 * u.rad)
     photons = scat(photons)
     order_selector = OrderSelector([2])
     cat = CATGrating(order_selector=order_selector, d=0.001)

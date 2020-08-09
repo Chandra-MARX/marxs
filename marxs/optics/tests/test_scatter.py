@@ -23,7 +23,7 @@ def test_distribution_of_scattered_rays():
     assert pval > 0.5
     assert np.allclose(np.std(p['det_x']), np.arctan(0.1), rtol=0.1)
 
-def test_distribution_scatered_rays_turned(inplanescatter, perrplanescatter):
+def test_distribution_scatered_rays_turned():
     '''Test that the in-plane scattering plane is correctly calculated.
 
     The photons are positioned 90 deg from the example above.
@@ -149,4 +149,4 @@ def test_derivedScatterClass():
     # This should raise a warning, but set the value
     with pytest.warns(UserWarning, match="Overriding class level"):
         rms = Derived(scatter=5 * u.arcsec)
-    assert rms.scatter == (5 * arcsec).to(u.rad).value
+    assert rms.scatter == 5 * u.arcsec

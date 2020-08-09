@@ -169,8 +169,8 @@ def test_groove_direction():
         arccosalpha = np.dot(v1, v2) / np.sqrt(np.dot(v1, v1) * np.dot(v2, v2))
         return np.arccos(arccosalpha)
 
-    assert np.allclose(angle_in_yz(p1['dir'][0,:], p2['dir'][0, :]), 0)
-    assert np.allclose(angle_in_yz(p3['dir'][0,:], p2['dir'][0, :]), 0)
+    assert np.allclose(angle_in_yz(p1['dir'][0,:], p2['dir'][0, :]), 0, atol=5e-8)
+    assert np.allclose(angle_in_yz(p3['dir'][0,:], p2['dir'][0, :]), 0, atol=5e-8)
 
     for px in [p1, p2, p3]:
         assert np.allclose(angle_in_yz(p['dir'][0,:], px['dir'][0, :]), 0.3)

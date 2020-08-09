@@ -155,10 +155,12 @@ def test_gratings_d():
 
 def test_scatter():
     '''Check that the right properties are set.'''
-    scat = RadialMirrorScatter(inplanescatter=1., perpplanescatter=.1)
-    varyattribute(scat, inplanescatter=2., perpplanescatter=.2)
-    assert scat.inplanescatter == 2.
-    assert scat.perpplanescatter == .2
+    scat = RadialMirrorScatter(inplanescatter=1. * u.arcmin,
+                               perpplanescatter=.1 * u.arcmin)
+    varyattribute(scat, inplanescatter=2. * u.arcsec,
+                  perpplanescatter=.2 * u.degree)
+    assert scat.inplanescatter == 2. * u.arcsec
+    assert scat.perpplanescatter == .2 * u.degree
 
 
 def test_errormessage_attribute():

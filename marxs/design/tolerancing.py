@@ -125,10 +125,11 @@ def varyattribute(element, **kwargs):
     In a `marxs.optics.RadialMirrorScatter` object, the width of the scattering
     can be modified like this:
 
+    >>> from astropy import units as u
     >>> from marxs.optics import RadialMirrorScatter
     >>> from marxs.design.tolerancing import varyattribute
-    >>> rms = RadialMirrorScatter(inplanescatter=1e-5, perpplanescatter=0)
-    >>> varyattribute(rms, inplanescatter=2e-5)
+    >>> rms = RadialMirrorScatter(inplanescatter=2 * u.arcsec, perpplanescatter=0 * u.arcsec)
+    >>> varyattribute(rms, inplanescatter=1 * u.arcsec)
 
     It is usually easy to see which attributes of a
     `marxs.simulator.SimulationSequenceElement` are relevant to be changed in
