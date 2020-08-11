@@ -58,6 +58,9 @@ API Changes
   scatter, provided that its already defined a class level variable (e.g.
   for subclasses). [#202]
 
+- `~marxs.optics.RandomGaussianScatter` and `~marxs.optics.Scatter` now expect
+  angular quantities instead of plai floats. [#216]
+
 
 Bug fixes
 ^^^^^^^^^

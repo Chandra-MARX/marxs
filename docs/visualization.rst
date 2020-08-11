@@ -26,6 +26,7 @@ First, we need to set up mirrors, gratings and detectors (here gratings on a Row
 
   >>> from marxs import optics, design, analysis
   >>> from marxs.design import rowland
+  >>> import astropy.units as u
   >>> rowland = design.rowland.RowlandTorus(5000, 5000)
   >>> aper = optics.CircleAperture(position=[12000, 0, 0],
   ...                              zoom=[1, 1000, 1000],
@@ -34,8 +35,8 @@ First, we need to set up mirrors, gratings and detectors (here gratings on a Row
   ...                         elements=[optics.PerfectLens,
   ...                         optics.RadialMirrorScatter],
   ...                         keywords = [{'focallength': 11000},
-  ...                                     {'inplanescatter': 2e-5,
-  ...                                      'perpplanescatter': 3e-6}])
+  ...                                     {'inplanescatter': 4 * u.arcsec,
+  ...                                      'perpplanescatter': 0.6 * u.arcsec}])
 
 In our figure, we want to color the diffraction gratings and the photons that pass through them. For this purpose we make a new class of grating that inherits from `~marxs.optics.FlatGrating` but additionally assigns a value to the ``colorid``. The method ``specific_process_photons` is defined as part of `~marxs.optics.FlatOpticalElement` and it returns a dictionary of arrays that are assigned to the corresponding column in the ``photons`` table. Here, we simply add another column to that::
 

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from marxs import optics, design, analysis, source, simulator
 from marxs.design import rowland
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 
 rowland = design.rowland.RowlandTorus(5000, 5000)
@@ -14,8 +15,8 @@ mirr = optics.FlatStack(position=[11000, 0, 0], zoom=[20, 1000, 1000],
                         elements=[optics.PerfectLens,
                                   optics.RadialMirrorScatter],
                         keywords = [{'focallength': 11000},
-                                    {'inplanescatter': 2e-5,
-                                     'perpplanescatter': 3e-6}])
+                                    {'inplanescatter': 4 * u.arcsec,
+                                     'perpplanescatter': 0.6 * u.arcsec}])
 mirr.display['opacity'] = 0.5
 
 class ColoredFlatGrating(optics.FlatGrating):

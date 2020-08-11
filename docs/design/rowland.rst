@@ -23,6 +23,7 @@ x,y plane touches the focal point at (0,0) and has a diameter of 1 m, so
 grating on the optical axis would be 1 m away from the focal point::
 
   >>> import numpy as np
+  >>> import astropy.units as u
   >>> from marxs import optics
   >>> from marxs import simulator
   >>> from marxs.design import rowland
@@ -38,7 +39,7 @@ happen at the same position, so those two functions are summarized in a single e
   >>> mirror = optics.FlatStack(position=[1100, 0, 0], zoom=[20, 100, 100],
   ...                            elements=[optics.PerfectLens, optics.RadialMirrorScatter],
   ...                            keywords = [{'focallength': 1100},
-  ...                                        {'inplanescatter': 1e-3, 'perpplanescatter': 1e-4}])
+  ...                                        {'inplanescatter': 3 * u.arcmin, 'perpplanescatter': 0.3 * u.arcmin}])
 
 Next, behind the mirror, we place a `~marxs.design.rowland.GratingArrayStructure`, which is simply
 a collection of gratings. The class of the grating is defined in the parameter ``elem_class`` and

@@ -4,6 +4,7 @@ This approximation is crude, but it's useful to have for running
 examples in environments where  `classic MARX`_ is not installed.
 '''
 import numpy as np
+import astropy.units as u
 
 from .data import NOMINAL_FOCALLENGTH
 from ...import optics
@@ -38,8 +39,8 @@ class HRMA(optics.FlatStack):
                               optics.RadialMirrorScatter,
                               optics.EnergyFilter]
         kwargs['keywords'] = [{'focallength': NOMINAL_FOCALLENGTH},
-                              {'inplanescatter': 3.6e-6,
-                               'perpplanescatter': 1.2e-6},
+                              {'inplanescatter': 3.6e-6 * u.rad,
+                               'perpplanescatter': 1.2e-6 * u.rad},
                               {'filterfunc': lambda x: np.ones_like(x) * 0.66,
                                'name': 'support spider, reflectivity, et al.'}]
         super(HRMA, self).__init__(**kwargs)
