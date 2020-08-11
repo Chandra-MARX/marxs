@@ -193,8 +193,13 @@ def _parse_position_keywords(kwargs):
             zoom = np.ones(3) * zoom
         if not len(zoom) == 3:
             raise ValueError('zoom must have three elements for x,y,z or be a scalar (global zoom).')
+        if np.any(np.array(zoom) <= 0):
+            raise ValueError('All values in zoom must be positive-definite to keep pos4d matrix valid. Specify zero-thickness elements with display properties.')
         pos4d = affines.compose(position, orientation, zoom)
     else:
         if ('position' in kwargs) or ('orientation' in kwargs) or ('zoom' in kwargs):
             raise ValueError('If pos4d is specificed, the following keywords cannot be given at the same time: position, orientation, zoom.')
+
+    if np.linalg.det(pos4d) == 0:
+        raise ValueError('pos4d matrix is invalid (determinant is 0).')
     return pos4d
