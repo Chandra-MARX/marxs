@@ -166,7 +166,7 @@ class Source(SimulationSequenceElement):
         else:
             raise SourceSpecificationError('`flux` must be a quantity or a callable.')
 
-    @u.quantity_input
+    @u.quantity_input()
     def generate_energies(self, t: u.s) -> u.keV:
         n = len(t)
         # function
@@ -189,7 +189,7 @@ class Source(SimulationSequenceElement):
         else:
             raise SourceSpecificationError('`energy` must be Quantity, function, or have columns "energy" and "flux".')
 
-
+    @u.quantity_input()
     def generate_polarization(self, times: u.s, energies: u.keV) -> u.rad:
         n = len(times)
         # function
@@ -316,6 +316,7 @@ class AstroSource(Source):
         photons['dec'].unit = u.degree
         photons.meta['COORDSYS'] = ('ICRS', 'Type of coordinate system')
 
+
 class PointSource(AstroSource):
     '''Astrophysical point source.
 
@@ -328,7 +329,8 @@ class PointSource(AstroSource):
     def __init__(self, **kwargs):
         super(PointSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         photons = super(PointSource, self).generate_photons(exposuretime)
         self.set_pos(photons, self.coords)
         return photons
@@ -355,7 +357,8 @@ class RadialDistributionSource(AstroSource):
         self.func_par = kwargs.pop('func_par', None)
         super(RadialDistributionSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         '''Photon positions are generated in a frame that is centered on the
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
@@ -371,6 +374,7 @@ class RadialDistributionSource(AstroSource):
         self.set_pos(photons, origin_coord)
 
         return photons
+
 
 class SphericalDiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
@@ -402,6 +406,7 @@ class SphericalDiskSource(RadialDistributionSource):
         u = np.random.rand(n)
         return np.arccos(np.cos(self.func_par[1]) * (1. - u) + u * np.cos(self.func_par[0]))
 
+
 class DiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
 
@@ -422,6 +427,7 @@ class DiskSource(RadialDistributionSource):
                           np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
         super(DiskSource, self).__init__(**kwargs)
 
+
 class GaussSource(AstroSource):
     '''Astrophysical source with a Gaussian brightness profile.
 
@@ -437,7 +443,8 @@ class GaussSource(AstroSource):
         self.sigma = kwargs.pop('sigma')
         super(GaussSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input()
+    def generate_photons(self, exposuretime: u.s):
         '''Photon positions are generated in a frame that is centered on the
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
@@ -472,7 +479,8 @@ class SymbolFSource(AstroSource):
         self.size = kwargs.pop('size', 1. * u.degree)
         super(SymbolFSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input()
+    def generate_photons(self, exposuretime: u.s):
         photons = super(SymbolFSource, self).generate_photons(exposuretime)
         n = len(photons)
         elem = np.random.choice(3, size=n)
