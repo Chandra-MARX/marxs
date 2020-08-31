@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from astropy.table import Column
+import astropy.units as u
 import transforms3d
 
 from ..optics.base import FlatOpticalElement
@@ -28,9 +29,12 @@ class FarLabPointSource(Source, FlatOpticalElement):
     '''
     def __init__(self, sourcePos, **kwargs):
         self.sourcePos = sourcePos
-        super(FarLabPointSource, self).__init__(**kwargs)
+        if not 'flux' in kwargs:
+            kwargs['flux'] = 1 / u.s
+        super(FarLabPointSource, self).__init__(geomarea=None, **kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         photons = super(FarLabPointSource, self).generate_photons(exposuretime)
         n = len(photons)
         # randomly choose direction - photons uniformly distributed over aperture area
@@ -80,9 +84,12 @@ class LabPointSourceCone(Source):
         self.dir = e2h(np.asanyarray(direction) / np.linalg.norm(direction), 0)
         self.position = e2h(np.asanyarray(position), 1)
         self.half_opening = half_opening
-        super(LabPointSourceCone, self).__init__(**kwargs)
+        if not 'flux' in kwargs:
+            kwargs['flux'] = 1 / u.s
+        super(LabPointSourceCone, self).__init__(geomarea=None, **kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         photons = super(LabPointSourceCone, self).generate_photons(exposuretime)
         n = len(photons)
 
