@@ -14,11 +14,12 @@ The most important columns during the simultion are the homogeneous space positi
 Photons from astrophysical sources have the follwoing properties: Time, energy, true sky coordinates (RA and dec) and polarization angle (measures North through east). There is also a probability column (see below), which is initialized to one::
 
   >>> from astropy.coordinates import SkyCoord
+  >>> import astropy.units as u
   >>> from marxs import optics, source
   >>> coords = SkyCoord(345., -35., unit='deg')
-  >>> src = source.PointSource(coords=coords, energy=0.25)
+  >>> src = source.PointSource(coords=coords, energy=0.25 * u.keV)
   >>> point = source.FixedPointing (coords=coords)
-  >>> photons = src.generate_photons(5)
+  >>> photons = src.generate_photons(5 * u.s)
   >>> photons.colnames
   ['time', 'energy', 'polangle', 'probability', 'ra', 'dec']
   >>> photons['probability']

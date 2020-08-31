@@ -126,13 +126,14 @@ class Sequence(BaseContainer):
     First, we import the required modules:
 
     >>> from astropy.coordinates import SkyCoord
+    >>> import astropy.units as u
     >>> from marxs import source, optics
     >>> from marxs.simulator import Sequence
 
     Then, we build up the parts of the simulation, source, pointing model and hardware
     of our instrument:
 
-    >>> mysource = source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1e-3, energy=2.)
+    >>> mysource = source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1e-3 / u.s / u.cm**2, energy=2. * u.keV)
     >>> sky2mission = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
     >>> aper = optics.RectangleAperture(position=[50., 0., 0.])
     >>> mirr = optics.ThinLens(focallength=10, position=[10., 0., 0.])
@@ -142,7 +143,7 @@ class Sequence(BaseContainer):
 
     Finally, we run one set of photons through the instrument:
 
-    >>> photons_in = mysource.generate_photons(1e5)
+    >>> photons_in = mysource.generate_photons(1e5 * u.s)
     >>> photons_out = my_instrument(photons_in)
 
     Now, let us check where the photons fall on the detector:

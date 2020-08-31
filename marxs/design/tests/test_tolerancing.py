@@ -239,7 +239,7 @@ def test_run_tolerances_for_energies():
                                       CaptureResAeff(orders=[0, 1, 2]),
                                       reset={'period_mean': 0.005,
                                              'period_sigma': 0.},
-                                      t_source=1000)
+                                      t_source=1. * u.ks)
     # Check the reset worked
     assert grat._d == 0.005
     # Check both energy have been calculated

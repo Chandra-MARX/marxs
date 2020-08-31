@@ -53,6 +53,7 @@ We now turn the combination of X-ray source and first mirror around the y-axis (
 
 .. doctest-requires:: mayavi
 
+  >>> import astropy.units as u
   >>> # Make an object that keeps the photon position after every simulation step
   >>> # for later plotting of photon paths.
   >>> pos = KeepCol('pos')
@@ -66,7 +67,7 @@ We now turn the combination of X-ray source and first mirror around the y-axis (
   ...   light.position = np.dot(rotmat, light_pos)
   ...   light.dir = np.dot(rotmat, light_dir)
   ...   m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
-  ...   rays = light(100)
+  ...   rays = light(100 * u.s)
   ...   pos.data = []
   ...   pos(rays)
   ...   rays = experiment(rays)

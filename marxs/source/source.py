@@ -59,9 +59,9 @@ def poisson_process(rate: (u.s * u.cm**2)**(-1)):
         times = expon.rvs(scale=1./fullrate,
                           size=int(exposuretime.value * fullrate * 1.1))
         # If we don't have enough numbers right now, add some more.
-        while times.sum() < exposuretime.value:
+        while (times.sum() * u.s) < exposuretime:
             times = np.hstack([times, expon.rvs(scale=1/fullrate,
-                                                size=int(exposuretime.value - times.sum() * fullrate * 1.1))])
+                                                size=int((exposuretime.to(u.s).value - times.sum()) * fullrate * 1.1))])
         times = np.cumsum(times)
         return times[times < exposuretime.value] * u.s
     return poisson_rate
@@ -102,17 +102,16 @@ class Source(SimulationSequenceElement):
         - polarization.
         - `~astropy.units.quantity.Quantity`: Constant energy.
         - `astropy.table.Table`:
-          where "flux" here really is a short form for
-          "flux density" and is given in the units of photons/s/keV.
           Given this table, the code assumes a piecewise flat spectrum.
           The "energy" values contain the **upper** limit of each bin,
-          the "flux" array the flux density in each bin.
-          The first entry in the "flux" array is ignored, because the lower
+          the "fluxdensity" array the flux density in each bin.
+          The first entry in the "fluxdensity" array is ignored, because the lower
           bound of this bin is undefined.
           The code draws an energy from this spectrum for every photon created.
         - A function or callable object: This option allows for full
           customization. The function must take an array of photon times as
-          input and return an equal length array of photon energies in keV.
+          input and return an equal length array of photon energies
+          `~astropy.units.quantity.Quantity`.
 
     polarization : `~astropy.units.quantity.Quantity` or ``None``,  `astropy.table.Table` or callable.
         There are several different ways to set the polarization angle of the
@@ -126,18 +125,18 @@ class Source(SimulationSequenceElement):
         - `~astropy.units.quantity.Quantity` :
           Constant polarization angle for all photons
         - `~astropy.table.Table` :
-          "angle" and "probability", where "probability" really means "probability
-          density".  The summed probability density will automatically be
+          Table with columns called "angle" and "probabilitydensity".
+          The summed probability density will automatically be
           normalized to one. Given this table, the
           code assumes a piecewise constant probability density. The "angle"
-          values contain the **upper** limit of each bin, the "probability"
-          array the probability density in this bin. The first entry in the
-          "probability" array is ignored, because the lower bound of this bin
+          values contain the **upper** limit of each bin. The first entry in the
+          "probabilitydenisty" array is ignored, because the lower bound of this bin
           is undefined.
         - a callable (function or callable object): This
           option allows full customization.  The function is called with two
           arrays (time and energy values) as input and must return an array of
-          equal length that contains the polarization angles in degrees.
+          equal length that contains the polarization angles as
+          `~astropy.units.quantity.Quantity` object.
 
     geomarea : `astropy.units.Quantity` or ``None``:
           Geometric opening area of telescope. If ``None`` then the flux must
@@ -178,8 +177,10 @@ class Source(SimulationSequenceElement):
                 return en
         # astropy.table.QTable
         elif hasattr(self.energy, 'columns'):
-            rand = RandomArbitraryPdf(self.energy['energy'].to(u.keV).value,
-                                      self.energy['flux'].to((u.s * u.cm**2)**(-1)).value)
+            x = self.energy['energy'].to(u.keV).value
+            y = (self.energy['fluxdensity'][1:] * np.diff(self.energy['energy'])).to((u.s * u.cm**2)**(-1)).value
+            y = np.hstack(([0], y))
+            rand = RandomArbitraryPdf(x, y)
             return rand(n) * u.keV
         # scalar quantity
         elif hasattr(self.energy, 'isscalar') and self.energy.isscalar:
@@ -187,7 +188,7 @@ class Source(SimulationSequenceElement):
                                                equivalencies=u.spectral())
         # anything else
         else:
-            raise SourceSpecificationError('`energy` must be Quantity, function, or have columns "energy" and "flux".')
+            raise SourceSpecificationError('`energy` must be Quantity, function, or have columns "energy" and "fluxdensity".')
 
     @u.quantity_input()
     def generate_polarization(self, times: u.s, energies: u.keV) -> u.rad:
@@ -203,8 +204,10 @@ class Source(SimulationSequenceElement):
             return np.random.uniform(0, 2 * np.pi, n) * u.rad
         # astropy.table.QTable
         elif hasattr(self.polarization, 'columns'):
-            rand = RandomArbitraryPdf(self.polarization['angle'].to(u.rad).value,
-                                      self.polarization['probability'])
+            x = self.polarization['angle'].to(u.rad).value
+            y = (self.polarization['probabilitydensity'][1:] * np.diff(self.polarization['angle'])).to(u.dimensionless_unscaled).value
+            y = np.hstack(([0], y))
+            rand = RandomArbitraryPdf(x, y)
             return rand(n) * u.rad
         # scalar quantity
         elif hasattr(self.polarization, 'isscalar') and self.polarization.isscalar:

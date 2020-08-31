@@ -413,7 +413,7 @@ def run_tolerances_for_energies(source, energies,
     outtabs = []
 
     for i, e in enumerate(energies):
-        source.energy = e.to(u.keV).value
+        source.energy = e
         photons_in = source.generate_photons(t_source)
         photons_in = instrum_before(photons_in)
         data = run_tolerances(photons_in, instrum_remaining,

@@ -20,8 +20,10 @@ In many cases, the spectrum of the sources will come from a table that is genera
 Our source here has a simple power-low spectrum. We ignore extinction for the moment which would significantly reduce the flux we observe in the soft band. 
 
    >>> import numpy as np
-   >>> energies = np.arange(.3, 8., .01)
-   >>> spectrum1 = 6.3e-4 * energies**(-1.9)
+   >>> import astropy.units as u
+   >>> from astropy.table import QTable
+   >>> energies = np.arange(.3, 8., .01) * u.keV
+   >>> spectrum1 = 6.3e-4 * energies.value**(-1.9) / u.s / u.cm**2 / u.keV
 
 Marxs sources have separate parameters for the ``energy`` (shape of the spectrum) and the ``flux`` (normalization of the spectrum and temporal distribution). In many cases we want to apply the same spectrum with different normalizations to different sources, so it is useful to separate the shape of the spectrum and the total flux. We simulate a source that is constant in time, so the photon arrival times will just be Poisson distributed. In this case, the input spectrum is already properly normalized, so we just sum it all up to to get the total flux. Note that MARXS interprets the energy array as the *upper* energy bound for each bin. The lower energy bound is gives as the upper energy bound from the previous bin. This leaves the *lower* bound of the first bin undefined and thus we do not include it in the sum.
 
@@ -37,7 +39,7 @@ The last thing that the source needs to know is how large the geometric opening 
 Now, can can finally create our source:
  
    >>> from marxs.source import PointSource
-   >>> src1 = PointSource(coords=ngc1313_X1, energy={'energy': energies, 'flux': spectrum1},
+   >>> src1 = PointSource(coords=ngc1313_X1, energy=QTable({'energy': energies, 'fluxdensity': spectrum1}),
    ...                    flux=flux1, geomarea=aperture.area)
 
 See :ref:`sources` for more details.
@@ -63,7 +65,7 @@ Run the simulation
 ==================
 In MARXS, a source generates a photon table and all following elements process this photon table by changing values in a column or adding new columns. Thus, we can stop and inspect the photons after every step (e.g. to look at their position right after they exit the mirror) or just execute all steps in a row::
 
-   >>> photons = src1.generate_photons(5e3)  # 5 ks exposure time
+   >>> photons = src1.generate_photons(5 * u.ks)
    >>> photons = pointing(photons)
    >>> photons = aperture(photons)
    >>> photons = hrma(photons)

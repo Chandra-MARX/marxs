@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 from ... import source, optics
 from ...math.utils import h2e
 
@@ -14,7 +15,7 @@ def test_PerfectLens(ra):
     f = 1000
     lens = optics.PerfectLens(focallength=f, zoom=400)
 
-    photons = mysource.generate_photons(11)
+    photons = mysource.generate_photons(11 * u.s)
     photons = mypointing(photons)
     photons = myslit(photons)
     assert np.allclose(h2e(photons['pos'].data)[:, 0], 100.)

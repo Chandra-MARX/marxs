@@ -10,8 +10,9 @@ First, let us generate some photons coming from some astrophysical source::
 
   >>> from astropy.coordinates import SkyCoord
   >>> from marxs import source, optics
+  >>> import astropy.units as u
   >>> mysource = source.PointSource(coords=SkyCoord(181., -23., unit='deg'))
-  >>> photons = mysource.generate_photons(10)
+  >>> photons = mysource.generate_photons(10 * u.s)
   >>> mypointing = source.FixedPointing(coords=SkyCoord('12h01m23s -22d59m12s'))
   >>> photons = mypointing(photons)
 

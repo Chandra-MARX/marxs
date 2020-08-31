@@ -78,8 +78,8 @@ def test_energy_input():
     # spectrum with distinct lines
     engrid = [0.5, 1., 2., 3.] * u.keV
     # first entry (456) will be ignored
-    fluxgrid = [456., 1., 0., 2.] / u.s / u.cm**2
-    s = Source(energy=QTable({'energy': engrid, 'flux': fluxgrid}))
+    fluxgrid = [456., 1., 0., 2.] / u.s / u.cm**2 / u.keV
+    s = Source(energy=QTable({'energy': engrid, 'fluxdensity': fluxgrid}))
 
     photons = s.generate_photons(1000 * u.s)
     en = photons['energy']
@@ -116,8 +116,8 @@ def test_polarization_input():
     # 3.table
     # spectrum with distinct lines
     polgrid = [0.5, 1., 2., 3.] * u.rad
-    probgrid = [456., 1., 0., 2.]  # first entry (456) will be ignored
-    s = Source(polarization=QTable({'angle': polgrid, 'probability': probgrid}))
+    probgrid = [456., 1., 0., 2.] / u.rad # first entry (456) will be ignored
+    s = Source(polarization=QTable({'angle': polgrid, 'probabilitydensity': probgrid}))
     photons = s.generate_photons(1000 * u.s)
     pol = photons['polangle']
     ind0510 = (pol >= 0.5) & (pol <=1.0)
@@ -185,8 +185,8 @@ def test_sphericaldisk_radius():
     assert np.min(d.arcmin >= 0.8)
 
 @pytest.mark.parametrize("diskclass,diskpar,n_expected",
-                         [(DiskSource, {'a_outer': 30. * u.arcmin}, 2800),
-                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}, 2800),
+                         [(DiskSource, {'a_outer': 30. * u.arcmin}, 2777),
+                          (SphericalDiskSource, {'a_outer': 30. * u.arcmin}, 2777),
                           (GaussSource, {'sigma': 1.5 * u.deg}, 150)])
 def test_disk_distribution(diskclass, diskpar, n_expected):
     '''This is a separate test from test_disk_radius, because it's a simpler
@@ -197,7 +197,7 @@ def test_disk_distribution(diskclass, diskpar, n_expected):
     That makes testing it a little awkard in a short run time, thus the limits are
     fairly loose.
 
-    This test is run for several extended sources, incl Gaussian. Stirctly speaking
+    This test is run for several extended sources, incl Gaussian. Strictly speaking
     it should fail for a Gaussian distribution, but if the sigma is large enough it
     will pass a loose test (and still fail if things to catastrophically wrong,
     e.g. some test circles are outside the source).
@@ -206,16 +206,16 @@ def test_disk_distribution(diskclass, diskpar, n_expected):
     s = diskclass(coords=SkyCoord(213., -10., unit=u.deg), **diskpar)
     photons = s.generate_photons(1e5 * u.s)
 
-    n = np.empty(20)
+    n = np.empty(50)
     for i in range(len(n)):
         circ = SkyCoord((213. +  np.random.uniform(-0.1, .1)) * u.degree,
                        (- 10. + np.random.uniform(-0.1, .1)) * u.degree)
         d = circ.separation(SkyCoord(photons['ra'], photons['dec'], unit='deg'))
         n[i] = (d < 5. * u.arcmin).sum()
-    s, p = normaltest(n)
+    # s, p = normaltest(n)
     # assert a p value here that is soo small that it's never going to be hit
     # by chance.
-    assert p > .05
+    # assert p > .05
     # better: Test number of expected photons matches
     # Allow large variation so that this is not triggered by chance
     assert np.isclose(n.mean(), n_expected, rtol=.2)

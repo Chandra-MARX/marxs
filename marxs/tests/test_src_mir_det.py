@@ -1,5 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+import astropy.units as u
 
 from marxs.source.labSource import LabPointSourceCone
 from marxs.optics.multiLayerMirror import MultiLayerMirror
@@ -18,13 +19,13 @@ def test_src_mir_det():
                           [0, 1, 0],
                           [-1, 0, 0]])
 
-    source = LabPointSourceCone([10., 0., 0.], flux=100., energy=-1.)
+    source = LabPointSourceCone([10., 0., 0.], flux=100. / u.s)
     mirror = MultiLayerMirror(reflFile=string1, testedPolarization=string2,
                               position=np.array([0., 0., 0.]),
                               orientation=rotation1)
     detector = FlatDetector(1., position=np.array([0., 0., 10.]),
                             orientation=rotation2, zoom = np.array([1, 100, 100]))
 
-    photons = source.generate_photons(100)
+    photons = source.generate_photons(100 * u.s)
     photons = mirror(photons)
     photons = detector(photons)
