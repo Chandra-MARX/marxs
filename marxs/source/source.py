@@ -85,7 +85,7 @@ class Source(SimulationSequenceElement):
     Parameters
     ----------
     flux : `~astropy.units.quantity.Quantity` or callable
-         This sets the total flux from a source in
+        This sets the total flux from a source in
         photons/time/area.  Options are:
 
         - quantity: Constant (not Poisson distributed) flux.
@@ -93,8 +93,7 @@ class Source(SimulationSequenceElement):
           returns an array
           of photon emission times between 0 and the total exposure time.
 
-    energy : polarization.
-        - `~astropy.units.quantity.Quantity` of callable or `astropy.table.Table`
+    energy : `~astropy.units.quantity.Quantity` or callable or `~astropy.table.QTable`
 
         This input decides the energy of the emitted photons.
         Possible formats are:
@@ -113,7 +112,7 @@ class Source(SimulationSequenceElement):
           input and return an equal length array of photon energies
           `~astropy.units.quantity.Quantity`.
 
-    polarization : `~astropy.units.quantity.Quantity` or ``None``,  `astropy.table.Table` or callable.
+    polarization : `~astropy.units.quantity.Quantity`, ``None``, `~astropy.table.QTable`, or callable.
         There are several different ways to set the polarization angle of the
         photons for a polarized source. In all cases, the angle is measured
         North through East. (We ignore the special case of a polarized source
@@ -138,7 +137,7 @@ class Source(SimulationSequenceElement):
           equal length that contains the polarization angles as
           `~astropy.units.quantity.Quantity` object.
 
-    geomarea : `astropy.units.Quantity` or ``None``:
+    geomarea : `astropy.units.Quantity` or ``None``
           Geometric opening area of telescope. If ``None`` then the flux must
           be given in photons per time, not per time per unit area.
 

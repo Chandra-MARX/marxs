@@ -156,7 +156,7 @@ the 6.4 keV Fe flourescence line after some polarized feature comes into view at
 Specify the sky position of an astrophysical source
 ===================================================
 
-An astrophysical source in |marxs| must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see :ref:`pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
+An astrophysical source in marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see :ref:`pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
 
 
 The following astropysical sources are included in marxs:
