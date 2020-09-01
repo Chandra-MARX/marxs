@@ -34,6 +34,11 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
+
+- Sources now require input for flux, energy, and polarization as astropy
+  quantities. Any table-like input must not be a astropy `QTable` and flux and
+  polarization values are *densities* not per-bin. [#218]
+
 - The geometry of a class is now defined as a separate object from the new
   `marxs.math.geometry` module. Before, the geometry was backed into the 
   optical components itself which led to significant code duplication. The new

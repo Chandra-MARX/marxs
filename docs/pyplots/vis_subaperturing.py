@@ -46,10 +46,10 @@ for e in gas.elements:
 
 instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp])
 star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
-                          energy=1., flux=1.)
+                          energy=1. * u.keV, flux=1. / u.s / u.cm**2)
 pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
 
-photons = star.generate_photons(4000)
+photons = star.generate_photons(4000 * u.s)
 photons = pointing(photons)
 photons = instrum(photons)
 ind = (photons['probability'] > 0) & (photons['facet'] >=0)

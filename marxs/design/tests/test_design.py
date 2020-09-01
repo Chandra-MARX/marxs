@@ -4,6 +4,7 @@ from scipy.stats import kstest
 import transforms3d
 import pytest
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        RowlandCircleArray,
@@ -19,8 +20,8 @@ class mock_facet(FlatOpticalElement):
     pass
 
 def test_radius_of_photon_shell():
-    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
-    photons = mysource.generate_photons(1000)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
+    photons = mysource.generate_photons(1. * u.ks)
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
@@ -298,8 +299,8 @@ def test_run_photons_through_gas():
     No need to check here that the grating equation works - that's part of the grating tests/
     '''
     # Setup only.
-    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
-    photons = mysource.generate_photons(1000)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
+    photons = mysource.generate_photons(1. * u.ks)
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
     marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))

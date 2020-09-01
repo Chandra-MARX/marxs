@@ -58,13 +58,14 @@ class ThinLens(FlatOpticalElement):
 
     >>> import matplotlib.pyplot as plt
     >>> from astropy.coordinates import SkyCoord
+    >>> import astropy.units as u
     >>> from marxs import source, optics
     >>> mysource = source.PointSource(coords=SkyCoord(30., 30., unit="deg"))
     >>> mypointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
     >>> myslit = optics.RectangleAperture(zoom=2)
     >>> lens = optics.ThinLens(focallength=10,zoom=40)
 
-    >>> photons = mysource.generate_photons(11)
+    >>> photons = mysource.generate_photons(11 * u.s)
     >>> photons = mypointing(photons)
     >>> photons = myslit(photons)
     >>> photons = lens(photons)

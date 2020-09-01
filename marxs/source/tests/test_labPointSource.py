@@ -2,6 +2,7 @@
 import numpy as np
 import transforms3d
 import pytest
+import astropy.units as u
 
 from ..labSource import LabPointSourceCone
 
@@ -17,10 +18,10 @@ def test_photon_generation():
     are all at the sources position.
     '''
     pos = [1., 1., 1.]
-    rate = 10
-    source = LabPointSourceCone(position=pos, flux=rate, energy=5.)
+    rate = 10 / u.s
+    source = LabPointSourceCone(position=pos, flux=rate, energy=5. * u.keV)
 
-    photons = source.generate_photons(1.)
+    photons = source.generate_photons(1. * u.s)
     assert np.all(photons['pos'] == np.ones([10, 4]))
 
 
@@ -32,13 +33,14 @@ def test_directions_range_cone():
 
     # parameters
     pos = [5 * np.random.random(), 5 * np.random.random(), 5 * np.random.random()]
-    rate = 10 * np.random.random()
+    rate = 10 * np.random.random() / u.s
     direction = [5* np.random.random(),5* np.random.random(),5* np.random.random()]
     delta = ((np.pi / 2) * (np.random.random() * 2 - 1))
 
     # run simulation
-    source = LabPointSourceCone(position=pos, half_opening= delta, flux=rate, energy=5., direction = direction)
-    photons = source.generate_photons(1.)
+    source = LabPointSourceCone(position=pos, half_opening=delta, flux=rate,
+                                energy=5. * u.keV, direction = direction)
+    photons = source.generate_photons(1. * u.s)
 
 
     # norm direction

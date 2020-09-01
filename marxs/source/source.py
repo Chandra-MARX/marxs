@@ -21,50 +21,55 @@ from ..math.random import RandomArbitraryPdf
 from .. import __version__ as marxsversion
 
 
-def poisson_process(rate):
+@u.quantity_input
+def poisson_process(rate: (u.s * u.cm**2)**(-1)):
     '''Return a function that generates Poisson distributed times with rate ``rate``.
 
     Parameters
     ----------
-    rate : float
-        Expectation value for the total rate of events in photons / cm**2 / s.
+    rate :  `~astropy.units.quantity.Quantity`
+        Expectation value for the total rate of photons with unit 1 / cm**2 / s.
 
     Returns
     -------
     poisson_rate : function
         Function that generates Poisson distributed times with rate ``rate``.
     '''
-    if not np.isscalar(rate):
+    if not rate.isscalar:
         raise ValueError('"rate" must be scalar.')
 
-    def poisson_rate(exposuretime, geomarea):
+    @u.quantity_input(exposuretime=u.s)
+    def poisson_rate(exposuretime: u.s, geomarea: u.cm**2) -> u.s:
         '''Generate Poisson distributed times.
 
         Parameters
         ----------
-        exposuretime : float
-            Exposure time in sec.
-        geomarea : `astropy.unit.Quantity`
+        exposuretime : `~astropy.units.quantity.Quantity`
+            Exposure time
+        geomarea : `~astropy.units.quantity.Quantity`
             Geometric opening area of telescope
 
         Returns
         -------
-        times : `numpy.ndarray`
+        times :  `~astropy.units.quantity.Quantity`
             Poisson distributed times.
         '''
-        fullrate = rate * geomarea.to(u.cm**2).value
+        fullrate = (rate * geomarea).to(u.s**(-1)).value
         # Make 10 % more numbers then we expect to need, because it's random
-        times = expon.rvs(scale=1./fullrate, size=int(exposuretime * fullrate * 1.1))
+        times = expon.rvs(scale=1./fullrate,
+                          size=int(exposuretime.value * fullrate * 1.1))
         # If we don't have enough numbers right now, add some more.
-        while times.sum() < exposuretime:
+        while (times.sum() * u.s) < exposuretime:
             times = np.hstack([times, expon.rvs(scale=1/fullrate,
-                                                size=int(exposuretime - times.sum() * fullrate * 1.1))])
+                                                size=int((exposuretime.to(u.s).value - times.sum()) * fullrate * 1.1))])
         times = np.cumsum(times)
-        return times[times < exposuretime]
+        return times[times < exposuretime.value] * u.s
     return poisson_rate
+
 
 class SourceSpecificationError(Exception):
     pass
+
 
 class Source(SimulationSequenceElement):
     '''Base class for all photons sources.
@@ -79,88 +84,88 @@ class Source(SimulationSequenceElement):
 
     Parameters
     ----------
-    flux : number or callable This sets the total flux from a source in
-        photons/s/cm^2; the default value is 1 cts/s.  Options are:
+    flux : `~astropy.units.quantity.Quantity` or callable
+        This sets the total flux from a source in
+        photons/time/area.  Options are:
 
-        - number: Constant (not Poisson distributed) flux.
+        - quantity: Constant (not Poisson distributed) flux.
         - callable: Function that takes a total exposure time as input and
           returns an array
           of photon emission times between 0 and the total exposure time.
 
-    energy : number of callable or (2, N) `numpy.ndarray` or `numpy.recarray` or `dict <dict>` or `astropy.table.Table`
+    energy : `~astropy.units.quantity.Quantity` or callable or `~astropy.table.QTable`
 
-        This input decides the energy of the emitted photons;
-        the default value is 1 keV.
+        This input decides the energy of the emitted photons.
         Possible formats are:
 
-        - number: Constant energy.
-        - (2, N) `numpy.ndarray` or object with columns "energy" and "flux"
-          (e.g. `dict <dict>` or `astropy.table.Table`),
-          where "flux" here really is a short form for
-          "flux density" and is given in the units of photons/s/keV.
-          For a (2, N) array the first column is the energy, the
-          second column is the flux density.
+        - polarization.
+        - `~astropy.units.quantity.Quantity`: Constant energy.
+        - `astropy.table.Table`:
           Given this table, the code assumes a piecewise flat spectrum.
           The "energy" values contain the **upper** limit of each bin,
-          the "flux" array the flux density in each bin.
-          The first entry in the "flux" array is ignored, because the lower
+          the "fluxdensity" array the flux density in each bin.
+          The first entry in the "fluxdensity" array is ignored, because the lower
           bound of this bin is undefined.
           The code draws an energy from this spectrum for every photon created.
         - A function or callable object: This option allows for full
           customization. The function must take an array of photon times as
-          input and return an equal length array of photon energies in keV.
+          input and return an equal length array of photon energies
+          `~astropy.units.quantity.Quantity`.
 
-    polarization: contant or ``None``, (2, N) `numpy.ndarray`, `dict <dict>`, `astropy.table.Table` or similar or callable.
+    polarization : `~astropy.units.quantity.Quantity`, ``None``, `~astropy.table.QTable`, or callable.
         There are several different ways to set the polarization angle of the
         photons for a polarized source. In all cases, the angle is measured
         North through East. (We ignore the special case of a polarized source
         exactly on a pole.)
         The default value is ``None`` (unpolarized source).
 
-        - ``None``: An unpolarized source. Every photons is assigned a random
+        - ``None`` : An unpolarized source. Every photons is assigned a random
           polarization.
-        - number: Constant polarization angle for all photons
-          (in degrees).
-        - (2, N) `numpy.ndarray` or object with columns
-          "angle" and "probability" (e.g. `dict <dict>` or
-          `astropy.table.Table`), where "probability" really means "probability
-          density".  The summed probability density will automatically be
-          normalized to one.  For a (2, N) array the first column is the angle,
-          the second column is the probability *density*. Given this table, the
+        - `~astropy.units.quantity.Quantity` :
+          Constant polarization angle for all photons
+        - `~astropy.table.Table` :
+          Table with columns called "angle" and "probabilitydensity".
+          The summed probability density will automatically be
+          normalized to one. Given this table, the
           code assumes a piecewise constant probability density. The "angle"
-          values contain the **upper** limit of each bin, the "probability"
-          array the probability density in this bin. The first entry in the
-          "probability" array is ignored, because the lower bound of this bin
+          values contain the **upper** limit of each bin. The first entry in the
+          "probabilitydenisty" array is ignored, because the lower bound of this bin
           is undefined.
         - a callable (function or callable object): This
           option allows full customization.  The function is called with two
           arrays (time and energy values) as input and must return an array of
-          equal length that contains the polarization angles in degrees.
+          equal length that contains the polarization angles as
+          `~astropy.units.quantity.Quantity` object.
 
-    geomarea : `astropu.units.Quantity` Geometric opening area of
-          telescope. Default is :math:`1 cm^2`.
+    geomarea : `astropy.units.Quantity` or ``None``
+          Geometric opening area of telescope. If ``None`` then the flux must
+          be given in photons per time, not per time per unit area.
 
     '''
-    def __init__(self, **kwargs):
-        self.energy = kwargs.pop('energy', 1.)
-        self.flux = kwargs.pop('flux', 1.)
-        self.polarization = kwargs.pop('polarization', None)
-        self.geomarea = kwargs.pop('geomarea', 1. * u.cm**2)
+    def __init__(self, energy=1*u.keV, flux=1 / u.s / u.cm**2,
+                 polarization=None, geomarea=1*u.cm**2, **kwargs):
+        self.energy = energy
+        self.flux = flux
+        self.polarization = polarization
+        self.geomarea = 1 if geomarea is None else geomarea
 
         super(Source, self).__init__(**kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.generate_photons(*args, **kwargs)
 
-    def generate_times(self, exposuretime):
+    @u.quantity_input()
+    def generate_times(self, exposuretime: u.s):
         if callable(self.flux):
             return self.flux(exposuretime, self.geomarea)
-        elif np.isscalar(self.flux):
-            return np.arange(0, exposuretime, 1./(self.flux * self.geomarea.to(u.cm**2).value))
+        elif hasattr(self.flux, 'isscalar') and self.flux.isscalar:
+            return np.arange(0, exposuretime.to(u.s).value,
+                             1. / (self.flux * self.geomarea * u.s).decompose()) * u.s
         else:
             raise SourceSpecificationError('`flux` must be a quantity or a callable.')
 
-    def generate_energies(self, t):
+    @u.quantity_input()
+    def generate_energies(self, t: u.s) -> u.keV:
         n = len(t)
         # function
         if callable(self.energy):
@@ -169,23 +174,23 @@ class Source(SimulationSequenceElement):
                 raise SourceSpecificationError('`energy` has to return an array of same size as input time array.')
             else:
                 return en
-        # constant energy
-        elif np.isscalar(self.energy):
-            return np.ones(n) * self.energy
-        # 2 * n numpy array
-        elif hasattr(self.energy, 'shape') and (self.energy.shape[0] == 2):
-            rand = RandomArbitraryPdf(self.energy[0, :], self.energy[1, :])
-            return rand(n)
-        # np.recarray or astropy.table.Table
-        elif hasattr(self.energy, '__getitem__'):
-            rand = RandomArbitraryPdf(self.energy['energy'], self.energy['flux'])
-            return rand(n)
+        # astropy.table.QTable
+        elif hasattr(self.energy, 'columns'):
+            x = self.energy['energy'].to(u.keV).value
+            y = (self.energy['fluxdensity'][1:] * np.diff(self.energy['energy'])).to((u.s * u.cm**2)**(-1)).value
+            y = np.hstack(([0], y))
+            rand = RandomArbitraryPdf(x, y)
+            return rand(n) * u.keV
+        # scalar quantity
+        elif hasattr(self.energy, 'isscalar') and self.energy.isscalar:
+            return np.ones(n) * self.energy.to(u.keV,
+                                               equivalencies=u.spectral())
         # anything else
         else:
-            raise SourceSpecificationError('`energy` must be number, function, 2*n array or have fields "energy" and "flux".')
+            raise SourceSpecificationError('`energy` must be Quantity, function, or have columns "energy" and "fluxdensity".')
 
-
-    def generate_polarization(self, times, energies):
+    @u.quantity_input()
+    def generate_polarization(self, times: u.s, energies: u.keV) -> u.rad:
         n = len(times)
         # function
         if callable(self.polarization):
@@ -194,51 +199,58 @@ class Source(SimulationSequenceElement):
                 raise SourceSpecificationError('`polarization` has to return an array of same size as input time and energy arrays.')
             else:
                 return pol
-        elif np.isscalar(self.polarization):
-            return np.ones(n) * self.polarization
-        # 2 * n numpy array
-        elif hasattr(self.polarization, 'shape') and (self.polarization.shape[0] == 2):
-            rand = RandomArbitraryPdf(self.polarization[0, :], self.polarization[1, :])
-            return rand(n)
-        # np.recarray or astropy.table.Table
-        elif hasattr(self.polarization, '__getitem__'):
-            rand = RandomArbitraryPdf(self.polarization['angle'], self.polarization['probability'])
-            return rand(n)
         elif self.polarization is None:
-            return np.random.uniform(0, 2 * np.pi, n)
+            return np.random.uniform(0, 2 * np.pi, n) * u.rad
+        # astropy.table.QTable
+        elif hasattr(self.polarization, 'columns'):
+            x = self.polarization['angle'].to(u.rad).value
+            y = (self.polarization['probabilitydensity'][1:] * np.diff(self.polarization['angle'])).to(u.dimensionless_unscaled).value
+            y = np.hstack(([0], y))
+            rand = RandomArbitraryPdf(x, y)
+            return rand(n) * u.rad
+        # scalar quantity
+        elif hasattr(self.polarization, 'isscalar') and self.polarization.isscalar:
+            return np.ones(n) * self.polarization
         else:
             raise SourceSpecificationError('`polarization` must be number (angle), callable, None (unpolarized), 2.n array or have fields "angle" (in rad) and "probability".')
 
     def generate_photon(self):
         raise NotImplementedError
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input()
+    def generate_photons(self, exposuretime: u.s):
         '''Central function to generate photons.
 
-        Calling this function generates a a photon table according to the `flux`, `energy`,
-        and `polarization` of this source. The number of photons depends on the total
-        exposure time, which is a parameter of this function. Depending on the setting for
-        `flux` the photons could be distributed equally over the interval 0..exposuretime
-        or follow some other distribution.
+        Calling this function generates a photon table according to
+        the `flux`, `energy`, and `polarization` of this source. The
+        number of photons depends on the total exposure time, which is
+        a parameter of this function. Depending on the setting for
+        `flux` the photons could be distributed equally over the
+        interval 0..exposuretime or follow some other distribution.
 
         Parameters
         ----------
-        exposuretime : float
-            Total exposure time in seconds.
+        exposuretime : `astropy.quantity.Quantity`
+            Total exposure time.
 
         Returns
         -------
         photons : `astropy.table.Table`
             Table with photon properties.
+
         '''
         times = self.generate_times(exposuretime)
         energies = self.generate_energies(times)
         pol = self.generate_polarization(times, energies)
         n = len(times)
-        photons = Table([times, energies, pol, np.ones(n)],
+        photons = Table([times.to(u.s).value,
+                         energies.to(u.keV).value,
+                         pol.to(u.rad).value,
+                         np.ones(n)],
                         names=['time', 'energy', 'polangle', 'probability'])
         photons.meta['EXTNAME'] = 'EVENTS'
-        photons.meta['EXPOSURE'] = (exposuretime, 'total exposure time [s]')
+        photons.meta['EXPOSURE'] = (exposuretime.to(u.s),
+                                    'total exposure time [s]')
 
         #photons.meta['DATE-OBS'] =
         photons.meta['CREATOR'] = 'MARXS - Version {0}'.format(marxsversion)
@@ -306,6 +318,7 @@ class AstroSource(Source):
         photons['dec'].unit = u.degree
         photons.meta['COORDSYS'] = ('ICRS', 'Type of coordinate system')
 
+
 class PointSource(AstroSource):
     '''Astrophysical point source.
 
@@ -318,7 +331,8 @@ class PointSource(AstroSource):
     def __init__(self, **kwargs):
         super(PointSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         photons = super(PointSource, self).generate_photons(exposuretime)
         self.set_pos(photons, self.coords)
         return photons
@@ -345,7 +359,8 @@ class RadialDistributionSource(AstroSource):
         self.func_par = kwargs.pop('func_par', None)
         super(RadialDistributionSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input
+    def generate_photons(self, exposuretime: u.s):
         '''Photon positions are generated in a frame that is centered on the
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
@@ -361,6 +376,7 @@ class RadialDistributionSource(AstroSource):
         self.set_pos(photons, origin_coord)
 
         return photons
+
 
 class SphericalDiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
@@ -392,6 +408,7 @@ class SphericalDiskSource(RadialDistributionSource):
         u = np.random.rand(n)
         return np.arccos(np.cos(self.func_par[1]) * (1. - u) + u * np.cos(self.func_par[0]))
 
+
 class DiskSource(RadialDistributionSource):
     '''Astrophysical source with the shape of a circle or ring.
 
@@ -412,6 +429,7 @@ class DiskSource(RadialDistributionSource):
                           np.random.rand(n) * (self.func_par[0]**2 - self.func_par[1]**2))
         super(DiskSource, self).__init__(**kwargs)
 
+
 class GaussSource(AstroSource):
     '''Astrophysical source with a Gaussian brightness profile.
 
@@ -427,7 +445,8 @@ class GaussSource(AstroSource):
         self.sigma = kwargs.pop('sigma')
         super(GaussSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input()
+    def generate_photons(self, exposuretime: u.s):
         '''Photon positions are generated in a frame that is centered on the
         coordinates set in ``coords``, then they get transformed into the global sky
         system.
@@ -462,7 +481,8 @@ class SymbolFSource(AstroSource):
         self.size = kwargs.pop('size', 1. * u.degree)
         super(SymbolFSource, self).__init__(**kwargs)
 
-    def generate_photons(self, exposuretime):
+    @u.quantity_input()
+    def generate_photons(self, exposuretime: u.s):
         photons = super(SymbolFSource, self).generate_photons(exposuretime)
         n = len(photons)
         elem = np.random.choice(3, size=n)

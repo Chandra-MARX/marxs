@@ -1,5 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+import astropy.units as u
 from ..labSource import FarLabPointSource as LabSource
 
 
@@ -8,11 +9,12 @@ def test_photon_generation():
     the starting positions of the photons are within the aperture.
     '''
     pos = [1., 0., 0.]
-    rate = 10
+    rate = 10 / u.s
     center = [0., 0.5, 0.]
-    source = LabSource(pos, flux=rate, energy=5., position = center, zoom = [1., 1., 2.8])
+    source = LabSource(pos, flux=rate, energy=5. * u.keV,
+                       position = center, zoom = [1., 1., 2.8])
 
-    photons = source.generate_photons(1.)
+    photons = source.generate_photons(1. * u.s)
     for i in range (0, 10):
         assert photons['pos'][i][1] >= -0.5
         assert photons['pos'][i][1] <= 1.5

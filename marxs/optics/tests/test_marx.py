@@ -10,6 +10,7 @@ and fixed.
 import numpy as np
 from scipy.stats import ks_2samp
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 import marxs
 import marxs.source
@@ -20,8 +21,8 @@ def test_noexplicettimedependence():
     mirror shell 0, which turned out to be due to ``sorted_index`` being a int,
     while marx expects an *unsigned* int.
     '''
-    mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"), flux=1., energy=1.)
-    photons = mysource.generate_photons(1000)
+    mysource = marxs.source.PointSource(coords=SkyCoord(30., 30., unit="deg"))
+    photons = mysource.generate_photons(1 * u.ks)
     mypointing = marxs.source.FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing(photons)
 

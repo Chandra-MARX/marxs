@@ -13,7 +13,7 @@ def test_reference_coordiante_system():
     '''Usually, rays that are on-axis will come in along the x-axis.
     Test a simulations with a different coordinate system.'''
     s = PointSource(coords=SkyCoord(12., 34., unit='deg'))
-    photons = s.generate_photons(5)
+    photons = s.generate_photons(5 * u.s)
     point_x = FixedPointing(coords=SkyCoord(12., 34., unit='deg'))
     p_x = point_x(photons.copy())
     assert np.allclose(p_x['dir'].data[:, 0], -1.)
@@ -28,7 +28,7 @@ def test_reference_coordiante_system():
 def test_polarization_direction():
     '''Test that a FixedPointing correctly assigns linear polarization vectors.'''
     s = PointSource(coords=SkyCoord(187.4, 0., unit='deg'))
-    photons = s.generate_photons(5)
+    photons = s.generate_photons(5 * u.s)
     photons['polangle'] = (np.array([0., 90., 180., 270., 45.])) * u.deg.to(photons['polangle'].unit)
     point_x = FixedPointing(coords=SkyCoord(187.4, 0., unit='deg'))
     p_x = point_x(photons.copy())
@@ -51,7 +51,7 @@ def test_polarization_direction():
     # Photons pointing east with the same RA will have parallel polarization vectors
     # This is true for all pointing directions.
     s = PointSource(coords=SkyCoord(22.5, 0., unit='deg'))
-    photons = s.generate_photons(5)
+    photons = s.generate_photons(5 * u.s)
     photons['dec'] = [67., 23., 0., -45.454, -67.88]
     photons['polangle'] = (90. * u.deg).to(photons['polangle'].unit)
     point = FixedPointing(coords=SkyCoord(94.3, 23., unit='deg'))
@@ -106,7 +106,7 @@ def test_jitter():
 def test_polarization_perpendicular(pointing):
     '''Consistency: Polarization vector must always be perpendicular to dir.'''
     s = PointSource(coords=SkyCoord(0., 0., unit='deg'))
-    photons = s.generate_photons(10)
+    photons = s.generate_photons(10 * u.s)
     photons['ra'] = np.random.uniform(0, 360., len(photons))
     # Exclude +-90 deg, because not handling poles well
     photons['dec'] = np.random.uniform(-89.9, 89.9, len(photons))

@@ -58,9 +58,9 @@ def test_resolvingpower_consistency():
                                            'orientation': blazemat,
                                            'order_selector': None},
                             )
-    star = PointSource(coords=SkyCoord(23., 45., unit="degree"), flux=5.)
+    star = PointSource(coords=SkyCoord(23., 45., unit="degree"), flux=5. / u.s / u.cm**2)
     pointing = FixedPointing(coords=SkyCoord(23., 45., unit='deg'))
-    photons = star.generate_photons(exposuretime=200)
+    photons = star.generate_photons(exposuretime=200 * u.s)
     p = pointing(photons)
     p = uptomirror(p)
 

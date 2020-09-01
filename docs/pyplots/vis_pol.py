@@ -1,6 +1,7 @@
 import numpy as np
 from transforms3d import euler
 from astropy.io import ascii
+import astropy.units as u
 import matplotlib.pyplot as plt
 
 from marxs.source import LabPointSourceCone
@@ -34,7 +35,7 @@ for i, angle in enumerate(angles):
     light.position = np.dot(rotmat, light_pos)
     light.dir = np.dot(rotmat, light_dir)
     m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
-    rays = light(10000)
+    rays = light(10000 * u.s)
     rays = experiment(rays)
     n_detected[i] = rays['probability'].sum()
 

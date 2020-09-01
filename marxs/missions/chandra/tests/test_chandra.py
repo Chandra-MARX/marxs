@@ -34,12 +34,12 @@ def test_ditherpattern():
 
 def test_stationary_pointing():
     '''Constant pointing can also be realized through a Lissajous with amplitude=0.'''
-    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), energy=1., flux=1.)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
     fixedpointing = FixedPointing(coords=SkyCoord(30., 30., unit=u.degree), roll=15. * u.degree)
     lisspointing = chandra.LissajousDither(coords=SkyCoord(30., 30., unit=u.degree),
                                            roll=15. * u.degree, DitherAmp=np.zeros(3)*u.degree)
 
-    photons = mysource.generate_photons(2)
+    photons = mysource.generate_photons(2 * u.s)
     fixedphotons = fixedpointing(photons.copy())
     lissphotons = lisspointing(photons.copy())
 
@@ -53,12 +53,12 @@ def test_detector_coordsystems():
     The most obvious one is the size of the pixel - currently the number of pixels times
     the pixel size does now match the length of the chip precisely.
     '''
-    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"), energy=1., flux=1.)
+    mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
     mypointing = chandra.LissajousDither(coords=SkyCoord(30., 30., unit='deg'), roll=15. * u.degree)
     # marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
     acis = chandra.ACIS(chips=[0,1,2,3], aimpoint=chandra.AIMPOINTS['ACIS-I'])
 
-    photons = mysource.generate_photons(5)
+    photons = mysource.generate_photons(5 * u.s)
     photons = mypointing(photons)
     # We want reproducible direction, so don't use mirror, but set direction by hand
     # photons = marxm(photons)

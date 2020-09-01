@@ -104,14 +104,14 @@ Another change compared to the 2d plotting is that we generate a lot fewer photo
   
   >>> import numpy as np
   >>> from astropy.coordinates import SkyCoord
+  >>> import astropy.units as u
   >>> from marxs import source, simulator
   >>> # object to save intermediate photons positions after every step of the simulaion
   >>> pos = simulator.KeepCol('pos')
   >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp], postprocess_steps=[pos])
-  >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
-  ...                           energy=1., flux=1.)
+  >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'))
   >>> pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
-  >>> photons = star.generate_photons(100)
+  >>> photons = star.generate_photons(100 * u.s)
   >>> photons = pointing(photons)
   >>> photons = instrum(photons)
   >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
