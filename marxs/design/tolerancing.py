@@ -21,7 +21,7 @@ __all__ = ['oneormoreelements',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
            'CaptureResAeff',
-           'generate_6d_wigglelist',
+           'generate_6d_wigglelist', 'reset_6d',
            'select_1dof_changed',
            'plot_wiggle', 'load_and_plot',
            ]
@@ -497,6 +497,10 @@ def generate_6d_wigglelist(trans, rot,
     changeindividual = [dict(zip(names, row)) for row in changeindividual]
 
     return changeglobal, changeindividual
+
+
+reset_6d = {'dx': 0., 'dy': 0., 'dz': 0., 'rx': 0., 'ry': 0., 'rz': 0.}
+'''The neutral element for a 6d wigglelist. Can be used to reset uncertainties.'''
 
 
 def select_1dof_changed(table, par,
