@@ -141,13 +141,15 @@ def test_poisson_process():
 
     It turns out that this is hard to test properly, without reimplemention the
     scipy version.
+
+    But at least we can test consistency of the unit handling.
     '''
     p = poisson_process(20. / (u.s * u.cm**2))
     times = p(100. * u.s, 1. * u.cm**2).value
     assert (len(times) > 1500) and (len(times) < 2500)
     assert (times[-1] > 99.) and (times[-1] < 100.)
 
-    times = p(100. * u.s, 10. * u.cm**2).value
+    times = p(.1 * u.ks, 1000. * u.mm**2).value
     assert (len(times) > 18000) and (len(times) < 22000)
     assert (times[-1] > 99.) and (times[-1] < 100.)
 

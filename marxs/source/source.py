@@ -54,16 +54,16 @@ def poisson_process(rate: (u.s * u.cm**2)**(-1)):
         times :  `~astropy.units.quantity.Quantity`
             Poisson distributed times.
         '''
-        fullrate = (rate * geomarea).to(u.s**(-1)).value
+        fullrate = rate * geomarea
         # Make 10 % more numbers then we expect to need, because it's random
-        times = expon.rvs(scale=1./fullrate,
-                          size=int(exposuretime.value * fullrate * 1.1))
+        times = expon.rvs(scale=1./fullrate.to(1 / u.s),
+                          size=int((exposuretime * fullrate * 1.1).to(u.dimensionless_unscaled)))
         # If we don't have enough numbers right now, add some more.
         while (times.sum() * u.s) < exposuretime:
-            times = np.hstack([times, expon.rvs(scale=1/fullrate,
-                                                size=int((exposuretime.to(u.s).value - times.sum()) * fullrate * 1.1))])
-        times = np.cumsum(times)
-        return times[times < exposuretime.value] * u.s
+            times = np.hstack([times, expon.rvs(scale=1/fullrate.to(1 / u.s),
+                                                size=int(((exposuretime - times.sum() * u.s) * fullrate * 1.1).to(u.dimensionless_unscaled)))])
+        times = np.cumsum(times) * u.s
+        return times[times < exposuretime]
     return poisson_rate
 
 
@@ -177,7 +177,7 @@ class Source(SimulationSequenceElement):
         # astropy.table.QTable
         elif hasattr(self.energy, 'columns'):
             x = self.energy['energy'].to(u.keV).value
-            y = (self.energy['fluxdensity'][1:] * np.diff(self.energy['energy'])).to((u.s * u.cm**2)**(-1)).value
+            y = (self.energy['fluxdensity'][1:]).to((u.s * u.cm**2 * u.keV)**(-1)).value
             y = np.hstack(([0], y))
             rand = RandomArbitraryPdf(x, y)
             return rand(n) * u.keV
@@ -204,8 +204,7 @@ class Source(SimulationSequenceElement):
         # astropy.table.QTable
         elif hasattr(self.polarization, 'columns'):
             x = self.polarization['angle'].to(u.rad).value
-            y = (self.polarization['probabilitydensity'][1:] * np.diff(self.polarization['angle'])).to(u.dimensionless_unscaled).value
-            y = np.hstack(([0], y))
+            y = (self.polarization['probabilitydensity']).to(1/u.rad).value
             rand = RandomArbitraryPdf(x, y)
             return rand(n) * u.rad
         # scalar quantity

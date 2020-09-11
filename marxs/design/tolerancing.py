@@ -21,7 +21,7 @@ __all__ = ['oneormoreelements',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
            'CaptureResAeff',
-           'generate_6d_wigglelist',
+           'generate_6d_wigglelist', 'reset_6d',
            'select_1dof_changed',
            'plot_wiggle', 'load_and_plot',
            ]
@@ -53,9 +53,9 @@ def wiggle(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
     e : `marxs.simulator.Parallel` or list of those elements
         Elements where uncertainties will be set
     dx, dy, dz : float
-        accuracy of grating positioning in x, y, z (in mm) - Gaussian sigma, not FWHM!
+        accuracy of positioning in x, y, z (in mm) - Gaussian sigma, not FWHM!
     rx, ry, rz : float
-        accuracy of grating positioning. Rotation around x, y, z (in rad) - Gaussian sigma, not FWHM!
+        accuracy of positioning. Rotation around x, y, z (in rad) - Gaussian sigma, not FWHM!
     '''
     e.elem_uncertainty = genfacun(len(e.elements), [dx, dy, dz], [rx, ry, rz])
     e.generate_elements()
@@ -497,6 +497,10 @@ def generate_6d_wigglelist(trans, rot,
     changeindividual = [dict(zip(names, row)) for row in changeindividual]
 
     return changeglobal, changeindividual
+
+
+reset_6d = {'dx': 0., 'dy': 0., 'dz': 0., 'rx': 0., 'ry': 0., 'rz': 0.}
+'''The neutral element for a 6d wigglelist. Can be used to reset uncertainties.'''
 
 
 def select_1dof_changed(table, par,
