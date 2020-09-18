@@ -243,4 +243,4 @@ def test_spectral_density():
         photons = [s.generate_photons(1e5 * u.s) for s in [s1, s2]]
         hists = [np.histogram(p['energy'], bins=np.arange(1, 3, .1))
                  for p in photons]
-        assert np.allclose(hists[0][0], hists[1][0], rtol=0.05)
+        assert np.allclose(hists[0][0], hists[1][0], rtol=0.14)
