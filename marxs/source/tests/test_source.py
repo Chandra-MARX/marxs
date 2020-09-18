@@ -221,3 +221,26 @@ def test_disk_distribution(diskclass, diskpar, n_expected):
     # better: Test number of expected photons matches
     # Allow large variation so that this is not triggered by chance
     assert np.isclose(n.mean(), n_expected, rtol=.2)
+
+
+def test_spectral_density():
+    '''Two tests that check that spectral density units are treated correctly'''
+    spec1 = QTable({'energy': [1, 2, 3] * u.keV,
+                    'fluxdensity': [1, 1, 1.]  / u.s / u.cm**2 / u.keV})
+    spec2 = QTable({'energy': [1, 1.5, 2, 2.5, 3] * u.keV,
+                    'fluxdensity': [1, 1, 1, 1., 1.]  / u.s / u.cm**2 / u.keV})
+    spec3 = QTable({'energy': [1, 2, 3] * u.keV,
+                   'fluxdensity': [1, 1, 2.]  / u.s / u.cm**2 / u.keV})
+    spec4 = QTable({'energy': [1, 1.5, 2, 2.5, 3] * u.keV,
+                    'fluxdensity': [1, 1, 1, 2., 2.]  / u.s / u.cm**2 / u.keV})
+
+    for sp1, sp2 in zip([spec1, spec3], [spec2, spec4]):
+        s1 = PointSource(coords=SkyCoord(-123., -43., unit=u.deg),
+                         energy=sp1, flux=1/u.s/u.cm**2)
+        s2 = PointSource(coords=SkyCoord(-123., -43., unit=u.deg),
+                         energy=sp2, flux=1/u.s/u.cm**2)
+
+        photons = [s.generate_photons(1e5 * u.s) for s in [s1, s2]]
+        hists = [np.histogram(p['energy'], bins=np.arange(1, 3, .1))
+                 for p in photons]
+        assert np.allclose(hists[0][0], hists[1][0], rtol=0.05)
