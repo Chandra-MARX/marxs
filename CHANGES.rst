@@ -1,3 +1,21 @@
+1.3 (unreleased)
+----------------
+
+New Features
+^^^^^^^^^^^^
+
+
+API Changes
+^^^^^^^^^^^
+
+
+Bug fixes
+^^^^^^^^^
+
+Other changes and additions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 1.2 (06-Nov-2020)
 -----------------
 
@@ -64,7 +82,7 @@ API Changes
   for subclasses). [#202]
 
 - `~marxs.optics.RandomGaussianScatter` and `~marxs.optics.Scatter` now expect
-  angular quantities instead of plai floats. [#216]
+  angular quantities instead of plain floats. [#216]
 
 
 Bug fixes
