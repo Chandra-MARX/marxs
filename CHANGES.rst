@@ -12,6 +12,9 @@ API Changes
 Bug fixes
 ^^^^^^^^^
 
+- `marxs.missions.mitsnl.catsupportbars` no longer throws an exception if
+  no photon hit a facet before. [#221] 
+
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
