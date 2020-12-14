@@ -110,3 +110,14 @@ def test_efficiency_table_wrong_format():
     '''Try to load a datafile with mission rows.'''
     with pytest.raises(DataFileFormatException):
         efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency_broken.csv'), k=2)
+
+
+def test_catsupportbars():
+   photons = generate_test_photons(5)
+   p = catsupportbars(photons.copy())
+   assert np.all(p['probability'] == 0)
+
+   photons['facet'] = np.arange(-1, 4)
+   p = catsupportbars(photons)
+   assert np.all(p['probability'][1:] == 1)
+   assert p['probability'][0] == 0

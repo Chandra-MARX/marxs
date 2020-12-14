@@ -34,6 +34,7 @@ __all__ = ['l1transtab', 'l1_order_selector',
            'L2Diffraction',
            'CATL1L2Stack',
            'NonParallelCATGrating',
+           'catsupportbars',
            ]
 
 d = 0.0002
@@ -208,6 +209,7 @@ class QualityFactor(FlatOpticalElement):
         return {'probability': self.factor**(photons['order'][intersect]**2)}
         return photons
 
+
 def check_lx_dims(lx_dims):
     '''Check that dimensions in l1_dims or l2_dims make sense'''
     if not (lx_dims['barwidth'] < lx_dims['period']):
@@ -362,7 +364,10 @@ def catsupportbars(photons):
 
     We might want to call this L3 support ;-)
     '''
-    photons['probability'][photons['facet'] < 0] = 0.
+    if 'facet' in photons.colnames:
+        photons['probability'][photons['facet'] < 0] = 0.
+    else:
+        photons['probability'] = 0.
     return photons
 
 
