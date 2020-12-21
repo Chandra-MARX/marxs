@@ -16,6 +16,7 @@ from ..tolerancing import (oneormoreelements,
                            select_1dof_changed,
                            plot_wiggle, load_and_plot,
                            run_tolerances_for_energies,
+                           run_tolerances_for_energies2,
                            )
 from ...optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
                        RectangleAperture, ThinLens, FlatDetector)
@@ -222,10 +223,11 @@ def test_runtolerances():
     assert 'meanorder' not in parameters[0]
 
 def test_run_tolerances_for_energies():
-    '''For this test, we need to define an instrument. The instrument is not very
-    realistic (an X-ray mirror with r=0 won't work), but the point here is just to
-    check the tolerancing for several energies. To make that calculation reasonably
-    fast, we need to keep the number of elements in the optical system small.
+    '''For this test, we need to define an instrument. The instrument is not
+    very realistic (an X-ray mirror with r=0 won't work), but the
+    point here is just to check the tolerancing for several
+    energies. To make that calculation reasonably fast, we need to
+    keep the number of elements in the optical system small.
     '''
     coords = SkyCoord(12. * u.deg, -45 * u.deg)
     src = PointSource(coords=coords)
@@ -259,6 +261,43 @@ def test_run_tolerances_for_energies():
     assert np.all(res['R'].data[:, 0] == 0)
     assert not np.any(np.isfinite(res['R'].data[:, 2]))
     assert res['R'].data[2, 1] > res['R'].data[0, 1]
+
+
+def test_run_tolerances_for_energies2():
+    '''Same, as above, but with different calling sequence
+    '''
+    coords = SkyCoord(12. * u.deg, -45 * u.deg)
+    src = PointSource(coords=coords)
+    pnt = FixedPointing(coords=coords)
+    aper = RectangleAperture(position=[5000, 0, 0], zoom=[1, 10, 10])
+    lens = ThinLens(position=[4900, 0, 0], zoom=[1, 10, 10], focallength=4900)
+    grat = FlatGrating(d=.002, order_selector=OrderSelector([0, 1]),
+                       position=[4800, 0, 0], zoom=[1, 10, 10])
+    det = FlatDetector(zoom=[1, 100, 100])
+    instrum = Sequence(elements=[pnt, aper, lens, grat, det])
+
+    parameters = [{'period_mean': 0.003, 'period_sigma': 0.},
+                  {'period_mean': 0.004, 'period_sigma': 0.}]
+
+    res = run_tolerances_for_energies2(src, [.1, 1] * u.keV,
+                                       instrum, FlatGrating,
+                                       varyperiod,
+                                       parameters,
+                                       CaptureResAeff(orders=[0, 1, 2]),
+                                       reset={'period_mean': 0.005,
+                                              'period_sigma': 0.},
+                                       t_source=1. * u.ks)
+    # Check the reset worked
+    assert grat._d == 0.005
+    # Check both energy have been calculated
+    assert 1 in res['energy']
+    assert .1 in res['energy']
+    assert len(res) == 4
+    # check results are reasonable
+    assert np.all(res['R'].data[:, 0] == 0)
+    assert not np.any(np.isfinite(res['R'].data[:, 2]))
+    assert res['R'].data[2, 1] > res['R'].data[0, 1]
+
 
 def test_capture_res_aeff():
     '''Test the captures res/aeff class.
