@@ -17,7 +17,7 @@ from ..analysis.gratings import (resolvingpower_from_photonlist,
 from ..analysis.gratings import AnalysisError
 
 __all__ = ['oneormoreelements',
-           'wiggle', 'moveglobal', 'moveindividual', 'movelem',
+           'wiggle', 'moveglobal', 'moveindividual', 'moveelem',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
            'CaptureResAeff',
