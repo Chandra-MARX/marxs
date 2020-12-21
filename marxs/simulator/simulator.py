@@ -99,6 +99,48 @@ class BaseContainer(SimulationSequenceElement):
                 a += e.elements_of_class(cls, subclass_ok)
         return a
 
+
+    def first_of_class_top_level(self, cls, subclass_ok=False):
+        '''Return the index of the first sub-element that has ``cls`` in it.
+
+        This walks the hiracy of `marxs.simulator.Sequence` and
+        `marxs.simulator.Parallel` objects and returns the index of the
+        first sub-element that contains a certain class.
+
+        Typically, this function is used to study and instrument with small
+        modifications. If e.g. only the detector are changed, we might want to
+        run a simulation up to the detectors, save te rays and then try out
+        different detector combinations without rerunning the simulations for
+        all earlier steps. This methid can help to identify the step that
+        contains the detectors.
+
+        Parameters
+        ----------
+        cls : class
+            The class searched for, e.g. `marxs.optics.FlatDetector` to find all
+            detectors.
+        subclass_ok : bool
+            Controls if subclasses of `cls` count as match.
+
+        Returns
+        -------
+        out : int or None
+            index for the first element in ``self.elements`` that is or contains
+            an objects of class ``cls``. If none is found, the method return
+            ``None``.
+        '''
+        for i, e in enumerate(self.elements):
+            if subclass_ok:
+                compfunc = lambda a, b: isinstance(a, b)
+            else:
+                compfunc = lambda a, b: type(a) == b
+            if compfunc(e, cls):
+                return i
+            elif hasattr(e, 'elements_of_class') and len(e.elements_of_class(cls, subclass_ok)) > 0:
+                return i
+        return None
+
+
 class Sequence(BaseContainer):
     '''A `Sequence` is a container that summarizes several optical elements.
 
