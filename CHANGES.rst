@@ -4,6 +4,12 @@
 New Features
 ^^^^^^^^^^^^
 
+- `marxs.simulator.Parallel` and `marxs.simulator.Sequence` now have a
+  ``first_of_class_top_level`` method to help find certain subelements. [#222]
+
+- Added `marxs.design.tolerancing.run_tolerances_for_energies2` is similar to
+  `marxs.design.tolerancing.run_tolerances_for_energies`, but with a
+  simplified interface. [#222]
 
 API Changes
 ^^^^^^^^^^^
