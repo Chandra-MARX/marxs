@@ -9,7 +9,7 @@ from astropy.coordinates import SkyCoord
 from astropy.utils.data import get_pkg_data_filename
 
 from ..tolerancing import (oneormoreelements,
-                           wiggle, moveglobal, moveindividual,
+                           wiggle, moveglobal, moveindividual, moveelem,
                            varyperiod, varyorderselector, varyattribute,
                            run_tolerances, CaptureResAeff,
                            generate_6d_wigglelist,
@@ -112,6 +112,15 @@ def test_moveelements_rotate():
     moveindividual(g2, rz=-1, ry=.2)
     assert not np.allclose(np.stack([e.pos4d for e in g1.elements]),
                            np.stack([e.pos4d for e in g2.elements]))
+
+
+def test_moveelem():
+    '''Move an individual element'''
+    det = FlatDetector(zoom=[1, 100, 100])
+    assert det.geometry['center'][2] == 0
+    moveelem(det, dz=5)
+    assert det.geometry['center'][2] == 5
+    assert np.all(det.geometry.pos4d[:3, :3] == np.eye(3) * [1, 100, 100])
 
 
 def test_wiggle():

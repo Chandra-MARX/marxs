@@ -17,7 +17,7 @@ from ..analysis.gratings import (resolvingpower_from_photonlist,
 from ..analysis.gratings import AnalysisError
 
 __all__ = ['oneormoreelements',
-           'wiggle', 'moveglobal', 'moveindividual',
+           'wiggle', 'moveglobal', 'moveindividual', 'movelem',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
            'CaptureResAeff',
@@ -103,6 +103,36 @@ def moveindividual(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
                                           euler.euler2mat(rx, ry, rz, 'sxyz'),
                                           np.ones(3))] * len(e.elements)
     e.generate_elements()
+
+
+
+@oneormoreelements
+def moveelem(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
+    '''Move and rotate a marxs element around principal axes.
+
+    Unlike `~marxs.design.tolerancing.moveglobal` this does not work on a
+    `~marxs.simulator.Parallel` object, which is a container holding other
+    elements, but it moves just one specific element itself (e.g. a single
+    detector).
+
+    To make it easier to return the element to its original position,
+    the original ``pos4d`` matrix of the element is stored as ``pos4d_orig``.
+
+    Parameters
+    ----------
+    e :`marxs.optics.base.OpticalElement` or list of those elements
+        Elements where uncertainties will be set
+    dx, dy, dz : float
+        translation in x, y, z (in mm)
+    rx, ry, rz : float
+        Rotation around x, y, z (in rad)
+    '''
+    if not hasattr(e.geometry, 'pos4d_orig'):
+        e.geometry.pos4d_orig = e.geometry.pos4d.copy()
+    move = affines.compose([dx, dy, dz],
+                           euler.euler2mat(rx, ry, rz, 'sxyz'),
+                           np.ones(3))
+    e.geometry.pos4d = move @ e.geometry.pos4d_orig
 
 
 @oneormoreelements
