@@ -10,14 +10,14 @@ from transforms3d import affines, euler
 from astropy.table import Table
 from astropy import table
 import astropy.units as u
-from ..simulator import Parallel
+from ..simulator import Parallel, Sequence
 from .uncertainties import generate_facet_uncertainty as genfacun
 from ..analysis.gratings import (resolvingpower_from_photonlist,
                                  effectivearea_from_photonlist)
 from ..analysis.gratings import AnalysisError
 
 __all__ = ['oneormoreelements',
-           'wiggle', 'moveglobal', 'moveindividual',
+           'wiggle', 'moveglobal', 'moveindividual', 'moveelem',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
            'CaptureResAeff',
@@ -103,6 +103,36 @@ def moveindividual(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
                                           euler.euler2mat(rx, ry, rz, 'sxyz'),
                                           np.ones(3))] * len(e.elements)
     e.generate_elements()
+
+
+
+@oneormoreelements
+def moveelem(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
+    '''Move and rotate a marxs element around principal axes.
+
+    Unlike `~marxs.design.tolerancing.moveglobal` this does not work on a
+    `~marxs.simulator.Parallel` object, which is a container holding other
+    elements, but it moves just one specific element itself (e.g. a single
+    detector).
+
+    To make it easier to return the element to its original position,
+    the original ``pos4d`` matrix of the element is stored as ``pos4d_orig``.
+
+    Parameters
+    ----------
+    e :`marxs.optics.base.OpticalElement` or list of those elements
+        Elements where uncertainties will be set
+    dx, dy, dz : float
+        translation in x, y, z (in mm)
+    rx, ry, rz : float
+        Rotation around x, y, z (in rad)
+    '''
+    if not hasattr(e.geometry, 'pos4d_orig'):
+        e.geometry.pos4d_orig = e.geometry.pos4d.copy()
+    move = affines.compose([dx, dy, dz],
+                           euler.euler2mat(rx, ry, rz, 'sxyz'),
+                           np.ones(3))
+    e.geometry.pos4d = move @ e.geometry.pos4d_orig
 
 
 @oneormoreelements
@@ -345,7 +375,7 @@ def run_tolerances_for_energies(source, energies,
                                 instrum_before, instrum_remaining,
                                 wigglefunc, wiggleparts,
                                 parameters, analyzefunc,
-                                reset=None, t_source=1):
+                                reset=None, t_source=1 / u.s):
     '''Run tolerancing for a grid of parameters and energies
 
     This function loops over `~marxs.design.tolerancing.run_tolerances` for
@@ -397,7 +427,7 @@ def run_tolerances_for_energies(source, energies,
         If ``reset=None``, then the elements affected by ``wigglefunc`` will
         be in the state corresponding to the last entry in ``parameters`` when
         this function exits.
-    t_source : int
+    t_source : `astropy.units.quantity.Quantity`
         parameter for ``source.generate_photons()``. If the source flux is set
         to one, then ``t_source`` determines the number of photons used in the
         tolerancing simulation.
@@ -432,6 +462,82 @@ def run_tolerances_for_energies(source, energies,
         wigglefunc(wiggleparts, **reset)
 
     return table.vstack(outtabs)
+
+
+# This function could be moved marxs itself
+def run_tolerances_for_energies2(source, energies, instrum, cls, wigglefunc,
+                                 parameters,
+                                 analyzefunc,reset=None, subclass_ok=False,
+                                 t_source=1 / u.s):
+    '''Run tolerancing for a grid of parameters and energies
+
+    This function loops over `~marxs.design.tolerancing.run_tolerances` for
+    different energies.
+    This function takes an instrument configuration and a function to change
+    one aspect of it. For every change it runs a simulations and calculates a
+    figure of merit. As the name indicates, this function is designed to derive
+    alignment tolerances for certain instrument parts but it might be general
+    enough for other parameter studies in instrument design.
+
+    There are two nested loops here looping over energy and tolerancing
+    parameters. In this case, the outer loop is over energies and then for
+    every energy, `~marxs.design.tolerancing.run_tolerances` loops over the
+    parameters. This works well where running the ``wigglefunc`` is relatively
+    fast, but propagating the photons through ``instrum_before`` is slow and
+    minimizes the memory footprint, because only one photon list is in memory
+    at any one time. It also implies that runs for the same wiggle parameters
+    but different energies are run on different realizations of any random
+    draws that are performed by ``wigglefunc``.
+
+
+    Parameters
+    ----------
+    source : `marxs.source.Source`
+        Source used to generate the photons for every energy. This function
+        changes the energy of the source, so the source should be set for
+        monoenergetic emission with a constant flux of 1.
+    energies : `astropy.units.quantity.Quantity`
+        An array of energy values.
+    instrum : `marxs.simulator.Sequence`
+        An instance of the instrument which contains all elements.
+    cls : class
+        Class of modified / wiggled / etc. element
+    wigglefunc, parameters, analyzefunc :
+        These parameters are passed to
+        `marxs.design.tolerancing.run_tolerances`. See that function for a
+        description of these parameters.
+    reset : dict or ``None``
+        A dictionary of values for the ``wigglefunc`` function that resets
+        the positions or properties of the wiggled elements to their default.
+        If ``reset=None``, then the elements affected by ``wigglefunc`` will
+        be in the state corresponding to the last entry in ``parameters`` when
+        this function exits.
+    t_source : `astropy.units.quantity.Quantity`
+        parameter for ``source.generate_photons()``. If the source flux is set
+        to one, then ``t_source`` determines the number of photons used in the
+        tolerancing simulation.
+
+    Returns
+    -------
+    result : `astropy.table.Table`
+        Each row in the table contains energy, wave, parameter values, and
+        results from ``analyzefunc`` for a single run.
+
+    '''
+    ind = instrum.first_of_class_top_level(cls, subclass_ok)
+    if ind is None:
+        raise Exception(f'{cls} nor part of {instrum}')
+
+    tab = run_tolerances_for_energies(source, energies,
+                                      Sequence(elements=instrum.elements[:ind]),
+                                      Sequence(elements=instrum.elements[ind:]),
+                                      wigglefunc,
+                                      instrum.elements_of_class(cls),
+                                      parameters,
+                                      analyzefunc,
+                                      reset,
+                                      t_source=t_source)
+    return tab
 
 
 def generate_6d_wigglelist(trans, rot,

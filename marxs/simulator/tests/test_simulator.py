@@ -3,7 +3,7 @@ from astropy.table import Table
 import pytest
 
 from ..simulator import KeepCol, Sequence, BaseContainer
-from ...optics import FlatDetector
+from ...optics import FlatDetector, FlatOpticalElement
 
 f1 = FlatDetector()
 f2 = FlatDetector()
@@ -33,6 +33,14 @@ def test_seach_top():
     assert [f1, f2, f3] == mission.elements_of_class(FlatDetector,
                                                      subclass_ok=True,
                                                      stop_at_first=True)
+
+
+def test_first_of_class():
+    '''Check that the first of class method returns expected indices.'''
+    assert mission.first_of_class_top_level(FlatDetector) == 0
+    assert mission.first_of_class_top_level(FlatOpticalElement) is None
+    assert mission.first_of_class_top_level(FlatOpticalElement, subclass_ok=True) == 0
+    assert mission.first_of_class_top_level(Sequence) == 1
 
 
 def test_format_saved_positions():
