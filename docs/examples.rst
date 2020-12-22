@@ -53,27 +53,27 @@ We now turn the combination of X-ray source and first mirror around the y-axis (
 
 .. doctest-requires:: mayavi
 
-  >>> import astropy.units as u
-  >>> # Make an object that keeps the photon position after every simulation step
-  >>> # for later plotting of photon paths.
-  >>> pos = KeepCol('pos')
-  >>> experiment = Sequence(elements=[m1, m2, det], postprocess_steps=[pos])
-  >>> from mayavi import mlab
-  >>> from marxs.visualization.mayavi import plot_object, plot_rays
-  >>> fig = mlab.figure()
-  >>> for i, angle in enumerate(np.arange(0, .5, .15) * np.pi):
-  ...   rotmat = np.eye(4)
-  ...   rotmat[:3, :3] = euler.euler2mat(angle, 0, 0, 'szxy')
-  ...   light.position = np.dot(rotmat, light_pos)
-  ...   light.dir = np.dot(rotmat, light_dir)
-  ...   m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
-  ...   rays = light(100 * u.s)
-  ...   pos.data = []
-  ...   pos(rays)
-  ...   rays = experiment(rays)
-  ...   # Now do the plotting
-  ...   obj = plot_object(experiment, viewer=fig)
-  ...   rout = plot_rays(pos.format_positions())
+    >>> import astropy.units as u
+    >>> # Make an object that keeps the photon position after every simulation step
+    >>> # for later plotting of photon paths.
+    >>> pos = KeepCol('pos')
+    >>> experiment = Sequence(elements=[m1, m2, det], postprocess_steps=[pos])
+    >>> from mayavi import mlab
+    >>> from marxs.visualization.mayavi import plot_object, plot_rays
+    >>> fig = mlab.figure()
+    >>> for i, angle in enumerate(np.arange(0, .5, .15) * np.pi):
+    ...   rotmat = np.eye(4)
+    ...   rotmat[:3, :3] = euler.euler2mat(angle, 0, 0, 'szxy')
+    ...   light.position = np.dot(rotmat, light_pos)
+    ...   light.dir = np.dot(rotmat, light_dir)
+    ...   m1.geometry.pos4d = np.dot(rotmat, m1pos4d)
+    ...   rays = light(100 * u.s)
+    ...   pos.data = []
+    ...   pos(rays)
+    ...   rays = experiment(rays)
+    ...   # Now do the plotting
+    ...   obj = plot_object(experiment, viewer=fig)
+    ...   rout = plot_rays(pos.format_positions())
 
 The plot shows four source positions and the corresponding four positions of the green
 mirror on top of each other.

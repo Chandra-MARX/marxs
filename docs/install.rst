@@ -24,6 +24,7 @@ The following Python packages are strongly recommended, but most parts of MARXS 
 - matplotlib
 - `mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (for 3 D output)
 - jsonschema
+- pyyaml
 
 Again, all but mayavi are available through common package managers such as
 conda, ``apt-get`` etc. For `mayavi

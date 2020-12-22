@@ -2,6 +2,8 @@
 import numpy as np
 from astropy.table import Table
 from astropy.io import ascii
+from astropy.utils.data import get_pkg_data_filename
+
 from transforms3d import euler
 from ...math.utils import norm_vector
 from ..multiLayerMirror import MultiLayerMirror, FlatBrewsterMirror
@@ -35,7 +37,10 @@ def test_photon_reflection():
                                 1.23984282 / 3.02],
                      'polarization': polarization,
                      'probability': [1., 1., 1., 1.]})
-    mirror = MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt', testedPolarization='./marxs/optics/data/ALSpolarization2.txt', zoom=[1, 24.5, 12])
+    mirror = MultiLayerMirror(reflFile=get_pkg_data_filename('data/testFile_mirror.txt', package='marxs.optics'),
+                              testedPolarization=get_pkg_data_filename('data/ALSpolarization2.txt',
+                                                                       package='marxs.optics'),
+                              zoom=[1, 24.5, 12])
     photons = mirror(photons)
 
     # confirm reflection angle
@@ -46,7 +51,7 @@ def test_photon_reflection():
     assert np.allclose(norm_vector(np.array(photons['dir'])), expected_dir)
 
     # confirm reflection probability
-    polarizedFile = ascii.read('./marxs/optics/data/ALSpolarization2.txt')
+    polarizedFile = ascii.read(get_pkg_data_filename('data/ALSpolarization2.txt', package='marxs.optics'))
     correctTestPolar = np.interp(1.23984282 / 3.02,
                                  polarizedFile['Photon energy'] / 1000,
                                  polarizedFile['Polarization'])
@@ -90,8 +95,9 @@ def test_photon_reflection2():
                      'polarization': polarization,
                      'probability': [1., 1., 1., 1.]})
     a = 2**(-0.5)
-    mirror = MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt',
-                              testedPolarization='./marxs/optics/data/ALSpolarization2.txt',
+    mirror = MultiLayerMirror(reflFile=get_pkg_data_filename('data/testFile_mirror.txt', package='marxs.optics'),
+                              testedPolarization=get_pkg_data_filename('data/ALSpolarization2.txt',
+                                                                       package='marxs.optics'),
                               orientation=np.array([[-a, 0, a],[0, -1, 0],[a, 0, a]]))
     photons = mirror(photons)
 

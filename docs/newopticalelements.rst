@@ -71,7 +71,7 @@ Non-physical elements
 Above, we discussed elements that are physically present, such as mirrors or detectors. The simulations also allows elements that are not a piece of hardware, for example, a function that just saves a copy of the photon list to disk or prints some diagnostic information would also work::
 
   >>> def backupcopy(photons):
-  ...     photons.write('backup.fits')
+  ...     photons.write('backup.fits', overwrite=True)
   ...     return photons
   >>> photons = backupcopy(photons)
 

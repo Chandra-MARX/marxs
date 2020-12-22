@@ -11,6 +11,7 @@ import numpy as np
 from scipy.stats import ks_2samp
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from astropy.utils.data import get_pkg_data_filename
 
 import marxs
 import marxs.source
@@ -26,7 +27,9 @@ def test_noexplicettimedependence():
     mypointing = marxs.source.FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing(photons)
 
-    marxm = marxs.optics.marx.MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0,0]))
+    marxm = marxs.optics.marx.MarxMirror(parfile=get_pkg_data_filename('hrma.par',
+                                                   package='marxs.optics'),
+                                         position=np.array([0., 0,0]))
     photons = marxm(photons)
     ks, p_value = ks_2samp(photons['mirror_shell'][:400], photons['mirror_shell'][600:])
     assert p_value > 1e-5

@@ -14,6 +14,8 @@ import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+from astropy.utils.data import get_pkg_data_filename
+
 import transforms3d.axangles
 
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
@@ -38,7 +40,6 @@ from ...missions.mitsnl.catgrating import (QualityFactor, L1,
 from ..scatter import RadialMirrorScatter, RandomGaussianScatter
 from ..filter import EnergyFilter
 
-
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
 
@@ -50,7 +51,8 @@ all_oe = [ThinLens(focallength=100),
           FlatDetector(pixsize=2., zoom=100.),
           CircularDetector(),
           FlatGrating(d=0.001, order_selector=OrderSelector([0])),
-          MarxMirror(parfile='marxs/optics/hrma.par'),
+          MarxMirror(parfile=get_pkg_data_filename('hrma.par',
+                                                   package='marxs.optics')),
           GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0,.5],
                                 elem_class=FlatGrating,
                                 elem_args={'zoom':0.05, 'd':0.002,
@@ -72,8 +74,10 @@ all_oe = [ThinLens(focallength=100),
                           z_range=[0, 0.1]),
           Baffle(),
           # MLMirror assumes 45 deg angle and will return nan otherwise
-          MultiLayerMirror(reflFile='./marxs/optics/data/testFile_mirror.txt',
-                           testedPolarization='./marxs/optics/data/ALSpolarization2.txt',
+          MultiLayerMirror(reflFile=get_pkg_data_filename('data/testFile_mirror.txt',
+                                                          package='marxs.optics'),
+                           testedPolarization=get_pkg_data_filename('data/ALSpolarization2.txt',
+                                                                    package='marxs.optics'),
                            orientation=transforms3d.axangles.axangle2mat([0,1,0], np.pi/4)),
           Sequence(elements=[]),
           HETG(),

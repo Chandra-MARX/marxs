@@ -24,41 +24,41 @@ All backends support a function called ``plot_object`` which plots objects in th
 
 First, we need to set up mirrors, gratings and detectors (here gratings on a Rowland torus). The entrace aperture is just a thin ring, like the effective area of a single shell in a Wolter type-I telescope::
 
-  >>> from marxs import optics, design, analysis
-  >>> from marxs.design import rowland
-  >>> import astropy.units as u
-  >>> rowland = design.rowland.RowlandTorus(5000, 5000)
-  >>> aper = optics.CircleAperture(position=[12000, 0, 0],
-  ...                              zoom=[1, 1000, 1000],
-  ...                              r_inner=960)
-  >>> mirr = optics.FlatStack(position=[11000, 0, 0], zoom=[20, 1000, 1000],
-  ...                         elements=[optics.PerfectLens,
-  ...                         optics.RadialMirrorScatter],
-  ...                         keywords = [{'focallength': 11000},
-  ...                                     {'inplanescatter': 4 * u.arcsec,
-  ...                                      'perpplanescatter': 0.6 * u.arcsec}])
+    >>> from marxs import optics, design, analysis
+    >>> from marxs.design import rowland
+    >>> import astropy.units as u
+    >>> rowland = design.rowland.RowlandTorus(5000, 5000)
+    >>> aper = optics.CircleAperture(position=[12000, 0, 0],
+    ...                              zoom=[1, 1000, 1000],
+    ...                              r_inner=960)
+    >>> mirr = optics.FlatStack(position=[11000, 0, 0], zoom=[20, 1000, 1000],
+    ...                         elements=[optics.PerfectLens,
+    ...                         optics.RadialMirrorScatter],
+    ...                         keywords = [{'focallength': 11000},
+    ...                                     {'inplanescatter': 4 * u.arcsec,
+    ...                                      'perpplanescatter': 0.6 * u.arcsec}])
 
 In our figure, we want to color the diffraction gratings and the photons that pass through them. For this purpose we make a new class of grating that inherits from `~marxs.optics.FlatGrating` but additionally assigns a value to the ``colorid``. The method ``specific_process_photons` is defined as part of `~marxs.optics.FlatOpticalElement` and it returns a dictionary of arrays that are assigned to the corresponding column in the ``photons`` table. Here, we simply add another column to that::
 
-  >>> class ColoredFlatGrating(optics.FlatGrating):
-  ...     '''Flat grating that also assigns a color to all passing photons.'''
-  ...     def specific_process_photons(self, *args, **kwargs):
-  ...         out = super(ColoredFlatGrating, self).specific_process_photons(*args, **kwargs)
-  ...         out['colorid'] = self.colorid if hasattr(self, 'colorid') else np.nan
-  ...         return out
+    >>> class ColoredFlatGrating(optics.FlatGrating):
+    ...     '''Flat grating that also assigns a color to all passing photons.'''
+    ...     def specific_process_photons(self, *args, **kwargs):
+    ...         out = super(ColoredFlatGrating, self).specific_process_photons(*args, **kwargs)
+    ...         out['colorid'] = self.colorid if hasattr(self, 'colorid') else np.nan
+    ...         return out
 
 We place a set of transmission gratings below the mirror and add CCDs on the Rowland torus::
 
-  >>> gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=180,
-  ...                                            x_range=[8000, 10000],
-  ...                                            radius=[870, 910],
-  ...                                            elem_class=ColoredFlatGrating,
-  ...                                            elem_args={'d': 2e-4, 'zoom': [1, 80, 80],
-  ...                                                       'order_selector': optics.OrderSelector([-1, 0, 1])})
-  >>> det_kwargs = {'d_element': 105, 'elem_class': optics.FlatDetector,
-  ...               'elem_args': {'zoom': [1, 50, 20], 'pixsize': 0.01}}
-  >>> det = design.rowland.RowlandCircleArray(rowland, theta=[3.1, 3.2], **det_kwargs)
-  >>> projectfp = analysis.ProjectOntoPlane()
+    >>> gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=180,
+    ...                                            x_range=[8000, 10000],
+    ...                                            radius=[870, 910],
+    ...                                            elem_class=ColoredFlatGrating,
+    ...                                            elem_args={'d': 2e-4, 'zoom': [1, 80, 80],
+    ...                                                       'order_selector': optics.OrderSelector([-1, 0, 1])})
+    >>> det_kwargs = {'d_element': 105, 'elem_class': optics.FlatDetector,
+    ...               'elem_args': {'zoom': [1, 50, 20], 'pixsize': 0.01}}
+    >>> det = design.rowland.RowlandCircleArray(rowland, theta=[3.1, 3.2], **det_kwargs)
+    >>> projectfp = analysis.ProjectOntoPlane()
 
 Each optical element in MARXS has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.
 The most common settings are ``display['color']`` (which can be any RGB tuple or any color valid in `matplotlib <http://matplotlib.org>`_) and ``display['opacity']`` (a number between 0 and 1).
@@ -69,14 +69,14 @@ Usually, ``display`` is a class dictionary, so any change on any one object will
    
 To change just one particular element we copy the class dictionary to that element and set the color. In this example, we calculate the angle that each grating has from the y-axis. We split that in three regions and color the gratings accordingly::
 
-  >>> import copy
-  >>> import numpy as np
-  >>> gratingcolors = 'bgr'
-  >>> for e in gas.elements:
-  ...     e.display = copy.deepcopy(e.display)
-  ...     e.ang = (np.arctan(e.pos4d[1,3] / e.pos4d[2, 3]) + np.pi/2) % (np.pi)
-  ...     e.colorid = int(e.ang / np.pi * 3)
-  ...     e.display['color'] = gratingcolors[e.colorid]
+    >>> import copy
+    >>> import numpy as np
+    >>> gratingcolors = 'bgr'
+    >>> for e in gas.elements:
+    ...     e.display = copy.deepcopy(e.display)
+    ...     e.ang = (np.arctan(e.pos4d[1,3] / e.pos4d[2, 3]) + np.pi/2) % (np.pi)
+    ...     e.colorid = int(e.ang / np.pi * 3)
+    ...     e.display['color'] = gratingcolors[e.colorid]
 
   
 .. _sect-vis-example:
@@ -102,45 +102,45 @@ Next, we want to show how the instrument that we use above looks in the 3d.
 Very similar to the previous example, we combine mirror, detector, and grating into `~marxs.simulator.Sequence`. We also define a `marxs.simulator.KeepCol` object, which we pass into our `~marxs.simulator.Sequence`. When we call the `~marxs.simulator.Sequence`, the `~marxs.simulator.KeepCol` object will make a copy of a column (here the "pos" column) and store that.
 Another change compared to the 2d plotting is that we generate a lot fewer photons because the lines indicating the photon paths can make the gratings hard to see in 3d if there are too many of them::
   
-  >>> import numpy as np
-  >>> from astropy.coordinates import SkyCoord
-  >>> import astropy.units as u
-  >>> from marxs import source, simulator
-  >>> # object to save intermediate photons positions after every step of the simulaion
-  >>> pos = simulator.KeepCol('pos')
-  >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp], postprocess_steps=[pos])
-  >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'))
-  >>> pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
-  >>> photons = star.generate_photons(100 * u.s)
-  >>> photons = pointing(photons)
-  >>> photons = instrum(photons)
-  >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
-  >>> posdat = pos.format_positions()[ind, :, :]
+    >>> import numpy as np
+    >>> from astropy.coordinates import SkyCoord
+    >>> import astropy.units as u
+    >>> from marxs import source, simulator
+    >>> # object to save intermediate photons positions after every step of the simulaion
+    >>> pos = simulator.KeepCol('pos')
+    >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp], postprocess_steps=[pos])
+    >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'))
+    >>> pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
+    >>> photons = star.generate_photons(100 * u.s)
+    >>> photons = pointing(photons)
+    >>> photons = instrum(photons)
+    >>> ind = (photons['probability'] > 0) & (photons['facet'] >=0)
+    >>> posdat = pos.format_positions()[ind, :, :]
 
 First, plot the objects that make up the instrument (aperture, mirror, gratings, detectors)::
 
 .. doctest-requires:: mayavi
 
-  >>> from mayavi import mlab
-  >>> from marxs.visualization.mayavi import plot_object, plot_rays
-  >>> fig = mlab.figure(bgcolor=(1,1,1))
-  >>> obj = plot_object(instrum, viewer=fig)
+    >>> from mayavi import mlab
+    >>> from marxs.visualization.mayavi import plot_object, plot_rays
+    >>> fig = mlab.figure(bgcolor=(1,1,1))
+    >>> obj = plot_object(instrum, viewer=fig)
 
 Now, we plot the rays using their colorid and a global color map that matches the blue-red values that we assinged to the gratings already::
   
 .. doctest-requires:: mayavi
 
-  >>> rays = plot_rays(posdat, scalar=photons['colorid'][ind],
-  ...                  kwargssurface={'opacity': .5,
-  ...                                 'line_width': 1,
-  ...                                  'colormap': 'blue-red'})
+    >>> rays = plot_rays(posdat, scalar=photons['colorid'][ind],
+    ...                  kwargssurface={'opacity': .5,
+    ...                                 'line_width': 1,
+    ...                                  'colormap': 'blue-red'})
 
 MARXS can also display non-physical objects. The following code will add a fraction of the Rowland torus::
 
 .. doctest-requires:: mayavi
   
-  >>> rowland.display['coo2'] = np.linspace(-.2, .2, 60)
-  >>> obj = plot_object(rowland, viewer=fig)
+    >>> rowland.display['coo2'] = np.linspace(-.2, .2, 60)
+    >>> obj = plot_object(rowland, viewer=fig)
 
 .. raw:: html
 
