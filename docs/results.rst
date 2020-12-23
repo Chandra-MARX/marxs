@@ -64,7 +64,7 @@ Save results to disk
 ====================
 The photon list is just an `astropy.table.Table` which can be saved to many formats out-of-the-box, most importantly to fits files::
 
-  >>> photons.write('mysim_result.fits')
+  >>> photons.write('mysim_result.fits', overwrite=True)
 
 Sometimes, an instrument specification might provide a specific writing method to add more metadata and header keywords to the table before it is written.
 

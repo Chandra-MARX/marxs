@@ -1,16 +1,18 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import astropy.units as u
+from astropy.utils.data import get_pkg_data_filename
 
 from marxs.source.labSource import LabPointSourceCone
 from marxs.optics.multiLayerMirror import MultiLayerMirror
 from marxs.optics.detector import FlatDetector
 
+
 def test_src_mir_det():
     '''This tests that source, multilayer mirror, and detector run without producing any errors.
     '''
-    string1 = 'marxs/optics/data/A12113.txt'
-    string2 = 'marxs/optics/data/ALSpolarization2.txt'
+    string1 = get_pkg_data_filename('data/A12113.txt', package='marxs.optics')
+    string2 = get_pkg_data_filename('data/ALSpolarization2.txt', package='marxs.optics')
     a = 2**(-0.5)
     rotation1 = np.array([[a, 0, -a],
                           [0, 1, 0],

@@ -1,63 +1,65 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# Compiled files
 *.py[cod]
-
-# C extensions
+*.a
+*.o
 *.so
+__pycache__
 
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
+# Ignore .c files by default to avoid including generated code. If you want to
+# add a non-generated .c extension, use `git add -f filename.c`.
+*.c
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
+# Other generated files
+*/version.py
+*/cython_version.py
+htmlcov
 .coverage
-.coverage.*
+MANIFEST
+.ipynb_checkpoints
+
+# Sphinx
+docs/api
+docs/_build
+
+# Eclipse editor project files
+.project
+.pydevproject
+.settings
+
+# Pycharm editor project files
+.idea
+
+# Floobits project files
+.floo
+.flooignore
+
+# Visual Studio Code project files
+.vscode
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+.eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+
+# Other
 .cache
-nosetests.xml
-coverage.xml
-*,cover
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-
-# Sphinx documentation
-docs/_build/
-docs/API/
-
-# PyBuilder
-target/
-
-# Common editor backups
+.tox
+.*.sw[op]
 *~
-\#*\#
-*.DS_Store
+.project
+.pydevproject
+.settings
+pip-wheel-metadata/
+
+# Mac OSX
+.DS_Store

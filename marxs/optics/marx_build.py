@@ -3,7 +3,7 @@ from os import path
 from configparser import ConfigParser
 from cffi import FFI
 
-with open ("marxs/optics/cdef.txt", "r") as myfile:
+with open (path.join(path.dirname(__file__), "cdef.txt"), "r") as myfile:
     cdeftxt=myfile.read()
 
 ffi = FFI()
@@ -14,7 +14,7 @@ conf = ConfigParser()
 # When setup.py is run, then setup.cfg is in the current directory
 # However, when runngin this in pytest, it's in ../
 # So offer both options here (files not found are silently ignored).
-conf.read(['setup.cfg', '../setup.cfg'])
+conf.read(['setup.cfg', '../setup.cfg', '../../setup.cfg'])
 marxscr = conf.get('MARX', 'srcdir')
 marxlib = conf.get('MARX', 'libdir')
 

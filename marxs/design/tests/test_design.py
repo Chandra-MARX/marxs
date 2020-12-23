@@ -5,6 +5,7 @@ import transforms3d
 import pytest
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from astropy.utils.data import get_pkg_data_filename
 
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        RowlandCircleArray,
@@ -24,7 +25,7 @@ def test_radius_of_photon_shell():
     photons = mysource.generate_photons(1. * u.ks)
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
-    marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
+    marxm = MarxMirror(get_pkg_data_filename('hrma.par', package='marxs.optics'), position=np.array([0., 0, 0]))
     photons = marxm(photons)
     r1, r2 = find_radius_of_photon_shell(photons, 1, 9e3)
     assert abs(r1 - 433.) < 1.
@@ -303,7 +304,7 @@ def test_run_photons_through_gas():
     photons = mysource.generate_photons(1. * u.ks)
     mypointing = FixedPointing(coords=SkyCoord(30, 30., unit='deg'))
     photons = mypointing.process_photons(photons)
-    marxm = MarxMirror('./marxs/optics/hrma.par', position=np.array([0., 0, 0]))
+    marxm = MarxMirror(get_pkg_data_filename('hrma.par', package='marxs.optics'), position=np.array([0., 0, 0]))
     photons = marxm(photons)
     gratingeff = OrderSelector([-1, 0, 1])
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff}

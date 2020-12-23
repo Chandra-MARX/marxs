@@ -4,23 +4,31 @@
 Optical elements that make up an instrument
 *******************************************
 
-A simulation is defined by creating objects for all optical elements such as mirrors and gratings and
-sorting these optical elements in the order in which a photon encounters them. Marxs works under the
-assumption that the order of elements is fixed. A photon does not have to interact with each element
-(e.g. it can miss a grating, but still be detected by another focal plane instrument), but under no circumstance will a photon ever go back
-to an element it already passed.
+A simulation is defined by creating objects for all optical elements
+such as mirrors and gratings and sorting these optical elements in the
+order in which a photon encounters them. Marxs works under the
+assumption that the order of elements is fixed. A photon does not have
+to interact with each element (e.g. it can miss a grating, but still
+be detected by another focal plane instrument), but under no
+circumstance will a photon ever go back to an element it already
+passed.
 
-There are ways to describe layouts where photons split between different paths, such as in the
-design of XMM-Newton where some photons pass the gratings and get reflected into the RGS detectors,
-while others continue on their path without ever encountering a grating until they hit the imaging
-detectors. Such complex setups are described in :ref:`complexgeometry`.
+There are ways to describe layouts where photons split between
+different paths, such as in the design of XMM-Newton where some
+photons pass the gratings and get reflected into the RGS detectors,
+while others continue on their path without ever encountering a
+grating until they hit the imaging detectors. Such complex setups are
+described in :ref:`complexgeometry`.
 
 
 .. _args for optical elements:
 
 Define an optical element for the simulation
 ============================================
-All optical elements have to be derived from :obj:`marxs.optics.base.OpticalElement` and they all share a common interface. 
+
+All optical elements have to be derived from
+:obj:`marxs.optics.base.OpticalElement` and they all share a common
+interface.
 
 Optical elements are generated with the following keywords:
 
@@ -45,12 +53,29 @@ Optical elements are generated with the following keywords:
 
 Output columns for the photon list
 ==================================
-Each MARXS run starts with a source and a pointing. The source generates the physical properties of each photon (energy, polarization) and places it in the universe (RA, dec, time). The pointing transforms position and polarization angle into vectors in spacecraft coordiantes (these vectors are called "dir" and "polarization") - see :ref:`sect-results-output`.
 
-Next, we need to assign an initial position in spacecraft coordinates to each photon. This is done by an aperture. One common approach in ray-tracing is to subdivide the entrace aperture into a regular grid and trace one ray per grid cell; alternatively, a large number of photons can be randomly distributed on the aperture. MARXS takes this second approach because (i) the result does not only depend on the position in the entrance aperture, but on a number of other parmeters (energy, polarization, time for time variable sources or pointings) and (ii) the photon list produced by the simulation closely resembles the photons lists from real observations.
-The column "pos" in the table holds the photon position as assigned on the aperture in homogeneous coordinates.
+Each MARXS run starts with a source and a pointing. The source
+generates the physical properties of each photon (energy,
+polarization) and places it in the universe (RA, dec, time). The
+pointing transforms position and polarization angle into vectors in
+spacecraft coordiantes (these vectors are called "dir" and
+"polarization") - see :ref:`sect-results-output`.
 
-After passing through the aperture, the photon list will have at least the following columns:
+Next, we need to assign an initial position in spacecraft coordinates
+to each photon. This is done by an aperture. One common approach in
+ray-tracing is to subdivide the entrace aperture into a regular grid
+and trace one ray per grid cell; alternatively, a large number of
+photons can be randomly distributed on the aperture. MARXS takes this
+second approach because (i) the result does not only depend on the
+position in the entrance aperture, but on a number of other parmeters
+(energy, polarization, time for time variable sources or pointings)
+and (ii) the photon list produced by the simulation closely resembles
+the photons lists from real observations.  The column "pos" in the
+table holds the photon position as assigned on the aperture in
+homogeneous coordinates.
+
+After passing through the aperture, the photon list will have at least
+the following columns:
 
 pos
   Position where the photon last interacted with an optical element in homogeneous coordinates.
@@ -105,14 +130,15 @@ Last, we process the photons through both detectors::
   >>> photons = det2(photons)
   >>> photons  # doctest: +IGNORE_OUTPUT
   <Table length=5>
-  polarization [4]  energy   pos [4]     dir [4]   probability  det_x   det_y  detpix_y detpix_x  CCD_ID
-      float64      float64   float64     float64     float64   float64 float64 float64  float64  float64
-  ---------------- ------- ----------- ----------- ----------- ------- ------- -------- -------- -------
-        0.0 .. 0.0     1.0 0.0 .. -1.0 -1.0 .. 0.0         1.0     0.0     0.0      9.5      9.5     1.0
-        0.0 .. 0.0     1.0 0.0 .. -1.0 -1.0 .. 0.0         1.0     1.0     0.0      9.5     19.5     1.0
-        0.0 .. 0.0     1.0 0.0 .. -1.0 -1.0 .. 0.0         1.0    -0.5     0.0      4.5      2.0     2.0
-        0.0 .. 0.0     1.0 0.0 .. -1.0 -1.0 .. 0.0         1.0     0.5     0.0      4.5      7.0     2.0
-        0.0 .. 0.0     1.0  1.0 .. 1.0 -1.0 .. 0.0         1.0     nan     nan      nan      nan    -1.0 
+   pos [4]     dir [4]    energy polarization [4] ...  CCD_ID  det_x   det_y 
+   float64     float64   float64     float64      ... float64 float64 float64
+  ---------- ----------- ------- ---------------- ... ------- ------- -------
+  0.0 .. 1.0 -1.0 .. 0.0     1.0       0.0 .. 0.0 ...     1.0     0.0     0.0
+  0.0 .. 1.0 -1.0 .. 0.0     1.0       0.0 .. 0.0 ...     1.0     1.0     0.0
+  0.0 .. 1.0 -1.0 .. 0.0     1.0       0.0 .. 0.0 ...     2.0    -0.5     0.0
+  0.0 .. 1.0 -1.0 .. 0.0     1.0       0.0 .. 0.0 ...     2.0     0.5     0.0
+  1.0 .. 1.0 -1.0 .. 0.0     1.0       0.0 .. 0.0 ...    -1.0     nan     nan
+
 
 In this example, the two detectors are set up by hand. MARXS offers the class `marxs.simulator.Paralell` to set up elements with parallel functions, such as several CCD detectors next to each other.
 	

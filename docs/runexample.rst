@@ -54,8 +54,7 @@ and also set up the instrument components. The entrace aperture was already init
 ::
 
    >>> hrma = chandra.HRMA()
-   >>> acis = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])  # doctest: +IGNORE_OUTPUT
-   Some warnings that ACIS 1024 * pixel size does not match chip size exactly ...
+   >>> acis = chandra.ACIS(chips=[4,5,6,7,8,9], aimpoint=chandra.AIMPOINTS['ACIS-S'])
 
 That was easy!
 
