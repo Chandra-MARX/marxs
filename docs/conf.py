@@ -62,7 +62,16 @@ exclude_patterns.append('_templates')
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
 rst_epilog += """
+.. _classic marx: http://space.mit.edu/cxc/marx/
 """
+
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ['_templates']
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ['_static']
 
 # -- Project information ------------------------------------------------------
 
@@ -107,8 +116,8 @@ release = package.__version__
 
 html_theme_options = {
     'logotext1': 'marxs',  # white,  semi-bold
-    'logotext2': '',  # orange, light
-    'logotext3': ':docs'   # white,  light
+    'logotext2': ':docs',  # orange, light
+    'logotext3': ''   # white,  light
     }
 
 
@@ -162,10 +171,11 @@ if setup_cfg.get('edit_on_github').lower() == 'true':
     extensions += ['sphinx_astropy.ext.edit_on_github']
 
     edit_on_github_project = setup_cfg['github_project']
-    edit_on_github_branch = "main"
+    edit_on_github_branch = "master"
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+    edit_on_github_skip_regex = '_.*|api/.*'
 
 # -- Resolving issue number to links in changelog -----------------------------
 github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])
