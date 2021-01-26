@@ -42,29 +42,32 @@ def xyz_square(geometry, r_factor=1):
                                                ])
     return box
 
+
 def xyz_circle(geometry, r_factor=1, philim=[0, 2 * np.pi], n_vertices=90):
     '''Generate Eukledian positions along an ellipse.
 
-    The circle is centered on the center of the object and the semi-major
-    and minor axes are given by ``v_y`` and ``v_z``. Note that this function
-    is usually used to generate circle position, although ellipses are possible,
-    thus the name.
+    The circle is centered on the center of the object and the
+    semi-major and minor axes are given by ``v_y`` and ``v_z``. Note
+    that this function is usually used to generate circle position,
+    although ellipses are possible, thus the name.
 
-    The circle (or ellipse) is approximated by a polygon with ``n_vertices``
-    vertices, where the value of ``n_vertices`` is taken from the ``self.display``
-    dictionary.
+    The circle (or ellipse) is approximated by a polygon with
+    ``n_vertices`` vertices, where the value of ``n_vertices`` is
+    taken from the ``self.display`` dictionary.
 
     Parameters
     ----------
     r_factor : float
         Scaling factor for the square.
     phi_lim : list
-        Lower and upper limit for the angle phi to restrict the circle to a wedge.
+        Lower and upper limit for the angle phi to restrict the circle to a
+        wedge.
 
     Returns
     -------
     circle : np.array of shape (n, 3)
         Eukledian coordinates of the corners of the square in 3d space.
+
     '''
     n = n_vertices
     phi = np.linspace(0.5 * np.pi, 2.5 * np.pi, n, endpoint=False)
@@ -98,15 +101,16 @@ class Geometry(NoGeometry):
 
     def __init__(self, kwargs={}):
         self.pos4d = _parse_position_keywords(kwargs)
-        #copy class attribute to instance attribute
+        # copy class attribute to instance attribute
         self._geometry = copy(self._geometry)
         super(Geometry, self).__init__(kwargs=kwargs)
 
     def __getitem__(self, key):
         '''This function wraps access to the pos4d matrix.
 
-        This is mostly a convenience method that gives access to vectors from the
-        ``pos4d`` matrix in familiar terms with string labels:
+        This is mostly a convenience method that gives access to
+        vectors from the ``pos4d`` matrix in familiar terms with
+        string labels:
 
         - ``center``: The ``center`` is the origin of the local coordiante system
           of the optical elemement. Typically, if will be the center of the
@@ -133,6 +137,7 @@ class Geometry(NoGeometry):
         Not all these labels make sense for every optical element (e.g. a curved
         mirror does not really have a "plane").
         Access through this method is slower than direct indexing of ``self.pos4d``.
+
         '''
 
         if key == 'center':
@@ -182,8 +187,8 @@ class Geometry(NoGeometry):
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (e.g. (x, y), or
-            (r, phi)).
+            coordinates in the coordiante system of the geometry (e.g. (x, y),
+            or (r, phi)).
 
         Returns
         -------
@@ -191,6 +196,7 @@ class Geometry(NoGeometry):
             Vectors pointing in direction 1, 2, and normal to the surface.
         '''
         raise NotImplementedError
+
 
 class FinitePlane(Geometry):
     '''Base class for geometrically flat optical elements.
@@ -200,7 +206,7 @@ class FinitePlane(Geometry):
     shape = 'box'
 
     loc_coos_name = ['y', 'z']
-    '''name for output columns that contain the interaction point in local coordinates.'''
+    '''name for output columns with interaction point in local coordinates.'''
 
     def intersect(self, dir, pos):
         '''Calculate the intersection point between a ray and the element
@@ -260,8 +266,7 @@ class FinitePlane(Geometry):
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (e.g. (x, y), or
-            (r, phi)).
+            coordinates in the coordiante system of the geometry (x, y)
 
         Returns
         -------
@@ -278,7 +283,7 @@ class FinitePlane(Geometry):
 
 class PlaneWithHole(FinitePlane):
 
-    shape='triangulation'
+    shape = 'triangulation'
     outer_factor = 3
     inner_factor = 0
 
@@ -289,8 +294,8 @@ class PlaneWithHole(FinitePlane):
     def triangulate(self, display={}):
         '''Return a triangulation of the aperture hole embedded in a square.
 
-        The size of the outer square is determined by the ``'outer_factor'`` element
-        in ``self.display``.
+        The size of the outer square is determined by the ``'outer_factor'``
+        element in ``self.display``.
 
         Returns
         -------
@@ -361,12 +366,14 @@ class CircularHole(PlaneWithHole):
         return xyz_circle(self,
                           r_factor=self['r_inner']/np.linalg.norm(self['v_y']),
                           philim=self.phi)
+
     def inner_display(self, display):
         # Inner edge of the display. If we have several stacked apertures,
         # we don't want to fill is all up to r=0.
         return xyz_circle(self,
                           r_factor=display['inner_factor'] * self['r_inner'] / np.linalg.norm(self['v_y']),
                           philim=self.phi)
+
 
 class Cylinder(Geometry):
     '''A Geometry shaped like a ring or tube.
@@ -446,14 +453,14 @@ class Cylinder(Geometry):
         # Step 1: Rotate around z axis
         rot = axangle2mat(np.array([0, 0, 1.]), rotation)
         # Step 2: Get position and size from Rowland torus
-        pos4d_circ = compose([rowland.R, 0, 0], rot, [rowland.r, rowland.r, width])
+        pos4d_circ = compose([rowland.R, 0, 0], rot,
+                             [rowland.r, rowland.r, width])
         # Step 3: Transform to global coordinate system
         pos4d_circ = np.dot(rowland.pos4d, pos4d_circ)
         # Step 4: Make detector
         det_kwargs = {'pos4d': pos4d_circ}
         det_kwargs.update(kwargs)
         return cls(det_kwargs)
-
 
     def intersect(self, dir, pos, transform=True):
         '''Calculate the intersection point between a ray and the element
@@ -465,8 +472,9 @@ class Cylinder(Geometry):
         pos : `numpy.ndarray` of shape (N, 4)
             homogeneous coordinates of a point on the ray
         transform : bool
-            If ``True``, input is in global coordinates and needs to be transformed
-            here for the calculations; if ``False`` input is in local coordinates.
+            If ``True``, input is in global coordinates and needs to be
+            transformed here for the calculations; if ``False`` input is in
+            local coordinates.
 
         Returns
         -------
@@ -476,9 +484,9 @@ class Cylinder(Geometry):
             homogeneous coordinates of the intersection point. Values are set
             to ``np.nan`` is no intersecton point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            phi, z coordiantes (in the local frame) for one of the intersection points.
-            If both intersection points are required, reset ``self.inner`` and call this
-            function again.
+            phi, z coordiantes (in the local frame) for one of the intersection
+            points. If both intersection points are required, reset
+            ``self.inner`` and call this function again.
         '''
         # This could be moved to a general function
         if not np.all(dir[:, 3] == 0):
@@ -492,7 +500,8 @@ class Cylinder(Geometry):
         xyz = h2e(pos)
         dir_e = h2e(dir)
 
-        # Solve quadratic equation in steps. a12 = (-xr +- sqrt(xr - r**2(x**2 - R**2)))
+        # Solve quadratic equation in steps.
+        # a12 = (-xr +- sqrt(xr - r**2(x**2 - R**2)))
         xy = xyz[:, :2]
         r = dir[:, :2]
         c = np.sum(xy**2, axis=1) - 1.
@@ -521,9 +530,11 @@ class Cylinder(Geometry):
             z_1 = xyz[i, 2] + a1 * dir[i, 2]
             z_2 = xyz[i, 2] + a2 * dir[i, 2]
             hit_1 = ((a1 >= 0) & (np.abs(z_1) <= 1.) &
-                     angle_between(phi_1, self.coos_limits[0][0], self.coos_limits[0][1]))
+                     angle_between(phi_1, self.coos_limits[0][0],
+                                   self.coos_limits[0][1]))
             hit_2 = ((a2 >= 0) & (np.abs(z_2) <= 1.) &
-                     angle_between(phi_2, self.coos_limits[0][0], self.coos_limits[0][1]))
+                     angle_between(phi_2, self.coos_limits[0][0],
+                                   self.coos_limits[0][1]))
             # If both 1 and 2 are hits, use the closer one
             hit_1[hit_2 & (a2 < a1)] = False
             hit_2[hit_1 & (a2 >= a1)] = False
@@ -538,7 +549,6 @@ class Cylinder(Geometry):
             interpos[i_ind[hit_1], :] = e2h(xyz[i_ind, :] + a1[:, None] * dir_e[i_ind, :], 1)[hit_1, :]
             interpos[i_ind[hit_2], :] = e2h(xyz[i_ind, :] + a2[:, None] * dir_e[i_ind, :], 1)[hit_2, :]
 
-
             trans, rot, zoom, shear = decompose44(self.pos4d)
             # interpos_local in z direction is in local coordinates, i.e.
             # the x coordiante is 0..1, but we want that in units of the
@@ -547,7 +557,6 @@ class Cylinder(Geometry):
             interpos = np.dot(self.pos4d, interpos.T).T
 
         return intersect, interpos, interpos_local
-
 
     def parametric_surface(self, phi=None, z=None, display={}):
         '''Parametric description of the tube.
@@ -558,11 +567,11 @@ class Cylinder(Geometry):
         Parameters
         ----------
         phi : np.array
-            ``phi`` is the angle around the tube profile. Set to ``None`` to use the
-            extend of the element itself.
+            ``phi`` is the angle around the tube profile. Set to ``None`` to
+            use the extend of the element itself.
         z : np.array
-            The coordiantes along the radius coordinate. Set to ``None`` to use the
-            extend of the element itself.
+            The coordiantes along the radius coordinate. Set to ``None`` to use
+            the extend of the element itself.
 
         Returns
         -------
@@ -588,8 +597,8 @@ class Cylinder(Geometry):
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (e.g. (x, y), or
-            (r, phi)).
+            coordinates in the coordiante system of the geometry (e.g. (x, y),
+            or (r, phi)).
 
         Returns
         -------
