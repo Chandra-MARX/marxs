@@ -1,6 +1,4 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-from __future__ import division
-
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 
@@ -13,6 +11,7 @@ from ..math.geometry import Cylinder
 
 class AnalysisError(Exception):
     pass
+
 
 def resolvingpower_per_order(gratings, photons, orders, detector=None,
                              colname='det_x'):
@@ -44,9 +43,9 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
         Photon list to be processed for every order
     orders : np.array of type int
         Order numbers
-    detector : marxs optical element or `marxs.design.RowlandTorus` or ``None``.
-        Photons are projected onto a detector. There are three ways to define
-        this detector:
+    detector : marxs optical element or `marxs.design.RowlandTorus` or
+        ``None``. Photons are projected onto a detector. There are three ways
+        to define this detector:
 
         - Pass in an instance of an optical element (e.g. a
           `marxs.optics.FlatDetector`).
@@ -75,10 +74,11 @@ def resolvingpower_per_order(gratings, photons, orders, detector=None,
     if detector is None:
         info['method'] = 'Detector position numerically optimized'
         info['fit_results'] = []
-        col = 'det_x' # 0 at center, detpix_x is 0 in corner.
+        col = 'det_x'  # 0 at center, detpix_x is 0 in corner.
         zeropos = 0.
     elif isinstance(detector, RowlandTorus):
-        det = CircularDetector(geometry=Cylinder.from_rowland(detector, width=1e5,
+        det = CircularDetector(geometry=Cylinder.from_rowland(detector,
+                                                              width=1e5,
                                                               rotation=np.pi,
                                                               kwargs={'phi_lim':[-np.pi/2, np.pi/2]}))
         info['method'] = 'Circular detector on Rowland circle'
@@ -226,7 +226,7 @@ def resolvingpower_from_photonlist(photons, orders,
 
 
 def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1.,
-                                   ordercol='order'):
+                                  ordercol='order'):
     '''Calculate the effective area several grating orders
 
     This is based on the probabilities of the photons in the list, so

@@ -249,7 +249,9 @@ class Source(SimulationSequenceElement):
                         names=['time', 'energy', 'polangle', 'probability'])
         photons.meta['EXTNAME'] = 'EVENTS'
         photons.meta['EXPOSURETIME'] = (exposuretime.to(u.s),
-                                    'total exposure time [s]')
+                                        'total exposure time [s]')
+        # Quantity cannot be written to fits, so add the same information
+        # again as a simple number.
         photons.meta['EXPOSURE'] = (exposuretime.to(u.s).value,
                                     'total exposure time [s]')
 

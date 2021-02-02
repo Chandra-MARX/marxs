@@ -5,11 +5,12 @@ import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
 from transforms3d.euler import euler2mat
 
-from ..catgrating import *
+from . import catgrating
 from ..catgrating import DataFileFormatException, check_lx_dims
 from marxs.optics import CATGrating, OrderSelector, FlatDetector
 from marxs.optics.scatter import RandomGaussianScatter
 from marxs.utils import generate_test_photons
+
 
 def test_nonparallelCATGrating_simplifies_to_CATGrating():
     '''With all randomness parameters set to 0, the results
@@ -20,24 +21,27 @@ def test_nonparallelCATGrating_simplifies_to_CATGrating():
     photons = scat(photons)
     order_selector = OrderSelector([2])
     cat = CATGrating(order_selector=order_selector, d=0.001)
-    npcat = NonParallelCATGrating(order_selector=order_selector, d=0.001)
+    npcat = catgrating.NonParallelCATGrating(order_selector=order_selector,
+                                             d=0.001)
     p1 = cat(photons.copy())
     p2 = npcat(photons)
     assert np.all(p1['dir'] == p2['dir'])
+
 
 def test_check():
     '''Make sure check raises Exception for unphysical parameters'''
     with pytest.raises(ValueError):
         check_lx_dims({'barwidth': 1, 'period': 1})
 
+
 def test_scalingSitransparancy():
     '''The module has data for 1 mu Si and scales that to the depth of the
     grating. Test against known-good coefficient from CXRO.'''
     photons = generate_test_photons(100)
-    cat = L1(order_selector=OrderSelector([-5]),
-             l1_dims = {'bardepth': 0.004 * u.mm,
-                        'period': 0.0001 * u.mm,
-                        'barwidth': 0.00009 * u.mm})
+    cat = catgrating.L1(order_selector=OrderSelector([-5]),
+                        l1_dims={'bardepth': 0.004 * u.mm,
+                                 'period': 0.0001 * u.mm,
+                                 'barwidth': 0.00009 * u.mm})
     photons = cat(photons)
     assert np.isclose(np.median(photons['probability']), 0.22458, rtol=1e-4)
 
@@ -49,8 +53,8 @@ def test_L2_broadening():
     diffraction.'''
     photons = generate_test_photons(1000)
     photons['energy'] = 0.25  # 50 Ang
-    l2 = L2Diffraction(l2_dims={'period': 0.966 * u.mm,
-                                'barwidth': 0.1 * u.mm})
+    l2 = catgrating.L2Diffraction(l2_dims={'period': 0.966 * u.mm,
+                                           'barwidth': 0.1 * u.mm})
     photons = l2(photons)
     det = FlatDetector(position=[-1, 0, 0])
     photons = det(photons)
@@ -65,8 +69,9 @@ def test_L2_broadening():
 def test_L2_Abs():
     '''Check L2 absorption against numbers calculated by Ralf Heilmann.'''
     photons = generate_test_photons(1)
-    l2 = L2Abs(l2_dims={'period': 0.966 * u.mm, 'bardepth': 0.5 * u.mm,
-                        'barwidth': 0.1 * u.mm})
+    l2 = catgrating.L2Abs(l2_dims={'period': 0.966 * u.mm,
+                                   'bardepth': 0.5 * u.mm,
+                                   'barwidth': 0.1 * u.mm})
     photons = l2(photons)
     assert np.isclose(photons['probability'], 0.81, rtol=0.02)
 
@@ -78,18 +83,20 @@ def test_L2_Abs_angle():
     l2_dims = {'period': 0.966 * u.mm, 'bardepth': 0.5 * u.mm,
                'barwidth': 0.1 * u.mm}
 
-    l2 = L2Abs(l2_dims=l2_dims)
+    l2 = catgrating.L2Abs(l2_dims=l2_dims)
     p1 = l2(generate_test_photons(1))
 
-    l2 = L2Abs(l2_dims=l2_dims, orientation=euler2mat(np.deg2rad(1.8), 0, 0, 'szxy'))
+    l2 = catgrating.L2Abs(l2_dims=l2_dims,
+                          orientation=euler2mat(np.deg2rad(1.8), 0, 0, 'szxy'))
     p2 = l2(generate_test_photons(1))
 
-    assert np.isclose(p2['probability'][0] / p1['probability'][0], 0.979, rtol=1e-3)
+    assert np.isclose(p2['probability'][0] / p1['probability'][0], 0.979,
+                      rtol=1e-3)
 
 
 def test_efficiency_table():
     '''Test that the efficiency is read in in the right format.'''
-    efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    efftab = catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
     orders, interpprobs = efftab.probabilities(np.array([0.5, 0.5, 1, 1]),
                                                np.ones(4),
                                                np.deg2rad([1., 2., 1., 2.]))
@@ -99,25 +106,26 @@ def test_efficiency_table():
 
 def test_efficiency_table_in_use():
     '''Use table in a optical element'''
-    efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    efftab = catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
     cat = CATGrating(order_selector=efftab, d=0.001)
     photons = generate_test_photons(5000)
     photons = cat(photons)
-    assert np.isclose((photons['order']==0).sum(), len(photons) / 2, rtol=.05)
+    assert np.isclose((photons['order'] == 0).sum(), len(photons) / 2,
+                      rtol=.05)
 
 
 def test_efficiency_table_wrong_format():
     '''Try to load a datafile with mission rows.'''
     with pytest.raises(DataFileFormatException):
-        efftab = InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency_broken.csv'), k=2)
+        catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency_broken.csv'), k=2)
 
 
 def test_catsupportbars():
-   photons = generate_test_photons(5)
-   p = catsupportbars(photons.copy())
-   assert np.all(p['probability'] == 0)
+    photons = generate_test_photons(5)
+    p = catgrating.catsupportbars(photons.copy())
+    assert np.all(p['probability'] == 0)
 
-   photons['facet'] = np.arange(-1, 4)
-   p = catsupportbars(photons)
-   assert np.all(p['probability'][1:] == 1)
-   assert p['probability'][0] == 0
+    photons['facet'] = np.arange(-1, 4)
+    p = catgrating.catsupportbars(photons)
+    assert np.all(p['probability'][1:] == 1)
+    assert p['probability'][0] == 0

@@ -1,5 +1,4 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-import inspect
 from functools import wraps
 import collections
 from copy import copy
@@ -10,7 +9,7 @@ from transforms3d import affines, euler
 from astropy.table import Table
 from astropy import table
 import astropy.units as u
-from ..simulator import Parallel, Sequence
+from ..simulator import Sequence
 from .uncertainties import generate_facet_uncertainty as genfacun
 from ..analysis.gratings import (resolvingpower_from_photonlist,
                                  effectivearea_from_photonlist)
@@ -464,7 +463,6 @@ def run_tolerances_for_energies(source, energies,
     return table.vstack(outtabs)
 
 
-# This function could be moved marxs itself
 def run_tolerances_for_energies2(source, energies, instrum, cls, wigglefunc,
                                  parameters,
                                  analyzefunc,reset=None, subclass_ok=False,

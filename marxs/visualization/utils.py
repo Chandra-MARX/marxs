@@ -1,11 +1,10 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-'''This module collects helper functions for visualization that are of use for several backends.
+'''This module collects helper functions for visualization backends.
 
-The functions here are not intended to be called directly by the user. Instead, they
-refractor common tasks that are used in several visualization backends.
+The functions here are not intended to be called directly by the
+user. Instead, they refractor common tasks that are used in several
+visualization backends.
 '''
-from __future__ import division
-
 import warnings
 import numpy as np
 
@@ -28,21 +27,25 @@ def get_obj_name(obj):
 class DisplayDict(dict):
     '''A dictionary to store how an element is displayed in plotting.
 
-    A dictionary of this type works just like a normal dictionary, except for an
-    additional look-up step for keys that are not found in the dictionary itself.
-    A ``DisplayDict`` is initialized with a reference to the object it describes
-    and any parameters accessed from ``DisplayDict`` that is not found in the
-    dictionary, will be searched in the objects geometry. This allows us to set
-    any and all display settings in the ``DisplayDict`` to custamize plotting in any
-    way, but for those values that are not set, fall back to the settings of the
-    geometry (e.g. the shape of an object is typically taken from the geometry,
-    while the color is not).
+    A dictionary of this type works just like a normal dictionary,
+    except for an additional look-up step for keys that are not found
+    in the dictionary itself.  A ``DisplayDict`` is initialized with a
+    reference to the object it describes and any parameter accessed
+    from ``DisplayDict`` that is not found in the dictionary will be
+    searched for in the object's geometry. This allows us to set any
+    and all display settings in the ``DisplayDict`` to customize
+    plotting in any way without affecting how the ray-trace is run
+    (which uses only the parameters set in the geoemtry), but for
+    those values that are not set, fall back to the settings of the
+    geometry (e.g. the shape of an object is typically taken from the
+    geometry, while the color is not).
 
     Parameters
     ----------
     parent : `marxs.base.MarxsElement`
         Reference to the object that is described by this ``DisplayDict``
     args, kwargs: see `dict`
+
     '''
     def __init__(self, parent, *args, **kwargs):
         self.parent = parent
@@ -64,7 +67,6 @@ class DisplayDict(dict):
         except:
             KeyError
             return d
-
 
 
 def plot_object_general(plot_registry, obj, display=None, **kwargs):
@@ -92,7 +94,7 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
 
     Returns
     -------
-    out : different
+    out : backend-dependent
         The output from the plotting function that was executed is passed
         through.  Different plotting backends return different kinds of output.
     '''
@@ -100,15 +102,17 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
         if hasattr(obj, 'display') and (obj.display is not None):
             display = obj.display
         else:
-            warnings.warn('Skipping {0}: No display dictionary found.'.format(get_obj_name(obj)),
-                           MARXSVisualizationWarning)
+            warnings.warn('Skipping {0}: No display dictionary found.'.format(
+                get_obj_name(obj)),
+                          MARXSVisualizationWarning)
             return None
 
     try:
         shape = display['shape']
     except KeyError:
-        warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(get_obj_name(obj)),
-                       MARXSVisualizationWarning)
+        warnings.warn('Skipping {0}: "shape" not set in display dict.'.format(
+            get_obj_name(obj)),
+                      MARXSVisualizationWarning)
         return None
 
     shapes = [s.strip() for s in shape.split(';')]
@@ -120,8 +124,9 @@ def plot_object_general(plot_registry, obj, display=None, **kwargs):
             display['color'] = get_color(display)
             return plot_registry[s](obj, display,  **kwargs)
     else:
-        warnings.warn('Skipping {0}: No function to plot {1}.'.format(get_obj_name(obj), shape),
-                          MARXSVisualizationWarning)
+        warnings.warn('Skipping {0}: No function to plot {1}.'.format(
+            get_obj_name(obj), shape),
+                      MARXSVisualizationWarning)
         return None
 
 
@@ -180,7 +185,9 @@ def color_tuple_to_hex(color):
     if all([isinstance(a, float) for a in color]):
         if any(i < 0. for i in color) or any(i > 1. for i in color):
             raise ValueError('Float values in color tuple must be between 0 and 1.')
-        out = hex(int(color[0] * 256**2 * 255 + color[1] * 256 * 255 + color[2] * 255))
+        out = hex(int(color[0] * 256**2 * 255 +
+                      color[1] * 256 * 255 +
+                      color[2] * 255))
     elif all([isinstance(a, int) for a in color]):
         if any(i < 0 for i in color) or any(i > 255 for i in color):
             raise ValueError('Int values in color tuple must be between 0 and 255.')
@@ -194,8 +201,8 @@ def color_tuple_to_hex(color):
 def plane_with_hole(outer, inner):
     '''Triangulation of a plane with an inner hole
 
-    This function constructs a triangulation for a plane with an inner hole, e.g.
-    a rectangular plane where an inner circle is cut out.
+    This function constructs a triangulation for a plane with an inner
+    hole, e.g. a rectangular plane where an inner circle is cut out.
 
     Parameters
     ----------
@@ -216,7 +223,8 @@ def plane_with_hole(outer, inner):
 
     Examples
     --------
-    In this example, we make a square and cut out a smaller square in the middle.
+    In this example, we make a square and cut out a smaller square in the
+    middle.
 
     >>> import numpy as np
     >>> from marxs.visualization.utils import plane_with_hole
@@ -245,10 +253,12 @@ def plane_with_hole(outer, inner):
     i_out = 0
     for i in range(n_out + n_in):
         if i/n >= i_in/n_in:
-            triangles[i, :] = [i_out, n_out + i_in, n_out + ((i_in + 1) % n_in)]
+            triangles[i, :] = [i_out, n_out + i_in,
+                               n_out + ((i_in + 1) % n_in)]
             i_in += 1
         else:
-            triangles[i, :] = [i_out, (i_out + 1) % n_out, n_out + (i_in % n_in)]
+            triangles[i, :] = [i_out, (i_out + 1) % n_out,
+                               n_out + (i_in % n_in)]
             i_out = (i_out + 1) % n_out
     return xyz, triangles
 
@@ -256,11 +266,12 @@ def plane_with_hole(outer, inner):
 def combine_disjoint_triangulations(list_xyz, list_triangles):
     '''Combine two disjoint triangulations into one set of points
 
-    This function combines two entirely separate triangulations into one set
-    of point and triangles. Plotting the combined triangulation should have the
-    same effect as plotting each triangulation separately. This function is used
-    for plotting apertures where we have e.g. an open ring. This can be plotted
-    as an inner circle plus an outer shape with a hole in it.
+    This function combines two entirely separate triangulations into
+    one set of point and triangles. Plotting the combined
+    triangulation should have the same effect as plotting each
+    triangulation separately. This function is used for plotting
+    apertures where we have e.g. an open ring. This can be plotted as
+    an inner circle plus an outer shape with a hole in it.
 
     Parameters
     ----------
@@ -275,9 +286,11 @@ def combine_disjoint_triangulations(list_xyz, list_triangles):
         stacked ``outer`` and ``inner``.
     triangles : nd.array
         List of the indices. Each row has the index of three points in ``xyz``.
+
     '''
     xyz = np.vstack(list_xyz)
     n_offset = np.cumsum([a.shape[0] for a in list_xyz])
     n_offset -= n_offset[0]
-    triangles = np.vstack([list_triangles[i] + n_offset[i] for i in range(len(n_offset))])
+    triangles = np.vstack([list_triangles[i] + n_offset[i] for i in
+                           range(len(n_offset))])
     return xyz, triangles
