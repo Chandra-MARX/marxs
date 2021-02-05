@@ -248,7 +248,7 @@ class Source(SimulationSequenceElement):
                          np.ones(n)],
                         names=['time', 'energy', 'polangle', 'probability'])
         photons.meta['EXTNAME'] = 'EVENTS'
-        photons.meta['EXPOSURE'] = (exposuretime.to(u.s),
+        photons.meta['EXPOSURE'] = (exposuretime.to(u.s).value,
                                     'total exposure time [s]')
 
         #photons.meta['DATE-OBS'] =

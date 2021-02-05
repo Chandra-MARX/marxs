@@ -1,7 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 import astropy.units as u
-from numpy.core.umath_tests import inner1d
 
 from .utils import norm_vector, e2h
 

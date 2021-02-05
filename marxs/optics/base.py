@@ -8,6 +8,7 @@ from ..math.geometry import Geometry, FinitePlane
 from ..base import SimulationSequenceElement
 from ..simulator import BaseContainer
 
+
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
 
@@ -130,41 +131,48 @@ class OpticalElement(SimulationSequenceElement):
             to ensure you are working with an independent copy.
 
         '''
-        if intersect.sum() > 0:
-            if hasattr(self, "specific_process_photons"):
-                outcols = self.specific_process_photons(photons, intersect, interpos, intercoos)
-                self.add_output_cols(photons, list(outcols.keys()))
-                for col in outcols:
-                    if col == 'probability':
-                        photons[col][intersect] *= np.asarray(outcols[col])
+        if intersect.sum() == 0:
+            return photons
+        if hasattr(self, "specific_process_photons"):
+            outcols = self.specific_process_photons(photons, intersect,
+                                                    interpos, intercoos)
+            self.add_output_cols(photons, list(outcols.keys()))
+            for col in outcols:
+                if col == 'probability':
+                    photons[col][intersect] *= np.asarray(outcols[col])
+                elif col is None:
+                    pass
+                else:
+                    photons[col][intersect] = outcols[col]
+
+        elif hasattr(self, "process_photon"):
+            if isinstance(photons, Row):
+                photons = Table(photons)
+            outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
+            n_intersect = intersect.nonzero()[0]
+            for photon, i in zip(photons[intersect], n_intersect):
+                outs = self.process_photon(photon['dir'], photon['pos'],
+                                           photon['energy'],
+                                           photon['polarization'])
+                for a, b in zip(outcols, outs):
+                    if a == 'probability':
+                        photons['probability'][i] *= b
+                    elif a is None:
+                        pass
                     else:
-                        photons[col][intersect] = outcols[col]
+                        photons[a][i] = b
+        else:
+            raise AttributeError('Optical element must have one of three: specific_process_photons, process_photon, or override process_photons.')
 
-            elif hasattr(self, "process_photon"):
-                if isinstance(photons, Row):
-                    photons = Table(photons)
-                outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
-                n_intersect = intersect.nonzero()[0]
-                for photon, i in zip(photons[intersect], n_intersect):
-                    outs = self.process_photon(photon['dir'], photon['pos'],
-                                               photon['energy'],
-                                               photon['polarization'])
-                    for a, b in zip(outcols, outs):
-                        if a == 'probability':
-                            photons['probability'][i] *= b
-                        else:
-                            photons[a][i] = b
-            else:
-                raise AttributeError('Optical element must have one of three: specific_process_photons, process_photon, or override process_photons.')
-
+        if self.loc_coos_name is not None:
             self.add_output_cols(photons, self.loc_coos_name)
-            # Add ID number to ID col, if requested
-            if self.id_col is not None:
-                photons[self.id_col][intersect] = self.id_num
-            # Set position in different coordinate systems
-            photons['pos'][intersect] = interpos[intersect]
             photons[self.loc_coos_name[0]][intersect] = intercoos[intersect, 0]
             photons[self.loc_coos_name[1]][intersect] = intercoos[intersect, 1]
+        # Add ID number to ID col, if requested
+        if self.id_col is not None:
+            photons[self.id_col][intersect] = self.id_num
+        # Set position in different coordinate systems
+        photons['pos'][intersect] = interpos[intersect]
 
         return photons
 
@@ -216,7 +224,8 @@ class FlatStack(FlatOpticalElement, BaseContainer):
     def specific_process_photons(self, *args, **kwargs):
         return {}
 
-    def process_photons(self, photons, intersect=None, interpos=None, intercoos=None):
+    def process_photons(self, photons, intersect=None, interpos=None,
+                        intercoos=None):
         '''
         Parameters
         ----------
