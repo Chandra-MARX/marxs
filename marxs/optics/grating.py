@@ -2,7 +2,6 @@
 '''Gratings and efficiency files'''
 import math
 import numpy as np
-from numpy.core.umath_tests import inner1d
 
 from ..math.utils import norm_vector
 from ..math.polarization import parallel_transport
@@ -242,10 +241,11 @@ class FlatGrating(FlatOpticalElement):
         wave = energy2wave / photons['energy'].data[intersect]
         # calculate angle between normal and (ray projected in plane perpendicular to groove)
         # -> this is the blaze angle
-        p_perp_to_grooves = norm_vector(p - inner1d(p, l)[:, None] * l)
+        p_perp_to_grooves = norm_vector(p - np.einsum("ij,ij->i", p, l)[:, None] * l)
         # Use abs here so that blaze angle is always in 0..pi/2
         # independent of the relative orientation of p and n.
-        blazeangle = np.arccos(np.abs(inner1d(p_perp_to_grooves, n)))
+        blazeangle = np.arccos(np.abs(np.einsum("ij,ij->i", p_perp_to_grooves,
+                                                n)))
         blazeangle += self.blaze_angle_modifier(intercoos[intersect, :])
         m, prob = self.order_selector(photons['energy'].data[intersect],
                                       photons['polarization'].data[intersect],
@@ -254,12 +254,12 @@ class FlatGrating(FlatOpticalElement):
         # The idea to calculate the components in the (d,l,n) system separately
         # is taken from MARX
         sign = self.order_sign_convention(p, d)
-        p_d = inner1d(p, d) + sign * m * wave / self.d(intercoos[intersect, :])
-        p_l = inner1d(p, l)
+        p_d = np.einsum("ij,ij->i", p, d) + sign * m * wave / self.d(intercoos[intersect, :])
+        p_l = np.einsum("ij,ij->i", p, l)
         # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = np.sqrt(1. - p_d**2 - p_l**2)
         # Check if the photons have same direction compared to normal before
-        direction = np.sign(inner1d(p, n), dtype=np.float)
+        direction = np.sign(np.einsum("ij,ij->i", p, n), dtype=np.float)
         if not self.transmission:
             direction *= -1
         dir = p_d[:, None] * d + p_l[:, None] * l + (direction * p_n)[:, None] * n
@@ -295,7 +295,7 @@ class CATGrating(FlatGrating):
         convention is only meaningful if the photons do not arrive
         perpendicular to the grating.
         '''
-        dotproduct = inner1d(p, e_perp_groove)
+        dotproduct = np.einsum("ij,ij->i", p, e_perp_groove)
         sign = np.sign(dotproduct)
         sign[sign == 0] = 1
         return sign

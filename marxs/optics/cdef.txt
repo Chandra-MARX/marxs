@@ -104,8 +104,7 @@ typedef struct
 }
 Marx_Photon_Type;
 
-double Marx_Mirror_Geometric_Area = 1;
+extern double Marx_Mirror_Geometric_Area = 1;
 
 int marx_mirror_init (Param_File_Type *pf);
 int marx_mirror_reflect (Marx_Photon_Type *p, int verbose);
-

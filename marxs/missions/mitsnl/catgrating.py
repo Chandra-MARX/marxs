@@ -10,7 +10,6 @@ angle transmission (CAT) gratings, see e.g. `Heilmann et al. (2015)`_
 .. _Heilmann et al. (2015): http://dx.doi.org/10.1117/12.2188525
 '''
 import numpy as np
-from numpy.core.umath_tests import inner1d
 from scipy.interpolate import RectBivariateSpline, interp1d
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
@@ -288,7 +287,7 @@ class L2Abs(FlatOpticalElement):
 
         p3 = norm_vector(photons['dir'].data[intersect])
         ex, ey, en = self.geometry.get_local_euklid_bases(intercoos[intersect, :])
-        angle = np.arccos(np.abs(inner1d(p3, en)))
+        angle = np.arccos(np.abs(np.einsum("ij,ij->i", p3, en)))
 
         # fractional area NOT covered by the hexagon structure
         openfraction = (self.innerfree / self.period)**2

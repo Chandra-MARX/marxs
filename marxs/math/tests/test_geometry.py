@@ -1,6 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
-from numpy.core.umath_tests import inner1d
 import transforms3d
 import transforms3d.euler
 import pytest
@@ -198,15 +197,15 @@ def test_intersect_tube_2points_outside():
 def test_phi_lim_verification():
     '''Check Errors for wrong phi_lim format.'''
     with pytest.raises(ValueError) as e:
-        circ = Cylinder({'phi_lim': [-.4, -.3, .4]})
+        Cylinder({'phi_lim': [-.4, -.3, .4]})
     assert '[lower limit, upper limit]' in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        circ = Cylinder({'phi_lim': [-.4, -.5]})
+        Cylinder({'phi_lim': [-.4, -.5]})
     assert '[lower limit, upper limit]' in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        circ = Cylinder({'phi_lim': [-.4, 5]})
+        Cylinder({'phi_lim': [-.4, 5]})
     assert 'range -pi to +pi' in str(e.value)
 
 
@@ -248,8 +247,8 @@ def test_local_coordsys(geom):
 
     x, y, z = g.get_local_euklid_bases(np.random.rand(5, 2))
 
-    assert np.allclose(inner1d(x, y), 0)
-    assert np.allclose(inner1d(x, z), 0)
+    assert np.allclose(np.einsum("ij,ij->i", x, y), 0)
+    assert np.allclose(np.einsum("ij,ij->i", x, z), 0)
 
     for vec in [x, y, z]:
         assert np.allclose(np.linalg.norm(vec, axis=1), 1.)

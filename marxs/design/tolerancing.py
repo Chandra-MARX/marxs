@@ -34,7 +34,7 @@ def oneormoreelements(func):
     '''
     @wraps(func)
     def func_wrapper(elements, *args, **kwargs):
-        if isinstance(elements, collections.Iterable):
+        if isinstance(elements, collections.abc.Iterable):
             for e in elements:
                 func(e, *args, **kwargs)
         else:
