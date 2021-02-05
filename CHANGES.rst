@@ -12,7 +12,7 @@ New Features
   simplified interface. [#222]
 
 - Output columns from optical elements can now be `None` (they will be ignored)
-  or specify the datatype and other Column meta information. [#225]
+  or specify the datatype and other Column meta information. [#226]
 
 API Changes
 ^^^^^^^^^^^
