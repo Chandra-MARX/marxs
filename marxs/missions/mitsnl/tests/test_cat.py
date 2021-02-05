@@ -5,7 +5,7 @@ import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
 from transforms3d.euler import euler2mat
 
-from . import catgrating
+from .. import catgrating
 from ..catgrating import DataFileFormatException, check_lx_dims
 from marxs.optics import CATGrating, OrderSelector, FlatDetector
 from marxs.optics.scatter import RandomGaussianScatter

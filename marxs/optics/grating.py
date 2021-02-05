@@ -4,7 +4,7 @@ import math
 import numpy as np
 from numpy.core.umath_tests import inner1d
 
-from ..math.utils import norm_vector, h2e, e2h
+from ..math.utils import norm_vector
 from ..math.polarization import parallel_transport
 from .. import energy2wave
 from .base import FlatOpticalElement
@@ -18,9 +18,10 @@ class OrderSelector(object):
     orderlist : array
         This are the order numbers to chose from. They must be integers.
     p : None or array
-        Probability for a photon to end up in each order. The sum of all probabilities
-        can be smaller than 1, if a certain fraction of photons is absorbed by
-        the grating. If this is ``None``, equal probability is assigned to all orders.
+        Probability for a photon to end up in each order. The sum of
+        all probabilities can be smaller than 1, if a certain fraction
+        of photons is absorbed by the grating. If this is ``None``,
+        equal probability is assigned to all orders.
 
     Examples
     --------
@@ -32,6 +33,7 @@ class OrderSelector(object):
     >>> from marxs.optics import FlatGrating, OrderSelector
     >>> singleordergrating = FlatGrating(d=1e-4, order_selector=OrderSelector([3]))
     >>> setofordersgrating = FlatGrating(d=1e-4, order_selector=OrderSelector(np.arange(-3, 4)))
+
     '''
     def __init__(self, orderlist, p=None):
         self.orderlist = orderlist
@@ -59,17 +61,20 @@ class OrderSelector(object):
 class EfficiencyFile(object):
     '''Select grating order from a probability distribution in a data file.
 
-    The file format supported by this class is as follows:
-    The first colum contains energy values in keV, all remaining columns have the probability
-    that a photons with this energy is diffracted into the respective order. The probabilities
-    for each order do not have to add up to 1.
+    The file format supported by this class is as follows: The first
+    colum contains energy values in keV, all remaining columns have
+    the probability that a photons with this energy is diffracted into
+    the respective order. The probabilities for each order do not have
+    to add up to 1.
 
     Parameters
     ----------
     filename : string
         Path to the efficiency file.
     orders : list
-        List of orders in the file. Must match the number of columns with probabilities.
+        List of orders in the file. Must match the number of columns with
+        probabilities.
+
     '''
     def __init__(self, filename, orders):
         dat = np.loadtxt(filename)
@@ -92,7 +97,6 @@ class EfficiencyFile(object):
         return self.orders[orderind], self.totalprob[ind]
 
 
-
 class FlatGrating(FlatOpticalElement):
     '''Flat grating
 
@@ -102,12 +106,14 @@ class FlatGrating(FlatOpticalElement):
     Parameters
     ----------
     d : float or callable
-        grating constant in mm. If ``d`` is callable, then it will be called as
-        ``d(intercoos)``, where ``intercoos`` is a (N, 2) array holding the
-        positions where photons hit the gratings in the local coordinate system.
-        This can be used to simulate manufacturing uncertainties or intentional
-        grating period variation. The callable has to return a vector of lengths N
+        grating constant in mm. If ``d`` is callable, then it will be
+        called as ``d(intercoos)``, where ``intercoos`` is a (N, 2)
+        array holding the positions where photons hit the gratings in
+        the local coordinate system.  This can be used to simulate
+        manufacturing uncertainties or intentional grating period
+        variation. The callable has to return a vector of lengths N
         that contains the grating constant for each photon in mm.
+
     order_selector : callable
         A function or callable object that accepts arrays of photon
         energy, polarization and the blaze angle as input and returns
@@ -117,10 +123,12 @@ class FlatGrating(FlatOpticalElement):
         probability that a photon at energy E ends up in order=[-2,
         -1, 0, 1, 2] is [0, 0, .5, .3, .0] , then the returned
         probability for all photons should be 0.8.
+
     transmission : bool
         Set to ``True`` for a transmission grating and to ``False`` for a
         reflection grating. (*Default*: ``True`` ) **Warning: Reflection
         gratings have not yet been tested**
+
     groove_angle : float
         Angle between the local z axis and the direction of the
         grooves in radian.  (*Default*: ``0.``)
@@ -130,10 +138,10 @@ class FlatGrating(FlatOpticalElement):
     '''name for output columns that contain the interaction point in local coordinates.'''
 
     order_name = 'order'
-    '''Column name for diffraction order. If set to ``None`` this is not added to the photon list.'''
+    '''Column name for diffraction order.'''
 
     blaze_name = 'blaze'
-    '''Column name for blaze angle. If set to ``None`` this is not added to the photon list.'''
+    '''Column name for blaze angle.'''
 
     def order_sign_convention(self, p, e_perp_groove):
         '''Set sign convention for grating orders.
@@ -157,7 +165,8 @@ class FlatGrating(FlatOpticalElement):
         p : np.array
             Array of Eucleadian direction vectors
         e_perp_groove : np.array
-            Array of local groove directions at the positions where the photons hit
+            Array of local groove directions at the positions where the photons
+            hit
         '''
         # -1 because n, l, d should be right-handed coordinate system
         # while n = e_x, l = e_x, and d = e_y would be left-handed.
@@ -214,10 +223,12 @@ class FlatGrating(FlatOpticalElement):
     def blaze_angle_modifier(self, intercoos):
         '''Modify blaze angle
 
-        In `diffract_photons` the blaze angle is calculated relative to the surface
-        of the grating. In cases where that number has to be modified (e.g. when the grating
-        bars are not perpendicualr to the surface) the blaze angle can be modified by
-        overriding this function.
+        In `diffract_photons` the blaze angle is calculated relative
+        to the surface of the grating. In cases where that number has
+        to be modified (e.g. when the grating bars are not
+        perpendicualr to the surface) the blaze angle can be modified
+        by overriding this function.
+
         '''
         return np.zeros(intercoos.shape[0])
 
@@ -254,35 +265,35 @@ class FlatGrating(FlatOpticalElement):
         dir = p_d[:, None] * d + p_l[:, None] * l + (direction * p_n)[:, None] * n
         return dir, m, prob, blazeangle
 
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+    def specific_process_photons(self, photons,
+                                 intersect, interpos, intercoos):
 
-        dir, m, p, blaze = self.diffract_photons(photons, intersect, interpos, intercoos)
+        dir, m, p, blaze = self.diffract_photons(photons, intersect, interpos,
+                                                 intercoos)
         pol = parallel_transport(photons['dir'].data[intersect, :], dir,
                                  photons['polarization'].data[intersect, :])
-        out = {'dir': dir, 'probability': p, 'polarization': pol}
-        if self.order_name is not None:
-            out[self.order_name] = m
-        if self.blaze_name is not None:
-            out[self.blaze_name] = blaze
+        out = {'dir': dir, 'probability': p, 'polarization': pol,
+               self.order_name: m, self.blaze_name: blaze}
         return out
 
 
 class CATGrating(FlatGrating):
     '''Critical-Angle-Transmission Grating
 
-    CAT gratings are a special case of :class:`FlatGrating` and accept the same arguments.
+    CAT gratings are a special case of :class:`FlatGrating` and accept
+    the same arguments.
 
-    They differ from a :class:`FlatGrating` in the sign convention of the
-    grating orders: Blazing happens on the side of the negative orders. Obviously, this
-    convention is only meaningful if the photons do not arrive perpendicular to the grating.
+    They differ from a :class:`FlatGrating` in the sign convention of
+    the grating orders: Blazing happens on the side of the negative
+    orders. Obviously, this convention is only meaningful if the
+    photons do not arrive perpendicular to the grating.
     '''
-
-
     def order_sign_convention(self, p, e_perp_groove):
         '''Convention to chose the sign for CAT grating orders
 
         Blazing happens on the side of the negative orders. Obviously, this
-        convention is only meaningful if the photons do not arrive perpendicular to the grating.
+        convention is only meaningful if the photons do not arrive
+        perpendicular to the grating.
         '''
         dotproduct = inner1d(p, e_perp_groove)
         sign = np.sign(dotproduct)

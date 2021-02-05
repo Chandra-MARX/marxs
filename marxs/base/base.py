@@ -55,9 +55,9 @@ class DocMeta(type):
 class MarxsElement(metaclass=DocMeta):
     '''Base class for all elements in a MARXS simulation.
 
-    This includes elements that actually change photon properties such as grating and
-    mirrors, but also abstract concepts that do not have a direct hardware
-    representation such as a "Rowland Torus".
+    This includes elements that actually change photon properties such
+    as grating and mirrors, but also abstract concepts that do not
+    have a direct hardware representation such as a "Rowland Torus".
     '''
 
     display = {'shape': 'None'}
@@ -77,19 +77,23 @@ class MarxsElement(metaclass=DocMeta):
     def describe(self):
         return OrderedDict(element=self.name)
 
+
 class SimulationSequenceElement(MarxsElement):
-    '''Base class for all elements in a simulation sequence that processes photons.'''
+    '''Base class for all elements in a simulation that processes photons.'''
 
     output_columns = []
     '''This is a list of strings that names the output properties.
 
-    This gives the names of the output properties from this optical element.
-    `process_photon` or `process_photons` are responsible for calculating the values of these
-    properties. For example, for a mirror of nested shells one might set
-    ``output_columns = ['mirror_shell']`` to pass the information on which shell the interaction
-    took place to the user.
+    This gives the names of the output properties from this optical
+    element.  `process_photon` or `process_photons` are responsible
+    for calculating the values of these properties. For example, for a
+    mirror of nested shells one might set
+    ``output_columns = ['mirror_shell']``
+    to pass the information on which shell the interaction took place to the
+    user.
 
-    The following properties are always included in the output and do not need to be listed here:
+    The following properties are always included in the output and do not need
+    to be listed here:
 
         dir : `numpy.ndarray`
             4-d direction vector of ray in homogeneous coordinates
@@ -105,6 +109,7 @@ class SimulationSequenceElement(MarxsElement):
             Probability that the photon continues. Set to 0 if the photon is
             absorbed, to 1 if it passes the optical element and to number
             between 0 and 1 to express a probability that the photons passes.
+
     '''
 
     id_col = None
@@ -129,7 +134,7 @@ class SimulationSequenceElement(MarxsElement):
         super(SimulationSequenceElement, self).__init__(**kwargs)
 
     def add_output_cols(self, photons, colnames=[]):
-        '''Add output columns of the correct format (currently: float) to the photon array.
+        '''Add output columns to the photon array.
 
         This function takes the column names that are added to ``photons`` from
         several sources:
@@ -142,19 +147,30 @@ class SimulationSequenceElement(MarxsElement):
         ----------
         photons : `astropy.table.Table`
             Table columns are added to.
-        colnames : list of strings
+        colnames : list of elements
+            Each element can be a string (in this case a float column with
+            initial value ``np.nan`` is added) or a dictionay of arguments
+            for `astropy.table.column.Column`. If the dictionay has a keys
+            "value" then the column will be initialized to that value.
             Column names to be added; in addition several object properties can
             be used to set the column names, see description above.
         '''
-        temp = np.empty(len(photons))
-        temp[:] = np.nan
         for n in self.output_columns + colnames:
-            if n not in photons.colnames:
-                photons.add_column(Column(name=n, data=temp))
+            if (n is not None) and (n not in photons.colnames):
+                if not isinstance(n, dict):
+                    n = {'name': n, 'value': np.nan}
+                val = n.pop('value', None)
+                newcol = Column(length=len(photons), **n)
+                if val is not None:
+                    newcol[:] = val
+                photons.add_column(newcol)
 
-        if self.id_col is not None:
-            if self.id_col not in photons.colnames:
-                photons.add_column(Column(name=self.id_col, data=-np.ones(len(photons))))
+        # We can call this recursively, because the column will be added
+        # before reaching this line agian, so we avoid infinite recursion.
+        if (self.id_col is not None) and (self.id_col not in photons.colnames):
+            self.add_output_cols(photons, colnames=[{'name': self.id_col,
+                                                     'dtype': int,
+                                                     'value': -1}])
 
     def __call__(self, photons, *args, **kwargs):
         return self.process_photons(photons, *args, **kwargs)
@@ -169,8 +185,9 @@ def _parse_position_keywords(kwargs):
     Parameters
     ----------
     pos4d : 4x4 array
-        Transformation to bring an element from the default position (see description of
-        individual elements) to a certain point in the space of homogeneous coordinates.
+        Transformation to bring an element from the default position
+        (see description of individual elements) to a certain point in
+        the space of homogeneous coordinates.
     position : 3-d vector in real space
         Measured from the origin of the spacecraft coordinate system.
     orientation : Rotation matrix or ``None``
@@ -179,11 +196,12 @@ def _parse_position_keywords(kwargs):
         of the spacecraft. The default is no rotation (i.e. the axes of both
         coordinate systems are parallel).
     zoom : float or 3-d vector
-        Scale the size of an optical element in each dimension by ``zoom``. If ``zoom`` is a scalar,
-        the same scale is applied in all dimesions. This only affects the oter dimensions of
-        the optical element, not internal scales like the pixel size or grating constant (if
-        defined for the optical element in question).
-    '''
+        Scale the size of an optical element in each dimension by
+        ``zoom``. If ``zoom`` is a scalar, the same scale is applied
+        in all dimesions. This only affects the oter dimensions of the
+        optical element, not internal scales like the pixel size or
+        grating constant (if defined for the optical element in
+        question).  '''
     pos4d = kwargs.pop('pos4d', None)
     if pos4d is None:
         position = kwargs.pop('position', np.zeros(3))
