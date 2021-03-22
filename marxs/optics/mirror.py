@@ -7,6 +7,7 @@ from .base import FlatOpticalElement
 from ..math.utils import h2e, e2h, distance_point_point, norm_vector
 from ..math.polarization import parallel_transport
 
+
 class PerfectLens(FlatOpticalElement):
     '''This describes an infinitely large lens that focusses all rays exactly.
 

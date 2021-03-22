@@ -84,11 +84,6 @@ class CircularDetector(OpticalElement):
         an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
     pixsize : float
         size of pixels in mm
-    phi_offset : float
-        This defines the center (pixel = 0) in radian. In other words:
-        The output ``det_phi`` column has its zero position at ``phi_offset`` and
-        values for ``phi`` are in the range [-pi, pi].
-
     '''
     loc_coos_name = ['det_phi', 'det_y']
 
