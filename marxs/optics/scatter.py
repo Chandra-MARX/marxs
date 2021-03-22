@@ -20,6 +20,7 @@ from ..math.rotations import axangle2mat
 from ..math.polarization import parallel_transport
 from .base import FlatOpticalElement
 
+
 class RadialMirrorScatter(FlatOpticalElement):
     '''Add scatter to any sort of radial mirror.
 
@@ -37,6 +38,9 @@ class RadialMirrorScatter(FlatOpticalElement):
         sigma of Gaussian for scatter perpendicular to the plane of reflection
         (default = 0)
     '''
+    inplanescattercol = 'inplanescatter'
+    perpplanescattercol = 'perpplanescatter'
+
     def __init__(self, **kwargs):
         self.inplanescatter = kwargs.pop('inplanescatter').to(u.rad).value
         self.perpplanescatter = kwargs.pop('perpplanescatter', 0. * u.rad).to(u.rad).value
@@ -69,7 +73,8 @@ class RadialMirrorScatter(FlatOpticalElement):
                                  photons['polarization'].data[intersect, :])
 
         return {'dir': outdir, 'polarization': pol,
-                'inplanescatter': inplaneangle, 'perpplanescatter': perpangle}
+                self.inplanescattercol: inplaneangle,
+                self.perpplanescattercol: perpangle}
 
 
 class RandomGaussianScatter(FlatOpticalElement):
@@ -136,7 +141,5 @@ class RandomGaussianScatter(FlatOpticalElement):
             outdir = e2h(np.einsum('...ij,...i->...j', rot, outdir), 0)
             pol = parallel_transport(photons['dir'].data[intersect, :], outdir,
                                      photons['polarization'].data[intersect, :])
-            out = {'dir': outdir, 'polarization': pol}
-        if self.scattername is not None:
-            out[self.scattername] = angle
+            out = {'dir': outdir, 'polarization': pol, self.scattername: angle}
         return out
