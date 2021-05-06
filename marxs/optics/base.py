@@ -9,6 +9,48 @@ from ..base import SimulationSequenceElement
 from ..simulator import BaseContainer
 
 
+def _assign_col_value(photons, col, index, value):
+    '''Assign new values to a subset of photons in a photon list
+
+    The column 'probability' receives special treatment: Probability values
+    are not replaced by the new numbers, but multiplied by the new numbers.
+    That way, a function just need to generate the *change in probability* and,
+    as a photon propagates through an instrument, all those changes multiply
+    together.
+
+    The probability column is also subject to extra checks because we want to
+    maintain probabilities between 0 and 1. In particular negative
+    probabilities can really cause problems later. Thus, this methods will
+    raise an Exception if probabilities are outside of the 0..1 range.
+    This can happen, for example, when an interpolation of a table goes wrong
+    or when numerical errors accumulate. In this case, the function that
+    generates the numbers for the probabilities in the first place, should
+    clip them to the allowed range.
+
+    Parameters
+    ----------
+    photons: `astropy.table.Table`
+        Table with photon properties
+    col : string
+        name of column
+    index : int or array
+        index of the photons that are assigned new values. Can be a single
+        number or a boolean array.
+    value : scalar or array
+        New valuees to the assigned to column `col`. If this is an array, it
+        needs to match the shape selected by the index array ``index``.
+    '''
+    if col == 'probability':
+        # Fix numerics of a probability
+        if np.any(value < 0) or np.any(value > 1):
+            raise ValueError('Found probability outside of the 0..1 arange.')
+        photons[col][index] *= value
+    elif col is None:
+        pass
+    else:
+        photons[col][index] = value
+
+
 class OpticalElement(SimulationSequenceElement):
     '''Base class for all optical elements in marxs.
 
@@ -138,29 +180,21 @@ class OpticalElement(SimulationSequenceElement):
                                                     interpos, intercoos)
             self.add_output_cols(photons, list(outcols.keys()))
             for col in outcols:
-                if col == 'probability':
-                    photons[col][intersect] *= np.asarray(outcols[col])
-                elif col is None:
-                    pass
-                else:
-                    photons[col][intersect] = outcols[col]
+                _assign_col_value(photons, col, intersect,
+                                  np.asarray(outcols[col]))
 
         elif hasattr(self, "process_photon"):
             if isinstance(photons, Row):
                 photons = Table(photons)
-            outcols = ['dir', 'pos', 'energy', 'polarization', 'probability'] + self.output_columns
+            outcols = ['dir', 'pos', 'energy', 'polarization',
+                       'probability'] + self.output_columns
             n_intersect = intersect.nonzero()[0]
             for photon, i in zip(photons[intersect], n_intersect):
                 outs = self.process_photon(photon['dir'], photon['pos'],
                                            photon['energy'],
                                            photon['polarization'])
-                for a, b in zip(outcols, outs):
-                    if a == 'probability':
-                        photons['probability'][i] *= b
-                    elif a is None:
-                        pass
-                    else:
-                        photons[a][i] = b
+                for col, b in zip(outcols, outs):
+                    _assign_col_value(photons, col, i, b)
         else:
             raise AttributeError('Optical element must have one of three: specific_process_photons, process_photon, or override process_photons.')
 

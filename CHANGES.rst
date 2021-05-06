@@ -14,6 +14,9 @@ New Features
 - Output columns from optical elements can now be `None` (they will be ignored)
   or specify the datatype and other Column meta information. [#226]
 
+- To avoid probabilities <0 or >1, values assigned to this column are now
+  tested and a ``ValueError`` may be raised. [#229]
+
 API Changes
 ^^^^^^^^^^^
 
@@ -23,6 +26,9 @@ Bug fixes
 
 - `marxs.missions.mitsnl.catsupportbars` no longer throws an exception if
   no photon hit a facet before. [#221]
+
+- To avoid probabilities <0 or >1, the default interpolation for MIT grating
+  efficiency tables is now linear. [#229]
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
