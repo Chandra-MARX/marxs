@@ -141,7 +141,7 @@ class InterpolateEfficiencyTable(object):
         Degree of spline. See `scipy.interpolate.RectBivariateSpline`.
     '''
 
-    def __init__(self, filename, k=3):
+    def __init__(self, filename, k=1):
         tab, wave, theta, orders = load_table2d(filename)
         theta = theta.to(u.rad)
         # Order is int, we will never interpolate about order,
