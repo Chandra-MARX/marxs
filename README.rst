@@ -3,8 +3,8 @@ marxs
 
 Multi-Architecture-Raytrace-Xraymission-Simulator
 
-.. image:: https://travis-ci.org/Chandra-MARX/marxs.svg
-   :target: https://travis-ci.org/Chandra-MARX/marxs
+.. image:: https://github.com/Chandra-MARX/marxs/actions/workflows/ci_tests.yml/badge.svg
+   :target: https://github.com/Chandra-MARX/marxs/actions/
    :alt: Continuous integration status
 
 .. image:: https://readthedocs.org/projects/marxs/badge/?version=latest
