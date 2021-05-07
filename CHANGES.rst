@@ -15,7 +15,7 @@ New Features
   or specify the datatype and other Column meta information. [#226]
 
 - To avoid probabilities <0 or >1, values assigned to this column are now
-  tested and a ``ValueError`` may be raised. [#229]
+  tested and a ``ValueError`` may be raised. [#230]
 
 API Changes
 ^^^^^^^^^^^
