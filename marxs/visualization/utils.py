@@ -64,8 +64,7 @@ class DisplayDict(dict):
         '''D.get(k[,d]) -> D[k] if k in D, else d.  d defaults to None.'''
         try:
             return self[k]
-        except:
-            KeyError
+        except KeyError:
             return d
 
 
