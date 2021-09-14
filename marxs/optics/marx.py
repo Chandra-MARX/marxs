@@ -29,8 +29,8 @@ class MarxError(Exception):
 class MarxMirror(OpticalElement, BaseAperture):
     '''Interface to MARX mirror module
 
-    This class provides an interface to the `MARX <http://space.mit.edu/ASC/marx/>`_
-    mirror module. It requires
+    This class provides an interface to the
+    `MARX <http://space.mit.edu/ASC/marx/>`_  mirror module. It requires
     both the MARX source code and compiled MARX binaries as explained in the
     :ref:`Installation instructions for MARXS <sect-installmarxccode>`
     When this model

@@ -3,6 +3,7 @@ import numpy as np
 
 from .. import HETG
 
+
 def test_orient():
     '''Check orientation of gratings.'''
     hetg = HETG()

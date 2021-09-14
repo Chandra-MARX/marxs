@@ -11,7 +11,6 @@ from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE,
                    PIX_CORNER_LSI_PAR, chip2tdet)
 
 
-
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
 
@@ -56,7 +55,8 @@ class ACISChip(FlatDetector):
         return {'chipx': chip[:, 0], 'chipy': chip[:, 1],
                 'tdetx': tdet[:, 0], 'tdety': tdet[:, 1],
                 'detx': detx, 'dety': dety,
-                'x': skyx, 'y': skyy,}
+                'x': skyx, 'y': skyy}
+
 
 class ACIS(Parallel):
     '''The ACIS instrument

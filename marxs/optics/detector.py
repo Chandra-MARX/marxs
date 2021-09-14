@@ -67,6 +67,7 @@ class FlatDetector(FlatOpticalElement):
         dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
         return {self.detpix_name[0]: detx, self.detpix_name[1]: dety}
 
+
 class CircularDetector(OpticalElement):
     '''A detector shaped like a ring or tube.
 
@@ -79,11 +80,12 @@ class CircularDetector(OpticalElement):
     Parameters
     ----------
     position, orientation, zoom, pos4d : see description of `pos4d`
-        The radius of the tube is given by the ``zoom`` keyword, see `pos4d`.
-        Use ``zoom[0] == zoom[1]`` to make a circular tube. ``zoom[0] != zoom[1]`` gives
-        an elliptical profile. ``zoom[2]`` sets the extension in the z direction.
-    pixsize : float
-        size of pixels in mm
+        The radius of the tube is given by the ``zoom`` keyword, see
+        `pos4d`.  Use ``zoom[0] == zoom[1]`` to make a circular
+        tube. ``zoom[0] != zoom[1]`` gives an elliptical
+        profile. ``zoom[2]`` sets the extension in the z direction.
+        pixsize : float size of pixels in mm
+
     '''
     loc_coos_name = ['det_phi', 'det_y']
 

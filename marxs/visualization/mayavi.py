@@ -1,13 +1,16 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 '''`Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ plotting backend
 
-Mayavi is a python package for interactive 3-D displays that uses VTK underneath.
-Fuctions in this module display rays or objects in 3D using mayavi. Each of them
-requires a ``mayavi.core.scene.Scene`` instance as input and returns a mayavi object
-(or a list of those), e.g. a ``mayavi.visual.Box`` instance.
+Mayavi is a python package for interactive 3-D displays that uses VTK
+underneath.  Fuctions in this module display rays or objects in 3D
+using mayavi. Each of them requires a ``mayavi.core.scene.Scene``
+instance as input and returns a mayavi object (or a list of those),
+e.g. a ``mayavi.visual.Box`` instance.
 
-The plotting routines attempt to find all valid OpenGL properties by name in the
-``display`` dictionaries and apply those to the plotted object.
+The plotting routines attempt to find all valid OpenGL properties by
+name in the ``display`` dictionaries and apply those to the plotted
+object.
+
 '''
 from __future__ import absolute_import
 
@@ -44,10 +47,12 @@ doc_plot='''
         Return the result of a mayavi plotting method.
 '''
 
+
 @format_doc(doc_plot)
 def container(obj, display=None, viewer=None):
     '''Recursively plot objects containted in a container.'''
     return [plot_object(e, display=None, viewer=viewer) for e in obj.elements]
+
 
 @format_doc(doc_plot)
 def triangulation(obj, display, viewer=None):
@@ -55,8 +60,10 @@ def triangulation(obj, display, viewer=None):
     from mayavi import mlab
 
     xyz, triangles = obj.geometry.triangulate(display)
-    t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2], triangles, color=display['color'])
+    t = mlab.triangular_mesh(xyz[:, 0], xyz[:, 1], xyz[:, 2],
+                             triangles, color=display['color'])
     return t
+
 
 @format_doc(doc_plot)
 def surface(surface, display, viewer=None):
@@ -78,6 +85,7 @@ def surface(surface, display, viewer=None):
     z = xyz[..., 2]
     m = mlab.mesh(x, y, z, figure=viewer, color=display['color'])
     return m
+
 
 @format_doc(doc_plot)
 def box(obj, display, viewer=None):
@@ -115,9 +123,10 @@ def box(obj, display, viewer=None):
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
     corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
-    b = mlab.triangular_mesh(corners[:,0], corners[:,1], corners[:,2],
+    b = mlab.triangular_mesh(corners[:, 0], corners[:, 1], corners[:, 2],
                              triangles, color=display['color'])
     return b
+
 
 @format_doc(doc_plot)
 def cylinder(obj, display, viewer=None):
@@ -138,8 +147,10 @@ def cylinder(obj, display, viewer=None):
                     tube_sides=display.get('tube_sides', 20))
     return c
 
+
 def plot_rays(data, scalar=None, viewer=None,
-              kwargssurface={'colormap': 'Accent', 'line_width': 1, 'opacity': .4}):
+              kwargssurface={'colormap': 'Accent', 'line_width': 1,
+                             'opacity': .4}):
     '''Plot lines for simulated rays.
 
     Parameters
@@ -182,13 +193,13 @@ def plot_rays(data, scalar=None, viewer=None,
     else:
         raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})'.format(n, N))
 
-    x = data[:,:, 0].flatten()
-    y = data[:,:, 1].flatten()
-    z = data[:,:, 2].flatten()
+    x = data[:, :, 0].flatten()
+    y = data[:, :, 1].flatten()
+    z = data[:, :, 2].flatten()
 
     a = np.arange(n * N).reshape((-1, N))[:, :-1].flatten()
     b = a + 1
-    connections = np.vstack([a,b]).T
+    connections = np.vstack([a, b]).T
 
     # Create the points
     src = mlab.pipeline.scalar_scatter(x, y, z, s, figure=viewer)
@@ -204,6 +215,7 @@ def plot_rays(data, scalar=None, viewer=None,
     surface = mlab.pipeline.surface(lines, figure=viewer, **kwargssurface)
 
     return src, lines, surface
+
 
 plot_registry = {'triangulation': triangulation,
                  'surface': surface,
