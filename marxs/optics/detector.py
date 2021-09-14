@@ -84,7 +84,7 @@ class CircularDetector(OpticalElement):
         `pos4d`.  Use ``zoom[0] == zoom[1]`` to make a circular
         tube. ``zoom[0] != zoom[1]`` gives an elliptical
         profile. ``zoom[2]`` sets the extension in the z direction.
-        pixsize : float size of pixels in mm
+    pixsize : float size of pixels in mm
 
     '''
     loc_coos_name = ['det_phi', 'det_y']

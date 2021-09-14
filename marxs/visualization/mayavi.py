@@ -12,8 +12,6 @@ name in the ``display`` dictionaries and apply those to the plotted
 object.
 
 '''
-from __future__ import absolute_import
-
 import numpy as np
 from astropy.utils.decorators import format_doc
 
@@ -25,7 +23,7 @@ from . import utils
 # Thus, I've moved the import statement into the individual functions, so that
 # this module can still be imported when Travis or readthedocs build the documentation.
 
-doc_plot='''
+doc_plot = '''
     {__doc__}
 
     Parameters
@@ -35,11 +33,11 @@ doc_plot='''
     display : dict of None
         Dictionary with display settings.
     viewer : ``mayavi.core.scene.Scene instance``.
-        If None, the source is not added
-        to any figure, and will be added automatically by the modules or filters.
-        If False, no figure will be created by modules or filters applied to the
-        source: the source can only be used for testing, or numerical algorithms,
-        not visualization.
+        If None, the source is not added to any figure, and will be
+        added automatically by the modules or filters.  If False, no
+        figure will be created by modules or filters applied to the
+        source: the source can only be used for testing, or numerical
+        algorithms, not visualization.
 
     Returns
     -------

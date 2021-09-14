@@ -14,9 +14,6 @@ instrument.
 
 These classes may be generalized in the future.
 '''
-
-from __future__ import division
-
 import numpy as np
 from scipy import optimize
 import transforms3d
@@ -35,7 +32,8 @@ __all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
            'ElementPlacementError', 'GratingArrayStructure', 'LinearCCDArray',
            'RectangularGrid', 'RowlandCircleArray']
 
-def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1,99]):
+
+def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1, 99]):
     '''Find the radius the photons coming from a single mirror shell have.
 
     For nested Wolter Type I mirrors the ray of photons reflected from a single
@@ -167,7 +165,7 @@ class RowlandTorus(MarxsElement, Geometry):
         n_Nones = 0
         for i, c in enumerate([x, y, z]):
             if c is None:
-                n_Nones +=1
+                n_Nones += 1
                 ind = i
         if n_Nones != 1:
             raise ValueError('Exactly one of the input numbers for x,y,z must be None.')
@@ -309,7 +307,6 @@ class RowlandTorus(MarxsElement, Geometry):
 
         return np.einsum('...ij,...j', self.pos4d, e2h(normal, 0))
 
-
     def normal(self, xyzw):
         '''Return the gradient vector field.
 
@@ -361,8 +358,8 @@ class RowlandTorus(MarxsElement, Geometry):
         '''
         y = radius * np.cos(angle)
         z = radius * np.sin(angle)
-        x = self.solve_quartic(y=y,z=z, interval=interval, transform=False)
-        xyz = np.vstack([x,y,z, np.ones_like(x)]).T
+        x = self.solve_quartic(y=y, z=z, interval=interval, transform=False)
+        xyz = np.vstack([x, y, z, np.ones_like(x)]).T
         return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
 
 

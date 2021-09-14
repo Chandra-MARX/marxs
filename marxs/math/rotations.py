@@ -4,6 +4,7 @@ from transforms3d.utils import normalized_vector
 
 __all__ = ['ex2vec_fix', 'axangle2mat']
 
+
 def ex2vec_fix(e1, efix):
     '''Rotate x-axis to e1, use efix to break rotation ambiguity.
 
