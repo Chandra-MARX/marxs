@@ -103,7 +103,7 @@ class Geometry(NoGeometry):
         self.pos4d = _parse_position_keywords(kwargs)
         # copy class attribute to instance attribute
         self._geometry = copy(self._geometry)
-        super(Geometry, self).__init__(kwargs=kwargs)
+        super().__init__(kwargs=kwargs)
 
     def __getitem__(self, key):
         '''This function wraps access to the pos4d matrix.
@@ -289,7 +289,7 @@ class PlaneWithHole(FinitePlane):
 
     def __init__(self, kwargs):
         self._geometry['r_inner'] = kwargs.pop('r_inner', 0.)
-        super(PlaneWithHole, self).__init__(kwargs)
+        super().__init__(kwargs)
 
     def triangulate(self, display={}):
         '''Return a triangulation of the aperture hole embedded in a square.
@@ -353,7 +353,7 @@ class CircularHole(PlaneWithHole):
             raise ValueError('phi[1] - phi[0] must be less than 2 pi.')
         self.phi = phi
 
-        super(CircularHole, self).__init__(kwargs)
+        super().__init__(kwargs)
 
     def outer_display(self, display):
         '''Return values in Eukledian space.'''
@@ -418,14 +418,14 @@ class Cylinder(Geometry):
     def __init__(self, kwargs={}):
         self.coos_limits = deepcopy(self.coos_limits)
         self.coos_limits[0] = np.asanyarray(kwargs.pop('phi_lim', [-np.pi, np.pi]))
-        super(Cylinder, self).__init__(kwargs)
+        super().__init__(kwargs)
 
     def __getitem__(self, value):
         if value == 'R':
             trans, rot, zoom, shear = decompose44(self.pos4d)
             return zoom[0]
         else:
-            return super(Cylinder, self).__getitem__(value)
+            return super().__getitem__(value)
 
     @classmethod
     def from_rowland(cls, rowland, width, rotation=0., kwargs={}):

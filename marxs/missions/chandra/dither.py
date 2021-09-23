@@ -28,7 +28,7 @@ class LissajousDither(FixedPointing):
         self.DitherAmp = kwargs.pop('DitherAmp', np.array([8., 8., 0.]) * u.arcsec)
         self.DitherPeriod = kwargs.pop('DitherPeriod', np.array([1000., 707., 1e5]) * u.s)
         self.DitherPhase = kwargs.pop('DitherPhase', np.zeros(3) * u.radian)
-        super(LissajousDither, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def dither(self, time):
         '''Calculate the dither offset relative to pointing direction.
@@ -44,7 +44,6 @@ class LissajousDither(FixedPointing):
             dither motion offset in pitch, yaw, roll for N times in rad
         '''
         return self.DitherAmp * np.sin(2. * np.pi * u.radian * time[:, np.newaxis] * u.s / self.DitherPeriod + self.DitherPhase)  / np.array([np.cos(self.coords.icrs.dec), 1., 1.])
-
 
     def pointing(self, time):
         '''Calculate the pointing direction for a set of times
@@ -132,23 +131,24 @@ class LissajousDither(FixedPointing):
 
         return photons_dir
 
-
     def write_asol(self, photons, asolfile, timestep=0.256):
         '''Write an aspect solution (asol) file
 
-        Chandra analysis scripts often require an aspect solution, which is essientiall
-        a list of pointing directions in the dither pattern vs. time.
-        This method write such a list to a file.
+        Chandra analysis scripts often require an aspect solution,
+        which is essientially a list of pointing directions in the
+        dither pattern vs. time.  This method write such a list to a
+        file.
 
         Parameters
         ----------
         photons :  `astropy.table.Table` or `astropy.table.Row`
-            Table with photon properties. Some meta data from the header of this table
-            is required (e.g. the length of the observation).
+            Table with photon properties. Some meta data from the header of
+            this table is required (e.g. the length of the observation).
         asolfile : string
             Path and file name where the asol file is saved.
         timestamp : float
             Time step between entries in the asol file in seconds.
+
         '''
         time = np.arange(0, photons.meta['EXPOSURE'][0], timestep)
         pointing = self.pointing(time).to(u.deg).value
@@ -158,9 +158,10 @@ class LissajousDither(FixedPointing):
         asol['time'].unit = 's'
         # The following columns represent measured offsets in Chandra
         # They are not part of this simulation. Simply set them to 0
-        for col in [ 'ra_err', 'dec_err', 'roll_err',
-                     'dy', 'dz', 'dtheta', 'dy_err', 'dz_err', 'dtheta_err',
-                      'roll_bias', 'pitch_bias', 'yaw_bias', 'roll_bias_err', 'pitch_bias_err', 'yaw_bias_err']:
+        for col in ['ra_err', 'dec_err', 'roll_err',
+                    'dy', 'dz', 'dtheta', 'dy_err', 'dz_err', 'dtheta_err',
+                    'roll_bias', 'pitch_bias', 'yaw_bias', 'roll_bias_err',
+                    'pitch_bias_err', 'yaw_bias_err']:
             asol[col] = np.zeros_like(time)
             if 'bias' in col:
                 asol[col].unit = 'deg / s'
@@ -169,8 +170,8 @@ class LissajousDither(FixedPointing):
             else:
                 asol[col].unit = 'deg'
         asol['q_att'] = [mat2quat(euler2mat(np.deg2rad(p[0]),
-                                   np.deg2rad(-p[1]),
-                                   np.deg2rad(-p[2]), 'rzyx'))
+                                            np.deg2rad(-p[1]),
+                                            np.deg2rad(-p[2]), 'rzyx'))
                          for p in pointing]
         # Copy info like the exposure time from the photons list meta to asol,
         # but not column specific keywords like TTYPEn, TCTYPn, MTYPEn, MFORMn, etc:

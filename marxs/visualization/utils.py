@@ -49,7 +49,7 @@ class DisplayDict(dict):
     '''
     def __init__(self, parent, *args, **kwargs):
         self.parent = parent
-        super(DisplayDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def __getitem__(self, key):
         if (key not in self) and hasattr(self.parent, 'geometry'):
@@ -58,7 +58,7 @@ class DisplayDict(dict):
             except AttributeError:
                 raise KeyError(key)
         else:
-            return super(DisplayDict, self).__getitem__(key)
+            return super().__getitem__(key)
 
     def get(self, k, d=None):
         '''D.get(k[,d]) -> D[k] if k in D, else d.  d defaults to None.'''

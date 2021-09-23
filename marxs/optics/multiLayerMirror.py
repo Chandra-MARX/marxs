@@ -127,7 +127,7 @@ class MultiLayerEfficiency(FlatOpticalElement):
     def __init__(self, **kwargs):
         self.fileName = kwargs.pop('reflFile')
         self.polFile = kwargs.pop('testedPolarization')
-        super(MultiLayerEfficiency, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def interp_files(self, photons, local):
         # read in correct reflecting probability file, now in table format

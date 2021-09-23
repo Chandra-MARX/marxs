@@ -165,6 +165,7 @@ HRC-S3-UR,s,h,"(2.253 -155.400   13.167 )",,,"LSI coords for HRC-S2 UR"
 HRC-S3-UL,s,h,"(2.253 -155.400  -13.167 )",,,"LSI coords for HRC-S2 UL"
 '''
 
+
 def chip2tdet(chip, tdet, id_num):
     '''Convert CHIP coordinates to TDET coordiantes.
 

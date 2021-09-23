@@ -3,19 +3,20 @@
 '''
 import numpy as np
 
-from .base import OpticalElement, FlatOpticalElement
+from .base import FlatOpticalElement
 from ..base import MarxsElement
-from ..math.geometry import NoGeometry
+
 
 class GlobalEnergyFilter(MarxsElement):
     '''Energy dependent filter that globally affects all photons.
 
-    This element is used on all photons in the list, there is no geometrical
-    position associated with it. Consequently, there is no update of the position
-    or direction for each photon.
-    Use this element for global filters, that are not directly associated with any particular
-    physical object, e.g. to apply a energy based mirror efficiency after
-    passing the photons through one of the perfect efficiency mirror models.
+    This element is used on all photons in the list, there is no
+    geometrical position associated with it. Consequently, there is no
+    update of the position or direction for each photon.  Use this
+    element for global filters, that are not directly associated with
+    any particular physical object, e.g. to apply a energy based
+    mirror efficiency after passing the photons through one of the
+    perfect efficiency mirror models.
 
     Parameters
     ----------
@@ -37,14 +38,15 @@ class GlobalEnergyFilter(MarxsElement):
     See Also
     --------
     marxs.optics.filter.EnergyFilter
+
     '''
 
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
-        super(GlobalEnergyFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, photons):
-        p =  self.filterfunc(photons['energy'])
+        p = self.filterfunc(photons['energy'])
         if np.any(p < 0.) or np.any(p > 1.):
             raise ValueError('Probabilities returned by filterfunc must be in interval [0, 1].')
         photons['probability'] *= p
@@ -79,10 +81,11 @@ class EnergyFilter(FlatOpticalElement):
     display = {'color': (1.0, 0., 0.),
                'opacity': 0.5,
                'shape': 'box',
-    }
+               }
+
     def __init__(self, **kwargs):
         self.filterfunc = kwargs.pop('filterfunc')
-        super(EnergyFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         p =  self.filterfunc(photons['energy'][intersect])

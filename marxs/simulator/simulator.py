@@ -36,7 +36,7 @@ class BaseContainer(SimulationSequenceElement):
         for elem in self.elements + self.preprocess_steps + self.postprocess_steps:
             if not callable(elem):
                 raise SimulationSetupError('{0} is not callable.'.format(str(elem)))
-        super(BaseContainer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, photons):
         for elem in self.elements:
@@ -199,7 +199,7 @@ class Sequence(BaseContainer):
 
     def __init__(self, **kwargs):
         self.elements = kwargs.pop('elements')
-        super(Sequence, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class Parallel(BaseContainer):
@@ -350,7 +350,7 @@ class Parallel(BaseContainer):
         else:
             self.elem_pos = elem_pos
 
-        super(Parallel, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if 'id_col' not in self.elem_args:
             self.elem_args['id_col'] = self.id_col
@@ -488,7 +488,7 @@ class ParallelCalculated(Parallel):
         self.normal_spec = kwargs.pop('normal_spec')
         self.parallel_spec = kwargs.pop('parallel_spec')
         kwargs['elem_pos'] = self.calculate_elempos()
-        super(ParallelCalculated, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def calculate_elempos(self):
         '''Calculate the position of elements based on some algorithm.
@@ -640,7 +640,7 @@ class Propagator(SimulationSequenceElement):
             backwards.
         '''
         self.distance = kwargs.pop('distance')
-        super(Propagator, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, photons):
         photons['pos'] = photons['pos'] + self.distance * photons['dir']

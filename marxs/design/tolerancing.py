@@ -25,6 +25,7 @@ __all__ = ['oneormoreelements',
            'plot_wiggle', 'load_and_plot',
            ]
 
+
 def oneormoreelements(func):
     '''Decorator for functions that modify optical elements.
 
@@ -54,7 +55,8 @@ def wiggle(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
     dx, dy, dz : float
         accuracy of positioning in x, y, z (in mm) - Gaussian sigma, not FWHM!
     rx, ry, rz : float
-        accuracy of positioning. Rotation around x, y, z (in rad) - Gaussian sigma, not FWHM!
+        accuracy of positioning. Rotation around x, y, z (in rad) - Gaussian
+        sigma, not FWHM!
     '''
     e.elem_uncertainty = genfacun(len(e.elements), [dx, dy, dz], [rx, ry, rz])
     e.generate_elements()
@@ -102,7 +104,6 @@ def moveindividual(e, dx=0, dy=0, dz=0, rx=0, ry=0, rz=0):
                                           euler.euler2mat(rx, ry, rz, 'sxyz'),
                                           np.ones(3))] * len(e.elements)
     e.generate_elements()
-
 
 
 @oneormoreelements
@@ -465,7 +466,7 @@ def run_tolerances_for_energies(source, energies,
 
 def run_tolerances_for_energies2(source, energies, instrum, cls, wigglefunc,
                                  parameters,
-                                 analyzefunc,reset=None, subclass_ok=False,
+                                 analyzefunc, reset=None, subclass_ok=False,
                                  t_source=1 / u.s):
     '''Run tolerancing for a grid of parameters and energies
 
@@ -710,7 +711,8 @@ the dict is applied.
 '''
 
 
-def load_and_plot(filename, parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'], **kwargs):
+def load_and_plot(filename, parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'],
+                  **kwargs):
     '''Load a table with wiggle results and make default plot
 
     This is a function to generate a quicklook image with many

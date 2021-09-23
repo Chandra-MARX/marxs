@@ -16,7 +16,7 @@ Numpy and astropy are best installed with a package manager such as conda. See t
 
 .. code-block:: bash
 
-    pip install transforms3d
+   $ pip install transforms3d
 
 The following Python packages are strongly recommended, but most parts of MARXS will work without them:
 
@@ -30,9 +30,9 @@ Again, all but mayavi are available through common package managers such as
 conda, ``apt-get`` etc. For `mayavi
 <https://docs.enthought.com/mayavi/mayavi/>`_ see `the mayavi installation
 instructions <https://docs.enthought.com/mayavi/mayavi/installation.html#installing-with-pip>`_.
-  
+
 In addition MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
-  
+
 Install the python code
 =======================
 
@@ -55,10 +55,10 @@ Now you install, run tests or build the documentation:
    $ python setup.py build_docs
 
 If you want to contribute to MARXS, but are not familiar with Python or
-git or Astropy yet, please have a look at the  
+git or Astropy yet, please have a look at the
 `Astropy developer documentation <http://docs.astropy.org/en/latest/#developer-documentation>`__.
 
-  
+
 .. _sect-installmarxccode:
 
 `classic marx`_ C code
@@ -77,17 +77,17 @@ cost of extra difficulty of linking them into shared objects. Since `classic mar
 not meant to be used a library for external functions (like this python
 module), the default installation settings are tuned for performance.
 On some architectures (tested on 32-bit Ubuntu GNU/Linux) linking the static
-libraries works, on other you might see an error like this: ``relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC``.
+libraries works, on others you might see an error like this: ``relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC``.
 In that case, simply recompile and install `classic marx`_ as position independent
-code (PIC). In the `classic marx`_ source code directory:: 
+code (PIC). In the `classic marx`_ source code directory::
 
 .. code-block:: bash
 
-    make distclean
-    ./configure --prefix=/path/to/your/instalation/ CFLAGS="-O2 -g -fPIC"
-    make clean
-    make
-    make install
+   $ make distclean
+   $ ./configure --prefix=/path/to/your/instalation/ CFLAGS="-O2 -g -fPIC"
+   $ make clean
+   $ make
+   $ make install
 
 I promise that the performance difference is so small, you won't notice
 it when you run the `classic marx`_ version, but it allows the setup process of

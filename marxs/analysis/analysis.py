@@ -1,11 +1,10 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-from __future__ import division
-
 import numpy as np
 import scipy.optimize
 from astropy.stats import sigma_clipped_stats
 
 from ..optics import FlatDetector
+
 
 def sigma_clipped_std(photons, colname='det_x', **kwargs):
     '''Return stddev of sigma-clipped data.
@@ -78,15 +77,17 @@ def find_best_detector_position(photons,
         p = mdet(photons.copy())
         return objective_func(p, **objective_func_args)
 
-    return scipy.optimize.minimize_scalar(width, args=(photons,), options={'maxiter': 20, 'disp': False},
-                                   **kwargs)
+    return scipy.optimize.minimize_scalar(width, args=(photons,),
+                                          options={'maxiter': 20,
+                                                   'disp': False},
+                                          **kwargs)
 
 
 def detected_fraction(photons, labels, col='order'):
     '''Calculate the fraction of photons detected for some integer label
 
-    While written for calculating Aeff per order, this can be used with any discrete
-    quantity, e.g. Aeff per CCD.
+    While written for calculating Aeff per order, this can be used
+    with any discrete quantity, e.g. Aeff per CCD.
 
     Parameters
     ----------
@@ -103,11 +104,10 @@ def detected_fraction(photons, labels, col='order'):
     -------
     prop : np.array
         Probability for a photon in a specific order to be detected.
+
     '''
     prob = np.zeros_like(labels, dtype=float)
     for i, o in enumerate(labels):
         ind = (photons[col] == o)
-        if filterfunc is not None:
-            ind = ind & filterfunc(photons)
         prob[i] = np.sum(photons['probability'][ind]) / len(photons)
     return prob

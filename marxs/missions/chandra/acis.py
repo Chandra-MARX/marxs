@@ -11,7 +11,6 @@ from .data import (NOMINAL_FOCALLENGTH, AIMPOINTS, TDET, ODET, PIXSIZE,
                    PIX_CORNER_LSI_PAR, chip2tdet)
 
 
-
 ACIS_name = ['I0', 'I1', 'I2', 'I3', 'S0', 'S1', 'S2', 'S3', 'S4', 'S5']
 '''names of the 10 ACIS chips'''
 
@@ -23,7 +22,7 @@ class ACISChip(FlatDetector):
         self.ODET = ODET['ACIS']
         self.pixsize_in_rad = np.deg2rad(PIXSIZE['ACIS'])
         kwargs['ignore_pixel_warning'] = True
-        super(ACISChip, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def chip_name(self):
@@ -56,7 +55,8 @@ class ACISChip(FlatDetector):
         return {'chipx': chip[:, 0], 'chipy': chip[:, 1],
                 'tdetx': tdet[:, 0], 'tdety': tdet[:, 1],
                 'detx': detx, 'dety': dety,
-                'x': skyx, 'y': skyy,}
+                'x': skyx, 'y': skyy}
+
 
 class ACIS(Parallel):
     '''The ACIS instrument
@@ -92,7 +92,7 @@ class ACIS(Parallel):
         # Use 0.024 because that's more consistent with 1024 pix
         kwargs['elem_args'] = {'pixsize': 0.024 } # {'pixsize': 0.023985 }
 
-        super(ACIS, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.chips = chips
         self.elements = [self.elements[i] for i in chips]
 
@@ -150,7 +150,7 @@ class ACIS(Parallel):
         return pos4d
 
     def process_photons(self, photons, *args, **kwargs):
-        photons = super(ACIS, self).process_photons(photons, *args, **kwargs)
+        photons = super().process_photons(photons, *args, **kwargs)
         photons.meta['SIM_X'] = self.aimpoint[0] - self.detoffset[0]
         photons.meta['SIM_Y'] = self.aimpoint[1] - self.detoffset[1]
         photons.meta['SIM_Z'] = self.aimpoint[2] - self.detoffset[2]

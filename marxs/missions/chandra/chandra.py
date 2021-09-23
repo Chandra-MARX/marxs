@@ -14,7 +14,7 @@ class Chandra(Sequence):
     def process_photons(self, photons):
         photons.meta['MISSION'] = ('AXAF', 'Mission')
         photons.meta['TELESCOP'] = ('CHANDRA', 'Telescope')
-        return super(Chandra, self).process_photons(photons)
+        return super().process_photons(photons)
 
     def write_evt(self, photons, filename):
         '''Write a Chandra event level 1 file.

@@ -86,7 +86,7 @@ class OpticalElement(SimulationSequenceElement):
         elif issubclass(geometry, Geometry):
             self.geometry = geometry(kwargs)
 
-        super(OpticalElement, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if not hasattr(self, "loc_coos_name"):
             self.loc_coos_name = self.geometry.loc_coos_name
@@ -250,7 +250,7 @@ class FlatStack(FlatOpticalElement, BaseContainer):
     def __init__(self, **kwargs):
         elements = kwargs.pop('elements')
         keywords = kwargs.pop('keywords')
-        super(FlatStack, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.elements = []
         for elem, k in zip(elements, keywords):
             self.elements.append(elem(pos4d=self.pos4d, **k))
@@ -260,19 +260,21 @@ class FlatStack(FlatOpticalElement, BaseContainer):
 
     def process_photons(self, photons, intersect=None, interpos=None,
                         intercoos=None):
-        '''
-        Parameters
+        '''Parameters
         ----------
         intersect, interpos, intercoos : array (N, 4)
-            The array ``interpos`` contains the intersection points in the global
-            coordinate system, ``intercoos`` in the local (y,z) system of the grating.
+            The array ``interpos`` contains the intersection points in
+            the global coordinate system, ``intercoos`` in the local
+            (y,z) system of the grating.
+
         '''
         if intersect.sum() > 0:
             # This line calls FlatOpticalElement.process_photons to add ID cols
             # and local coos if requested (this could also be done by any of
             # the contained sequence elements, but we want the user to be able
             # to specify that for either of them).
-            photons = super(FlatStack, self).process_photons(photons, intersect, interpos, intercoos)
+            photons = super().process_photons(photons, intersect, interpos,
+                                              intercoos)
             for e in self.elements:
                 photons = e.process_photons(photons, intersect, interpos, intercoos)
 

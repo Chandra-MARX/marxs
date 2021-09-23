@@ -7,6 +7,7 @@ from transforms3d.affines import compose
 from ...optics import FlatGrating, OrderSelector
 from ...simulator import Parallel
 
+
 class HETG(Parallel):
 
     id_col = 'facet'
@@ -14,12 +15,15 @@ class HETG(Parallel):
     def __init__(self, **kwargs):
         self.hess = Table.read(get_pkg_data_filename('HESSdesign.rdb'))
         '''The HESS datafile is commented very well inside the rdb file.
-        Here, I just need to make a note about the relation of the coordinate systems:
-        The vectors that define the facet edges are called x and y in the rdb file.
-        In the MARXS global coordinate system these are y and z respectively, so
-        uxf -> y and uyg -> z.
+
+        Here, I just need to make a note about the relation of the
+        coordinate systems: The vectors that define the facet edges
+        are called x and y in the rdb file.  In the MARXS global
+        coordinate system these are y and z respectively, so uxf -> y
+        and uyg -> z.
 
         Datafile from: http://space.mit.edu/HETG/hess/basic.html
+
         '''
         kwargs['elem_pos'] = self.calculate_elempos()
         kwargs['elem_class'] = FlatGrating
@@ -33,23 +37,26 @@ class HETG(Parallel):
         kwargs['elem_args'] = {'order_selector': OrderSelector(np.arange(-3, 4)),
                                'd': d, 'name': list(self.hess['hessloc']),
                                'groove_angle': groove_ang.tolist()}
-        super(HETG, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # I would like to put the center of the HETG on its hinge point.
         # Unfortunately, I don't know that hinge point very well, so I'm guessing a little.
         move = np.eye(4)
-        move[:, 3] = [8600., 580 * np.cos(np.deg2rad(30)),
-                      580 * np.sin(np.deg2rad(30)), 1.]
+        move[:, 3] = [8618., -650 * np.sin(np.deg2rad(60)),
+                      650 * np.cos(np.deg2rad(60)), 1.]
+        self.move_center(move)
 
     def calculate_elempos(self):
         '''Read position of facets from file.
 
-        Based on the positions, other grating parameters are chosen that differ between
-        HEG and MEG, e.g. grating constant.
+        Based on the positions, other grating parameters are chosen
+        that differ between HEG and MEG, e.g. grating constant.
+
         '''
-        # take x,y,z components of various vectors and put in numpy arrays
-        # Note: This makes (3, N) arrays as opposed to (N, 3) arrays used in other parts of MARXS.
-        # Note: Sometimes an angle has a minus. Beware of active / passive rotations.
+        # take x,y,z components of various vectors and put in numpy
+        # arrays Note: This makes (3, N) arrays as opposed to (N, 3)
+        # arrays used in other parts of MARXS.  Note: Sometimes an
+        # angle has a minus. Beware of active / passive rotations.
         hess = self.hess
 
         cen = np.vstack([hess[s+'c'].data for s in 'xyz'])
