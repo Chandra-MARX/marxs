@@ -22,7 +22,7 @@ class Aperture(optics.MultiAperture):
         if 'elements' not in kwargs:
             kwargs['elements'] = [optics.CircleAperture(position=[NOMINAL_FOCALLENGTH, 0, 0],
                               zoom=[1, r[1], r[1]], r_inner=r[0]) for r in mirror_radii]
-        super(Aperture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class HRMA(optics.FlatStack):
@@ -47,4 +47,4 @@ class HRMA(optics.FlatStack):
                                'perpplanescatter': 1.2e-6 * u.rad},
                               {'filterfunc': lambda x: np.ones_like(x) * 0.66,
                                'name': 'support spider, reflectivity, et al.'}]
-        super(HRMA, self).__init__(**kwargs)
+        super().__init__(**kwargs)

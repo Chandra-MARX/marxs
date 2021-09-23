@@ -75,7 +75,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         if out < 0:
             raise MarxError('Mirror cannot be initialized. Probably missing parameters or syntax error in {0}.'.format(parfile))
 
-        super(MarxMirror, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @staticmethod
     def _table2c(photons):

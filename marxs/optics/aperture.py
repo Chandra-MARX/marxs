@@ -128,7 +128,7 @@ class CircleAperture(FlatAperture):
     default_geometry = CircularHole
 
     def __init__(self, **kwargs):
-        super(CircleAperture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if self.geometry['r_inner'] > np.linalg.norm(self.geometry['v_y']):
             raise ValueError('r_inner must be less than size of full aperture.')
 
@@ -189,7 +189,7 @@ class MultiAperture(BaseAperture, BaseContainer):
         self.elements = kwargs.pop('elements')
         self.id_col = kwargs.pop('id_col', 'aperture')
         self.id_num_offset = kwargs.pop('id_num_offset', 0)
-        super(MultiAperture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         for i, elem in enumerate(self.elements):
             elem.id_col = self.id_col
             elem.id_num = self.id_num_offset + i

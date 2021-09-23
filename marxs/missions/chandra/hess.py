@@ -37,7 +37,7 @@ class HETG(Parallel):
         kwargs['elem_args'] = {'order_selector': OrderSelector(np.arange(-3, 4)),
                                'd': d, 'name': list(self.hess['hessloc']),
                                'groove_angle': groove_ang.tolist()}
-        super(HETG, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # I would like to put the center of the HETG on its hinge point.
         # Unfortunately, I don't know that hinge point very well, so I'm guessing a little.

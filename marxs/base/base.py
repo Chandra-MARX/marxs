@@ -131,7 +131,7 @@ class SimulationSequenceElement(MarxsElement):
         # We want to use id_col as a class attribute, but overwrite it if given as a kwarg
         if 'id_col' in kwargs:
             self.id_col = kwargs.pop('id_col')
-        super(SimulationSequenceElement, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def add_output_cols(self, photons, colnames=[]):
         '''Add output columns to the photon array.

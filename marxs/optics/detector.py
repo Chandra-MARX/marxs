@@ -8,6 +8,7 @@ from .base import FlatOpticalElement, OpticalElement
 from ..utils import SimulationSetupWarning
 from ..math.geometry import Cylinder
 
+
 class FlatDetector(FlatOpticalElement):
     '''Flat detector with square pixels
 
@@ -51,7 +52,7 @@ class FlatDetector(FlatOpticalElement):
 
     def __init__(self, pixsize=1, ignore_pixel_warning=False, **kwargs):
         self.pixsize = pixsize
-        super(FlatDetector, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         t, r, zoom, s = decompose44(self.pos4d)
         self.npix = [0, 0]
         self.centerpix = [0, 0]
@@ -102,7 +103,7 @@ class CircularDetector(OpticalElement):
 
     def __init__(self, pixsize=1, **kwargs):
         self.pixsize = pixsize
-        super(CircularDetector, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         detx = intercoos[intersect, 0] * self.geometry['R'] / self.pixsize + self.centerpix[0]

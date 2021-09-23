@@ -482,7 +482,7 @@ class RowlandCircleArray(ParallelCalculated, OpticalElement):
         kwargs['parallel_spec'] =  self.rowland.parametric(0., 0.) - self.rowland.parametric(1., 0.)
         kwargs['pos_spec'] = self.xyzwpos
 
-        super(RowlandCircleArray, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def rowland_normal(self, xyzw):
         return self.rowland.normal(xyzw)
@@ -597,7 +597,7 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
         if 'pos_spec' not in kwargs.keys():
             kwargs['pos_spec'] = self.xyzwpos
 
-        super(LinearCCDArray, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def rowland_normal(self, xyzw):
         return self.rowland.normal(xyzw)
@@ -724,7 +724,7 @@ class GratingArrayStructure(LinearCCDArray):
         kwargs['parallel_spec'] = parallel_spec
         kwargs['pos_spec'] = self.xyzwpos
 
-        super(GratingArrayStructure, self).__init__(rowland, d_element, x_range, radius, phi, **kwargs)
+        super().__init__(rowland, d_element, x_range, radius, phi, **kwargs)
 
     def calc_ideal_center(self):
         '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
@@ -858,7 +858,7 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
         if 'parallel_spec' not in kwargs.keys():
             kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
 
-        super(RectangularGrid, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def elempos(self):
 

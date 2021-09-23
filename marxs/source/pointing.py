@@ -91,7 +91,7 @@ class FixedPointing(PointingModel):
 
         self.reference_transform = kwargs.pop('reference_transform', np.eye(4))
 
-        super(FixedPointing, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def offset_coos(self):
@@ -150,19 +150,23 @@ class FixedPointing(PointingModel):
         ----------
         photons : `astropy.table.Table`
         '''
-        photons = super(FixedPointing, self).process_photons(photons)
-        photons['dir'] = self.photons_dir(SkyCoord(photons['ra'], photons['dec'],
+        photons = super().process_photons(photons)
+        photons['dir'] = self.photons_dir(SkyCoord(photons['ra'],
+                                                   photons['dec'],
                                                    unit='deg'),
                                           photons['time'].data)
         photons['polarization'] = self.photons_pol(photons['dir'].data,
                                                    photons['polangle'].data,
                                                    photons['time'].data)
         photons.meta['RA_PNT'] = (self.coords.ra.degree, '[deg] Pointing RA')
-        photons.meta['DEC_PNT'] = (self.coords.dec.degree, '[deg] Pointing Dec')
+        photons.meta['DEC_PNT'] = (self.coords.dec.degree,
+                                   '[deg] Pointing Dec')
         photons.meta['ROLL_PNT'] = (self.roll.to(u.degree).value,
                                     '[deg] Pointing Roll')
-        photons.meta['RA_NOM'] = (self.coords.ra.degree, '[deg] Nominal Pointing RA')
-        photons.meta['DEC_NOM'] = (self.coords.dec.degree, '[deg] Nominal Pointing Dec')
+        photons.meta['RA_NOM'] = (self.coords.ra.degree,
+                                  '[deg] Nominal Pointing RA')
+        photons.meta['DEC_NOM'] = (self.coords.dec.degree,
+                                   '[deg] Nominal Pointing Dec')
         photons.meta['ROLL_NOM'] = (self.roll.to(u.degree).value,
                                     '[deg] Nominal Pointing Roll')
 
@@ -172,24 +176,25 @@ class FixedPointing(PointingModel):
 class JitterPointing(FixedPointing):
     '''Transform spacecraft to fixed sky system.
 
-    This extends `marxs.sourcs.FixedPointing` by adding a random jitter coordinate.
-    In this simple implementation the jitter angles applied to two consecutive
-    photons are entirely uncorrelated, even if these two photons arrive at the
-    same time.
-    This class makes the assumption that jitter is small (no change in the projected
-    geometric area of the aperture due to jitter).
+    This extends `marxs.sourcs.FixedPointing` by adding a random
+    jitter coordinate.  In this simple implementation the jitter
+    angles applied to two consecutive photons are entirely
+    uncorrelated, even if these two photons arrive at the same time.
+    This class makes the assumption that jitter is small (no change in
+    the projected geometric area of the aperture due to jitter).
 
     Parameters
     ----------
     jitter : `~astropy.units.quantity.Quantity`
         Gaussian sigma of jitter angle
+
     '''
     def __init__(self, **kwargs):
         self.jitter = np.abs(kwargs.pop('jitter'))
-        super(JitterPointing, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def process_photons(self, photons):
-        photons = super(JitterPointing, self).process_photons(photons)
+        photons = super().process_photons(photons)
         # Get random jitter direction
         n = len(photons)
         randang = np.random.rand(n) * 2. * np.pi

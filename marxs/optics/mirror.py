@@ -29,7 +29,7 @@ class PerfectLens(FlatOpticalElement):
 
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')
-        super(PerfectLens, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         # A ray through the center is not broken.
@@ -79,12 +79,11 @@ class ThinLens(FlatOpticalElement):
 
     display = {'color': (0., 0.5, 0.),
                'opacity': 0.5,
-    }
-
+               }
 
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')
-        super(ThinLens, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def process_photon(self, dir, pos, energy, polarization):
         intersect, h_intersect, loc_inter = self.geometry.intersect(dir, pos)

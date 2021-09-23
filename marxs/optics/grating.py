@@ -179,7 +179,7 @@ class FlatGrating(FlatOpticalElement):
         self._d = kwargs.pop('d')
         groove_angle = kwargs.pop('groove_angle', 0.)
 
-        super(FlatGrating, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.geometry._geometry['groove_angle'] = groove_angle
 

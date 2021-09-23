@@ -22,20 +22,23 @@ class FarLabPointSource(Source, FlatOpticalElement):
     ----------
     sourcePos: 3 element list
         3D coordinates of photon source (not aperture)
-    kwargs: ``pos4d`` or ``position``, ``orientation``, and ``zoom`` can be used to set the position,
-        size and orientation of the rectangular apeture; see `pos4d` for details.
-        Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
+    kwargs:
+        ``pos4d`` or ``position``, ``orientation``, and ``zoom`` can
+        be used to set the position, size and orientation of the
+        rectangular apeture; see `pos4d` for details.  Other keyword
+        arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
+
     '''
     def __init__(self, sourcePos, **kwargs):
         self.sourcePos = sourcePos
-        if not 'flux' in kwargs:
+        if 'flux' not in kwargs:
             kwargs['flux'] = 1 / u.s
-        super(FarLabPointSource, self).__init__(geomarea=None, **kwargs)
+        super().__init__(geomarea=None, **kwargs)
 
     @u.quantity_input
     def generate_photons(self, exposuretime: u.s):
-        photons = super(FarLabPointSource, self).generate_photons(exposuretime)
+        photons = super().generate_photons(exposuretime)
         n = len(photons)
         # randomly choose direction - photons uniformly distributed over aperture area
         # measurements in mm
@@ -84,9 +87,9 @@ class LabPointSourceCone(Source):
         self.dir = e2h(np.asanyarray(direction) / np.linalg.norm(direction), 0)
         self.position = e2h(np.asanyarray(position), 1)
         self.half_opening = half_opening
-        if not 'flux' in kwargs:
+        if 'flux' not in kwargs:
             kwargs['flux'] = 1 / u.s
-        super(LabPointSourceCone, self).__init__(geomarea=None, **kwargs)
+        super().__init__(geomarea=None, **kwargs)
 
     @u.quantity_input
     def generate_photons(self, exposuretime: u.s):
