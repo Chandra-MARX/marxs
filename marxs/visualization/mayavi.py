@@ -98,29 +98,9 @@ def box(obj, display, viewer=None):
     photon interaction happens on the surface, not in the substrate.
     '''
     from mayavi import mlab
-
-    corners = np.array([[-1, -1, -1], [-1,+1, -1],
-                        [-1, -1,  1], [-1, 1,  1],
-                        [ 1, -1, -1], [ 1, 1, -1],
-                        [ 1, -1, +1], [ 1, 1, +1]])
-    if 'box-half' in display:
-        # write in a way that it works with any value for that keyword
-        try:
-            if display['box-half'][0] == '+':
-                factor = +1
-            elif display['box-half'][0] == '-':
-                factor = -1
-            else:
-                factor = 0
-            xyz = {'x': 0, 'y': 1, 'z': 2}
-            if display['box-half'][1] in xyz:
-                j = xyz[display['box-half'][1]]
-                corners[corners[:, j] == factor, j] = 0
-        except:
-            pass
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-    corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
+    corners = utils.halfbox_corners(obj, display)
     b = mlab.triangular_mesh(corners[:, 0], corners[:, 1], corners[:, 2],
                              triangles, color=display['color'])
     return b

@@ -8,6 +8,8 @@ visualization backends.
 import warnings
 import numpy as np
 
+from marxs.math import utils as mutils
+
 
 class MARXSVisualizationWarning(Warning):
     '''Warning class for MARXS objects missing from plotting'''
@@ -293,3 +295,37 @@ def combine_disjoint_triangulations(list_xyz, list_triangles):
     triangles = np.vstack([list_triangles[i] + n_offset[i] for i in
                            range(len(n_offset))])
     return xyz, triangles
+
+
+def triangulate_parametricsurface(xyz):
+    xyz = mutils.h2e(xyz)
+    xyz = xyz.reshape(-1, 3)
+    index = np.arange(xyz.shape[0] - 2)
+    indarr = np.vstack([index, index + 1, index + 2]).T
+    return xyz, np.vstack([index, index + 1, index + 2]).T
+
+
+def halfbox_corners(obj, display):
+    corners = np.array([[-1, -1, -1], [-1,+1, -1],
+                        [-1, -1,  1], [-1, 1,  1],
+                        [ 1, -1, -1], [ 1, 1, -1],
+                        [ 1, -1, +1], [ 1, 1, +1]])
+    if 'box-half' in display:
+        # write in a way that it works with any value for that keyword
+        try:
+            if display['box-half'][0] == '+':
+                factor = +1
+            elif display['box-half'][0] == '-':
+                factor = -1
+            else:
+                factor = 0
+            xyz = {'x': 0, 'y': 1, 'z': 2}
+            if display['box-half'][1] in xyz:
+                j = xyz[display['box-half'][1]]
+                corners[corners[:, j] == factor, j] = 0
+        except:
+            pass
+
+    corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
+    corners = mutils.h2e(corners)
+    return corners
