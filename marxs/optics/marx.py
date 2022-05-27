@@ -118,7 +118,7 @@ class MarxMirror(OpticalElement, BaseAperture):
         c_photon_list.sorted_index = ffi.cast('unsigned int*', sorted_index.ctypes.data)
 
         sorted_energies = np.sort(photons['energy'].data)
-        sorted_energies = np.ascontiguousarray(sorted_energies, dtype=np.float)
+        sorted_energies = np.ascontiguousarray(sorted_energies, dtype=float)
         keep_cffi_pointers['sorted_energies'] = sorted_energies  # keep alive
         c_photon_list.sorted_energies = ffi.cast('double*', sorted_energies.ctypes.data)
 

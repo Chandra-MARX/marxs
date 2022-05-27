@@ -116,7 +116,7 @@ class ACIS(Parallel):
             coos = {}
             for corner in ['LL', 'LR', 'UR', 'UL']:
                 ind = t['col1'] == 'ACIS-{0}-{1}'.format(chip, corner)
-                coos[corner] = np.array([np.float(v) for v in t[ind]['col4'][0][1:-1].split()])
+                coos[corner] = np.array([float(v) for v in t[ind]['col4'][0][1:-1].split()])
             out.append(coos)
         return out
 
