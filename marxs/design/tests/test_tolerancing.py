@@ -11,7 +11,9 @@ from astropy.utils.data import get_pkg_data_filename
 from ..tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual, moveelem,
                            varyperiod, varyorderselector, varyattribute,
-                           run_tolerances, CaptureResAeff,
+                           run_tolerances,
+                           CaptureResAeff,
+                           CaptureResAeff_CCDgaps,
                            generate_6d_wigglelist,
                            select_1dof_changed,
                            plot_wiggle, load_and_plot,
@@ -91,12 +93,15 @@ def test_moveelements_translate():
     '''Check that the element movers work. If the whole structure is translated
     or individual elements are translated by the same amount, the positions
     should be the same.'''
+    g0 = gsa()
     g1 = gsa()
     g2 = gsa()
     moveglobal(g1, dy=-20)
     moveindividual(g2, dy=-20)
     assert np.allclose(np.stack([e.pos4d for e in g1.elements]),
                        np.stack([e.pos4d for e in g2.elements]))
+    assert not np.allclose(np.stack([e.pos4d for e in g0.elements]),
+                           np.stack([e.pos4d for e in g2.elements]))
 
 
 def test_moveelements_rotate():
@@ -320,6 +325,9 @@ def test_capture_res_aeff():
     assert np.isclose(out['Aeffgrat'], 7.5)
     assert len(out['R']) == 3
     assert np.isnan(out['R'][1])
+    # Large rtol to reduce risk of random failures
+    assert np.isclose(out['R'][2], 50., rtol=.8)
+
 
 def test_capture_res_aeff_filter():
     '''Ensure that photons with probability 0 will be ignored.
@@ -341,6 +349,53 @@ def test_capture_res_aeff_filter():
     assert np.isnan(out['R'][2])
 
 
+def test_capture_res_aeff_nonfinite():
+    '''Ensure that photons with nonfinite values will be ignored for resolving power
+    but not for the effective area
+    '''
+    p = generate_test_photons(200)
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = np.nan
+
+    resaeff = CaptureResAeff(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos')
+    out = resaeff(p)
+    assert np.allclose(out['Aeff'], [2.5, 0., 7.5])
+    assert out['Aeff0'] == 2.5
+    assert out['Aeffgrat'] == 7.5
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][2])
+
+
+
+def test_capture_res_aeff_CCDgap():
+    '''Test the captures res/aeff class.
+
+    Similar to the previous test, this is not a complete functional test,
+    but it checks the interfaces.
+    The actual function to calculate the effective area is tested elsewhere.
+    '''
+    p = generate_test_photons(200)
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = -100
+    p['xpos'][50:] = np.random.normal(scale=1, size=150)
+    p['CCD'] = 0
+    # the last 100 photons don't hit a CCD and thus the Aeff is smaller
+    p['CCD'][100:] = -1
+
+    resaeff = CaptureResAeff_CCDgaps(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos',
+                             aeff_filter_col='CCD')
+    out = resaeff(p)
+    assert np.allclose(out['Aeff'], [2.5, 0., 2.5])
+    assert np.isclose(out['Aeff0'], 2.5)
+    assert np.isclose(out['Aeffgrat'], 2.5)
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][1])
+    # Large rtol to reduce risk of random failures
+    assert np.isclose(out['R'][2], 50., rtol=8)
 
 def test_6dlist():
     '''Check the list of dicts in 3 translations dof and 3 rotations'''

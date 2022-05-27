@@ -17,6 +17,9 @@ New Features
 - To avoid probabilities <0 or >1, values assigned to this column are now
   tested and a ``ValueError`` may be raised. [#230]
 
+- Added a new class `CaptureResAeff_CCDgap` that selects photons differently for
+  calculation of the effective area and resolving power to account for chip gaps. [#235]
+
 API Changes
 ^^^^^^^^^^^
 

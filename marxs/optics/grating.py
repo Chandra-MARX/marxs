@@ -260,7 +260,7 @@ class FlatGrating(FlatOpticalElement):
         # The norm for p_n can be derived, but the direction needs to be chosen.
         p_n = np.sqrt(1. - p_d**2 - p_l**2)
         # Check if the photons have same direction compared to normal before
-        direction = np.sign(np.einsum("ij,ij->i", p, n), dtype=np.float)
+        direction = np.sign(np.einsum("ij,ij->i", p, n), dtype=float)
         if not self.transmission:
             direction *= -1
         dir = p_d[:, None] * d + p_l[:, None] * l + (direction * p_n)[:, None] * n
