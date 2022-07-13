@@ -8,7 +8,7 @@ from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from astropy.utils.data import get_pkg_data_filename
 
-from ..tolerancing import (oneormoreelements,
+from marxs.design.tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual, moveelem,
                            varyperiod, varyorderselector, varyattribute,
                            run_tolerances,
@@ -20,13 +20,13 @@ from ..tolerancing import (oneormoreelements,
                            run_tolerances_for_energies,
                            run_tolerances_for_energies2,
                            )
-from ...optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
+from marxs.optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
                        RectangleAperture, ThinLens, FlatDetector)
 
-from ...design import RowlandTorus, GratingArrayStructure
-from ...utils import generate_test_photons
-from ...source import PointSource, FixedPointing
-from ...simulator import Sequence
+from marxs.design import RowlandTorus, GratingArrayStructure
+from marxs.utils import generate_test_photons
+from marxs.source import PointSource, FixedPointing
+from marxs.simulator import Sequence
 
 try:
     import matplotlib.pyplot as plt
@@ -37,10 +37,10 @@ except ImportError:
 
 mytorus = RowlandTorus(0.5, 0.5, position=[1.5, 0, -3])
 
-def gsa():
+def gsa(elem_class=FlatGrating):
     '''make a parallel structure - fresh for every test'''
     g = GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0.1,.2],
-                              elem_class=FlatGrating,
+                              elem_class=elem_class,
                               elem_args={'zoom':0.2, 'd':0.002,
                                          'order_selector': OrderSelector([1])
                                      })
@@ -135,7 +135,7 @@ def test_wiggle():
     wiggle(g, dx=10, dy=.1)
     diff = elempos - np.stack([e.pos4d for e in g.elements])
     # Given the numbers, wiggle in x must be larger than y
-    # This also tests that not all diff number are the same
+    # This also tests that not all diff numbers are the same
     # (as they would be with move).
     assert np.std(diff[:, 0, 3]) > np.std(diff[:, 1, 3])
 
@@ -187,7 +187,6 @@ def test_errormessage_attribute():
         varyattribute(gsa, attributenotpresent=1., notpresenteither=2.)
 
     assert 'does not have' in str(e.value)
-
 
 
 def test_orderselector():

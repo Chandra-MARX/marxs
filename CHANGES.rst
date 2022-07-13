@@ -21,6 +21,10 @@ New Features
   calculation of the effective area and resolving power to account for chip gaps. [#235]
 
 - Add direct X3D visualization backend to avoid the need for Mayavi. [#238]
+- Add several missions under development that were previously developed in separate
+  repros. As it turn out, keeping the code separate lead to significant parallel
+  work that can be simplified by keeping all of them in marxs itself. Hoewever, those
+  mission are less fleshed out then marxs itself, less documented and less tested. [#237]
 
 API Changes
 ^^^^^^^^^^^

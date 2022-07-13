@@ -3,12 +3,23 @@ from collections import OrderedDict
 import inspect
 import warnings
 from copy import deepcopy
+import re
+from datetime import datetime
 
 import numpy as np
 from transforms3d import affines
 from astropy.table import Column
 
 from ..visualization.utils import DisplayDict
+from marxs import __version__
+
+__all__ = ['GeometryError',
+           'DocMeta',
+           'MarxsElement',
+           'TagVersion',
+           'SimulationSequenceElement',
+           ]
+
 
 class GeometryError(Exception):
     pass
@@ -76,6 +87,55 @@ class MarxsElement(metaclass=DocMeta):
 
     def describe(self):
         return OrderedDict(element=self.name)
+
+
+reexp = re.compile(r"(?P<version>[\d.dev]+[\d]+)[+]?(g(?P<gittag>\w+))?[.]?(d(?P<dirtydate>[\d]+))?")
+'''Regex to parse scm version string'''
+
+ver = reexp.match(__version__)
+'''Parsed version of the marxs code'''
+
+
+class TagVersion(MarxsElement):
+    '''Tag a photons list with diagnostic information such as a the program version.
+
+    All keyword arguments passed when this element is initialized or when it is called
+    will be added to the meta information of the photon list, some additional
+    information on program version and runtime is added automatically.
+    As such, the format of the keyword values is very flexible. However, if they are
+    going to be written to fits files it is useful to follow fits conventions and
+    the default paraemter values also invoke fits conventions.
+
+
+    Parameters
+    ----------
+    origin : tuple of strings
+        according to fits convention, the Institution where file was created
+    creator : string or tuple of strings
+        according to fits convention, the Person or program creating file'
+    '''
+    def __init__(self,
+                 origin=('unkwown', 'Institution where file was created'),
+                 creator=('MARXS', 'Person or program creating file'),
+                 **kwargs):
+        super().__init__(name=kwargs.pop('name', self.__class__))
+
+        kwargs['MARXSVER'] = (ver.group('version'), 'MARXS code version')
+        if not ver.group('gittag') is None:
+            kwargs['MARXSGIT'] = (ver.group('gittag'),
+                                        'Git hash of MARXS code')
+        if not ver.group('dirtydate') is None:
+            kwargs['MARXSTIM'] = (ver.group('dirtydate'),
+                                        'Date of dirty version ARCUS code')
+        self.tags = kwargs
+
+    def __call__(self, photons, *args, **kwargs):
+        photons.meta['DATE'] = (datetime.now().isoformat()[:10], 'Date/time of computation')
+        for k, v in self.tags.items():
+            photons.meta[k] = v
+        for k, v in kwargs.items():
+            photons.meta[k] = v
+        return photons
 
 
 class SimulationSequenceElement(MarxsElement):

@@ -9,11 +9,11 @@ from transforms3d import affines, euler
 from astropy.table import Table
 from astropy import table
 import astropy.units as u
-from ..simulator import Sequence
-from .uncertainties import generate_facet_uncertainty as genfacun
-from ..analysis.gratings import (resolvingpower_from_photonlist,
+from marxs.simulator import Sequence
+from marxs.design.uncertainties import generate_facet_uncertainty as genfacun
+from marxs.analysis.gratings import (resolvingpower_from_photonlist,
                                  effectivearea_from_photonlist)
-from ..analysis.gratings import AnalysisError
+from marxs.analysis.gratings import AnalysisError
 
 __all__ = ['oneormoreelements',
            'wiggle', 'moveglobal', 'moveindividual', 'moveelem',

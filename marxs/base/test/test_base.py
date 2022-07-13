@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 from astropy.table import Table
 
-from ..base import _parse_position_keywords
+from ..base import TagVersion, _parse_position_keywords
 from ..base import SimulationSequenceElement as SSE
 
 
@@ -68,3 +68,13 @@ def test_output_col_none():
     t = T()
     t.add_output_cols(photons)
     assert photons.colnames == ['a']
+
+
+def test_tag():
+    'check that tagging works'
+    photons = Table({'a': [1, 2]})
+
+    tag = TagVersion(qwer='texthere')
+    photons = tag(photons, tag='check')
+    assert photons.meta['qwer'] == 'texthere'
+    assert photons.meta['tag'] == 'check'
