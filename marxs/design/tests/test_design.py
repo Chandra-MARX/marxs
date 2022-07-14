@@ -41,9 +41,9 @@ def test_design_tilted_torus():
     assert np.all(pos4d == np.eye(4))
     # This is a solution that looks good by hand, but could still be slightly wrong...
     R, r, pos4d = design_tilted_torus(10, np.deg2rad(3), np.deg2rad(6))
-    assert r == 5.0068617299896054
-    assert R == 4.9794336175561327
-    assert pos4d[0,3] == 0.027390523158633273
+    assert r == pytest.approx(5.0068617299896054)
+    assert R == pytest.approx(4.9794336175561327)
+    assert pos4d[0,3] == pytest.approx(0.027390523158633273)
     # The z axis should be unchanged
     assert np.allclose(pos4d[[0,1],2], 0)
 
@@ -51,12 +51,12 @@ def test_design_tilted_torus_negative_angles():
     '''Tilt the torus the other way. Should be same geometry in general.'''
     R, r, pos4d = design_tilted_torus(10, np.deg2rad(3), np.deg2rad(6))
     Rn, rn, pos4dn = design_tilted_torus(10, np.deg2rad(-3), np.deg2rad(-6))
-    assert R == Rn
-    assert r == rn
-    assert pos4d[0,3] == pos4dn[0, 3]
+    assert R == pytest.approx(Rn)
+    assert r == pytest.approx(rn)
+    assert pos4d[0,3] == pytest.approx(pos4dn[0, 3])
     assert pos4d[2, 3] == 0 # torus in xy plane
     assert pos4dn[2, 3] == 0
-    assert pos4d[1, 3] == - pos4dn[1, 3]
+    assert pos4d[1, 3] == pytest.approx(-pos4dn[1, 3])
 
 def test_torus():
     '''Compare parametric equation of torus with non-parametric.
