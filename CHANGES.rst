@@ -36,6 +36,9 @@ Bug fixes
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+- Updates of CI and simplify _astropy_init and conftest for new Python and
+  astropy verisons. [#236]
+
 
 1.2 (06-Nov-2020)
 -----------------

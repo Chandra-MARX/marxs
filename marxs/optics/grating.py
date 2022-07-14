@@ -225,9 +225,8 @@ class FlatGrating(FlatOpticalElement):
         In `diffract_photons` the blaze angle is calculated relative
         to the surface of the grating. In cases where that number has
         to be modified (e.g. when the grating bars are not
-        perpendicualr to the surface) the blaze angle can be modified
+        perpendicular to the surface) the blaze angle can be modified
         by overriding this function.
-
         '''
         return np.zeros(intercoos.shape[0])
 

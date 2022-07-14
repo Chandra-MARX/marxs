@@ -66,12 +66,12 @@ def test_angle_dependence():
     '''Test the grating angle for non-perpendicular incidence.
 
     For this test, I write the grating equation in its simple traditional form:
-    :math:`m \lambda = \delta s = d sin(\alpha)`.
+    m lambda = delta s = d sin(alpha).
 
     If the incoming ray is not perpendicular to the grating, we use the angle beta
-    between the incoming ray and the grating normal. The grating equation than looks
+    between the incoming ray and the grating normal. The grating equation then looks
     like this for m = 1:
-    :math:`\delta s = \delta s_2 - \delta s_1 = d sin(\alpha) - d sin(\beta)`.
+    delta s = delta s_2 - delta s_1 = d sin(alpha) - d sin(beta).
     '''
     d = 0.001
     beta = np.deg2rad([0., 5., 10., 20.])

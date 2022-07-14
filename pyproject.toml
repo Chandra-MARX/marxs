@@ -2,5 +2,5 @@
 requires = ["setuptools",
             "setuptools_scm",
             "wheel",
-	    "cffi"]
+	        "cffi"]
 build-backend = 'setuptools.build_meta'
