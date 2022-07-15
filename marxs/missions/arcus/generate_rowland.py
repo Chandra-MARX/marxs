@@ -1,7 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 '''This module has functions to make up a conf dictionary that
 specified all the optical parameters for Arcus. Several of the
-parameters depend on each other (e.g. the spaceing between the CTS
+parameters depend on each other (e.g. the spaceing between the CAT
 gratings and the focal plane depend on the focal lengths and the
 spacing between SPOs and CAT gratings), so these functions derive the
 remaining parameters from specific input variables.
