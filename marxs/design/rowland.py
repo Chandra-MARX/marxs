@@ -834,12 +834,12 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
         Size of the edge of a element, which is assumed to be flat and square.
         (``d_element`` can be larger than the actual size of the silicon
         membrane to accommodate a minimum thickness of the surrounding frame.)
-    x_range: list of 2 floats
+    x_range: list of two floats
         Minimum and maximum of the x coordinate that is searched for an
         intersection with the torus. A ray can intersect a torus in up to four
         points. ``x_range`` specififes the range for the numerical search for
         the intersection point.
-    y_range, z_range: lost of two floats
+    y_range, z_range: list of two floats
         limits of the rectangular area where gratings are placed.
 
     '''
@@ -879,27 +879,109 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
 
         return np.vstack([np.array(xpos), ypos.flatten(), zpos.flatten(), np.ones_like(xpos)]).T
 
-    def calculate_elempos(self):
-        '''Calculate the position of elements based on some algorithm.
 
-        Returns
-        -------
-        pos4d : list of arrays
-            List of affine transformations that bring an optical element centered
-            on the origin of the coordinate system with the active plane in the
-            yz-plane to the required facet position on the Rowland torus.
-        '''
-        pos4d = []
+class CircularMeshGrid(ParallelCalculated, OpticalElement):
+    '''A collection of diffraction gratings on the Rowland torus filling a circle.
 
-        xyzw = self.elempos()
-        normals = self.get_spec('normal_spec', xyzw)
-        parallels = self.get_spec('parallel_spec', xyzw, normals)
+    This class is similar to ``marxs.design.rowland.RectangularGrid`` but
+    places elements (e.g. gratings) to fill a circle instead of a rectangle.
+    When initialized, it places elements in the space available on the
+    Rowland circle, most commonly, this class is used to place grating facets.
 
-        for i in range(xyzw.shape[0]):
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See
+    `marxs.simulation.Parallel` for details.
 
-            # Find the rotation between [1, 0, 0] and the new normal
-            # Keep grooves (along e_y) parallel to e_y
-            rot_mat = ex2vec_fix(h2e(normals[i, :]), h2e(parallels[i, :]))
+    After any of the `elem_pos`, `elem_uncertainty` or
+    `uncertainty` is changed, `generate_elements` needs to be
+    called to regenerate the facets on the GAS.
 
-            pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
-        return pos4d
+    Parameters
+    ----------
+    rowland : RowlandTorus
+    d_element : list of two floats
+        Size of the edge of elements along the two (y and z in canonincal marxs orientation)
+        edges.
+        ``d_element`` can be larger than the actual size of the silicon
+        membrane to accommodate a minimum thickness of the surrounding frame.
+    opt_range : list of 2 floats
+        Minimum and maximum of the coordinate that is searched for an
+        intersection with the torus. A ray can intersect a torus in up to four
+        points. ``opt_range`` specififes the range for the numerical search for
+        the intersection point to resolve this ambiguity.
+    optimize_axis : character
+        Axis along which the element position is optimized numerically to follow
+        the Rowland torus. Because of the limitations of the current implementation,
+        this axis needs to be along to one of the coordinate axis, so valid entries
+        are "x", "y", and "z".
+    radius : list of two floats
+        Inner and outer radius of the circle. The center of the circle coincides with
+        the opitical axis chosen by `opt_axis`.
+    '''
+
+    id_col = 'facet'
+
+    def __init__(self, **kwargs):
+        self.radius = kwargs.pop('radius')
+        self.opt_range = kwargs.pop('opt_range')
+        self.rowland = kwargs.pop('rowland')
+        self.d_element = kwargs.pop('d_element')
+        self.optimize_axis = kwargs.pop('optimize_axis')
+        try:
+            if self.optimize_axis not in 'xyz':
+                raise ValueError('Valid entries for optimize_axis are "x", "y", and "z".')
+        except TypeError:
+            # Not a string
+            raise ValueError('Valid entries for optimize_axis are "x", "y", and "z".')
+        kwargs['pos_spec'] = self.elempos
+
+        super().__init__(**kwargs)
+
+    def elempos(self):
+        # For readability, this code is written using an explicit x,y,z notation for
+        # variable names assuming a circle in the y/z plane and a numerical
+        # solution for the Rowland torus in the x direction.
+        # In the last few lines, the variables are turned around to make it fit the
+        # chosen direction.
+        n_x = int(np.ceil(2 * self.radius[1] / self.d_element[0]))
+        x_width = n_x * self.d_element[0]
+        x_pos = np.arange(- x_width / 2, self.radius[1], self.d_element[0])
+
+        xpos = []
+        ypos = []
+
+        for x in x_pos:
+            if np.abs(x) > self.radius[1]:
+                # Outermost layer. Center might be outside outer radius
+                y = np.array([0])
+            else:
+                y_outer = np.sqrt(self.radius[1]**2 - x**2)
+                if np.abs(x) > self.radius[0]:
+                    n_y = int(np.ceil(2 * y_outer / self.d_element[1]))
+                    y_width = n_y * self.d_element[1]
+                    y = np.arange(- y_width / 2, y_outer, self.d_element[1])
+                else:
+                    y_inner = np.sqrt(self.radius[0]**2 - x**2)
+                    y_mid = 0.5 * (y_inner + y_outer)
+                    n_y = int(np.ceil((y_outer - y_inner) / self.d_element[1]))
+                    y_width = n_y * self.d_element[1]
+                    y = np.arange(y_mid - y_width / 2, y_outer, self.d_element[1])
+                    y = np.hstack([-y, y])
+
+            xpos.extend([x] * len(y))
+            ypos.extend(y)
+
+        zpos = []
+        xyz = 'xyz'.replace(self.optimize_axis, '')
+        for x, y in zip(xpos, ypos):
+            zpos.append(self.rowland.solve_quartic(**{xyz[0]: x, xyz[1]: y}, interval=self.opt_range))
+        # Now, we need to find where the zpos goes and where the xpos and ypos goes
+        stacklist = []
+        xylist = [xpos, ypos]
+        for n in 'xyz':
+            if n == self.optimize_axis:
+                stacklist.append(zpos)
+            else:
+                stacklist.append(xylist.pop(0))
+        stacklist.append(np.ones_like(zpos))  # For homogeneous coordinates
+        return np.vstack(stacklist).T

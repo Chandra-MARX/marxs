@@ -17,7 +17,7 @@ New Features
 - To avoid probabilities <0 or >1, values assigned to this column are now
   tested and a ``ValueError`` may be raised. [#230]
 
-- Added a new class `CaptureResAeff_CCDgap` that selects photons differently for
+- Added a new class ``CaptureResAeff_CCDgap`` that selects photons differently for
   calculation of the effective area and resolving power to account for chip gaps. [#235]
 
 - Add direct X3D visualization backend to avoid the need for Mayavi. [#238]
@@ -25,6 +25,8 @@ New Features
   repros. As it turn out, keeping the code separate lead to significant parallel
   work that can be simplified by keeping all of them in marxs itself. Hoewever, those
   mission are less fleshed out then marxs itself, less documented and less tested. [#237]
+- Add ``CircularMeshGrid`` as a new way to place gratings on the Rowlandtorus. Adapted from
+  previous Lynx code. [#237]
 
 API Changes
 ^^^^^^^^^^^
@@ -51,6 +53,13 @@ Bug fixes
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Previously, MARXS only contained modules for currently operating missions.
+  However, in practice, it's mostly used to simulate proposed missions. Thus,
+  we changed the policy to include simulation code for proposed missions here.
+  That code may not be of general use, but it simplifies the workflow for
+  developers considerably and serve example on how to build your own
+  instrument from the building blocks provided by the main marxs modules. [#237]
 
 - Updates of CI and simplify _astropy_init and conftest for new Python and
   astropy verisons. [#236]

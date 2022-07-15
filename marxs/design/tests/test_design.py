@@ -10,11 +10,13 @@ from astropy.utils.data import get_pkg_data_filename
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        RowlandCircleArray,
                        find_radius_of_photon_shell, design_tilted_torus,
-                       ElementPlacementError)
+                       ElementPlacementError,
+                       CircularMeshGrid,
+                       )
 from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, OrderSelector, FlatGrating
-from ...math.utils import h2e
+from ...math.utils import h2e, xyz2zxy
 
 class mock_facet(FlatOpticalElement):
     '''Lightweight class with no functionality for tests.'''
@@ -297,7 +299,7 @@ def test_persistent_facetargs():
 def test_run_photons_through_gas():
     '''And check that they have the expected labels.
 
-    No need to check here that the grating equation works - that's part of the grating tests/
+    No need to check here that the grating equation works - that's part of the grating tests.
     '''
     # Setup only.
     mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
@@ -425,3 +427,55 @@ def test_nojumpsinCCDorientation():
     xcomponent = np.array([e.geometry['e_y'][0] for e in det.elements])
     xcompdiff = np.diff(xcomponent)
     assert (np.max(np.abs(xcompdiff)) / np.median(np.abs(xcompdiff))) < 1.1
+
+
+def test_circularMeshGrid():
+    '''Check MeshGrid against a hand-checked and thus known-good solution'''
+    myrowland = RowlandTorus(10000., 10000.)
+    gas = CircularMeshGrid(rowland=myrowland,
+                           radius=(100., 300.),
+                           d_element=(30., 50),
+                           elem_class=mock_facet,
+                           opt_range=[10000., 20000.],
+                           optimize_axis='x',
+                           parallel_spec=np.array([0., 1., 0., 0.]),
+                           normal_spec=np.array([1, 0, 0, 1]))
+    assert len(gas.elements) == 178
+    poslist = np.stack(gas.elem_pos)
+    assert np.all(poslist[:, 0, 3] > 19000)
+    assert np.all(poslist[:, 0, 3] < 20000)
+    assert np.all(np.abs(poslist[:, 1, 3] < 300))
+    assert np.all(np.abs(poslist[:, 2, 3] < 300))
+
+def test_circularMeshGrid_rotated():
+    '''Check MeshGrid against a hand-checked and thus known-good solution.
+    Repeats previous test but for a different axes'''
+    myrowland = RowlandTorus(10000., 10000.)
+    myrowland.pos4d = xyz2zxy @ myrowland.pos4d
+    gas = CircularMeshGrid(rowland=myrowland,
+                           radius=(100., 300.),
+                           d_element=(30., 50),
+                           elem_class=mock_facet,
+                           opt_range=[10000., 20000.],
+                           optimize_axis='z',
+                           parallel_spec=np.array([0., 1., 0., 0.]),
+                           normal_spec=np.array([0, 1, 0, 1]))
+    assert len(gas.elements) == 178
+    poslist = np.stack(gas.elem_pos)
+    assert np.all(poslist[:, 2, 3] > 19000)
+    assert np.all(poslist[:, 2, 3] < 20000)
+    assert np.all(np.abs(poslist[:, 0, 3] < 300))
+    assert np.all(np.abs(poslist[:, 1, 3] < 300))
+
+@pytest.mark.parametrize('val', (1, 'X', None))
+def test_CircularMeshGridErrorMessage(val):
+    '''Check error message for optimze_axis keyword'''
+    myrowland = RowlandTorus(10000., 10000.)
+    with pytest.raises(ValueError,
+                       match='Valid entries for optimize_axis are "x", "y", and "z".'):
+        gas = CircularMeshGrid(rowland=myrowland,
+                               radius=300.,
+                               d_element=(30, 50),
+                               elem_class=mock_facet,
+                               opt_range=[10000., 20000.],
+                               optimize_axis=val)
