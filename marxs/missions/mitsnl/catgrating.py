@@ -39,7 +39,7 @@ __all__ = ['l1transtab', 'l1_order_selector',
 d = 0.0002
 '''Spacing of grating bars'''
 
-l1transtab = Table.read(get_pkg_data_filename('SiTransmission.csv'), format='ascii.ecsv')
+l1transtab = Table.read(get_pkg_data_filename('data/SiTransmission.csv'), format='ascii.ecsv')
 '''Transmission through 1 mu of Si'''
 
 l1_order_selector = OrderSelector(orderlist=np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]),

@@ -54,8 +54,8 @@ def test_wiggle_bar_tilt():
     # Given the numbers, wiggle in x must be larger than y
     # This also tests that not all diff numbers are the same
     # (as they would be with move).
-    assert np.all(diff[:, 1, :] == 0)
-    assert np.all(diff[:, 3, :] == 0)
+    assert np.all(diff[:, 1, :] == pytest.approx(0))
+    assert np.all(diff[:, 3, :] == pytest.approx(0))
     # Rotation happens around these axes!
     assert np.all(diff[:, 0, :3] != 0)
     assert np.all(diff[:, 2, :3] != 0)
