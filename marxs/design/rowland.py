@@ -27,10 +27,12 @@ from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
 from ..math.geometry import Geometry
 
+
 __all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
            'RowlandTorus',
            'ElementPlacementError', 'GratingArrayStructure', 'LinearCCDArray',
-           'RectangularGrid', 'RowlandCircleArray']
+           'RectangularGrid', 'RowlandCircleArray', 'CircularMeshGrid',
+           ]
 
 
 def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1, 99]):
@@ -434,7 +436,8 @@ def design_tilted_torus(f, alpha, beta):
 class ElementPlacementError(Exception):
     pass
 
-
+# TO_DO: RowlandCircleArray and LinearCCDArray seem to have the same function
+# except that that latter takes care of normals.
 class RowlandCircleArray(ParallelCalculated, OpticalElement):
     '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
 
@@ -660,7 +663,11 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
                          np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
         return np.hstack(radii)
 
-
+# TO-DO: THe next three classes have very similar purpose,
+# just slightly different layout (rectangle, tiles in circle, tiles in concentric rings)
+# yet their implementations and API are different. Some automatically account for orientataion
+# of the Rowland torus, some don't. And, in fact, the rectangle could also be used for 1D arrangements
+# (see linear CCD array above)
 class GratingArrayStructure(LinearCCDArray):
     '''A collection of diffraction gratings on the Rowland torus.
 
