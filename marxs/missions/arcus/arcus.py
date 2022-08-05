@@ -15,7 +15,7 @@ from marxs.design.rowland import RowlandCircleArray
 import marxs.analysis
 from marxs.design import tolerancing as tol
 from marxs.missions.mitsnl.catgrating import catsupportbars
-from marxs.missions.athena.spo import SPOChannelMirror, ScatterPerChannel
+from marxs.missions.athena.spo import SPOChannelMirror, ScatterPerChannel, spomounting
 from .ralfgrating import CATfromMechanical, CATWindow
 
 from . import spo
@@ -126,13 +126,6 @@ class Aperture(optics.MultiAperture):
             apers.append(rect)
 
         super(Aperture, self).__init__(elements=apers, **kwargs)
-
-
-def spomounting(photons):
-    '''Remove photons that do not go through an SPO but hit the
-    frame part of the petal.'''
-    photons['probability'][photons['xou'] < 0] = 0.
-    return photons
 
 
 class SimpleSPOs(Sequence):
