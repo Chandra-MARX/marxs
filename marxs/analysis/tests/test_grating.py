@@ -4,6 +4,7 @@ from ...utils import generate_test_photons
 from ...optics import ThinLens, FlatGrating, FlatDetector, OrderSelector
 from ..gratings import (resolvingpower_from_photonlist,
                         effectivearea_from_photonlist,
+                        identify_photon_in_supaperture
                         )
 
 def test_resolvingpower_from_photonlist():
@@ -48,3 +49,10 @@ def test_aeff_from_photonlist():
     assert aeff[3] == 0
     assert np.isclose(aeff[2], .04)
     assert np.isclose(aeff[1], .6)
+
+
+def test_identify_photon_in_supaperture():
+    angle = [0, 59, 61, 180, 289]
+    inaper = identify_photon_in_supaperture(np.deg2rad(angle),
+                                            np.deg2rad(30), ang_0=np.pi / 2)
+    assert np.all(inaper == [False, False, True, False, True])

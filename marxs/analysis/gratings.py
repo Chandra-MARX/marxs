@@ -256,3 +256,26 @@ def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1.,
     for i, o in enumerate(orders):
         aeff[i] = photons['probability'][photons[ordercol] == o].sum()
     return aeff / n_photons * A_geom
+
+
+def identify_photon_in_supaperture(angle, max_ang, ang_0=np.pi / 2):
+    '''Find which photons are in a sub-aperture of two mirrored sectors
+
+    This function includes mirroring on the 0 line, e.g. if
+    max_ang=20 deg and ang_0 = 90 deg, includes photons in two sectors
+    from 70-110 deg and 250-290 deg.
+
+    Parameters
+    ----------
+    angle : array
+        Angles (in rad) to be tested
+    max_ang : float
+        Maximal distance (in rad) from ``ang_0`` that is included in the sub-aperturing
+    ang_0 : float
+        Center of the sub-aperturing region. Default is sub-aperturing perpendicular
+        to the ``angle=0`` line, which is the most common sub-aperturing layout with
+        subaperturing perpendicular to the dispersion direction as ``angle=0``.
+    '''
+    indplus = np.isclose(np.mod(angle, 2 * np.pi), ang_0, atol=max_ang)
+    indminus = np.isclose(np.mod(angle, 2 * np.pi), 2 * np.pi - ang_0, atol=max_ang)
+    return indplus | indminus
