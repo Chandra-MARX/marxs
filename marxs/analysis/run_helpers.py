@@ -11,7 +11,7 @@ from marxs.source import PointSource, FixedPointing
 
 
 __all__ = ['default_coord',
-           'run_monoenergetic_simulation',
+           'monoenergetic_astrosimulation',
            ]
 
 default_coord = SkyCoord(30., 30., unit='deg')

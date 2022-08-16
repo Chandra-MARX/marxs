@@ -1,0 +1,18 @@
+# %ECSV 0.9
+# ---
+# datatype:
+# - {name: Metashell Serial Number, datatype: int64}
+# - {name: r_inner, unit: mm, datatype: float64}
+# - {name: r_outer, unit: mm, datatype: float64}
+# meta: !!omap
+# - {ORIGFILE: EffectiveAreas4XGS.xlsx}
+# - {origin: "email from Will Zhang to Mark Schattenburg, Sunday, February 6, 2022 at 5:25 PM "}
+# - {author: Hans Moritz Guenther}
+# schema: astropy-2.0
+"Metashell Serial Number" r_inner r_outer
+1 151.544 212.863
+2 231.010 319.055
+3 338.443 428.440
+4 449.103 538.434
+5 560.379 647.051
+6 670.259 836.677
