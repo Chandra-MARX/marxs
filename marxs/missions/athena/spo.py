@@ -20,7 +20,7 @@ from marxs.missions.mitsnl.catgrating import load_table2d
 from marxs.math.utils import xyz2zxy
 
 __all__ = ['aperture',
-           'spogeom', 'spo_pos4d',
+           'spogeom', 'spo_pos4d', 'spogeom2pos4d',
            'PerfectLensSegment',
            'SPOChannelMirror', 'ScatterPerChannel',
            'geometricthroughput', 'willingaleloss',
@@ -29,22 +29,28 @@ __all__ = ['aperture',
 
 spogeom = Table.read(get_pkg_data_path('data/xous.csv'), format='ascii.ecsv')
 spogeom['r_mid'] = (spogeom['outer_radius'] + spogeom['inner_radius']) / 2
-spo_pos4d = []
-# Convert angle to quantity here to make sure that unit is taken into account
-for row, ang in zip(spogeom,
-                    u.Quantity(spogeom['clocking_angle']).to(u.rad).value):
-    spo_pos4d.append(compose([0,  # focallength,  # - spogeom[i]['d_from_12m']
-                              row['r_mid'] * np.sin(ang),
-                              row['r_mid'] * np.cos(ang)],
-                             euler2mat(-ang, 0., 0.),
-                             # In detail this should be (primary_length + gap + secondary_length) / 2
-                             # but the gap is somewhat complicated and this is only used
-                             # for display, we'll ignore that for now.
-                             [row['primary_length'],
-                              row['azwidth'] / 2.,
-                              (row['outer_radius'] - row['inner_radius']) / 2.]))
 
-spo_pos4d = [np.dot(xyz2zxy, s) for s in spo_pos4d]
+def spogeom2pos4d(spogeom):
+    spo_pos4d = []
+    # Convert angle to quantity here to make sure that unit is taken into account
+    for row, ang in zip(spogeom,
+                        u.Quantity(spogeom['clocking_angle']).to(u.rad).value):
+        spo_pos4d.append(compose([0,  # focallength,  # - spogeom[i]['d_from_12m']
+                                  row['r_mid'] * np.sin(ang),
+                                  row['r_mid'] * np.cos(ang)],
+                                  euler2mat(-ang, 0., 0.),
+                                  # In detail this should be (primary_length + gap + secondary_length) / 2
+                                  # but the gap is somewhat complicated and this is only used
+                                  # for display, we'll ignore that for now.
+                                  [row['primary_length'],
+                                   row['azwidth'] / 2.,
+                                   (row['outer_radius'] - row['inner_radius']) / 2.
+                                   ]
+                                  )
+                         )
+    return spo_pos4d
+
+spo_pos4d = [np.dot(xyz2zxy, s) for s in spogeom2pos4d(spogeom)]
 
 
 aperture = CircleAperture(position=[0, 0, 12200],

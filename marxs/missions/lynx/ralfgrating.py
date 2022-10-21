@@ -1,22 +1,25 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
-from astropy.utils.data import get_pkg_data_filename as gpdf
+from astropy.utils.data import get_pkg_data_filename
 from astropy.table import Table
 from marxs.optics.base import OpticalElement
 from marxs.simulator import ParallelCalculated
 from marxs.math.utils import h2e
 from marxs.missions.mitsnl.catgrating import InterpolateEfficiencyTable as IET
 
-order_selector_Si = IET(gpdf('data/gratings/Si_efficiency.dat',
-                             package='marxslynx'))
+# CAT gratings tabulated data
+order_selector_Si = IET(
+    get_pkg_data_filename('data/Si_efficiency_5_7.dat',
+                          package='marxs.missions.mitsnl'))
 order_selector_Si.coating = 'None'
-order_selector_SiPt = IET(gpdf('data/gratings/SiPt_efficiency.dat',
-                               package='marxslynx'))
-order_selector_SiPt.coating = 'Pt'
+order_selector_Pt = IET(
+    get_pkg_data_filename('data/SiPt_efficiency_5_7.dat',
+                          package='marxs.missions.mitsnl'))
+order_selector_Pt.coating = 'Pt'
 
 ###
 ###
-### To-Do: delete here and use rowland.CircualrMeshGrid instead
+### To-Do: delete here and use rowland.CircularMeshGrid instead
 class MeshGrid(ParallelCalculated, OpticalElement):
     '''A collection of diffraction gratings on the Rowland torus.
 
@@ -44,7 +47,7 @@ class MeshGrid(ParallelCalculated, OpticalElement):
     z_range: list of 2 floats
         Minimum and maximum of the x coordinate that is searched for an
         intersection with the torus. A ray can intersect a torus in up to four
-        points. ``x_range`` specififes the range for the numerical search for
+        points. ``x_range`` specifies the range for the numerical search for
         the intersection point.
     x_range, y_range: lists of two floats
         limits of the rectangular area where gratings are placed.
