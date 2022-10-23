@@ -3,8 +3,7 @@ import os
 
 import numpy as np
 import transforms3d
-from marxs.optics import OpticalElement
-from marxs.simulator import Parallel, ParallelCalculated
+from marxs.simulator import Parallel
 from marxs.missions.mitsnl.catgrating import (InterpolateEfficiencyTable,
                                               CATL1L2Stack)
 
@@ -19,7 +18,7 @@ globalorderselector = InterpolateEfficiencyTable(
 '''Global instance of an order selector to use in all CAT gratings.
 
 As long as the efficiency table is the same for all CAT gratings, it makes
-sense to define that globaly. If every grating had its own independent
+sense to define that globally. If every grating had its own independent
 order selector, we would have to read the selector file a few hundred times.
 '''
 

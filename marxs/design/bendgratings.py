@@ -1,5 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-'''This module contains fuctions to modify gratings.
+'''This module contains functions to modify gratings.
 
 After flat simple gratings have been placed on a Rowland-torus, they can be
 changed to more complicated geometries or set-ups. For example, placing just
@@ -10,7 +10,7 @@ is often useful to think of this as a multi-step process for the simulation,
 so in practice a chirp would have to be known in grating manufacturing.
 
 To support this conceptual idea (place the gratings, then rotate it, then do X,
-then chirp it) the functions in this module operate on exicting grating objects.
+then chirp it) the functions in this module operate on exciting grating objects.
 '''
 import numpy as np
 from scipy.optimize import minimize_scalar

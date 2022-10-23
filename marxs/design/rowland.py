@@ -6,9 +6,9 @@ called `~marxs.design.rowland.RowlandTorus`), some helper functions used to set
 the right parameters for the torus and a few classes that are derived from
 `marxs.simulator.ParallelCalculated`, each placing elements such as gratings
 or detectors on the Rowland torus. There are many ways to do that, e.g. the
-limits can be defined in x,y,z coordiantes or in theta, phi coordinates on the
+limits can be defined in x,y,z coordinates or in theta, phi coordinates on the
 torus, gratings can be ordered in concentric circles or pack densely in a
-rectoangular area etc. At this point, the different classes do not exploit all
+rectangular area etc. At this point, the different classes do not exploit all
 these possibilities, they merely give a few of many possible ways to set up an
 instrument.
 
@@ -844,7 +844,7 @@ class RectangularGrid(ParallelCalculated, OpticalElement):
     x_range: list of two floats
         Minimum and maximum of the x coordinate that is searched for an
         intersection with the torus. A ray can intersect a torus in up to four
-        points. ``x_range`` specififes the range for the numerical search for
+        points. ``x_range`` specifies the range for the numerical search for
         the intersection point.
     y_range, z_range: list of two floats
         limits of the rectangular area where gratings are placed.
