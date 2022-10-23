@@ -93,21 +93,23 @@ id_num_offset = {'1': 0,
                  '2m': 11000}
 
 
-# Set a little above entrance pos (the mirror) for display purposes.
-# Thus, needs to be geometrically bigger for off-axis sources.
-# with fac > 0.5 for aligned squares, but more for tilted rectangles
-fac = [1.1, 0.8]
-spopos = np.array(spo.spo_pos4d)
-rmid = 0.5 * (spopos[:, 1, 3].max() + spopos[:, 1, 3].min())
-delta_r = spo.spogeom['outer_radius'] - spo.spogeom['inner_radius']
-rdim = spopos[:, 1, 3].max() - rmid + fac[0] * delta_r.max()
-aperzoom = [1, spopos[:, 0, 3].max() + fac[1] * spo.spogeom['azwidth'].max(),
-            rdim
-            ]
+
 
 
 class Aperture(optics.MultiAperture):
     def __init__(self, conf, channels=channels, **kwargs):
+        # Set a little above entrance pos (the mirror) for display purposes.
+        # Thus, needs to be geometrically bigger for off-axis sources.
+        # with fac > 0.5 for aligned squares, but more for tilted rectangles
+        fac = [1.1, 0.8]
+        spopos = np.array(conf['spo_pos4d'])
+        rmid = 0.5 * (spopos[:, 1, 3].max() + spopos[:, 1, 3].min())
+        delta_r = conf['spo_geom']['outer_radius'] - conf['spo_geom']['inner_radius']
+        rdim = spopos[:, 1, 3].max() - rmid + fac[0] * delta_r.max()
+        aperzoom = [1, spopos[:, 0, 3].max() + fac[1] * conf['spo_geom']['azwidth'].max(),
+                    rdim
+                    ]
+
         apers = []
         for chan in channels:
             pos = conf['pos_opt_ax'][chan][:3].copy()
