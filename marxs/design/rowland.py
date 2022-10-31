@@ -17,7 +17,6 @@ These classes may be generalized in the future.
 import numpy as np
 from scipy import optimize
 import transforms3d
-from transforms3d.utils import normalized_vector
 
 from ..optics.base import OpticalElement
 from ..base import MarxsElement
@@ -30,8 +29,9 @@ from ..math.geometry import Geometry
 
 __all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
            'RowlandTorus',
-           'ElementPlacementError', 'GratingArrayStructure', 'LinearCCDArray',
-           'RectangularGrid', 'RowlandCircleArray', 'CircularMeshGrid',
+           'ElementsOnTorus',
+           'GratingArrayStructure',
+           'RectangularGrid', 'CircularMeshGrid',
            ]
 
 
@@ -62,7 +62,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1, 99]):
     percentile : list of floats
         The radius is calculated at the given percentiles. ``50`` would give
         the median radius. The default of ``[1, 99]`` gives a radius range
-        excluding extrem outliers such as stray rays scattered into the extreme
+        excluding extreme outliers such as stray rays scattered into the extreme
         wing of the PSF.
 
     '''
@@ -111,7 +111,7 @@ class RowlandTorus(MarxsElement, Geometry):
         Parameters
         ----------
         xyz : np.array of shape (N, 3) or (3)
-            Coordinates of points in euklidean space. The quartic is calculated
+            Coordinates of points in euclidean space. The quartic is calculated
             for those points.
         transform : bool
             If ``True`` transform ``xyz`` from the global coordinate system
@@ -125,65 +125,59 @@ class RowlandTorus(MarxsElement, Geometry):
             Quartic at the input location
         '''
         if xyz.shape[-1] != 3:
-            raise ValueError('Input coordinates must be defined in Eukledian space.')
+            raise ValueError('Input coordinates must be defined in Eucledian space.')
 
         if transform:
             invpos4d = np.linalg.inv(self.pos4d)
             xyz = h2e(np.einsum('...ij,...j', invpos4d, e2h(xyz, 1)))
         return ((xyz**2).sum(axis=-1) + self.R**2. - self.r**2.)**2. - 4. * self.R**2. * (xyz[..., [0,2]]**2).sum(axis=-1)
 
-    def solve_quartic(self, x=None, y=None, z=None, interval=[0, 1], transform=True):
-        '''Solve the quartic on the Rowland torus in Cartesian coordinates.
+    def solve_quartic(self, origin, v, transform=True):
+        '''Solve the quartic on the Rowland torus.
 
         This method solves the quartic equation for positions on the Rowland
-        Torus for cases where two of the Cartesian coordinates are fixed
-        (e.g. y and z) and the third one (e.g. x) needs to be computed. This
-        function is intended as a convenience for a common use case. In more
-        general cases, evaluate the :meth:`RowlandTorus.quartic` and search for
-        the roots of that function.
+        Torus, i.e. it intersects a line with the torus. To that end, the
+        location on the line is varied and the root of te quartic is found
+        through numerical optimization.
 
         Parameters
         ----------
-        x, y, z : float or None
-            Set two of these coordinates to fixed numbers. This method will
-            solve for the coordinate set to ``None``.
-            x, y, z are defined in the global coordinate system.
-        interval : np.array
-            [min, max] for the search. The quartic can have up to four
-            solutions because a line can intersect a torus in four points and
-            this interval must bracket one and only one solution.
+        origin : np.array
+            Origin of line as homogeneous coordinate.
+            This is also used as approximate starting point for the numerical
+            optimization, so it would be reasonable close to the
+            solution.
+        v : np.array
+            Direction of the line as homogeneous coordinate.
         transform : bool
-            If ``True`` transform ``xyz`` from the global coordinate system
+            If ``True`` transform input from the global coordinate system
             into the local coordinate system of the torus. If this
             transformation is done in the calling function already, set to
             ``False``.
 
         Returns
         -------
-        coo : float
-            Value of the fitted coordinate.
+        coo : np.array
+            Position of intersection as homogeneous coordinate.
 
         '''
-        n_Nones = 0
-        for i, c in enumerate([x, y, z]):
-            if c is None:
-                n_Nones += 1
-                ind = i
-        if n_Nones != 1:
-            raise ValueError('Exactly one of the input numbers for x,y,z must be None.')
-        # Need to give it a number for vstack to work
-        if ind == 0: x = 0.
-        if ind == 1: y = 0.
-        if ind == 2: z = 0.
-
-        xyz = np.vstack([x,y,z]).T
-        def f(val_in):
-            xyz[..., ind] = val_in
-            return self.quartic(xyz, transform=transform)
-        val_out, brent_out = optimize.brentq(f, interval[0], interval[1], full_output=True)
-        if not brent_out.converged:
+        origin = h2e(origin)
+        v = h2e(v)
+        def fun(k, origin, v):
+            return self.quartic(origin + k[..., None] * v, transform=transform)
+        out = optimize.root(fun,
+                            # The starting guess also serves to set the scale
+                            # in the absence of a jacobian.
+                            # So, can't start at 0. Instead, need to guess
+                            # reasonable scale from torus parameters.
+                            # np.max to avoid problems at r = R.
+                            # In that case, just pick a small number.
+                            max(np.abs(self.r - self.R), self.r / 1e-2) * 0.1,
+                            args=(origin, v))
+        if not out.success:
             raise Exception('Intersection with torus not found.')
-        return val_out
+        else:
+            return e2h(origin + out.x[..., None] * v, 1)
 
     def parametric_surface(self, theta, phi, display):
         '''Parametric representation of surface of torus.
@@ -242,7 +236,7 @@ class RowlandTorus(MarxsElement, Geometry):
         ----------
         xyzw : np.array of shape (N, 4)
             Coordinates of points on the torus surface in homogeneous
-            coordiantes.
+            coordinates.
 
         transform : bool
             If ``True`` transform ``xyz`` from the global coordinate system
@@ -285,7 +279,7 @@ class RowlandTorus(MarxsElement, Geometry):
     def normal_parametric(self, theta, phi):
         '''Return the gradient vector field.
 
-        Following the usual concentions, the vector is pointing outwards
+        Following the usual convention, the vector is pointing outwards
         of the torus volume.
 
         Parameters
@@ -312,19 +306,19 @@ class RowlandTorus(MarxsElement, Geometry):
     def normal(self, xyzw):
         '''Return the gradient vector field.
 
-        Following the usual concentions, the vector is pointing outwards
+        Following the usual conventions, the vector is pointing outwards
         of the torus volume.
 
         Parameters
         ----------
         xyzw : np.array of shape (N, 4)
-            Coordinates of points in euklidean space. The quartic is calculated
+            Coordinates of points in euclidean space. The quartic is calculated
             for those points. All points need to be on the surface of the torus.
 
         Returns
         -------
         gradient : np.array
-            Gradient vector field in euklidean coordinates. One vector
+            Gradient vector field in euclidean coordinates. One vector
             corresponds to each input point. The shape of ``gradient`` is the
             same as the shape of ``xyz``.
         '''
@@ -333,10 +327,10 @@ class RowlandTorus(MarxsElement, Geometry):
         theta, phi = self.xyzw2parametric(xyzw, 1)
         return self.normal_parametric(theta, phi)
 
-    def xyz_from_radiusangle(self, radius, angle, interval):
-        '''Get Cartesian coordiantes for radius, angle on the rowland circle.
+    def xyz_from_radiusangle(self, radius, angle, start):
+        '''Get Cartesian coordinates for radius, angle on the rowland circle.
 
-        y, z are calculated from the radius and angle of polar coordiantes in a
+        y, z are calculated from the radius and angle of polar coordinates in a
         plane; then x is determined from the condition that the point lies on
         the Rowland circle.  The plane is perpendicular to the optical axis
         that defines the Rowland circle.
@@ -347,22 +341,26 @@ class RowlandTorus(MarxsElement, Geometry):
             Polar coordinates in a plane perpendicular to the optical axis
             (where the optical axis is parallel to the x-axis and goes through
             the origin of the `RowlandTorus`.
-            ``angle=0`` conicides with the local y-axis.
-        interval : np.array
-            [min, max] for the search. The quartic can have up to four
-            solutions because a line can intersect a torus in four points and
-            this interval must bracket one and only one solution.
+            ``angle=0`` coincides with the local y-axis.
+        start : number
+            Starting value for the search. The quartic can have up to four
+            solutions because a line can intersect a torus in four points.
+            The solution found thus depends on where the numerical root solver
+            starts the search.
 
         Returns
         -------
         xyz : np.array of shape (n, 3)
-            Eukledian coordinates in the global coordinate system.
+            Euclidean coordinates in the global coordinate system.
         '''
         y = radius * np.cos(angle)
         z = radius * np.sin(angle)
-        x = self.solve_quartic(y=y, z=z, interval=interval, transform=False)
-        xyz = np.vstack([x, y, z, np.ones_like(x)]).T
-        return h2e(np.einsum('...ij,...j', self.pos4d, xyz))
+        # Use np.mean for backwards compatibility.
+        # This used to take a bracketing interval instead of a first guess.
+        out = self.solve_quartic(np.array([np.mean(start), y, z, 1]),
+                               np.array([1, 0, 0, 0]),
+                               transform=False)
+        return h2e(np.einsum('...ij,...j', self.pos4d, out))
 
 
 def design_tilted_torus(f, alpha, beta):
@@ -433,195 +431,230 @@ def design_tilted_torus(f, alpha, beta):
     return R, r, pos4d
 
 
-class ElementPlacementError(Exception):
-    pass
+class ElementsOnTorus(ParallelCalculated, OpticalElement):
+    '''A collection of elements on a Rowland torus.
 
-# TO_DO: RowlandCircleArray and LinearCCDArray seem to have the same function
-# except that that latter takes care of normals.
-class RowlandCircleArray(ParallelCalculated, OpticalElement):
-    '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
+    When initialized, it places elements in the space available on the
+    Rowland torus, most commonly, this class is used to place grating facets.
 
-    When a `RowlandCircleArray` is initialized, it places a number of elements
-    on the Rowland circle. These elements could be any optical element, but the
-    most common use for this structure is an array of CCDs capturing a
-    spread-out grating spectrum like ACIS-S in Chandra.
-
-    After generation, individual positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`.
-    See `marxs.simulator.Parallel` for details.
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See
+    `marxs.simulation.Parallel` for details.
 
     After any of the `elem_pos`, `elem_uncertainty` or
     `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the final CCD positions.
+    called to regenerate the facets on the GAS.
 
     Parameters
     ----------
     rowland : RowlandTorus
-    d_element : float
-        Size of the edge of each element, which is assumed to be flat and
-        square. ``d_element`` can be larger than the actual size of the optical
-        element to accommodate a minimum distance between elements from
-        mounting structures.
-    theta : list of floats
-        Angle on the Rowland circle to be covered by detectors.
-        For a continuous array of detectors, this is just a list with two
-        elements ``[inner, outer]``. However, it is also possible to list more
-        than one range in a flat list, to e.g. set one detector in the focus to
-        detect the zeroth order and offset others:
-        ``[inner_1, outer_1, inner_2, outer_2, ...]``.
+    d_element : list of two floats
+        Size of the edge of elements along the two (y and z in canonical marxs orientation)
+        edges.
+        ``d_element`` can be larger than the actual size of the silicon
+        membrane to accommodate a minimum thickness of the surrounding frame.
+    guess_distance : float
+        A ray can intersect a torus in up to four
+        points. ``opt_range`` specifies the starting distance for the numerical search for
+        the intersection point to resolve this ambiguity.
+    optimize_axis : np.array
+        Homogeneous coordinate of the axis along which elements will be moved. This will
+        usually coincide with the optical axis of the telescope.
     '''
+    def __init__(self, **kwargs):
+        self.guess_distance = kwargs.pop('guess_distance')
+        self.rowland = kwargs.pop('rowland')
+        self.d_element = kwargs.pop('d_element')
+        self.optimize_axis = kwargs.pop('optimize_axis')
+        self.id_col = kwargs.pop('id_col', 'facet')
 
-    id_col = 'CCD_ID'
-
-    def __init__(self, rowland, d_element, theta, **kwargs):
-        self.rowland = rowland
-        if not len(theta) % 2 == 0:
-            raise ValueError('radius must be a list of [inner_1, outer_1, inner_2, outer_2, ...].')
-        if np.max(np.abs(theta)) > 10:
-            raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
-        self.theta = theta
-        self.d_element = d_element
-        kwargs['normal_spec'] = self.rowland_normal
-        kwargs['parallel_spec'] =  self.rowland.parametric(0., 0.) - self.rowland.parametric(1., 0.)
-        kwargs['pos_spec'] = self.xyzwpos
+        # Do I need those defaults? Or are they in one of the higher classes already?
+        if 'normal_spec' not in kwargs.keys():
+            kwargs['normal_spec'] = self.rowland.normal
+        if 'parallel_spec' not in kwargs.keys():
+            kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
+        kwargs['pos_spec'] = self.elempos
 
         super().__init__(**kwargs)
 
-    def rowland_normal(self, xyzw):
-        return self.rowland.normal(xyzw)
+    def elemposyz(self):
+        '''Return element position in 2D.
 
-    def xyzwpos(self):
-        radii = self.distribute_elements_on_arc()
-        return self.rowland.parametric(radii, 0.)
-
-    def max_elements_on_arc(self, theta):
-        '''Max number of elements that fit on an arc
-
-        Parameters
-        ----------
-        theta : list of two floats
-            angle range that should be covered by elements
+        This function will be customized by derived classes.
 
         Returns
         -------
-        n : int
-            Number of elements needed to cover a given radius segment.
-            Elements might reach beyond the limits if the arc length
-            is not an integer multiple of the element size.
+        ypos, zpos : np.array
+            1D arrays of y and z positions for the elements distributed in 2D.
         '''
-        return int(np.ceil(self.rowland.r * (theta[1] - theta[0]) / self.d_element))
+        raise NotImplementedError
 
-    def distribute_elements_on_arc(self):
-        '''Distributes elements as evenly as possible along an arc segment.
+    def elempos(self):
+        ypos, zpos = self.elemposyz()
+        posyz = np.vstack([np.zeros_like(ypos), ypos, zpos])
+        # Using parallel at origin, because we place the elements on y/z
+        parallels = self.get_spec('parallel_spec', np.zeros((1, 4)), self.optimize_axis)
+        rot_mat = ex2vec_fix(h2e(self.optimize_axis), h2e(parallels))
+        mat4d = transforms3d.affines.compose(np.zeros(3), rot_mat, np.ones(3))
 
-        Returns
-        -------
-        theta : np.ndarray
-            Theta coordinates of the element *center* positions.
-        '''
-        theta = []
-        for i in range(len(self.theta) // 2):
-            bracket = self.theta[2 * i: 2 * i + 2]
-            n = self.max_elements_on_arc(bracket)
-            theta.append(np.mean(bracket) +
-                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element / self.rowland.r)
-        return np.hstack(theta)
+        origin = np.einsum('...ij,...j', mat4d, e2h(posyz.T, 1)) + self.guess_distance * self.optimize_axis
+        return self.rowland.solve_quartic(origin, self.optimize_axis)
 
 
-class LinearCCDArray(ParallelCalculated, OpticalElement):
-    '''A 1D collection of elements (e.g. CCDs) arranged on a Rowland circle.
+class RectangularGrid(ElementsOnTorus):
+    '''A collection of diffraction gratings on the Rowland torus.
 
-    When a `LinearCCDArray` is initialized, it places a number of elements on
-    the Rowland circle. These elements could be any optical element, but the
-    most common use for this structure is an array of CCDs capturing a
-    spread-out grating spectrum like ACIS-S in Chandra.
+    This class is similar to ``marxs.design.rowland.GratingArrayStructure`` but
+    instead of placing elements on concentric circles, they are placed to fill
+    a rectangular area.
 
-    After generation, individual positions can be adjusted by hand by editing
-    the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for
+    When initialized, it places elements in the space available on the
+    Rowland circle, most commonly, this class is used to place grating facets.
+
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See
+    `marxs.simulation.Parallel` for details.
+
+    After any of the `elem_pos`, `elem_uncertainty` or
+    `uncertainty` is changed, `generate_elements` needs to be
+    called to regenerate the facets on the GAS.
+
+    Parameters
+    ----------
+    y_range, z_range: list of two floats
+        Limits of the rectangular area where gratings are placed.
+        To place only one element, make both limits the same, e.g.
+        ``z_range=[5, 5]`` will place one element in each row in z
+        centered on $z=5$.
+
+    '''
+    def __init__(self, **kwargs):
+        self.y_range = kwargs.pop('y_range')
+        self.z_range = kwargs.pop('z_range')
+
+        super().__init__(**kwargs)
+
+    def elemposyz(self):
+
+        print(self.y_range)
+        n_y = int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
+        n_z = int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
+        print(n_y, n_z)
+        n_y = max(1, n_y)
+        n_z = max(1, n_z)
+        print(n_y, n_z)
+
+        # n_y and n_z are rounded up, so they cover a slightly larger range than y/z_range
+        width_y = n_y * self.d_element
+        width_z = n_z * self.d_element
+
+        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element), self.y_range[1], self.d_element)
+        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element), self.z_range[1], self.d_element)
+        print(ypos, zpos)
+
+        ypos, zpos = np.meshgrid(ypos, zpos)
+
+        return ypos.flatten(), zpos.flatten()
+
+
+class CircularMeshGrid(ElementsOnTorus):
+    '''A collection of diffraction gratings on the Rowland torus filling a circle.
+
+    When initialized, it places elements in the space available on the
+    Rowland circle, most commonly, this class is used to place grating facets.
+
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See
+    `marxs.simulation.Parallel` for details.
+
+    After any of the `elem_pos`, `elem_uncertainty` or
+    `uncertainty` is changed, `generate_elements` needs to be
+    called to regenerate the facets on the GAS.
+
+    Parameters
+    ----------
+    radius : list of two floats
+        Inner and outer radius of the circle. The center of the circle coincides with
+        the opitical axis chosen by `opt_axis`.
+    '''
+
+    def __init__(self, **kwargs):
+        self.radius = kwargs.pop('radius')
+
+        super().__init__(**kwargs)
+
+    def elemposyz(self):
+        # For readability, this code is written using an explicit x,y,z notation for
+        # variable names assuming a circle in the y/z plane and a numerical
+        # solution for the Rowland torus in the x direction.
+        # In the last few lines, the variables are turned around to make it fit the
+        # chosen direction.
+        n_y = int(np.ceil(2 * self.radius[1] / self.d_element[0]))
+        y_width = n_y * self.d_element[0]
+        y_pos = np.arange(- y_width / 2, self.radius[1], self.d_element[0])
+
+        ypos = []
+        zpos = []
+
+        for y in y_pos:
+            if np.abs(y) > self.radius[1]:
+                # Outermost layer. Center might be outside outer radius
+                z = np.array([0])
+            else:
+                z_outer = np.sqrt(self.radius[1]**2 - y**2)
+                if np.abs(y) > self.radius[0]:
+                    n_z = int(np.ceil(2 * z_outer / self.d_element[1]))
+                    z_width = n_z * self.d_element[1]
+                    z = np.arange(- z_width / 2, z_outer, self.d_element[1])
+                else:
+                    z_inner = np.sqrt(self.radius[0]**2 - y**2)
+                    z_mid = 0.5 * (z_inner + z_outer)
+                    n_z = int(np.ceil((z_outer - z_inner) / self.d_element[1]))
+                    z_width = n_z * self.d_element[1]
+                    z = np.arange(z_mid - z_width / 2, z_outer, self.d_element[1])
+                    z = np.hstack([-z, z])
+
+            ypos.extend([y] * len(z))
+            zpos.extend(z)
+        return ypos, zpos
+
+
+class GratingArrayStructure(ElementsOnTorus):
+    '''Collection of diffraction gratings on the Rowland Torus
+
+    When a ``GratingArrayStructure`` (GAS) is initialized, it places elements
+    in the space available on the Rowland circle, most commonly, this class is
+    used to place grating facets.
+
+    After generation, individual facet positions can be adjusted by hand by
+    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for
     details.
 
-    After any of the `elem_pos`, `elem_uncertainty` or
-    `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the final CCD positions.
+    After any of the `elem_pos`, `elem_uncertainty` or `uncertainty` is
+    changed, `generate_elements` needs to be called to regenerate the facets on
+    the GAS.
 
     Parameters
     ----------
-    rowland : RowlandTorus
-    d_element : float
-        Size of the edge of each element, which is assumed to be flat and
-        square. (``d_element`` can be larger than the actual size of the
-        optical element to accommodate a minimum distance between elements
-        from mounting structures.
-    x_range: list of 2 floats
-        Minimum and maximum of the x coordinate that is searched for an
-        intersection  with the torus. A line can intersect a torus in up to
-        four points. ``x_range`` specifies the range for the numerical search
-        for the intersection point.
-    radius : list of floats
-        Inner and outer radius as measured in the yz-plane from the center of
-        the `LinearCCDArray`. Can be negative to place elements on both sides
-        of the center of the `LinearCCDArray`. Elements will be placed
-        ``d_element`` apart; if a non-integer number of elements is needed to
-        cover the ``radius``, elements will reach beyond the given numbers.
-        For a continuous array of detectors, this is just a list with two
-        elements ``[r_inner, r_outer]``. However, it is also possible to list
-        more than one range in a flat list, to e.g. set one detector in the
-        focus to detect the zeroth order and offset others:
-        ``[r_inner_1, r_outer_1, r_inner_2, r_outer_2, ...]``.
-    phi : floats
-        Direction of line through the centers of all elements. :math:`\phi=0`
-        is on the positive y axis. Angles are given in radian.
+    radius : list of 2 floats
+        Inner and outer radius of the GAS as measured in the yz-plane from the
+        origin.
+
+    phi : float or list of 2 floats
+        Bounding angles for a segment covered by the GSA. :math:`\phi=0` is on
+        the positive y axis. The segment fills the space from ``phi1`` to
+        ``phi2`` in the usual mathematical way (counterclockwise).  Angles are
+        given in radian. Note that ``phi[1] < phi[0]`` is possible if the
+        segment crosses the y axis.
+        Alternatively, ``phi`` can just be a single number. In that case, there
+        will be exactly one element per radius.
+
     '''
-
-    id_col = 'CCD_ID'
-
-    def __init__(self, rowland, d_element, x_range, radius, phi, **kwargs):
-        self.rowland = rowland
-        if not len(radius) % 2 == 0:
-            raise ValueError('radius must be a list of [inner_1, outer_1, inner_2, outer_2, ...].')
-        radarray = np.array(radius)
-        if not np.all(radarray[1::2] > radarray[::2]):
-            raise ValueError('Outer radius must be larger than inner radius.')
-        self.radius = radius
-
-        if np.max(np.abs(phi)) > 10:
-            raise ValueError('Input angles >> 2 pi. Did you use degrees (radian expected)?')
-        self.phi = phi
-        self.x_range = x_range
-        self.d_element = d_element
-
-        if 'normal_spec' not in kwargs.keys():
-            kwargs['normal_spec'] = self.rowland_normal
-
-        if 'parallel_spec' not in kwargs.keys():
-            radii = self.distribute_elements_on_radius()
-            kwargs['parallel_spec'] =  e2h(normalized_vector(self.xyz_from_radiusangle(radii[1], self.phi, self.x_range) - self.xyz_from_radiusangle(radii[0], self.phi, self.x_range)), 0)
-
-        if 'pos_spec' not in kwargs.keys():
-            kwargs['pos_spec'] = self.xyzwpos
+    def __init__(self, **kwargs):
+        self.phi = kwargs.get('phi', [0., 2*np.pi])
+        self.radius = kwargs['radius']
 
         super().__init__(**kwargs)
-
-    def rowland_normal(self, xyzw):
-        return self.rowland.normal(xyzw)
-
-    def xyz_from_radiusangle(self, r, phi, x_range):
-        '''Wrap `marxs.design.RowlandTorus.xyz_from_radiusangle` for better error message'''
-        try:
-            xyz = self.rowland.xyz_from_radiusangle(r, phi, x_range)
-        except ValueError as e:
-            if 'f(a) and f(b) must have different signs' in str(e):
-                raise ElementPlacementError('No intersection with Rowland torus in range {0}'.format(self.x_range))
-            else:
-                # Something else went wrong
-                raise e
-        return xyz
-
-    def xyzwpos(self):
-        radii = self.distribute_elements_on_radius()
-        facet_pos = np.array([self.xyz_from_radiusangle(r, self.phi, self.x_range).flatten() for r in radii])
-        return e2h(facet_pos, 1)
-
 
     def max_elements_on_radius(self, radius):
         '''Distribute elements on a radius.
@@ -663,81 +696,6 @@ class LinearCCDArray(ParallelCalculated, OpticalElement):
                          np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
         return np.hstack(radii)
 
-# TO-DO: THe next three classes have very similar purpose,
-# just slightly different layout (rectangle, tiles in circle, tiles in concentric rings)
-# yet their implementations and API are different. Some automatically account for orientataion
-# of the Rowland torus, some don't. And, in fact, the rectangle could also be used for 1D arrangements
-# (see linear CCD array above)
-class GratingArrayStructure(LinearCCDArray):
-    '''A collection of diffraction gratings on the Rowland torus.
-
-    When a ``GratingArrayStructure`` (GAS) is initialized, it places elements
-    in the space available on the Rowland circle, most commonly, this class is
-    used to place grating facets.
-
-    After generation, individual facet positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See `Parallel` for
-    details.
-
-    After any of the `elem_pos`, `elem_uncertainty` or `uncertainty` is
-    changed, `generate_elements` needs to be called to regenerate the facets on
-    the GAS.
-
-    Parameters
-    ----------
-    rowland : RowlandTorus
-    d_element : float
-        Size of the edge of a element, which is assumed to be flat and square.
-        (``d_element`` can be larger than the actual size of the silicon
-        membrane to accommodate a minimum thickness of the surrounding frame.)
-
-    x_range: list of 2 floats
-        Minimum and maximum of the x coordinate that is searched for an
-        intersection with the torus. A ray can intersect a torus in up to four
-        points. ``x_range`` specififes the range for the numerical search for
-        the intersection point.
-
-    radius : list of 2 floats
-        Inner and outer radius of the GAS as measured in the yz-plane from the
-        origin.
-
-    phi : list of 2 floats
-        Bounding angles for a segment covered by the GSA. :math:`\phi=0` is on
-        the positive y axis. The segment fills the space from ``phi1`` to
-        ``phi2`` in the usual mathematical way (counterclockwise).  Angles are
-        given in radian. Note that ``phi[1] < phi[0]`` is possible if the
-        segment crosses the y axis.
-
-    Notes
-    -----
-    This class derives from `LinearCCDArray`, which is a 1D arrangement of
-    elements.  `GratingArrayStructure` also picks radii, but places several
-    elements at each radius.
-
-    '''
-
-    tangent_to_torus = False
-    '''If ``True`` the default orientation (before applying blaze, uncertainties etc.) of elements is
-    such that they are tangents to the torus in the center of the element.
-    If ``False`` they are perpendicular to perfectly focussed rays.
-    '''
-
-    id_col = 'facet'
-
-    def __init__(self, rowland, d_element, x_range, radius, phi=[0., 2*np.pi],
-                 parallel_spec=np.array([0., 1., 0., 0.]), **kwargs):
-        if np.min(radius) < 0:
-            raise ValueError('Radius must be positive.')
-        kwargs['parallel_spec'] = parallel_spec
-        kwargs['pos_spec'] = self.xyzwpos
-
-        super().__init__(rowland, d_element, x_range, radius, phi, **kwargs)
-
-    def calc_ideal_center(self):
-        '''Position of the center of the GSA, assuming placement on the Rowland circle.'''
-        a = (self.phi[0] + anglediff(self.phi) / 2 ) % (2. * np.pi)
-        r = sum(self.radius) / 2
-        return self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten()
 
     def max_elements_on_arc(self, radius):
         '''Calculate maximal number of elements that can be placed at a certain radius.
@@ -760,6 +718,8 @@ class GratingArrayStructure(LinearCCDArray):
           beyond the limits set by the ``phi`` parameter of the GAS. If an arc
           segment is not wide enough to accommodate at least a single element,
           it will go empty.
+          (The exception to that is is ``phi`` is a single value. In that case,
+          there will be exactly one element.)
 
         Parameters
         ----------
@@ -772,6 +732,8 @@ class GratingArrayStructure(LinearCCDArray):
             The phi angles for centers of the elements at ``radius``.
 
         '''
+        if len(self.phi) == 1:
+            return self.phi
         # arc is most crowded on inner radius
         n = self.max_elements_on_arc(radius - self.d_element / 2)
         element_angle = self.d_element / (2. * np.pi * radius)
@@ -780,7 +742,7 @@ class GratingArrayStructure(LinearCCDArray):
         centerangles = d_between + 0.5 * element_angle + np.arange(n) * (d_between + element_angle)
         return (self.phi[0] + centerangles) % (2. * np.pi)
 
-    def getelem_xyzw(self):
+    def elempos(self):
         pos = []
         radii = self.distribute_elements_on_radius()
         for r in radii:
@@ -789,206 +751,3 @@ class GratingArrayStructure(LinearCCDArray):
                 pos.append(self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten())
         return e2h(np.array(pos), 1)
 
-    def calculate_elempos(self):
-        '''Calculate the position of elements based on some algorithm.
-
-        Returns
-        -------
-        pos4d : list of arrays
-            List of affine transformations that bring an optical element
-            centered on the origin of the coordinate system with the active
-            plane in the yz-plane to the required facet position on the Rowland
-            torus.
-        '''
-        pos4d = []
-
-        xyzw = self.getelem_xyzw()
-        normals = self.get_spec('normal_spec', xyzw)
-        parallels = self.get_spec('parallel_spec', xyzw, normals)
-
-        for i in range(xyzw.shape[0]):
-
-            # Find the rotation between [1, 0, 0] and the new normal
-            # Keep grooves (along e_y) parallel to e_y
-            rot_mat = ex2vec_fix(h2e(normals[i, :]), h2e(parallels[i, :]))
-
-            pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
-        return pos4d
-
-
-class RectangularGrid(ParallelCalculated, OpticalElement):
-    '''A collection of diffraction gratings on the Rowland torus.
-
-    This class is similar to ``marxs.design.rowland.GratingArrayStructure`` but
-    instead of placing elements on concentric circles, they are placed to fill
-    a rectangular area.
-
-    When initialized, it places elements in the space available on the
-    Rowland circle, most commonly, this class is used to place grating facets.
-
-    After generation, individual facet positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See
-    `marxs.simulation.Parallel` for details.
-
-    After any of the `elem_pos`, `elem_uncertainty` or
-    `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the facets on the GAS.
-
-    Parameters
-    ----------
-    rowland : RowlandTorus
-    d_element : float
-        Size of the edge of a element, which is assumed to be flat and square.
-        (``d_element`` can be larger than the actual size of the silicon
-        membrane to accommodate a minimum thickness of the surrounding frame.)
-    x_range: list of two floats
-        Minimum and maximum of the x coordinate that is searched for an
-        intersection with the torus. A ray can intersect a torus in up to four
-        points. ``x_range`` specifies the range for the numerical search for
-        the intersection point.
-    y_range, z_range: list of two floats
-        limits of the rectangular area where gratings are placed.
-
-    '''
-
-    id_col = 'facet'
-
-    def __init__(self, **kwargs):
-        self.x_range = kwargs.pop('x_range')
-        self.y_range = kwargs.pop('y_range')
-        self.z_range = kwargs.pop('z_range')
-        self.rowland = kwargs.pop('rowland')
-        self.d_element = kwargs.pop('d_element')
-        kwargs['pos_spec'] = self.elempos
-        if 'normal_spec' not in kwargs.keys():
-            kwargs['normal_spec'] = np.array([0., 0., 0., 1.])
-        if 'parallel_spec' not in kwargs.keys():
-            kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
-
-        super().__init__(**kwargs)
-
-    def elempos(self):
-
-        n_y = int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
-        n_z = int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
-
-        # n_y and n_z are rounded up, so they cover a slighty larger range than y/z_range
-        width_y = n_y * self.d_element
-        width_z = n_z * self.d_element
-
-        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element), self.y_range[1], self.d_element)
-        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element), self.z_range[1], self.d_element)
-        ypos, zpos = np.meshgrid(ypos, zpos)
-
-        xpos = []
-        for y, z in zip(ypos.flatten(), zpos.flatten()):
-            xpos.append(self.rowland.solve_quartic(y=y, z=z, interval=self.x_range))
-
-        return np.vstack([np.array(xpos), ypos.flatten(), zpos.flatten(), np.ones_like(xpos)]).T
-
-
-class CircularMeshGrid(ParallelCalculated, OpticalElement):
-    '''A collection of diffraction gratings on the Rowland torus filling a circle.
-
-    This class is similar to ``marxs.design.rowland.RectangularGrid`` but
-    places elements (e.g. gratings) to fill a circle instead of a rectangle.
-    When initialized, it places elements in the space available on the
-    Rowland circle, most commonly, this class is used to place grating facets.
-
-    After generation, individual facet positions can be adjusted by hand by
-    editing the attributes `elem_pos` or `elem_uncertainty`. See
-    `marxs.simulation.Parallel` for details.
-
-    After any of the `elem_pos`, `elem_uncertainty` or
-    `uncertainty` is changed, `generate_elements` needs to be
-    called to regenerate the facets on the GAS.
-
-    Parameters
-    ----------
-    rowland : RowlandTorus
-    d_element : list of two floats
-        Size of the edge of elements along the two (y and z in canonincal marxs orientation)
-        edges.
-        ``d_element`` can be larger than the actual size of the silicon
-        membrane to accommodate a minimum thickness of the surrounding frame.
-    opt_range : list of 2 floats
-        Minimum and maximum of the coordinate that is searched for an
-        intersection with the torus. A ray can intersect a torus in up to four
-        points. ``opt_range`` specififes the range for the numerical search for
-        the intersection point to resolve this ambiguity.
-    optimize_axis : character
-        Axis along which the element position is optimized numerically to follow
-        the Rowland torus. Because of the limitations of the current implementation,
-        this axis needs to be along to one of the coordinate axis, so valid entries
-        are "x", "y", and "z".
-    radius : list of two floats
-        Inner and outer radius of the circle. The center of the circle coincides with
-        the opitical axis chosen by `opt_axis`.
-    '''
-
-    id_col = 'facet'
-
-    def __init__(self, **kwargs):
-        self.radius = kwargs.pop('radius')
-        self.opt_range = kwargs.pop('opt_range')
-        self.rowland = kwargs.pop('rowland')
-        self.d_element = kwargs.pop('d_element')
-        self.optimize_axis = kwargs.pop('optimize_axis')
-        try:
-            if self.optimize_axis not in 'xyz':
-                raise ValueError('Valid entries for optimize_axis are "x", "y", and "z".')
-        except TypeError:
-            # Not a string
-            raise ValueError('Valid entries for optimize_axis are "x", "y", and "z".')
-        kwargs['pos_spec'] = self.elempos
-
-        super().__init__(**kwargs)
-
-    def elempos(self):
-        # For readability, this code is written using an explicit x,y,z notation for
-        # variable names assuming a circle in the y/z plane and a numerical
-        # solution for the Rowland torus in the x direction.
-        # In the last few lines, the variables are turned around to make it fit the
-        # chosen direction.
-        n_x = int(np.ceil(2 * self.radius[1] / self.d_element[0]))
-        x_width = n_x * self.d_element[0]
-        x_pos = np.arange(- x_width / 2, self.radius[1], self.d_element[0])
-
-        xpos = []
-        ypos = []
-
-        for x in x_pos:
-            if np.abs(x) > self.radius[1]:
-                # Outermost layer. Center might be outside outer radius
-                y = np.array([0])
-            else:
-                y_outer = np.sqrt(self.radius[1]**2 - x**2)
-                if np.abs(x) > self.radius[0]:
-                    n_y = int(np.ceil(2 * y_outer / self.d_element[1]))
-                    y_width = n_y * self.d_element[1]
-                    y = np.arange(- y_width / 2, y_outer, self.d_element[1])
-                else:
-                    y_inner = np.sqrt(self.radius[0]**2 - x**2)
-                    y_mid = 0.5 * (y_inner + y_outer)
-                    n_y = int(np.ceil((y_outer - y_inner) / self.d_element[1]))
-                    y_width = n_y * self.d_element[1]
-                    y = np.arange(y_mid - y_width / 2, y_outer, self.d_element[1])
-                    y = np.hstack([-y, y])
-
-            xpos.extend([x] * len(y))
-            ypos.extend(y)
-
-        zpos = []
-        xyz = 'xyz'.replace(self.optimize_axis, '')
-        for x, y in zip(xpos, ypos):
-            zpos.append(self.rowland.solve_quartic(**{xyz[0]: x, xyz[1]: y}, interval=self.opt_range))
-        # Now, we need to find where the zpos goes and where the xpos and ypos goes
-        stacklist = []
-        xylist = [xpos, ypos]
-        for n in 'xyz':
-            if n == self.optimize_axis:
-                stacklist.append(zpos)
-            else:
-                stacklist.append(xylist.pop(0))
-        stacklist.append(np.ones_like(zpos))  # For homogeneous coordinates
-        return np.vstack(stacklist).T

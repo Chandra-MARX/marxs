@@ -10,7 +10,6 @@ from astropy.utils.data import get_pkg_data_filename
 from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
                        RowlandCircleArray,
                        find_radius_of_photon_shell, design_tilted_torus,
-                       ElementPlacementError,
                        CircularMeshGrid,
                        )
 from ...optics.base import FlatOpticalElement
@@ -80,27 +79,34 @@ def test_torus():
     assert np.allclose(mytorus.quartic(xyz, transform=False), 0.)
 
 def test_torus_solve_quartic():
-    '''solve_quartic helps to find point on the torus if two coordinates are fixed.'''
+    '''solve_quartic helps to find points on the torus.
+
+    This test could make use of the hypothesis testing package.
+    '''
     mytorus = RowlandTorus(2., 1.)
     xyzw = mytorus.parametric([.34, 1.23], [.4, 4.5])
     xyz = h2e(xyzw)
 
     for i in [0, 1]:
         for j in range(3):
-            kwargs = {'x': xyz[i, 0], 'y': xyz[i, 1], 'z': xyz[i, 2],
-                      'interval' : np.array([-0.1, 0.1]) + xyz[i, j]}
-            kwargs['xyz'[j]] = None
-            assert np.allclose(xyz[i, j], mytorus.solve_quartic(**kwargs))
+            # generate random direction in homogeneous coordiantes
+            direction = np.random.rand(4) - 0.5
+            direction[3] = 0
+            assert np.allclose(xyz[i, j],
+                               mytorus.solve_quartic(origin=xyz[i, j] + 0.1 * direction,
+                                                     v=direction))
 
-    # Nothing to solve for
-    with pytest.raises(ValueError) as e:
-        out = mytorus.solve_quartic(x=1, y=1, z=1)
-    assert 'Exactly one of the input numbers' in str(e.value)
+def test_torus_solve_quartic_vector():
+    '''Ensure solve_quartic also works with vector-values inputs'''
+    rowl = RowlandTorus(2000., 2000.)
+    intersect = rowl.solve_quartic(np.array([4000, 0, 0, 2]), np.array([1, 0, 0, 0]))
 
-    # Too many parameters to solve for
-    with pytest.raises(ValueError) as e:
-        out = mytorus.solve_quartic(x=1, y=None, z=None)
-    assert 'Exactly one of the input numbers' in str(e.value)
+    start = np.array([[3800, 0, 0, 1], [0, 0, 0, 1]])
+    direction = np.array([[1, 0, 0, 0], [1, 0, 0, 0]])
+    intersect = rowl.solve_quartic(start, direction)
+    assert intersect[:, 0] == pytest.approx([4000, 0, 0, 0])
+    assert intersect[:, 1] == pytest.approx(np.zeros(4), abs=1e-4)
+
 
 def test_rotated_torus():
     '''Test the torus equation for a set of points.
@@ -222,10 +228,6 @@ def test_GratingArrayStructure():
     assert gas.max_elements_on_radius(gas.radius) == 10
     assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
-    center = gas.calc_ideal_center()
-    assert center[2] == 0
-    assert center[1] == (300. + 600.) / 2.
-    assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
     #     for f in gas.elem_pos:
@@ -372,17 +374,6 @@ def test_LinearCCDArray_rotatated():
     assert len(ccds.elements) == 7
     for e in ccds.elements:
         assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
-
-def test_impossible_LinearCCDArray():
-    '''The rotation is chosen such that all requested detector positions are
-    INSIDE the rowland torus
-    '''
-    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
-    myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
-    with pytest.raises(ElementPlacementError) as e:
-        ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                              radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
-    assert 'No intersection with Rowland' in str(e.value)
 
 def test_RowlandCircleArrayone():
     '''Test an array of one element in default position'''

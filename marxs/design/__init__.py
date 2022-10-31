@@ -1,6 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from .rowland import (RowlandTorus,
-                      GratingArrayStructure, LinearCCDArray,
+                      GratingArrayStructure,
                       RectangularGrid,
-                      RowlandCircleArray,
+                      CircularMeshGrid,
                       find_radius_of_photon_shell)

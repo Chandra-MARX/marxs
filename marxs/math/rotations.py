@@ -8,7 +8,7 @@ __all__ = ['ex2vec_fix', 'axangle2mat']
 def ex2vec_fix(e1, efix):
     '''Rotate x-axis to e1, use efix to break rotation ambiguity.
 
-    This function calcalates the rotation matrix that rotates the x-axis to
+    This function calculates the rotation matrix that rotates the x-axis to
     ``e1``, i.e. it rotates the normal of the y,z-plane to a new plane where
     ``e1`` is the normal. This still leaves the rotation angle of the plane
     free. This function breaks the degeneracy by keeping a vector that is
