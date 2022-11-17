@@ -2,14 +2,15 @@
 import pytest
 import numpy as np
 import astropy.units as u
+from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
 from transforms3d.euler import euler2mat
 
 from .. import catgrating
-from ..catgrating import DataFileFormatException, check_lx_dims
+from ..catgrating import check_lx_dims
 from marxs.optics import CATGrating, OrderSelector, FlatDetector
 from marxs.optics.scatter import RandomGaussianScatter
-from marxs.utils import generate_test_photons
+from marxs.utils import generate_test_photons, DataFileFormatException
 
 
 def test_nonparallelCATGrating_simplifies_to_CATGrating():
@@ -96,7 +97,8 @@ def test_L2_Abs_angle():
 
 def test_efficiency_table():
     '''Test that the efficiency is read in in the right format.'''
-    efftab = catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    tab = Table.read(get_pkg_data_filename('grating_efficiency.csv'), format='ascii.ecsv')
+    efftab = catgrating.InterpolateEfficiencyTable(tab, k=2)
     orders, interpprobs = efftab.probabilities(np.array([0.5, 0.5, 1, 1]),
                                                np.ones(4),
                                                np.deg2rad([1., 2., 1., 2.]))
@@ -106,7 +108,8 @@ def test_efficiency_table():
 
 def test_efficiency_table_in_use():
     '''Use table in a optical element'''
-    efftab = catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency.csv'), k=2)
+    tab = Table.read(get_pkg_data_filename('grating_efficiency.csv'), format='ascii.ecsv')
+    efftab = catgrating.InterpolateEfficiencyTable(tab, k=2)
     cat = CATGrating(order_selector=efftab, d=0.001)
     photons = generate_test_photons(5000)
     photons = cat(photons)
@@ -116,8 +119,9 @@ def test_efficiency_table_in_use():
 
 def test_efficiency_table_wrong_format():
     '''Try to load a datafile with mission rows.'''
+    tab = Table.read(get_pkg_data_filename('grating_efficiency_broken.csv'), format='ascii.ecsv')
     with pytest.raises(DataFileFormatException):
-        catgrating.InterpolateEfficiencyTable(get_pkg_data_filename('grating_efficiency_broken.csv'), k=2)
+        catgrating.InterpolateEfficiencyTable(tab, k=2)
 
 
 def test_catsupportbars():

@@ -20,12 +20,12 @@ from marxs.optics import (CATGrating,
                           FlatOpticalElement)
 from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
+from marxs.utils import tablerows_to_2d
 
 
 __all__ = ['l1transtab', 'l1_order_selector',
            'l1_dims', 'l2_dims',
            'qualityfactor', 'd',
-           'load_table2d',
            'InterpolateEfficiencyTable',
            'QualityFactor',
            'L1',
@@ -61,53 +61,6 @@ qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
 '''Scaling of grating efficiencies, parameterized as a Debye-Waller factor'''
 
 
-class DataFileFormatException(Exception):
-    '''Exception for grating efficiency files not matching expected format.'''
-    pass
-
-
-def load_table2d(filename):
-    '''Get a 2d array from an ecsv input file.
-
-    In the table file, the data is flattened to a 1d form.
-    The first two columns are x and y, like this:
-    The first column looks like this with many duplicates:
-    [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3, ...].
-    Column B repeats like this: [1,2,3,4,5,6,1,2,3,4,5,6,1,2,3, ...].
-
-    All remaining columns are data on the same x-y grid, and the grid
-    has to be regular.
-
-
-    Parameters
-    ----------
-    filename : string
-        Name and path of data file
-
-    Returns
-    -------
-    tab : `astropy.table.Table`
-        Table as read in. Useful to access units or other meta data.
-    x, y : `astropy.table.Column`
-        Unique entries in first and second column
-    dat : np.array
-        The remaining outputs are np.arrays of shape (len(x), len(y))
-    '''
-    tab = Table.read(filename, format='ascii.ecsv')
-    x = tab.columns[0]
-    y = tab.columns[1]
-    n_x = len(set(x))
-    n_y = len(set(y))
-    if len(x) != (n_x * n_y):
-        raise DataFileFormatException('Data is not on regular grid.')
-
-    x = x[::n_y]
-    y = y[:n_y]
-    coldat = [tab[d].data.reshape(n_x, n_y) for d in tab.columns[2:]]
-
-    return tab, x, y, coldat
-
-
 class InterpolateEfficiencyTable(object):
     '''Order Selector for MARXS using a specific kind of data table.
 
@@ -116,7 +69,7 @@ class InterpolateEfficiencyTable(object):
     suited to version control with git, those tables are converted to csv files
     of a certain format.
     A short summary of this format is given here, to help reading the code.
-    The table contains data in 3-dimenasional (wave, n_theta, order) space,
+    The table contains data in 3-dimensional (wave, n_theta, order) space,
     flattened into a 2d table.
 
     - Row 1 + 2: Column labels. Not used here.
@@ -126,7 +79,7 @@ class InterpolateEfficiencyTable(object):
 
     For each wavelength there are multiple blaze angles listed, so Column A
     contains
-    many dublicates and looks like this: [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3, ...].
+    many duplicates and looks like this: [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3, ...].
     Column B repeats like this: [1,2,3,4,5,6,1,2,3,4,5,6,1,2,3, ...].
 
     Because the wave, theta grid is regular, this class can use the
@@ -135,21 +88,22 @@ class InterpolateEfficiencyTable(object):
 
     Parameters
     ----------
-    filename : string
-        path and name of data file
+    tab : `astropy.table.Table`
+        Table as read in. Useful to access units or other meta data.
     k : int
         Degree of spline. See `scipy.interpolate.RectBivariateSpline`.
     '''
 
-    def __init__(self, filename, k=1):
-        tab, wave, theta, orders = load_table2d(filename)
+    def __init__(self, tab, k=1):
+        wave, theta, orders = tablerows_to_2d(tab)
+
         theta = theta.to(u.rad)
         # Order is int, we will never interpolate about order,
         self.orders = np.array([int(n) for n in tab.colnames[2:]])
         self.interpolators = [RectBivariateSpline(wave, theta, d, kx=k, ky=k) for d in orders]
 
     def probabilities(self, energies, pol, blaze):
-        '''Obtain the probabilties for photons to go into a particular order.
+        '''Obtain the probabilities for photons to go into a particular order.
 
         This has the same parameters as the ``__call__`` method, but it returns
         the raw probabilities, while ``__call__`` will draw from these
@@ -192,7 +146,7 @@ class InterpolateEfficiencyTable(object):
 
 
 class QualityFactor(FlatOpticalElement):
-    '''Scale probabilites of theoretical curves to measured values.
+    '''Scale probabilities of theoretical curves to measured values.
 
     All gratings look better in theory than in practice. This grating quality
     factor scales the calculated diffraction probabilities to the observed
@@ -400,7 +354,7 @@ class CATL1L2Stack(FlatStack):
                  l1_order_selector=l1_order_selector,
                  qualityfactor=qualityfactor,
                  **kwargs):
-        kwargs['elements'] = [CATGrating,
+        kwargs['elements'] = [NonParallelCATGrating,
                               QualityFactor,
                               L1,
                               L2Abs,

@@ -22,7 +22,10 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
-
+- ``load_table2d`` has been replaced by ```marxs.utils.tablerows_to_2d``, which perform
+  the same reformatting of a table, but does not read it in. [#237]
+- ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a
+  filename as parameter. [#237]
 
 Bug fixes
 ^^^^^^^^^
