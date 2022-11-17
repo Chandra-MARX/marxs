@@ -20,6 +20,7 @@ from marxs.optics import (CATGrating,
                           FlatOpticalElement)
 from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
+from marxs.utils import tablerows_to_2d
 
 
 __all__ = ['l1transtab', 'l1_order_selector',
@@ -60,11 +61,6 @@ qualityfactor = {'d': 200. * u.um, 'sigma': 1.75 * u.um}
 '''Scaling of grating efficiencies, parameterized as a Debye-Waller factor'''
 
 
-class DataFileFormatException(Exception):
-    '''Exception for grating efficiency files not matching expected format.'''
-    pass
-
-
 class InterpolateEfficiencyTable(object):
     '''Order Selector for MARXS using a specific kind of data table.
 
@@ -93,27 +89,13 @@ class InterpolateEfficiencyTable(object):
     Parameters
     ----------
     tab : `astropy.table.Table`
-        Data table with efficiency data.
+        Table as read in. Useful to access units or other meta data.
     k : int
         Degree of spline. See `scipy.interpolate.RectBivariateSpline`.
     '''
 
     def __init__(self, tab, k=1):
-        wave = tab.columns[0]
-        theta = tab.columns[1]
-        n_wave = len(set(wave))
-        n_theta = len(set(theta))
-        if len(wave) != (n_wave * n_theta):
-            raise DataFileFormatException('Data is not on regular grid.')
-        wave_arr = tab.columns[0].data.reshape(n_wave, n_theta)
-        theta_arr = tab.columns[1].data.reshape(n_wave, n_theta)
-        if not (np.allclose(wave_arr, wave_arr[:, 0][:, None]) and
-                np.allclose(theta_arr, theta_arr[0, :][None, :])):
-            raise DataFileFormatException('Input table wavelength or angle not sorted.')
-
-        wave = wave[::n_theta]
-        theta = theta[:n_theta]
-        orders = [tab[d].data.reshape(n_wave, n_theta) for d in tab.columns[2:]]
+        wave, theta, orders = tablerows_to_2d(tab)
 
         theta = theta.to(u.rad)
         # Order is int, we will never interpolate about order,
