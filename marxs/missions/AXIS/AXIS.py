@@ -15,7 +15,7 @@ from marxs.missions.mitsnl.catgrating import (CATL1L2Stack, catsupportbars,
 from marxs.design import tolerancing as tol
 from marxs.base import MarxsElement
 
-from arcus.instrument.arcus import FiltersAndQE
+from marxs.missions.arcus.arcus import FiltersAndQE
 from marxs.missions.lynx.mirror import MetaShellAperture, PerfectLensSegment
 from marxs.design.bendgratings import NumericalChirpFinder, chirp_gratings
 from marxs.missions.lynx.lynx import LynxGAS, add_rowland_to_conf
@@ -67,7 +67,8 @@ conf = {'metashellgeometry': Table.read(get_pkg_data_filename('data/AXIS_metashe
         'grating_size': np.array([30., 60.]),
         'grating_frame': 2.,
         'det_kwargs': {'theta': [3.13, 3.17],
-                       'd_element': 24.576 * 2 + 0.824 * 2 + 0.5,
+                       'd_element': [24.576 * 2 + 0.824 * 2 + 0.5,
+                                     24.576 + 0.824 * 2 + 0.5],
                        'elem_class': optics.FlatDetector,
                        'elem_args': {'zoom': [1, 24.576, 12.288],
                                      'pixsize': 0.024,
@@ -113,9 +114,10 @@ conf_chirp['chirp_order'] = -5.4
 
 
 
-class RowlandDetArray(design.rowland.RowlandCircleArray):
+class RowlandDetArray(design.rowland.RectangularGrid):
     def __init__(self, conf):
-        super(RowlandDetArray, self).__init__(conf['rowland'], **conf['det_kwargs'])
+        super(RowlandDetArray, self).__init__(conf['rowland'], **conf['det_kwargs'],
+                                              guess_distance=25.)
 
 
 # Place an additional detector on the Rowland circle.

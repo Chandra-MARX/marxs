@@ -6,12 +6,12 @@ from scipy.interpolate import interp1d
 import transforms3d
 
 import marxs
-from marxs.simulator import Sequence, KeepCol
+from marxs.simulator import Sequence, KeepCol, ParallelCalculated
 from marxs.optics import (GlobalEnergyFilter,
                           FlatDetector,
                           CircularDetector)
 from marxs import optics
-from marxs.design.rowland import RowlandCircleArray
+from marxs.design.rowland import RectangularGrid
 import marxs.analysis
 from marxs.design import tolerancing as tol
 from marxs.missions.mitsnl.catgrating import catsupportbars
@@ -45,6 +45,20 @@ defaultconf['inplanescatter'] = 7. / (2 * 0.68) * u.arcsec
 defaultconf['spo_pos4d'] = spo.spo_pos4d
 defaultconf['spo_geom'] = spo.spogeom
 defaultconf['reflectivity_interpolator'] = spo.reflectivity_interpolator
+defaultconf['det_kwargs']= {
+    'elem_class': FlatDetector,
+    # orientation flips around CCDs so that det_x increases
+    # with increasing x coordinate
+    'elem_args': {'pixsize': 0.024, 'zoom': [1, 24.576, 12.288],
+                  'orientation': np.array([[-1, 0, 0],
+                                          [0, -1, 0],
+                                          [0, 0, +1]])},
+}
+# Other arguments for the detector - are tey needed for something?
+#defaultconf['detector']['d_element'] = [
+#    defaultconf['det_kwargs']['elem_args']['zoom'][1] * 2 + 0.824 * 2 + 0.5,
+#    defaultconf['det_kwargs']['elem_args']['zoom'][2] * 2 + 0.824 * 2 + 0.5,
+#]
 
 
 channels = list(defaultconf['pos_opt_ax'].keys())
@@ -93,31 +107,20 @@ id_num_offset = {'1': 0,
                  '2m': 11000}
 
 
-
-
-
 class Aperture(optics.MultiAperture):
     def __init__(self, conf, channels=channels, **kwargs):
         # Set a little above entrance pos (the mirror) for display purposes.
         # Thus, needs to be geometrically bigger for off-axis sources.
-        # with fac > 0.5 for aligned squares, but more for tilted rectangles
-        fac = [1.1, 0.8]
-        spopos = np.array(conf['spo_pos4d'])
-        rmid = 0.5 * (spopos[:, 1, 3].max() + spopos[:, 1, 3].min())
-        delta_r = conf['spo_geom']['outer_radius'] - conf['spo_geom']['inner_radius']
-        rdim = spopos[:, 1, 3].max() - rmid + fac[0] * delta_r.max()
-        aperzoom = [1, spopos[:, 0, 3].max() + fac[1] * conf['spo_geom']['azwidth'].max(),
-                    rdim
-                    ]
+        aperzoom = spo.zoom_to_cover_all_spos(conf, 1.1, 0.8)
 
         apers = []
         for chan in channels:
             pos = conf['pos_opt_ax'][chan][:3].copy()
             pos[2] += 12200
             if '1' in chan:
-                pos[1] += rmid
+                pos[1] += spo.rmid_spo(conf)
             elif '2' in chan:
-                pos[1] -= rmid
+                pos[1] -= spo.rmid_spo(conf)
             else:
                 raise ValueError('No rules for channel {}'.format(chan))
 
@@ -212,26 +215,20 @@ class FiltersAndQE(Sequence):
         super(FiltersAndQE, self).__init__(elements=elems, **kwargs)
 
 
-class DetMany(RowlandCircleArray):
-    elem_class = FlatDetector
-    # orientation flips around CCDs so that det_x increases
-    # with increasing x coordinate
-    elem_args = {'pixsize': 0.024, 'zoom': [1, 24.576, 12.288],
-                 'orientation': np.array([[-1, 0, 0],
-                                          [0, -1, 0],
-                                          [0, 0, +1]])}
-    d_element = elem_args['zoom'][1] * 2 + 0.824 * 2 + 0.5
-    theta = [np.pi - 0.5, np.pi + 0.5]
+class DetMany(RectangularGrid):
+
+    y_range=[-400, 400]
 
     def __init__(self, conf, **kwargs):
         super(DetMany, self).__init__(rowland=conf['rowland_detector'],
                                       elem_class=self.elem_class,
                                       elem_args=self.elem_args,
                                       d_element=self.d_element,
-                                      theta=self.theta,
+                                      y_range=self.y_range,
                                       # convention is to start counting at 1
                                       id_num_offset=1,
-                                      id_col='CCD')
+                                      id_col='CCD',
+                                      guess_distance=-25.)
 
 
 class Det16(DetMany):
@@ -247,7 +244,7 @@ class Det16(DetMany):
             e.display = disp
 
 
-class DetCamera(DetMany):
+class DetCamera(ParallelCalculated):
     '''CCD detectors in camera layout
 
     8 CCDs in each strip, with gaps between them in 3-2-3 groups
@@ -264,38 +261,35 @@ class DetCamera(DetMany):
     offset = [-5., 5.]
     '''offset of one strip vs the other to avoid matching chip gaps in mm'''
 
-    def __init__(self, conf, **kwargs):
+    id_col = 'CCD'
+
+    def __init__(self, conf):
         r = conf['rowland_detector'].r
         phi_m = np.arcsin(conf['d'] / r) + np.pi
-        ccd = self.elem_args['zoom'][1]
+        ccd = conf['det_kwargs']['elem_args']['zoom'][1]
         p0 = conf['phi_det_start']
         gaps = np.array([0, self.d_ccd, self.d_fsupport, self.d_ccd,
                          self.d_ccd, self.d_fsupport,
                          self.d_ccd, self.d_ccd])
         theta1 = (p0 + ccd / r) + np.arange(8) * 2 * ccd / r + gaps.cumsum() / r
-        self.theta = np.hstack([phi_m - theta1 - self.offset[0] / r,
-                                phi_m + self.offset[1] / r + theta1])
+        theta = np.hstack([phi_m - theta1 - self.offset[0] / r,
+                           phi_m + self.offset[1] / r + theta1])
         # Sort so that CCD number increases from -x to +x
-        self.theta.sort()
-        self.theta = self.theta[::-1]
+        theta.sort()
+        theta = theta[::-1]
+        pos = conf['rowland_detector'].parametric(theta, 0)
 
-        super().__init__(conf, **kwargs)
+        super().__init__(pos_spec=pos,
+                         normal_spec=conf['rowland_detector'].normal,
+                         parallel_spec=conf['rowland_detector'].pos4d @ np.array([0, 1, 0, 0]),
+                         **conf['det_kwargs'],
+                         )
         assert len(self.elements) == conf['n_CCDs']
         # but make real detectors orange
         disp = deepcopy(self.elements[0].display)
         disp['color'] = 'orange'
         for e in self.elements:
             e.display = disp
-
-    def distribute_elements_on_arc(self):
-        '''Distributes elements as evenly as possible along an arc segment.
-
-        Returns
-        -------
-        theta : np.ndarray
-            Theta coordinates of the element *center* positions.
-        '''
-        return self.theta
 
 
 class FocalPlaneDet(marxs.optics.FlatDetector):
@@ -339,7 +333,7 @@ class PerfectArcus(Sequence):
         for derived classes.
 
         '''
-        # rotatate such that phi=0 is at the bottom
+        # rotate such that phi=0 is at the bottom
         rot = transforms3d.axangles.axangle2mat(np.array([0, 1, 0]), np.pi)
         circdet = CircularDetector(orientation=xyz2zxy[:3, :3] @ rot,
                                    zoom=[defaultconf['rowland_detector'].r,

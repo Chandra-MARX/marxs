@@ -73,8 +73,8 @@ def test_two_optical_axes():
                           (Arcus(channels=['1m']), 100 * u.cm**2),
                           (Arcus(channels=['2m']), 100 * u.cm**2)])
 def test_effective_area(instrum, expected_area):
-    '''Surely, the effective area of Arcus will eveolve a little when the
-    code is changed to accomendate e.g. a slightly different mounting
+    '''Surely, the effective area of Arcus will evolve a little when the
+    code is changed to accommodate e.g. a slightly different mounting
     for the gratings, but if the effective area drops or increases
     dramatically, that is more likely a sign for a bug in the code.
     '''

@@ -34,12 +34,12 @@ try:
 except ImportError:
     HAS_MPL = False
 
-
 mytorus = RowlandTorus(0.5, 0.5, position=[1.5, 0, -3])
 
 def gsa(elem_class=FlatGrating):
     '''make a parallel structure - fresh for every test'''
-    g = GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0.1,.2],
+    g = GratingArrayStructure(rowland=mytorus,
+                              d_element=[0.1, 0.1], radius=[0.1,.2],
                               elem_class=elem_class,
                               elem_args={'zoom':0.2, 'd':0.002,
                                          'order_selector': OrderSelector([1])

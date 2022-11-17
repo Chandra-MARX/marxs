@@ -19,15 +19,12 @@ from marxs.missions.athena import spo
 from marxs.missions.mitsnl.catgrating import load_table2d
 from marxs import simulator
 from marxs import analysis
-
-
-# Probably get rid of all of these
 from marxs.missions.arcus.utils import config as arcus_config
-from arcus.instrument.arcus import FiltersAndQE
+from marxs.missions.arcus.arcus import FiltersAndQE
 
 tagversion = TagVersion(SATELLIT='Athena', GRATING='CAT')
 
-# SPOs reflectivity tabluated data
+# SPOs reflectivity tabulated data
 reflectivity = load_table2d(os.path.join(arcus_config['data']['caldb_inputdata'],
                                          'spos', 'coated_reflectivity.csv'))
 reflectivity_interpolator = RectBivariateSpline(reflectivity[1].to(u.keV),
@@ -35,7 +32,7 @@ reflectivity_interpolator = RectBivariateSpline(reflectivity[1].to(u.keV),
                                                 reflectivity[3][0])
 
 
-# CAT gratings tabluated data
+# CAT gratings tabulated data
 order_selector_Si = InterpolateEfficiencyTable(
     get_pkg_data_filename('data/Si_efficiency_5_7.dat',
                           package='marxs.missions.mitsnl'))
@@ -65,8 +62,9 @@ conf = {
         # from what I would expect.
         'grating_size': np.array([60., 60.]),
         'grating_frame': 2.,
-        'det_kwargs': {'theta': [3.12, 3.18],
-                       'd_element': 24.576 * 2 + 0.824 * 2 + 0.5,
+        'det_kwargs': {'y_range': [300, 600],
+                       'd_element': [24.576 * 2 + 0.824 * 2 + 0.5,
+                                     24.576 + 0.824 * 2 + 0.5],
                        'elem_class': optics.FlatDetector,
                        'elem_args': {'zoom': [1, 24.576, 12.288],
                                      'pixsize': 0.024,
@@ -148,9 +146,10 @@ class GAS(design.rowland.CircularMeshGrid):
             e.display['color'] = 'rgb'[int(ang / np.pi * 3)]
 
 
-class RowlandDetArray(design.rowland.RowlandCircleArray):
+class RowlandDetArray(design.rowland.RectangularGrid):
     def __init__(self, conf):
-        super().__init__(conf['rowland'], **conf['det_kwargs'])
+        super().__init__(conf['rowland'], **conf['det_kwargs'],
+                         guess_distance=25.)
 
 
 # Place an additional detector on the Rowland circle.

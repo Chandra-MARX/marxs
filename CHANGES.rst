@@ -30,6 +30,18 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
+- For all classes that place elements on the Rowland torus, the API has been
+  standardized. That means changes to almost all of them. In particular:
+  - ``rowland.RectangularGrid`` replaces ``RowlandTorusArray`` and ``LinearCCDArray``.
+    Inputs are specified the y and z ranges now instead of Rowland circle
+    :math:`$\phi` coordinates that are hard to visualize since it's measure from the
+    center of the Rowland circle and the origin of :math:`$\phi=0` depends on the
+    rotation of the torus. ``rowland.RectangularGrid`` can be used for 1D or 2D
+    arrangements and thus ``d_element`` must always be two numbers for dimension in
+    both directions.
+  - All classes now use a minimizer instead of a brackets root finder. So, instead
+    of a bracketing interval, they now need a ``guess_distance`` where the minimization
+    starts.
 - ``load_table2d`` has been replaced by ```marxs.utils.tablerows_to_2d``, which perform
   the same reformatting of a table, but does not read it in. [#237]
 - ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a

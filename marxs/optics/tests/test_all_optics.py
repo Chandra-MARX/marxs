@@ -29,7 +29,7 @@ from ...base import _parse_position_keywords
 from ...design import (RowlandTorus, GratingArrayStructure,
                        LinearCCDArray, RowlandCircleArray,
                        RectangularGrid)
-from ..baffles import Baffle
+from ... import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra import HETG
@@ -53,25 +53,23 @@ all_oe = [ThinLens(focallength=100),
           FlatGrating(d=0.001, order_selector=OrderSelector([0])),
           MarxMirror(parfile=get_pkg_data_filename('hrma.par',
                                                    package='marxs.optics')),
-          GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0,.5],
+          GratingArrayStructure(rowland=mytorus, d_element=[0.1, 0.1],
+                                radius=[0,.5],
                                 elem_class=FlatGrating,
                                 elem_args={'zoom':0.05, 'd':0.002,
                                            'order_selector': OrderSelector([1])
                                            }),
-          LinearCCDArray(mytorus, d_element=0.05, x_range=[0., 0.5],
-                          radius=[0., 0.5], phi=0., elem_class=FlatGrating,
-                         elem_args={'zoom': 0.05, 'd':0.002,
+          CircularMeshGrid(rowland=mytorus, d_element=[0.05, 0.05],
+                          radius=[0., 0.5], elem_class=FlatGrating,
+                          elem_args={'zoom': 0.05, 'd':0.002,
                                     'order_selector': OrderSelector([2])
                                 }),
-          RowlandCircleArray(rowland=mytorus, elem_class=FlatGrating,
-                             elem_args={'zoom': 0.04, 'd': 1e-3,
-                                        'order_selector': OrderSelector([2])},
-                             d_element=0.1,theta=[np.pi - 0.2, np.pi + 0.1]),
           RectangularGrid(rowland=mytorus, elem_class=FlatGrating,
                           elem_args={'zoom': 0.04, 'd': 1e-3,
                                      'order_selector': OrderSelector([-1, 0])},
-                          d_element=0.1, x_range=[0.8, 1.1], y_range=[0, 0.1],
-                          z_range=[0, 0.1]),
+                          d_element=[0.1, 0.1], y_range=[0, 0.1],
+                          z_range=[0, 0.1],
+                          guess_distance=1.),
           Baffle(),
           # MLMirror assumes 45 deg angle and will return nan otherwise
           MultiLayerMirror(reflFile=get_pkg_data_filename('data/testFile_mirror.txt',

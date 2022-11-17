@@ -6,7 +6,7 @@ from transforms3d.euler import euler2mat
 from ...utils import generate_test_photons
 from .. import Parallel, ParallelCalculated
 from ...optics import FlatDetector as CCD
-from ...design import RowlandTorus, RowlandCircleArray
+from ...design import RowlandTorus, RectangularGrid
 
 def test_Parallel_numbering():
     '''Test automatic numbering and numbers assigned to photons.
@@ -73,9 +73,11 @@ def test_parallel_calculated_normals():
     did not match up on the Rowland circle.'''
     rowland = RowlandTorus(5900., 6020.)
     detccdargs = {'pixsize': 0.024,'zoom': [1, 24.576, 12.288]}
-    det = RowlandCircleArray(rowland=rowland, elem_class=CCD,
+    det = RectangularGrid(rowland=rowland, elem_class=CCD,
                              elem_args=detccdargs,
-                             d_element=49.652, theta=[np.pi - 0.2, np.pi -0.19])
+                             d_element=[49.652, 49.652],
+                             y_range=[-100, 100],
+                             guess_distance=25.)
     e1 = det.elements[0]
     e2 = det.elements[1]
     # These two edges should be close together:

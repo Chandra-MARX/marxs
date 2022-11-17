@@ -22,7 +22,8 @@ import transforms3d
 from scipy.interpolate import interp1d
 
 from marxs import optics, simulator, design, analysis
-from marxs.design.rowland import design_tilted_torus, RowlandTorus
+from marxs.design.rowland import (design_tilted_torus, RowlandTorus,
+                                  CircularMeshGrid)
 from marxs.math.geometry import Cylinder
 from marxs.optics import FlatDetector, CATGrating
 from marxs.simulator import Propagator
@@ -57,8 +58,8 @@ conf = {'metashellgeometry': Table.read(get_pkg_data_filename('data/metashellgeo
         'betafac': 4.4,
         'grating_size': np.array([20., 50.]),
         'grating_frame': 2.,
-        'det_kwargs': {'theta': [3.12, 3.182],
-                       'd_element': 16.884,
+        'det_kwargs': {'y_range': [400, 800],
+                       'd_element': [16.884, 16.884],
                        'elem_class': optics.FlatDetector,
                        'elem_args': {'zoom': [1, 8.192, 8.192],
                                      'pixsize': 0.016}},
@@ -105,7 +106,7 @@ conf_chirp['chirp_energy'] = 0.6
 conf_chirp['chirp_order'] = -5.4
 
 
-class LynxGAS(ralfgrating.MeshGrid):
+class LynxGAS(CircularMeshGrid):
     def __init__(self, conf):
         gg = conf['gas_kwargs']
         # Add in / update keywords that are calculated based on other conf
@@ -130,9 +131,10 @@ class LynxGAS(ralfgrating.MeshGrid):
             e.display['color'] = 'rgb'[int(ang / np.pi * 3)]
 
 
-class RowlandDetArray(design.rowland.RowlandCircleArray):
+class RowlandDetArray(design.rowland.RectangularGrid):
     def __init__(self, conf):
-        super(RowlandDetArray, self).__init__(conf['rowland'], **conf['det_kwargs'])
+        super(RowlandDetArray, self).__init__(conf['rowland'], **conf['det_kwargs'],
+                                              guess_distance=25.)
 
 
 # Place an additional detector on the Rowland circle.

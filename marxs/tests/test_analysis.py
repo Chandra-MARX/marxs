@@ -50,8 +50,7 @@ def test_resolvingpower_consistency():
     blazeang = 1.91
     rowland = RowlandTorus(6000., 6000.)
     blazemat = transforms3d.axangles.axangle2mat(np.array([0, 0, 1]), np.deg2rad(blazeang))
-    gas = GratingArrayStructure(rowland=rowland, d_element=30.,
-                                x_range=[1e4, 1.4e4],
+    gas = GratingArrayStructure(rowland=rowland, d_element=[30., 30.],
                                 radius=[50, 100],
                                 elem_class=CATGrating,
                                 elem_args={'d': 1e-4, 'zoom': [1., 10., 10.],

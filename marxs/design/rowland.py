@@ -21,11 +21,9 @@ import transforms3d
 from ..optics.base import OpticalElement
 from ..base import MarxsElement
 from ..optics import FlatDetector
-from ..math.rotations import ex2vec_fix
 from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
 from ..math.geometry import Geometry
-
 
 __all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
            'RowlandTorus',
@@ -77,7 +75,7 @@ def find_radius_of_photon_shell(photons, mirror_shell, x, percentile=[1, 99]):
 class RowlandTorus(MarxsElement, Geometry):
     '''Torus with y axis as symmetry axis.
 
-    Note that the origin of the torus is the focal point, which is
+    Note that the origin of the torus is the focal point, which
     **may or may not** be the same as the center of the torus.
 
     Parameters
@@ -125,7 +123,7 @@ class RowlandTorus(MarxsElement, Geometry):
             Quartic at the input location
         '''
         if xyz.shape[-1] != 3:
-            raise ValueError('Input coordinates must be defined in Eucledian space.')
+            raise ValueError('Input coordinates must be defined in Euclidean space.')
 
         if transform:
             invpos4d = np.linalg.inv(self.pos4d)
@@ -145,7 +143,7 @@ class RowlandTorus(MarxsElement, Geometry):
         origin : np.array
             Origin of line as homogeneous coordinate.
             This is also used as approximate starting point for the numerical
-            optimization, so it would be reasonable close to the
+            optimization, so it should be reasonably close to the
             solution.
         v : np.array
             Direction of the line as homogeneous coordinate.
@@ -164,15 +162,17 @@ class RowlandTorus(MarxsElement, Geometry):
         origin = h2e(origin)
         v = h2e(v)
         def fun(k, origin, v):
-            return self.quartic(origin + k[..., None] * v, transform=transform)
+            out = self.quartic(origin + k[..., None] * v, transform=transform)
+            return out
         out = optimize.root(fun,
                             # The starting guess also serves to set the scale
                             # in the absence of a jacobian.
                             # So, can't start at 0. Instead, need to guess
                             # reasonable scale from torus parameters.
-                            # np.max to avoid problems at r = R.
-                            # In that case, just pick a small number.
-                            max(np.abs(self.r - self.R), self.r / 1e-2) * 0.1,
+                            # r-R seems like a good guess but does not work at r = R.
+                            # In that case, just pick a number that's small
+                            # relative to r.
+                            max(np.abs(self.r - self.R), self.r * 1e-2) * 0.1,
                             args=(origin, v))
         if not out.success:
             raise Exception('Intersection with torus not found.')
@@ -452,33 +452,52 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
         Size of the edge of elements along the two (y and z in canonical marxs orientation)
         edges.
         ``d_element`` can be larger than the actual size of the silicon
-        membrane to accommodate a minimum thickness of the surrounding frame.
+        membrane or the active area of a CCD chip to accommodate a minimum
+        thickness of the surrounding frame.
     guess_distance : float
         A ray can intersect a torus in up to four
-        points. ``opt_range`` specifies the starting distance for the numerical search for
+        points. ``guess_distance`` specifies the starting distance for the numerical search for
         the intersection point to resolve this ambiguity.
+        Default is the start close to outer rim of the torus.
     optimize_axis : np.array
         Homogeneous coordinate of the axis along which elements will be moved. This will
         usually coincide with the optical axis of the telescope.
+        Default is the x-axis.
+    normal_spec : np.array or callable
+        see `~marxs.simulator.simulator.ParallelCalculated` for details.
+        Default for this class: Pointing **inward** into the Rowlandtorus,
+        as one would do for an array of e.g. CCDs.
+    parallel_spec : np.array or callable
+        see `~marxs.simulator.simulator.ParallelCalculated` for details.
+        Default for this class: Symmetry axis of the torus.
     '''
     def __init__(self, **kwargs):
-        self.guess_distance = kwargs.pop('guess_distance')
         self.rowland = kwargs.pop('rowland')
+        # Default to a slightly positive number
+        self.guess_distance = kwargs.pop('guess_distance',
+                                         self.rowland.r + self.rowland.R)
         self.d_element = kwargs.pop('d_element')
-        self.optimize_axis = kwargs.pop('optimize_axis')
+        self.optimize_axis = np.asanyarray(kwargs.pop('optimize_axis',
+                                           self.rowland.pos4d @ np.array([1, 0, 0, 0])))
         self.id_col = kwargs.pop('id_col', 'facet')
 
-        # Do I need those defaults? Or are they in one of the higher classes already?
+        # Defaults changes from parent classes. Document! Or remove?
         if 'normal_spec' not in kwargs.keys():
-            kwargs['normal_spec'] = self.rowland.normal
+            kwargs['normal_spec'] = lambda xyzw: -self.rowland.normal(xyzw)
         if 'parallel_spec' not in kwargs.keys():
-            kwargs['parallel_spec'] = np.array([0., 1., 0., 0.])
+            # If not given, make parallel to Rowland circle at origin.
+            kwargs['parallel_spec'] = self.rowland.pos4d @ np.array([0, 1, 0, 0])
         kwargs['pos_spec'] = self.elempos
 
         super().__init__(**kwargs)
 
     def elemposyz(self):
-        '''Return element position in 2D.
+        '''Specify the element position in the yz plane
+
+        For the torus, the Rowland circle lies in the xy plane and the symmetry
+        axis of the torus is the y-axis. In this class, the position of the
+        elements is specified in the yz plane in the coordinates of the
+        torus and the remaining coordinate.
 
         This function will be customized by derived classes.
 
@@ -490,15 +509,22 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
         raise NotImplementedError
 
     def elempos(self):
+        '''Generate 3D positions of elements
+
+        For each elements, y and z coordinates in the torus coordinate system
+        are generated from ``self.elemposyz`` and the elements are placed at
+        x=0. Then, that initial coordinate is transformed into the global
+        coordinate system and moved by
+        ``self.guess_distance * self.optimize_axis``. The resulting position
+        is the starting point for numerical optimization along
+        ``self.optimize_axis`` to find the on-torus location.
+        '''
         ypos, zpos = self.elemposyz()
         posyz = np.vstack([np.zeros_like(ypos), ypos, zpos])
-        # Using parallel at origin, because we place the elements on y/z
-        parallels = self.get_spec('parallel_spec', np.zeros((1, 4)), self.optimize_axis)
-        rot_mat = ex2vec_fix(h2e(self.optimize_axis), h2e(parallels))
-        mat4d = transforms3d.affines.compose(np.zeros(3), rot_mat, np.ones(3))
-
-        origin = np.einsum('...ij,...j', mat4d, e2h(posyz.T, 1)) + self.guess_distance * self.optimize_axis
-        return self.rowland.solve_quartic(origin, self.optimize_axis)
+        origin = np.einsum('...ij,...j', self.rowland.pos4d, e2h(posyz.T, 1)) + self.guess_distance * self.optimize_axis
+        # solve_quartic is not vectorized (because scipy.optimize is not)
+        # so need to pass in one element at a time.
+        return np.vstack([self.rowland.solve_quartic(o, self.optimize_axis) for o in origin])
 
 
 class RectangularGrid(ElementsOnTorus):
@@ -526,31 +552,28 @@ class RectangularGrid(ElementsOnTorus):
         To place only one element, make both limits the same, e.g.
         ``z_range=[5, 5]`` will place one element in each row in z
         centered on $z=5$.
+        Default for z-range: [-1e-10, 1e-10]. This will make one element
+        centered on 0 in z-range.
 
     '''
     def __init__(self, **kwargs):
         self.y_range = kwargs.pop('y_range')
-        self.z_range = kwargs.pop('z_range')
+        self.z_range = kwargs.pop('z_range', [-1e-10, 1e-10])
 
         super().__init__(**kwargs)
 
     def elemposyz(self):
-
-        print(self.y_range)
-        n_y = int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element))
-        n_z = int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element))
-        print(n_y, n_z)
+        n_y = int(np.ceil((self.y_range[1] - self.y_range[0]) / self.d_element[0]))
+        n_z = int(np.ceil((self.z_range[1] - self.z_range[0]) / self.d_element[1]))
         n_y = max(1, n_y)
         n_z = max(1, n_z)
-        print(n_y, n_z)
 
         # n_y and n_z are rounded up, so they cover a slightly larger range than y/z_range
-        width_y = n_y * self.d_element
-        width_z = n_z * self.d_element
+        width_y = n_y * self.d_element[0]
+        width_z = n_z * self.d_element[1]
 
-        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element), self.y_range[1], self.d_element)
-        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element), self.z_range[1], self.d_element)
-        print(ypos, zpos)
+        ypos = np.arange(0.5 * (self.y_range[0] - width_y + self.y_range[1] + self.d_element[0]), self.y_range[1], self.d_element[0])
+        zpos = np.arange(0.5 * (self.z_range[0] - width_z + self.z_range[1] + self.d_element[1]), self.z_range[1], self.d_element[1])
 
         ypos, zpos = np.meshgrid(ypos, zpos)
 
@@ -574,13 +597,11 @@ class CircularMeshGrid(ElementsOnTorus):
     Parameters
     ----------
     radius : list of two floats
-        Inner and outer radius of the circle. The center of the circle coincides with
-        the opitical axis chosen by `opt_axis`.
+        Inner and outer radius of the circle.
     '''
 
     def __init__(self, **kwargs):
         self.radius = kwargs.pop('radius')
-
         super().__init__(**kwargs)
 
     def elemposyz(self):
@@ -651,9 +672,8 @@ class GratingArrayStructure(ElementsOnTorus):
 
     '''
     def __init__(self, **kwargs):
-        self.phi = kwargs.get('phi', [0., 2*np.pi])
-        self.radius = kwargs['radius']
-
+        self.phi = kwargs.pop('phi', [0., 2*np.pi])
+        self.radius = kwargs.pop('radius')
         super().__init__(**kwargs)
 
     def max_elements_on_radius(self, radius):
@@ -671,7 +691,7 @@ class GratingArrayStructure(ElementsOnTorus):
             Elements might reach beyond the radius limits if the difference between
             inner and outer radius is not an integer multiple of the element size.
         '''
-        return int(np.ceil((radius[1] - radius[0]) / self.d_element))
+        return int(np.ceil((radius[1] - radius[0]) / self.d_element[0]))
 
     def distribute_elements_on_radius(self):
         '''Distributes elements as evenly as possible along a radius.
@@ -693,7 +713,7 @@ class GratingArrayStructure(ElementsOnTorus):
             radiusbracket = self.radius[2 * i: 2 * i + 2]
             n = self.max_elements_on_radius(radiusbracket)
             radii.append(np.mean(radiusbracket) +
-                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element)
+                         np.arange(- n / 2 + 0.5, n / 2 + 0.5) * self.d_element[0])
         return np.hstack(radii)
 
 
@@ -705,7 +725,7 @@ class GratingArrayStructure(ElementsOnTorus):
         radius : float
             Radius of circle where the centers of all elements will be placed.
         '''
-        return radius * anglediff(self.phi) // self.d_element
+        return radius * anglediff(self.phi) // self.d_element[1]
 
     def distribute_elements_on_arc(self, radius):
         '''Distribute elements on an arc.
@@ -735,19 +755,19 @@ class GratingArrayStructure(ElementsOnTorus):
         if len(self.phi) == 1:
             return self.phi
         # arc is most crowded on inner radius
-        n = self.max_elements_on_arc(radius - self.d_element / 2)
-        element_angle = self.d_element / (2. * np.pi * radius)
+        n = self.max_elements_on_arc(radius - self.d_element[0] / 2)
+        element_angle = self.d_element[1] / (2. * np.pi * radius)
         # thickness of space between elements, distributed equally
         d_between = (anglediff(self.phi) - n * element_angle) / (n + 1)
         centerangles = d_between + 0.5 * element_angle + np.arange(n) * (d_between + element_angle)
         return (self.phi[0] + centerangles) % (2. * np.pi)
 
-    def elempos(self):
-        pos = []
+    def elemposyz(self):
+        angles = []
         radii = self.distribute_elements_on_radius()
         for r in radii:
-            angles = self.distribute_elements_on_arc(r)
-            for a in angles:
-                pos.append(self.rowland.xyz_from_radiusangle(r, a, self.x_range).flatten())
-        return e2h(np.array(pos), 1)
-
+            angles.append(self.distribute_elements_on_arc(r))
+        # Turn lists of lists into flat numpy array
+        radii = np.concatenate([[radii[i]] * len(a) for i, a in enumerate(angles)])
+        angles = np.concatenate(angles)
+        return radii * np.sin(angles), radii * np.cos(angles)

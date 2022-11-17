@@ -73,7 +73,7 @@ def make_rowland_from_d_BF_R_f(d_BF, R, f=11880.):
     that the spacing between channels d_BF is actually an important parameter
     so it makes sense to use that here to parameterize the torus, too.
 
-    f is the distance between a theoerical on-axis CAT grating and the focal
+    f is the distance between a theoretical on-axis CAT grating and the focal
     point.  It's default is a little smaller than 12 m, to leave space to mount
     the SPOs.
 

@@ -32,7 +32,8 @@ First, we need to set up mirrors, gratings and detectors (here gratings on a Row
     >>> aper = optics.CircleAperture(position=[12000, 0, 0],
     ...                              zoom=[1, 1000, 1000],
     ...                              r_inner=960)
-    >>> mirr = optics.FlatStack(position=[11000, 0, 0], zoom=[20, 1000, 1000],
+    >>> mirr = optics.FlatStack(position=[11000, 0, 0],
+    ...                         zoom=[20, 1000, 1000],
     ...                         elements=[optics.PerfectLens,
     ...                         optics.RadialMirrorScatter],
     ...                         keywords = [{'focallength': 11000},
@@ -50,15 +51,14 @@ In our figure, we want to color the diffraction gratings and the photons that pa
 
 We place a set of transmission gratings below the mirror and add CCDs on the Rowland torus::
 
-    >>> gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=180,
-    ...                                            x_range=[8000, 10000],
+    >>> gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=[180, 180],
     ...                                            radius=[870, 910],
     ...                                            elem_class=ColoredFlatGrating,
     ...                                            elem_args={'d': 2e-4, 'zoom': [1, 80, 80],
     ...                                                       'order_selector': optics.OrderSelector([-1, 0, 1])})
-    >>> det_kwargs = {'d_element': 105, 'elem_class': optics.FlatDetector,
+    >>> det_kwargs = {'d_element': [105, 50], 'elem_class': optics.FlatDetector,
     ...               'elem_args': {'zoom': [1, 50, 20], 'pixsize': 0.01}}
-    >>> det = design.rowland.RowlandCircleArray(rowland, theta=[3.1, 3.2], **det_kwargs)
+    >>> det = design.rowland.RectangularGrid(rowland=rowland, y_range=[-200, 200], **det_kwargs)
     >>> projectfp = analysis.ProjectOntoPlane()
 
 Each optical element in MARXS has some default values to customize its looks in its ``display`` property, which may or may not be used by the individual backend since not every backend supports the same display settings.

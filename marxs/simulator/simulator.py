@@ -585,7 +585,7 @@ class KeepCol(object):
         Parameters
         ----------
         atol : float or None
-            Sometimes several consequtive elements record identical photon positions in
+            Sometimes several consecutive elements record identical photon positions in
             `keepcol`. Those are removed from the output to speed up rendering in 3D
             programs.
             ``atol`` sets the limit up to which two positions are considered *identical*.
@@ -596,7 +596,7 @@ class KeepCol(object):
         -------
         pos : np.array
             Array of shape (N, n, 3), where N is the number of photons and n the number of
-            unique photon positions in eukledian coordinates.
+            unique photon positions in euclidean coordinates.
         '''
         if len(self.data) == 0:
             raise ValueError('KeepCol object contains no data.')
