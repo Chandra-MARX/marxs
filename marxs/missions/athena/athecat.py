@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import astropy.units as u
+from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
 import transforms3d
 from scipy.interpolate import RectBivariateSpline
@@ -16,7 +17,7 @@ from marxs.math.geometry import Cylinder
 from marxs.math.utils import xyz2zxy
 from marxs.missions.mitsnl.catgrating import InterpolateEfficiencyTable
 from marxs.missions.athena import spo
-from marxs.missions.mitsnl.catgrating import load_table2d
+from marxs.utils import tablerows_to_2d
 from marxs import simulator
 from marxs import analysis
 from marxs.missions.arcus.utils import config as arcus_config
@@ -25,21 +26,24 @@ from marxs.missions.arcus.arcus import FiltersAndQE
 tagversion = TagVersion(SATELLIT='Athena', GRATING='CAT')
 
 # SPOs reflectivity tabulated data
-reflectivity = load_table2d(os.path.join(arcus_config['data']['caldb_inputdata'],
-                                         'spos', 'coated_reflectivity.csv'))
-reflectivity_interpolator = RectBivariateSpline(reflectivity[1].to(u.keV),
-                                                reflectivity[2].to(u.rad),
-                                                reflectivity[3][0])
+reflectivity = tablerows_to_2d(Table.read(os.path.join(arcus_config['data']['caldb_inputdata'],
+                                                       'spos', 'coated_reflectivity.csv'),
+                                          format='ascii.ecsv'))
+reflectivity_interpolator = RectBivariateSpline(reflectivity[0].to(u.keV),
+                                                reflectivity[1].to(u.rad),
+                                                reflectivity[2][0])
 
 
 # CAT gratings tabulated data
-order_selector_Si = InterpolateEfficiencyTable(
+order_selector_Si = InterpolateEfficiencyTable(Table.read(
     get_pkg_data_filename('data/Si_efficiency_5_7.dat',
-                          package='marxs.missions.mitsnl'))
+                          package='marxs.missions.mitsnl'),
+    format='ascii.ecsv'))
 order_selector_Si.coating = 'None'
-order_selector_Pt = InterpolateEfficiencyTable(
+order_selector_Pt = InterpolateEfficiencyTable(Table.read(
     get_pkg_data_filename('data/SiPt_efficiency_5_7.dat',
-                          package='marxs.missions.mitsnl'))
+                          package='marxs.missions.mitsnl'),
+    format='ascii.ecsv'))
 order_selector_Pt.coating = 'Pt'
 
 

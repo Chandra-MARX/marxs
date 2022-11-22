@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import os
 
+from astropy.table import Table
 import numpy as np
 import transforms3d
 from marxs.simulator import Parallel
@@ -13,8 +14,8 @@ from .utils import config
 
 
 globalorderselector = InterpolateEfficiencyTable(
-    os.path.join(config['data']['caldb_inputdata'],
-                 'gratings', 'efficiency.csv'))
+    Table.read(os.path.join(config['data']['caldb_inputdata'],
+                 'gratings', 'efficiency.csv'), format='ascii.ecsv'))
 '''Global instance of an order selector to use in all CAT gratings.
 
 As long as the efficiency table is the same for all CAT gratings, it makes

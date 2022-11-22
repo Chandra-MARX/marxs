@@ -5,7 +5,6 @@ from transforms3d.affines import compose
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_path
 from astropy.table import Table
-from scipy.interpolate import RectBivariateSpline
 from numpy.core.umath_tests import inner1d
 from scipy.interpolate import interp1d
 
@@ -16,7 +15,6 @@ from marxs.optics.aperture import CircleAperture
 from marxs.simulator import Parallel, Sequence
 from marxs.math.utils import e2h, h2e, norm_vector
 from marxs.math.polarization import parallel_transport
-from marxs.missions.mitsnl.catgrating import load_table2d
 from marxs.math.utils import xyz2zxy
 
 __all__ = ['aperture',

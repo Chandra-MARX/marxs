@@ -1,38 +1,37 @@
 import copy
-from astropy.table import Table
-import astropy.units as u
-from astropy.utils.data import get_pkg_data_filename
-import numpy as np
 
-from marxs import optics, simulator, design, analysis
+import astropy.units as u
+import numpy as np
+from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
+
+from marxs import analysis, design, optics, simulator
+from marxs.base import MarxsElement, TagVersion
+from marxs.design import tolerancing as tol
+from marxs.design.bendgratings import NumericalChirpFinder, chirp_gratings
 from marxs.math.geometry import Cylinder
-from marxs.optics import FlatDetector, OrderSelector
-from marxs.simulator import Propagator
-from marxs.missions.mitsnl.catgrating import (CATL1L2Stack, catsupportbars,
+from marxs.missions.arcus.arcus import FiltersAndQE
+from marxs.missions.lynx.lynx import LynxGAS, add_rowland_to_conf
+from marxs.missions.lynx.mirror import MetaShellAperture, PerfectLensSegment
+from marxs.missions.mitsnl.catgrating import (CATL1L2Stack,
                                               InterpolateEfficiencyTable,
                                               NonParallelCATGrating,
-                                              )
-from marxs.design import tolerancing as tol
-from marxs.base import MarxsElement
-
-from marxs.missions.arcus.arcus import FiltersAndQE
-from marxs.missions.lynx.mirror import MetaShellAperture, PerfectLensSegment
-from marxs.design.bendgratings import NumericalChirpFinder, chirp_gratings
-from marxs.missions.lynx.lynx import LynxGAS, add_rowland_to_conf
-
-
-from marxs.base import TagVersion
+                                              catsupportbars)
+from marxs.optics import FlatDetector, OrderSelector
+from marxs.simulator import Propagator
 
 tagversion = TagVersion(SATELLIT='AXIS')
 
 # CAT gratings tabluated data
-order_selector_Si = InterpolateEfficiencyTable(
+order_selector_Si = InterpolateEfficiencyTable(Table.read(
     get_pkg_data_filename('data/Si_efficiency_5_7.dat',
-                          package='marxs.missions.mitsnl'))
+                          package='marxs.missions.mitsnl'),
+    format='ascii.ecsv'))
 order_selector_Si.coating = 'None'
-order_selector_Pt = InterpolateEfficiencyTable(
+order_selector_Pt = InterpolateEfficiencyTable(Table.read(
     get_pkg_data_filename('data/SiPt_efficiency_5_7.dat',
-                          package='marxs.missions.mitsnl'))
+                          package='marxs.missions.mitsnl'),
+    format='ascii.ecsv'))
 order_selector_Pt.coating = 'Pt'
 
 
