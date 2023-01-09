@@ -189,7 +189,9 @@ class L1(CATGrating):
         check_lx_dims(l1_dims)
         self.openfraction = 1 - l1_dims['barwidth'] / l1_dims['period']
         energy = l1transtab['energy'].to(u.keV, equivalencies=u.spectral())
-        trans = np.exp(np.log(l1transtab['transmission']) * l1_dims['bardepth'] / (1 * u.micrometer))
+        with np.errstate(divide='ignore'):
+            logtranstab = np.log(l1transtab['transmission'])
+        trans = np.exp(logtranstab * l1_dims['bardepth'] / (1 * u.micrometer))
         self.transfunc = interp1d(energy, trans)
         kwargs['d'] = l1_dims['period'].to(u.mm).value
         super().__init__(**kwargs)
