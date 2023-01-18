@@ -2,11 +2,12 @@
 import os
 import numpy as np
 import astropy.units as u
-from astropy.table import Table
+from astropy.table import Table, vstack
 from scipy.interpolate import RectBivariateSpline
 
 from marxs.optics import GlobalEnergyFilter
 from marxs.missions.athena.spo import spogeom2pos4d
+from marxs.missions.athena.spo import spogeom as athena_spogeom
 from marxs.utils import tablerows_to_2d
 
 from .load_csv import load_number, load_table
@@ -28,6 +29,21 @@ reflectivity_interpolator = RectBivariateSpline(reflectivity[0].to(u.keV),
 geometricopening = load_number('spos', 'geometricthroughput', 'transmission') * load_number('spos', 'porespecifications', 'transmission')
 geometricthroughput = GlobalEnergyFilter(filterfunc=lambda e: geometricopening,
                                          name='SPOgeometricthrougput')
+
+
+# Make an SPO layout that's larger than MIDEX Arcus, using exact Athena sizes for each SPO
+athena_petal1 = athena_spogeom[athena_spogeom['Petal #'] == 1]
+min_angle_distance = [np.abs(np.diff(athena_petal1[athena_petal1['Row #'] == i]['clocking_angle'])).min()
+                       for i in range(1, 16)]
+spos_large = []
+for i in range(2, 10):
+   row = athena_spogeom[athena_spogeom['Row #'] == i][:5]
+   row['clocking_angle'] = np.arange(-2, 2.1) * min_angle_distance[i - 1] * athena_spogeom['clocking_angle'].unit
+   spos_large.append(row)
+spos_large = vstack(spos_large)
+spos_large['MM #'] = np.arange(1, len(spos_large) + 1)
+spos_large.remove_column('Petal #')
+spos_large_pos4d = [np.dot(xyz2zxy, s) for s in spogeom2pos4d(spos_large)]
 
 
 def rmid_spo(conf):

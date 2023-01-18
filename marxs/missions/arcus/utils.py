@@ -4,8 +4,13 @@ import subprocess
 
 from marxs.base import TagVersion
 
-__all__ = ['config', 'tabversion']
+__all__ = ['config', 'tabversion', 'id_num_offset']
 
+
+id_num_offset = {'1': 0,
+                 '2': 1000,
+                 '1m': 10000,
+                 '2m': 11000}
 
 config = configparser.ConfigParser()
 confs_found = config.read(['arcus.cfg',
