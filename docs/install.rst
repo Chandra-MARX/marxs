@@ -23,6 +23,7 @@ The following Python packages are strongly recommended, but most parts of MARXS 
 - `scipy <http://www.numpy.org/>`_
 - matplotlib
 - `mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (for 3 D output)
+- `x3d <https://pypi.org/project/x3d/>`_
 - jsonschema
 - pyyaml
 

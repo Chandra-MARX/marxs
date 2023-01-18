@@ -577,6 +577,9 @@ class Cylinder(Geometry):
         -------
         xyzw : np.array
             Ring coordinates in global homogeneous coordinate system.
+            The array has the following shape (npoints, 2, 4). 
+            `xyzw[:, 0, :]` describes one rim of the cylinder, `xyzw[:, 1, :]`
+            the other rim.
         '''
         phi = np.linspace(self.coos_limits[0][0], self.coos_limits[0][1], self.n_points) \
               if phi is None else np.asanyarray(phi)

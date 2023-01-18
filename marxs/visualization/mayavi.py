@@ -2,7 +2,7 @@
 '''`Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ plotting backend
 
 Mayavi is a python package for interactive 3-D displays that uses VTK
-underneath.  Fuctions in this module display rays or objects in 3D
+underneath.  Functions in this module display rays or objects in 3D
 using mayavi. Each of them requires a ``mayavi.core.scene.Scene``
 instance as input and returns a mayavi object (or a list of those),
 e.g. a ``mayavi.visual.Box`` instance.
@@ -48,7 +48,7 @@ doc_plot = '''
 
 @format_doc(doc_plot)
 def container(obj, display=None, viewer=None):
-    '''Recursively plot objects containted in a container.'''
+    '''Recursively plot objects contained in a container.'''
     return [plot_object(e, display=None, viewer=viewer) for e in obj.elements]
 
 
@@ -98,29 +98,9 @@ def box(obj, display, viewer=None):
     photon interaction happens on the surface, not in the substrate.
     '''
     from mayavi import mlab
-
-    corners = np.array([[-1, -1, -1], [-1,+1, -1],
-                        [-1, -1,  1], [-1, 1,  1],
-                        [ 1, -1, -1], [ 1, 1, -1],
-                        [ 1, -1, +1], [ 1, 1, +1]])
-    if 'box-half' in display:
-        # write in a way that it works with any value for that keyword
-        try:
-            if display['box-half'][0] == '+':
-                factor = +1
-            elif display['box-half'][0] == '-':
-                factor = -1
-            else:
-                factor = 0
-            xyz = {'x': 0, 'y': 1, 'z': 2}
-            if display['box-half'][1] in xyz:
-                j = xyz[display['box-half'][1]]
-                corners[corners[:, j] == factor, j] = 0
-        except:
-            pass
     triangles = [(0,2,6), (0,4,6), (0,1,5), (0,4,5), (0,1,3), (0,2,3),
                  (7,3,2), (7,6,2), (7,3,1), (7,5,1), (7,6,4), (7,5,4)]
-    corners = np.einsum('ij,...j->...i', obj.pos4d, mutils.e2h(corners, 1))
+    corners = utils.halfbox_corners(obj, display)
     b = mlab.triangular_mesh(corners[:, 0], corners[:, 1], corners[:, 2],
                              triangles, color=display['color'])
     return b
@@ -155,7 +135,7 @@ def plot_rays(data, scalar=None, viewer=None,
     ----------
     data : np.array of shape(n, N, 3)
         where n is the number of rays, N the number of positions per ray and
-        the last dimension is the (x,y,z) of an Eukledian position vector.
+        the last dimension is the (x,y,z) of an Euclidean position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
         This quantity is used to color the rays. If ``None`` all rays will have
         the same color. If it has n elements, each ray will have exactly one
