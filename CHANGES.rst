@@ -42,7 +42,7 @@ API Changes
   - All classes now use a minimizer instead of a brackets root finder. So, instead
     of a bracketing interval, they now need a ``guess_distance`` where the minimization
     starts.
-- ``load_table2d`` has been replaced by ```marxs.utils.tablerows_to_2d``, which perform
+- ``load_table2d`` has been replaced by ``marxs.utils.tablerows_to_2d``, which performs
   the same reformatting of a table, but does not read it in. [#237]
 - ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a
   filename as parameter. [#237]

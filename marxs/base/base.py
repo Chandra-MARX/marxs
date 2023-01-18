@@ -26,7 +26,7 @@ class GeometryError(Exception):
 
 
 class DocMeta(type):
-    '''Metaclass to inherit docstrings when reqired.
+    '''Metaclass to inherit docstrings when required.
 
     When a derived class overwrites a method that was already defined in its
     base class, the new method usually has the same purpose as the original

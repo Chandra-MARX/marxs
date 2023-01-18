@@ -2,7 +2,7 @@
 '''This module contains helper functions to make running simulations easier.
 
 Sometimes, those functions save only a few lines of code, but that can still
-improve the readibility of e.g. loops and cells in notebooks.
+improve the readability of e.g. loops and cells in notebooks.
 '''
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -30,7 +30,7 @@ def monoenergetic_astrosimulation(instrument, energy, n_photons=2e4,
     n_photon : int
         number of photons for the simulation
     reference_transform : np.array of shape (4, 4)
-        For instruments that do not use the canonocal x-axis as the optical axis.
+        For instruments that do not use the canonical x-axis as the optical axis.
         See `marxs.source.pointing.FixedPointing`
 
 

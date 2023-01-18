@@ -22,7 +22,6 @@ from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
 from marxs.utils import tablerows_to_2d
 
-
 __all__ = ['l1transtab', 'l1_order_selector',
            'l1_dims', 'l2_dims',
            'qualityfactor', 'd',
@@ -332,7 +331,7 @@ class CATL1L2Stack(FlatStack):
     This element combines all parts of a CAT grating into a single object.
     These include the grating membrane and the absorption and diffraction due
     to the L1 and L2 support.
-    Approximations are done for all those elements, see the individial classes
+    Approximations are done for all those elements, see the individual classes
     for more details. Except for `order_selector` all other parameters are set with
     defaults defined in module level variables.
 
@@ -341,7 +340,7 @@ class CATL1L2Stack(FlatStack):
     order_selector : `marxs.optics.OrderSelector`
         Order selector for the grating membrane
     groove_angle : float
-        Goove angle of grating bars (in rad). Default: 0
+        Groove angle of grating bars (in rad). Default: 0
     l1_order_selector : `marxs.optics.OrderSelector`
         Order selector for L1 dispersion (cross-dispersion direction for grating)
     qualityfactor : dict

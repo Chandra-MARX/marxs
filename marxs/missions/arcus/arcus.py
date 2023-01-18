@@ -14,14 +14,14 @@ from marxs import optics
 from marxs.design.rowland import RectangularGrid
 import marxs.analysis
 from marxs.design import tolerancing as tol
-from marxs.missions.mitsnl.catgrating import catsupportbars
+from marxs.missions.mitsnl.catgrating import catsupportbars, CATL1L2Stack, l1_order_selector
 from marxs.missions.athena.spo import SPOChannelMirror, ScatterPerChannel, spomounting
-from .ralfgrating import CATfromMechanical, CATWindow
+from .ralfgrating import CATfromMechanical, CATWindow, globalorderselector, RegularGrid
 
 from . import spo
 from . import boom
 from .load_csv import load_number, load_table
-from .utils import tagversion
+from .utils import tagversion, id_num_offset
 from marxs.math.utils import xyz2zxy
 from .generate_rowland import make_rowland_from_d_BF_R_f
 from ..mitsnl.tolerances import wiggle_and_bar_tilt
@@ -42,8 +42,8 @@ defaultconf['phi_det_start'] = 0.037
 defaultconf['perpplanescatter'] = 1.5 / 2.3545 * u.arcsec
 # 2 * 0.68 converts HPD to sigma
 defaultconf['inplanescatter'] = 7. / (2 * 0.68) * u.arcsec
-defaultconf['spo_pos4d'] = spo.spo_pos4d
-defaultconf['spo_geom'] = spo.spogeom
+defaultconf['spo_pos4d'] = spo.spos_large_pos4d
+defaultconf['spo_geom'] = spo.spos_large
 defaultconf['reflectivity_interpolator'] = spo.reflectivity_interpolator
 defaultconf['det_kwargs']= {
     'elem_class': FlatDetector,
@@ -54,6 +54,23 @@ defaultconf['det_kwargs']= {
                                           [0, -1, 0],
                                           [0, 0, +1]])},
 }
+
+defaultconf['gratinggrid'] = {'d_element': [54., 54.],
+                              'elem_class': CATL1L2Stack,
+                              'elem_args': {'zoom': [1., 25., 25.],
+                                            'order_selector': globalorderselector,
+                                            'l1_dims': {'bardepth': 0.0057 * u.mm,
+                                                        'period': 0.005 * u.mm,
+                                                        'barwidth': 0.0009 * u.mm},
+                                            'l2_dims': {'bardepth': 0.5 * u.mm,
+                                                        'period': 0.9622504 * u.mm,
+                                                        'barwidth': 0.0962250 * u.mm},
+                                            'qualityfactor': {'d': 200. * u.um,
+                                                              'sigma': 1.75 * u.um},
+                                            'l1_order_selector': l1_order_selector,
+                              },
+                              'parallel_spec': np.array([1., 0., 0., 0.]),
+                   }
 # Other arguments for the detector - are tey needed for something?
 #defaultconf['detector']['d_element'] = [
 #    defaultconf['det_kwargs']['elem_args']['zoom'][1] * 2 + 0.824 * 2 + 0.5,
@@ -83,8 +100,8 @@ def reformat_randall_errorbudget(budget, globalfac=0.8):
         many draws are done and thus the resulting layout actually
         represents a distribution. For a "global" tolerance, the result hinges
         essentially on a single random draw. If this is set to ``None``,
-        misalignments are drawn statistically. Instead, the toleracnes can be
-        scaled determinisitically, e.g. by "0.8 sigma" (the mean absolute
+        misalignments are drawn statistically. Instead, the tolerances can be
+        scaled deterministically, e.g. by "0.8 sigma" (the mean absolute
         deviation for a Gaussian distribution).
     '''
     for row in budget:
@@ -99,12 +116,6 @@ def reformat_randall_errorbudget(budget, globalfac=0.8):
                 tol *= np.random.randn(len(tol))
 
         row[3] = tol
-
-
-id_num_offset = {'1': 0,
-                 '2': 1000,
-                 '1m': 10000,
-                 '2m': 11000}
 
 
 class Aperture(optics.MultiAperture):
@@ -308,7 +319,7 @@ class PerfectArcus(Sequence):
     '''Default Definition of Arcus without any misalignments'''
     aper_class = Aperture
     spo_class = SimpleSPOs
-    gratings_class = CATGratings
+    gratings_class = RegularGrid  #CATGratings
     filter_and_qe_class = FiltersAndQE
     '''Set any of these classes to None to not have them included.
     (e.g. SIXTE does filters and QE itself).

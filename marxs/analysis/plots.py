@@ -10,7 +10,7 @@ class OrderColor():
     colormap : string
         Name of a matplotlib colormap
     max_order : int
-        Maximum order that this color schme will be used on (i.e. the end of
+        Maximum order that this color scheme will be used on (i.e. the end of
         the colorbar will be assigned ot this order)
     '''
     def __init__(self, colormap='nipy_spectral', max_order=15):
