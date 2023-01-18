@@ -20,6 +20,8 @@ New Features
 - Added a new class `CaptureResAeff_CCDgap` that selects photons differently for
   calculation of the effective area and resolving power to account for chip gaps. [#235]
 
+- Add direct X3D visualization backend to avoid the need for Mayavi. [#238]
+
 API Changes
 ^^^^^^^^^^^
 - ``load_table2d`` has been replaced by ```marxs.utils.tablerows_to_2d``, which perform
