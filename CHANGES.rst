@@ -46,6 +46,7 @@ API Changes
   the same reformatting of a table, but does not read it in. [#237]
 - ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a
   filename as parameter. [#237]
+- `effectivearea_from_photonlist` now requires a unit for the input of the effective area. [#237]
 
 - Rename files that had a class of the same name, because this confuses the Sphinx autosummary
   extension. The following files have been renamed: `marxs.missions.chandra.chandra` to

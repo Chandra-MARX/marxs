@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 from astropy.stats import sigma_clipped_stats
+import astropy.units as u
 
 from ..optics import FlatDetector, CircularDetector, OrderSelector
 from ..design import RowlandTorus
@@ -131,7 +132,7 @@ def weighted_per_order(data, orders, energy, gratingeff):
 
     This method provides one way to summarize the data by calculating the
     weighted mean of the resolution for each energy, weighted by the
-    probability of photons for be diffracted into that order ( = the expected
+    probability of photons to be diffracted into that order ( = the expected
     fraction).
 
     Parameters
@@ -225,13 +226,13 @@ def resolvingpower_from_photonlist(photons, orders,
     return res, pos, std
 
 
-def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1.,
+def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**2,
                                   ordercol='order'):
     '''Calculate the effective area several grating orders
 
     This is based on the probabilities of the photons in the list, so
     this photons list must already account for all instrument
-    components, for example, do not forgot to set the probability to 0
+    components, for example, do not forget to set the probability to 0
     for photons that falls into a chip gap.
 
     Parameters
