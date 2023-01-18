@@ -2,7 +2,7 @@
 '''`Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ plotting backend
 
 Mayavi is a python package for interactive 3-D displays that uses VTK
-underneath.  Fuctions in this module display rays or objects in 3D
+underneath.  Functions in this module display rays or objects in 3D
 using mayavi. Each of them requires a ``mayavi.core.scene.Scene``
 instance as input and returns a mayavi object (or a list of those),
 e.g. a ``mayavi.visual.Box`` instance.
@@ -48,7 +48,7 @@ doc_plot = '''
 
 @format_doc(doc_plot)
 def container(obj, display=None, viewer=None):
-    '''Recursively plot objects containted in a container.'''
+    '''Recursively plot objects contained in a container.'''
     return [plot_object(e, display=None, viewer=viewer) for e in obj.elements]
 
 
@@ -135,7 +135,7 @@ def plot_rays(data, scalar=None, viewer=None,
     ----------
     data : np.array of shape(n, N, 3)
         where n is the number of rays, N the number of positions per ray and
-        the last dimension is the (x,y,z) of an Eukledian position vector.
+        the last dimension is the (x,y,z) of an Euclidean position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
         This quantity is used to color the rays. If ``None`` all rays will have
         the same color. If it has n elements, each ray will have exactly one

@@ -17,12 +17,13 @@ Depending on the target audience of the visualization (e.g. a detailed technical
 
 Currently, the following plotting packages are supported: 
 
-- `Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ is a python package for interactive 3-D displays that uses VTK underneath. Using plotting routines from `marxs.visualization.mayavi` scenes can be displayed right in the same Python session or `jupyter notebook <http://docs.enthought.com/mayavi/mayavi/tips.html#using-mayavi-in-jupyter-notebooks>`_ where the MARXS simulation is running or be exported as static images (e.g. PNG) or as X3D suitable for inclusion in a web page or `AAS journal paper <http://adsabs.harvard.edu/abs/2016ApJ...818..115V>`_.
+- `X3D <https://www.web3d.org/x3d/what-x3d>`__ is an open XML-based standard to 3D models in the web-browser and can be displayed with different libraries. Importantly, it can also be rendered directly in a Jupyter notebook.
+- `Mayavi <http://docs.enthought.com/mayavi/mayavi/>`__ is a Python package for interactive 3-D displays that uses VTK underneath. Using plotting routines from `marxs.visualization.mayavi` scenes can be displayed right in the same Python session or `jupyter notebook <http://docs.enthought.com/mayavi/mayavi/tips.html#using-mayavi-in-jupyter-notebooks>`_ where the MARXS simulation is running or be exported as static images (e.g. PNG) or as X3D suitable for inclusion in a web page or `AAS journal paper <http://adsabs.harvard.edu/abs/2016ApJ...818..115V>`_.
 - `three.js <https://threejs.org/>`__ is a javascript package to render 3d content in a web-browser using WebGL technology. MARXS does not display this content directly, but outputs code (`marxs.visualization.threejs`) or json formatted data (`marxs.visualization.threejsjson`) that can be included in a web page.
 
-All backends support a function called ``plot_object`` which plots objects in the simulation such as apertures, mirrors, or detectors and a function called ``plot_rays`` which shows the path the photons have taken through the instrument in any specific simulation. In the example below, we use the `~marxs.visualization.mayavi` backend to explain these functions. The arguments for these functions are very similar for all backends, but some differences are unavoidable. For example, `marxs.visualization.mayavi.plot_rays` needs a reference to the scene where the rays will be added, while `marxs.visualization.threejs.plot_rays` requires a file handle where relevant javascript commands can be written - see :ref:`sect-vis-api` for a more details.
+All backends support a function called ``plot_object`` which plots objects in the simulation such as apertures, mirrors, or detectors and a function called ``plot_rays`` which shows the path the photons have taken through the instrument in any specific simulation. In the example below, we use the `~marxs.visualization.mayavi` backend to explain these functions. The arguments for these functions are very similar for all backends, but some differences are unavoidable. For example, `marxs.visualization.mayavi.plot_rays` needs a reference to the scene where the rays will be added, while `marxs.visualization.threejs.plot_rays` requires a file handle where relevant javascript commands can be written - see :ref:`sect-vis-api` for more details.
 
-First, we need to set up mirrors, gratings and detectors (here gratings on a Rowland torus). The entrace aperture is just a thin ring, like the effective area of a single shell in a Wolter type-I telescope::
+First, we need to set up mirrors, gratings and detectors (here gratings on a Rowland torus). The entrance aperture is just a thin ring, like the effective area of a single shell in a Wolter type-I telescope::
 
     >>> from marxs import optics, design, analysis
     >>> from marxs.design import rowland
@@ -83,7 +84,7 @@ To change just one particular element we copy the class dictionary to that eleme
 
 Using MARXS to visualize sub-aperturing
 =======================================
-In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. This is a fully functional ray-trace simulation; the only unrealsitic point is the grating constant of the diffraction gratings which is about an order of magnitude smaller than current gratings.
+In this example, we use MARXS to explain how sub-aperturing works. Continuing the code from above, we define an instrument setup, run a simulation, and plot results both in 2d and in 3d. This is a fully functional ray-trace simulation; the only unrealistic point is the grating constant of the diffraction gratings which is about an order of magnitude smaller than current gratings.
 
 
 2d plot
@@ -93,7 +94,7 @@ We want to know how photons that go through a particular set of gratings are dis
 
 .. plot:: pyplots/vis_subaperturing.py
 
-On the plot, we see that photons from each sector (e.g. the sector that colors photons red) form a strip on the detector. Only adding up photons from all sectors gives us a round PSF. Subaperturing is the idea to disperse only photons from one sector, such that the PSF in cross-dispersion direction is large, but the dispersion in cross-dispersion direction is much smaller (the green sector in the figure). Thus, the spectral resolution of the dispersed spectrum will be higher than for a spectrograph that uses the full PSF. Note that the first order photons are asymetrically distributed unlike the zeroth order. This is due to the finite sizes of the flat diffraction gratings that deviate from the curved Rowland torus. Based on this simulation, we can now decide to implement sub-aperturing in our instrument. We will instruct the engineers to mount ggratings only at the green colored positions so that we get a sharper line (a better resolving power) compared with using every photon that passes through the mirror.
+On the plot, we see that photons from each sector (e.g. the sector that colors photons red) form a strip on the detector. Only adding up photons from all sectors gives us a round PSF. Subaperturing is the idea to disperse only photons from one sector, such that the PSF in cross-dispersion direction is large, but the dispersion in cross-dispersion direction is much smaller (the green sector in the figure). Thus, the spectral resolution of the dispersed spectrum will be higher than for a spectrograph that uses the full PSF. Note that the first order photons are asymmetrically distributed unlike the zeroth order. This is due to the finite sizes of the flat diffraction gratings that deviate from the curved Rowland torus. Based on this simulation, we can now decide to implement sub-aperturing in our instrument. We will instruct the engineers to mount ggratings only at the green colored positions so that we get a sharper line (a better resolving power) compared with using every photon that passes through the mirror.
 
 3d output
 ---------
@@ -106,7 +107,7 @@ Another change compared to the 2d plotting is that we generate a lot fewer photo
     >>> from astropy.coordinates import SkyCoord
     >>> import astropy.units as u
     >>> from marxs import source, simulator
-    >>> # object to save intermediate photons positions after every step of the simulaion
+    >>> # object to save intermediate photons positions after every step of the simulation
     >>> pos = simulator.KeepCol('pos')
     >>> instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp], postprocess_steps=[pos])
     >>> star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'))
@@ -126,7 +127,7 @@ First, plot the objects that make up the instrument (aperture, mirror, gratings,
     >>> fig = mlab.figure(bgcolor=(1,1,1))
     >>> obj = plot_object(instrum, viewer=fig)
 
-Now, we plot the rays using their colorid and a global color map that matches the blue-red values that we assinged to the gratings already::
+Now, we plot the rays using their colorid and a global color map that matches the blue-red values that we assigned to the gratings already::
   
 .. doctest-requires:: mayavi
 
@@ -151,7 +152,7 @@ MARXS can also display non-physical objects. The following code will add a fract
   </scene> 
   </x3d>
   <p class="caption" style="clear:both;"><span class="caption-text">
-  3D view of the instrument set up. Lines are photon paths. All detectors are orange and the gratings are red, green, and blue, depending on their position. The mirror and the aperture are shown with their default representation (white box and transparent green plate with the aperture hole). Part of the Rowland torus is shown as a red surface. Use your mouse to rotate, pan and zoom. <a href="https://www.x3dom.org/documentation/interaction/">(Detailed instructions for camera navigation).</a> </span></p>
+  3D view of the instrument set up. Lines are photon paths. All detectors are orange, and the gratings are red, green, and blue, depending on their position. The mirror and the aperture are shown with their default representation (white box and transparent green plate with the aperture hole). Part of the Rowland torus is shown as a red surface. Use your mouse to rotate, pan and zoom. <a href="https://www.x3dom.org/documentation/interaction/">(Detailed instructions for camera navigation).</a> </span></p>
   </div>
         
 .. _sect-vis-api:
@@ -160,6 +161,8 @@ Reference/API
 =============
 
 .. automodapi:: marxs.visualization
+.. automodapi:: marxs.visualization.x3d
+   :skip: format_doc
 .. automodapi:: marxs.visualization.mayavi
    :skip: format_doc
 .. automodapi:: marxs.visualization.threejs
