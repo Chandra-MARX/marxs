@@ -20,6 +20,7 @@ Under the hood, the XML is constructed using the
 '''
 from functools import wraps
 from warnings import warn
+import xml.etree.ElementTree as ET
 
 import numpy as np
 from astropy.utils.decorators import format_doc
@@ -63,6 +64,7 @@ doc_plot = '''
 '''
 
 class Scene(x3d.Scene):
+    '''X3D Scene with added _repr_html_ for notebook output'''
     js_source = 'https://www.x3dom.org/download/x3dom.js'
     css_source = 'https://www.x3dom.org/download/x3dom.css'
     dimension_px = (600, 400)
@@ -71,8 +73,8 @@ class Scene(x3d.Scene):
     # for how to add buttons for viewpoints
 
     def _repr_html_(self):
-
-        return(f"""
+        root = ET.fromstring(self.XML())
+        html = f"""
 <html>
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/> 
@@ -83,9 +85,15 @@ class Scene(x3d.Scene):
     <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'> 
       {self.XML()}
     </x3d>
+    """
+        for vp in root.findall('Viewpoint'):
+            description = vp.get('description')
+            html += f'<button onclick="document.querySelector(\'Viewpoint[description=\\\'{description}\\\']\').setAttribute(\'set_bind\',\'true\');">{description}</button>\n'
+        html +="""
   </body>
 </html>
-""")
+"""
+        return html
 
 
 def empty_scene(func):
