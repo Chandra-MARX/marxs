@@ -55,9 +55,9 @@ defaultconf['det_kwargs']= {
                                           [0, 0, +1]])},
 }
 
-defaultconf['gratinggrid'] = {'d_element': [54., 54.],
+defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
                               'elem_class': CATL1L2Stack,
-                              'elem_args': {'zoom': [1., 25., 25.],
+                              'elem_args': {'zoom': [1., 28., 28.5],
                                             'order_selector': globalorderselector,
                                             'l1_dims': {'bardepth': 0.0057 * u.mm,
                                                         'period': 0.005 * u.mm,
@@ -71,7 +71,7 @@ defaultconf['gratinggrid'] = {'d_element': [54., 54.],
                               },
                               'parallel_spec': np.array([1., 0., 0., 0.]),
                    }
-# Other arguments for the detector - are tey needed for something?
+# Other arguments for the detector - are they needed for something?
 #defaultconf['detector']['d_element'] = [
 #    defaultconf['det_kwargs']['elem_args']['zoom'][1] * 2 + 0.824 * 2 + 0.5,
 #    defaultconf['det_kwargs']['elem_args']['zoom'][2] * 2 + 0.824 * 2 + 0.5,
@@ -124,7 +124,37 @@ class Aperture(optics.MultiAperture):
         # Thus, needs to be geometrically bigger for off-axis sources.
         aperzoom = spo.zoom_to_cover_all_spos(conf, 1.1, 0.8)
 
+        channels = deepcopy(channels)
+
         apers = []
+
+        # Currently, channel an a 1m are so close, they need to
+        # share an aperture
+        if ('1' in channels) and ('1m' in channels):
+            pos = [0, spo.rmid_spo(conf), 12200]
+            aperzoom = spo.zoom_to_cover_all_spos(conf, 2., 2.)
+            aperzoom[1] *=2
+            rect = optics.RectangleAperture(position=pos,
+                                            zoom=aperzoom,
+                                            orientation=xyz2zxy[:3, :3])
+            rect.display['outer_factor'] = 1.8
+            apers.append(rect)
+            channels.remove('1')
+            channels.remove('1m')
+
+        if ('2' in channels) and ('2m' in channels):
+            pos = [0, -spo.rmid_spo(conf), 12000]
+            aperzoom = spo.zoom_to_cover_all_spos(conf, 2., 2.)
+            aperzoom[1] *=2
+            rect = optics.RectangleAperture(position=pos,
+                                            zoom=aperzoom,
+                                            orientation=xyz2zxy[:3, :3])
+            rect.display['outer_factor'] = 1.8
+            apers.append(rect)
+            channels.remove('2')
+            channels.remove('2m')
+
+
         for chan in channels:
             pos = conf['pos_opt_ax'][chan][:3].copy()
             pos[2] += 12200
@@ -138,7 +168,7 @@ class Aperture(optics.MultiAperture):
             rect = optics.RectangleAperture(position=pos,
                                             zoom=aperzoom,
                                             orientation=xyz2zxy[:3, :3])
-            rect.display['outer_factor'] = 2
+            rect.display['outer_factor'] = 1.5
             apers.append(rect)
 
         super(Aperture, self).__init__(elements=apers, **kwargs)
