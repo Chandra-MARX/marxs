@@ -42,7 +42,8 @@ def spogeom2pos4d(spogeom):
                                   # for display, we'll ignore that for now.
                                   [row['primary_length'],
                                    row['azwidth'] / 2.,
-                                   (row['outer_radius'] - row['inner_radius']) / 2.
+                                   # 36 reflective plates in each stack
+                                   36 * row['plate_height'] / 2.
                                    ]
                                   )
                          )

@@ -40,6 +40,11 @@ for i in range(2, 10):
    row = athena_spogeom[athena_spogeom['Row #'] == i][:5]
    row['clocking_angle'] = np.arange(-2, 2.1) * min_angle_distance[i - 1] * athena_spogeom['clocking_angle'].unit
    spos_large.append(row)
+   # Treat second XOU stack as independent row for now
+   # In my table, they are in the second half of the table
+   row = athena_spogeom[600:][athena_spogeom[600:]['Row #'] == i][:5]
+   row['clocking_angle'] = np.arange(-2, 2.1) * min_angle_distance[i - 1] * athena_spogeom['clocking_angle'].unit
+   spos_large.append(row)
 spos_large = vstack(spos_large)
 spos_large['MM #'] = np.arange(1, len(spos_large) + 1)
 spos_large.remove_column('Petal #')
