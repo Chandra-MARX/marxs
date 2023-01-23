@@ -1,8 +1,11 @@
 import numpy as np
+from astropy.table import Table
+import pytest
 
 from ...utils import generate_test_photons
 from ...optics import ThinLens, FlatGrating, FlatDetector, OrderSelector
 from ..gratings import (resolvingpower_from_photonlist,
+                        resolvingpower_from_photonlist_robust,
                         effectivearea_from_photonlist,
                         identify_photon_in_supaperture
                         )
@@ -36,6 +39,41 @@ def test_resolvingpower_from_photonlist():
     resy, posy, stdy = resolvingpower_from_photonlist(p, orders, col='det_y', zeropos=0)
     assert np.all(resy < 1.)
     assert np.allclose(posy, 0, atol=1e-4)
+
+
+def test_resolvingpower_from_photonlist_robust():
+    orders = [1, 2, 3]
+    size = 10000
+    photons = Table({'col1': 2000 + np.random.normal(size=size),
+                     'col2': 1000 + np.random.normal(size=size),
+                     'order': np.random.choice(orders, size=size)})
+    res, pos, std = resolvingpower_from_photonlist_robust(photons, orders,
+                                                          ['col1', 'col2'],
+                                                          [0, 0])
+    assert 1000 / 2.3548 * np.ones(3) == pytest.approx(res, rel=1e-1)
+    assert np.ones(3) == pytest.approx(std, rel=1e-1)
+    assert 1000 * np.ones(3) == pytest.approx(pos, rel=1e-1)
+
+    res, pos, std = resolvingpower_from_photonlist_robust(photons, orders,
+                                                          ['col1', 'col2'],
+                                                          [0, -1000])
+    assert 2000 / 2.3548 * np.ones(3) == pytest.approx(res, rel=1e-1)
+
+def test_resolvingpower_from_photonlist_robust2():
+    '''Now give zeropos for one of the distributions'''
+    size=10000
+    photons = Table({'col1': 2000 + np.random.normal(size=size),
+                     'col2': 1000 + np.random.normal(size=size),
+                     'ord': np.random.choice([0, 1, 2], size=size)})
+    photons['col1'][photons['ord'] == 0] = 0
+    res, pos, std = resolvingpower_from_photonlist_robust(photons, [1,2],
+                                                          ['col1', 'col2'],
+                                                          [None, 10000],
+                                                          ordercol='ord')
+    assert 2000 / 2.3548 * np.ones(2) == pytest.approx(res, rel=1e-1)
+    assert np.ones(2) == pytest.approx(std, rel=1e-1)
+    assert 2000 * np.ones(2) == pytest.approx(pos, rel=1e-1)
+
 
 
 def test_aeff_from_photonlist():

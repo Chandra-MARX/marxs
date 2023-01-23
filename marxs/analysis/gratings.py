@@ -226,6 +226,62 @@ def resolvingpower_from_photonlist(photons, orders,
     return res, pos, std
 
 
+def resolvingpower_from_photonlist_robust(photons, orders,
+                                          cols, zeropositions,
+                                          ordercol='order'):
+    '''Robustly calculate the resolving power for grating orders
+
+    This function wraps `resolvingpower_from_photonlist` to iterate
+    over several columns. It calculates the resolving power R for several
+    columns and reports the worst case.
+
+    We often want to determine R from the distribution of photons on a CCD.
+    Geometry effects like CCDs that are slightly off the
+    Rowland torus make R calculated on the detectors lower than an ideal case.
+    However, that R can spike if part of the line hits a
+    chip gap. So, we can calculate R for a continuous detector on the
+    ideal Rowland circle and report that R in such a case.
+
+    Parameters
+    ----------
+    photons : `astropy.table.Table`
+        Photon event list
+    orders : np.array
+        Orders for which the resolving power will be calculated
+    cols : list
+        List of column names for the column holding the dispersion coordinate.
+    zeropositions : list
+        List of values of column `col` where the zeroth order is found. If not given,
+        this is calculated (assuming the zeroth order photons are part of the
+        event list).
+    ordercol : string
+        Name of column that lists grating order for each photon
+
+    Returns
+    -------
+    res : np.array
+        resolving power for each order
+    pos : np.array
+        mean value of ``col`` for each order
+    std : np.array
+        standard deviation of the distribution of ``col`` for each order
+    '''
+    if len(cols) != len(zeropositions):
+        raise ValueError('Number of elements in cols and zeropositions is not the same.')
+    results = np.zeros((len(cols), len(orders)))
+    positions = np.zeros_like(results)
+    stds = np.zeros_like(results)
+    for i, (col, zeropos) in enumerate(zip(cols, zeropositions)):
+        res, pos, std = resolvingpower_from_photonlist(photons, orders,
+                                                    col=col, zeropos=zeropos,
+                                                    ordercol=ordercol)
+        results[i, :] = res
+        positions[i, :] = pos
+        stds[i, :] = std
+    ind = np.argmin(results, axis=0)
+    return np.take(results, ind, 0)[0, :], np.take(positions, ind, 0)[0, :], np.take(stds, ind, 0)[0, :]
+
+
 def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**2,
                                   ordercol='order'):
     '''Calculate the effective area several grating orders
@@ -233,7 +289,7 @@ def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**
     This is based on the probabilities of the photons in the list, so
     this photons list must already account for all instrument
     components, for example, do not forget to set the probability to 0
-    for photons that falls into a chip gap.
+    for photons that fall into a chip gap.
 
     Parameters
     ----------
