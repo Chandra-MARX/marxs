@@ -23,10 +23,11 @@ New Features
 - Add direct X3D visualization backend to avoid the need for Mayavi. [#238]
 - Add several missions under development that were previously developed in separate
   repros. As it turn out, keeping the code separate lead to significant parallel
-  work that can be simplified by keeping all of them in marxs itself. Hoewever, those
+  work that can be simplified by keeping all of them in marxs itself. However, those
   mission are less fleshed out then marxs itself, less documented and less tested. [#237]
 - Add ``CircularMeshGrid`` as a new way to place gratings on the Rowlandtorus. Adapted from
   previous Lynx code. [#237]
+- Add various helper functions that previously lived in separate repros. [#237]
 
 API Changes
 ^^^^^^^^^^^

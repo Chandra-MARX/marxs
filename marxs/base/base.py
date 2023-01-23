@@ -1,7 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from collections import OrderedDict
 import inspect
-import warnings
 from copy import deepcopy
 import re
 from datetime import datetime
@@ -115,8 +114,8 @@ class TagVersion(MarxsElement):
         according to fits convention, the Person or program creating file'
     '''
     def __init__(self,
-                 origin=('unkwown', 'Institution where file was created'),
-                 creator=('MARXS', 'Person or program creating file'),
+                 ORIGIN=('unkwown', 'Institution where file was created'),
+                 CREATOR=('MARXS', 'Person or program creating file'),
                  **kwargs):
         super().__init__(name=kwargs.pop('name', self.__class__))
 
@@ -136,6 +135,58 @@ class TagVersion(MarxsElement):
         for k, v in kwargs.items():
             photons.meta[k] = v
         return photons
+
+
+def check_meta_consistent(meta1, meta2, keywords=['ORIGIN', 'CREATOR',
+                                                  'MARXSVER', 'MARXSGIT', 'MARXSTIM',
+                                                  ],
+                          allow_missing=True):
+    '''Check that the meta data between two simulations indicates consistency.
+
+    This check compares a number of keywords (e.g. the version of marxs) to
+    indicate if the simulations where run with the same version of marxs.
+    If a simulation records more information in the metadata,
+    the check can be more complete.
+    This function raises an `AssertionError` if the two sets of
+    meta information are different.
+
+    Parameters
+    ----------
+    meta1 : dict
+        header from photon list 1
+    meta2 : dict
+        header from photon list 2
+    keywords : list
+        Keywords to be checked
+    allow_missing : bool
+        This flag allows a keyword to be missing from both dictionaries
+        (e.g. MARXSGIT is not set if run with a released version); however,
+        it is still an error if a key is present only in one, but not the
+        dictionary.
+
+    Raises
+    ------
+    AssertionError, KeyError
+    '''
+    for k in keywords:
+        if (k in meta1) and (k in meta2):
+            assert meta1[k] == meta2[k]
+        else:
+            if not allow_missing:
+                raise KeyError(f'{k} not found in both dicts.')
+            # Even with allow_missing=True
+            # it's an error to have a key in only one dict
+            if (k in meta1) or (k in meta2):
+                raise KeyError(f'{k} found in one, but not both dicts.')
+
+
+def check_energy_consistent(photons):
+    '''Check if the energy is the same for all photons.
+
+    If there is no energy colum, then this also passes.
+    '''
+    if 'energy' in photons.colnames:
+        assert np.allclose(photons['energy'], photons['energy'][0])
 
 
 class SimulationSequenceElement(MarxsElement):
