@@ -53,11 +53,12 @@ defaultconf['det_kwargs']= {
                   'orientation': np.array([[-1, 0, 0],
                                           [0, -1, 0],
                                           [0, 0, +1]])},
+    'id_num_offset': 1,
 }
 
 defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
                               'elem_class': CATL1L2Stack,
-                              'elem_args': {'zoom': [1., 28., 28.5],
+                              'elem_args': {'zoom': [1., 28./2, 28.5/2],
                                             'order_selector': globalorderselector,
                                             'l1_dims': {'bardepth': 0.0057 * u.mm,
                                                         'period': 0.005 * u.mm,
@@ -121,43 +122,32 @@ def reformat_randall_errorbudget(budget, globalfac=0.8):
 class Aperture(optics.MultiAperture):
     def __init__(self, conf, channels=channels, **kwargs):
         # Set a little above entrance pos (the mirror) for display purposes.
-        # Thus, needs to be geometrically bigger for off-axis sources.
-        aperzoom = spo.zoom_to_cover_all_spos(conf, 1.1, 0.8)
-
+        aper_z = 12200
         channels = deepcopy(channels)
 
         apers = []
 
-        # Currently, channel an a 1m are so close, they need to
+        # Currently, channel 1 and 1m are so close, they need to
         # share an aperture
-        if ('1' in channels) and ('1m' in channels):
-            pos = [0, spo.rmid_spo(conf), 12200]
-            aperzoom = spo.zoom_to_cover_all_spos(conf, 2., 2.)
-            aperzoom[1] *=2
-            rect = optics.RectangleAperture(position=pos,
-                                            zoom=aperzoom,
-                                            orientation=xyz2zxy[:3, :3])
-            rect.display['outer_factor'] = 1.8
-            apers.append(rect)
-            channels.remove('1')
-            channels.remove('1m')
+        for pair in [('1', '1m', +1), ('2', '2m', -1)]:
+            if (pair[0] in channels) and (pair[1] in channels):
+                pos = [0, pair[2] * spo.rmid_spo(conf), aper_z]
+                aperzoom = spo.zoom_to_cover_all_spos(conf, .8, 1.5)
+                aperzoom[1] *=2
+                rect = optics.RectangleAperture(position=pos,
+                                                zoom=aperzoom,
+                                                orientation=xyz2zxy[:3, :3])
+                rect.display['outer_factor'] = 2.
+                apers.append(rect)
+                channels.remove(pair[0])
+                channels.remove(pair[1])
 
-        if ('2' in channels) and ('2m' in channels):
-            pos = [0, -spo.rmid_spo(conf), 12000]
-            aperzoom = spo.zoom_to_cover_all_spos(conf, 2., 2.)
-            aperzoom[1] *=2
-            rect = optics.RectangleAperture(position=pos,
-                                            zoom=aperzoom,
-                                            orientation=xyz2zxy[:3, :3])
-            rect.display['outer_factor'] = 1.8
-            apers.append(rect)
-            channels.remove('2')
-            channels.remove('2m')
-
-
+        # Now, add individual apertures if they are not double
+        # Thus, needs to be geometrically bigger for off-axis sources.
+        aperzoom = spo.zoom_to_cover_all_spos(conf, 1.1, 0.8)
         for chan in channels:
             pos = conf['pos_opt_ax'][chan][:3].copy()
-            pos[2] += 12200
+            pos[2] += aper_z
             if '1' in chan:
                 pos[1] += spo.rmid_spo(conf)
             elif '2' in chan:

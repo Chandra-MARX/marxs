@@ -226,7 +226,7 @@ def resolvingpower_from_photonlist(photons, orders,
     return res, pos, std
 
 
-def resolvingpower_from_photonlist_robust(photons, orders,
+def resolvingpower_from_photonlist_robust(lphotons, orders,
                                           cols, zeropositions,
                                           ordercol='order'):
     '''Robustly calculate the resolving power for grating orders
@@ -244,8 +244,8 @@ def resolvingpower_from_photonlist_robust(photons, orders,
 
     Parameters
     ----------
-    photons : `astropy.table.Table`
-        Photon event list
+    lphotons : list of `astropy.table.Table`
+        List of Photon event list
     orders : np.array
         Orders for which the resolving power will be calculated
     cols : list
@@ -268,10 +268,13 @@ def resolvingpower_from_photonlist_robust(photons, orders,
     '''
     if len(cols) != len(zeropositions):
         raise ValueError('Number of elements in cols and zeropositions is not the same.')
+    if len(cols) != len(lphotons):
+        raise ValueError('Number of elements in cols and photon lists is not the same.')
+
     results = np.zeros((len(cols), len(orders)))
     positions = np.zeros_like(results)
     stds = np.zeros_like(results)
-    for i, (col, zeropos) in enumerate(zip(cols, zeropositions)):
+    for i, (photons, col, zeropos) in enumerate(zip(lphotons, cols, zeropositions)):
         res, pos, std = resolvingpower_from_photonlist(photons, orders,
                                                     col=col, zeropos=zeropos,
                                                     ordercol=ordercol)
@@ -299,7 +302,7 @@ def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**
         Orders for which the resolving power will be calculated
     n_photons : int
         Number of photons originally simulated
-    A_geom : number
+    A_geom : quantity
         Geometric area of aperture that was used for photon list.
     ordercol : string
         Name of column that lists grating order for each photon
@@ -315,7 +318,7 @@ def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**
     return aeff / n_photons * A_geom
 
 
-def identify_photon_in_supaperture(angle, max_ang, ang_0=np.pi / 2):
+def identify_photon_in_subaperture(angle, max_ang, ang_0=np.pi / 2):
     '''Find which photons are in a sub-aperture of two mirrored sectors
 
     This function includes mirroring on the 0 line, e.g. if
