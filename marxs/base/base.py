@@ -16,6 +16,8 @@ __all__ = ['GeometryError',
            'DocMeta',
            'MarxsElement',
            'TagVersion',
+           'check_meta_consistent',
+           'check_energy_consistent',
            'SimulationSequenceElement',
            ]
 
