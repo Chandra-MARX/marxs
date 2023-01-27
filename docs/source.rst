@@ -199,7 +199,6 @@ Sources in the lab are specified in the same coordinate system used for all othe
 The following laboratory sources are provided:
 
 - `~marxs.source.FarLabPointSource`
-- `~marxs.source.LabPointSource`
 - `~marxs.source.LabPointSourceCone`
 
 Design your own sources and pointing models

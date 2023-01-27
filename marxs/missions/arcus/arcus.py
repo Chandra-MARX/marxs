@@ -32,10 +32,10 @@ __all__ = ['xyz2zxy',
 
 jitter_sigma = load_number('other', 'pointingjitter',
                            'FWHM') / 2.3545
-defaultconf = make_rowland_from_d_BF_R_f(600., 5915.51307, 12000. - 123.569239)
+defaultconf = make_rowland_from_d_BF_R_f(750., 5915.51307, 12000. - 123.569239)
 defaultconf['blazeang'] = 1.8
 defaultconf['n_CCDs'] = 16
-defaultconf['phi_det_start'] = 0.037
+defaultconf['phi_det_start'] = 0.024  # was 0.037 at 600 mm channel spacing
 
 # SPO scatter
 # factor 2.3545 converts from FWHM to sigma
@@ -129,18 +129,18 @@ class Aperture(optics.MultiAperture):
 
         # Currently, channel 1 and 1m are so close, they need to
         # share an aperture
-        for pair in [('1', '1m', +1), ('2', '2m', -1)]:
-            if (pair[0] in channels) and (pair[1] in channels):
-                pos = [0, pair[2] * spo.rmid_spo(conf), aper_z]
-                aperzoom = spo.zoom_to_cover_all_spos(conf, .8, 1.5)
-                aperzoom[1] *=2
-                rect = optics.RectangleAperture(position=pos,
-                                                zoom=aperzoom,
-                                                orientation=xyz2zxy[:3, :3])
-                rect.display['outer_factor'] = 2.
-                apers.append(rect)
-                channels.remove(pair[0])
-                channels.remove(pair[1])
+        #for pair in [('1', '1m', +1), ('2', '2m', -1)]:
+        #    if (pair[0] in channels) and (pair[1] in channels):
+        #        pos = [0, pair[2] * spo.rmid_spo(conf), aper_z]
+        #        aperzoom = spo.zoom_to_cover_all_spos(conf, .8, 1.5)
+        #        aperzoom[1] *=2
+        #        rect = optics.RectangleAperture(position=pos,
+        #                                        zoom=aperzoom,
+        #                                        orientation=xyz2zxy[:3, :3])
+        #        rect.display['outer_factor'] = 2.
+        #        apers.append(rect)
+        #        channels.remove(pair[0])
+        #        channels.remove(pair[1])
 
         # Now, add individual apertures if they are not double
         # Thus, needs to be geometrically bigger for off-axis sources.
@@ -154,11 +154,12 @@ class Aperture(optics.MultiAperture):
                 pos[1] -= spo.rmid_spo(conf)
             else:
                 raise ValueError('No rules for channel {}'.format(chan))
+            pos[2] = aper_z
 
             rect = optics.RectangleAperture(position=pos,
                                             zoom=aperzoom,
                                             orientation=xyz2zxy[:3, :3])
-            rect.display['outer_factor'] = 1.5
+            rect.display['outer_factor'] = 1.3
             apers.append(rect)
 
         super(Aperture, self).__init__(elements=apers, **kwargs)
@@ -351,9 +352,11 @@ class PerfectArcus(Sequence):
     def add_boom(self, conf):
         '''Add four sided boom. Only the top two bays contribute any
         absorption, so we can save time by not modelling the remaining bays.'''
-        return [boom.FourSidedBoom(orientation=xyz2zxy[:3, :3],
-                                   position=[0, 0, 596.],
-                                   boom_dimensions={'start_bay': 6})]
+
+        return []
+        #return [boom.FourSidedBoom(orientation=xyz2zxy[:3, :3],
+        #                           position=[0, 0, 596.],
+        #                           boom_dimensions={'start_bay': 6})]
 
     def add_detectors(self, conf):
         '''Add detectors to the element list
