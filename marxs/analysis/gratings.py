@@ -217,7 +217,8 @@ def resolvingpower_from_photonlist(photons, orders,
     for i, o in enumerate(orders):
         ind = (photons[ordercol] == o)
         if ind.sum() > 20:
-            meanpos, medianpos, stdpos = sigma_clipped_stats(photons[col][ind])
+            # There is a .value here to work around https://github.com/astropy/astropy/issues/13281
+            meanpos, medianpos, stdpos = sigma_clipped_stats(photons[col][ind].value)
         else:
             meanpos, stdpos = np.nan, np.nan
         pos[i] = meanpos
