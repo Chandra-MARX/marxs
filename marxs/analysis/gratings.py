@@ -283,7 +283,8 @@ def resolvingpower_from_photonlist_robust(lphotons, orders,
         positions[i, :] = pos
         stds[i, :] = std
     ind = np.argmin(results, axis=0)
-    return np.take(results, ind, 0)[0, :], np.take(positions, ind, 0)[0, :], np.take(stds, ind, 0)[0, :]
+    ind_n = np.arange(results.shape[1])
+    return results[ind, ind_n], positions[ind, ind_n], stds[ind, ind_n]
 
 
 def effectivearea_from_photonlist(photons, orders, n_photons, A_geom=1. * u.cm**2,

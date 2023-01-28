@@ -33,17 +33,17 @@ def analyze_sim(photons, orders, reference_meta, conf, A_geom):
     -------
     res : np.array
         Array of R values for each aperture and order, measured from
-        photons that hit a CCD.
-        For signal close to a CCD boundary, the
+        photons that hit a CCD. For signal close to a CCD boundary, the
         detected photon distribution may be artificially narrow.
-        In general it is
-        better to use res (because the CCDs don't follow the Rowland circle
-        exactly) but it's so close that ``circ_phi`` can be used for those
-        cases.
+        In general it is better to use res (because the CCDs don't follow
+        the Rowland circle exactly) but it's so close that ``circ_phi``
+        can be used for those cases. ``res`` is set to ``np.nan`` if there
+        is no signal (e.g. a chip gap).
     Aeff : quantity
-        Aeff for each aperture and order
+        Effective area for each aperture and order, using only photons
+        that are not L1 cross-dispersed and detected on a CCD.
     '''
-    # Number of apertures is hardcoded to 4
+    n_apertures = len(list(id_num_offset.values()))
     photons['aper_id'] = np.digitize(photons['xou'],
                                      bins=list(id_num_offset.values()))
 
@@ -53,13 +53,14 @@ def analyze_sim(photons, orders, reference_meta, conf, A_geom):
 
     chan_name = list(id_num_offset.keys())
 
-    res = np.zeros((4, len(orders)))
+    res = np.zeros((n_apertures, len(orders)))
     aeff = np.zeros_like(res) * u.cm**2
 
 
-    for a in range(1, 5):
+    for a in range(1, n_apertures + 1):
         pa = photons[(photons['aper_id'] == a) &
-                      (photons['probability'] > 0)]
+                     (photons['probability'] > 0) &
+                     (photons['order_L1'] == 0)]
         plist = [pa[pa['CCD'] >= 0]]
         zeropos = [conf['pos_opt_ax'][chan_name[a - 1]][0]]
         cols = ['proj_x']
@@ -73,9 +74,10 @@ def analyze_sim(photons, orders, reference_meta, conf, A_geom):
         res_a, pos_a, std_a = r_from_photons(plist, orders, cols=cols,
                                              zeropositions=zeropos)
         res[a - 1, :] = res_a
-        aeff[a - 1, :] = effectivearea_from_photonlist(pa, orders,
+        aeff[a - 1, :] = effectivearea_from_photonlist(plist[0], orders,
                                                        len(photons),
                                                        A_geom=A_geom)
+        res[aeff == 0] = np.nan
     return res, aeff
 
 
