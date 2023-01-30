@@ -9,6 +9,13 @@ from . import (find_best_detector_position)
 from .analysis import sigma_clipped_std
 from ..math.geometry import Cylinder
 
+__all__ = ['AnalysisError',
+           'resolvingpower_per_order',
+           'resolvingpower_from_photonlist',
+           'resolvingpower_from_photonlist_robust',
+           'weighted_per_order',
+           'average_R_Aeff',
+           ]
 
 class AnalysisError(Exception):
     pass
@@ -167,6 +174,40 @@ def weighted_per_order(data, orders, energy, gratingeff):
                                   gratingeff.prob[:, ind_o[0]][en_sort])
 
     return np.ma.average(data, axis=0, weights=weights)
+
+
+def average_R_Aeff(r, aeff, axis=None):
+    '''Average R and Aeff over one dimension e.g. channel or orders
+
+    Aeff is summed over the input, while R is calculated as the
+    weighted average, using Aeff as the weight for each order.
+    This function works for masked arrays and those with nan's.
+
+    Unlike `weighted_per_order` this function summarizes measured
+    quantities, so instead of an expected fraction that will be interpolated
+    from some table, this uses the observed effective area as weight.
+
+    Parameters
+    ----------
+    r : array
+        Resolving power
+    aeff : array
+        Effective area
+    axis : `None` or int
+        Passed to `np.ma.average`. This can be used if the input arrays
+        are multi-dimensional.
+
+    Returns
+    -------
+    aeff_avg : array or float
+        Summed effective area
+    res_avg : array or float
+        Average resolving power
+    '''
+    aeff_avg = aeff.sum(axis=axis)
+    res_avg = np.ma.average(np.ma.masked_invalid(r),
+                            weights=aeff, axis=axis)
+    return res_avg, aeff_avg
 
 
 def resolvingpower_from_photonlist(photons, orders,

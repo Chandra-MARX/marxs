@@ -7,7 +7,8 @@ from ...optics import ThinLens, FlatGrating, FlatDetector, OrderSelector
 from ..gratings import (resolvingpower_from_photonlist,
                         resolvingpower_from_photonlist_robust,
                         effectivearea_from_photonlist,
-                        identify_photon_in_subaperture
+                        identify_photon_in_subaperture,
+                        average_R_Aeff,
                         )
 
 def test_resolvingpower_from_photonlist():
@@ -98,3 +99,47 @@ def test_identify_photon_in_subaperture():
     inaper = identify_photon_in_subaperture(np.deg2rad(angle),
                                             np.deg2rad(30), ang_0=np.pi / 2)
     assert np.all(inaper == [False, False, True, False, True])
+
+
+def test_average_R_Aeff():
+    r_out, aeff_out = average_R_Aeff(np.array([np.nan, np.nan]),
+                                     np.array([1, 2]))
+    assert r_out is np.ma.masked
+    assert aeff_out == 3
+    r_out, aeff_out = average_R_Aeff(np.array([5., 5.]),
+                                     np.array([1, 2]))
+    assert r_out == pytest.approx(5)
+    r_out, aeff_out = average_R_Aeff(np.array([5., 2.]),
+                                     np.array([1, 2]))
+    assert r_out == pytest.approx(3)
+
+    nan = np.nan
+    r = np.array([
+       [[3.72047331e+03, nan, nan, 1.22772588e-02],
+        [3.68709325e+03,            nan,            nan, 5.16674211e-02],
+        [3.78030863e+03,            nan,            nan, 5.68255010e-02],
+        [3.67658767e+03,            nan, 1.20839326e+03, 2.84897083e-02]],
+
+       [[3.63193038e+03,            nan,            nan, 6.43244337e-05],
+        [           nan,            nan,            nan, 2.55943724e-02],
+        [3.81094245e+03,            nan,            nan, 3.20472833e-02],
+        [3.62704572e+03,            nan,            nan, 4.04451453e-02]]])
+    aeff = np.array([
+       [[45.43284984,  0.        ,  0.        ,  4.14357052],
+        [46.01057067,  0.        ,  0.        ,  3.95845344],
+        [45.35928564,  0.        ,  0.        ,  4.00130456],
+        [44.54923056,  0.        ,  8.66382063,  4.11383244]],
+
+       [[44.93080722,  0.        ,  0.        ,  4.35276434],
+        [ 0.        ,  0.        ,  0.        ,  3.96159335],
+        [45.1660785 ,  0.        ,  0.        ,  3.68142596],
+        [44.43211355,  0.        ,  0.        ,  4.3622082 ]]])
+    expected_r = np.ma.masked_invalid(
+       [[3716.1898154882915, nan, 1208.3932636420263, 0.03699616674607531],
+        [3690.417678741742, nan, nan, 0.024213505777004152]])
+    expected_aeff = np.array([
+        [181.35193671,   0.        ,   8.66382063,  16.21716095],
+        [134.52899927,   0.        ,   0.        ,  16.35799185]])
+    r_out, aeff_out =  average_R_Aeff(r, aeff, axis=1)
+    assert np.allclose(r_out, expected_r, equal_nan=True)
+    assert np.allclose(aeff_out, expected_aeff, equal_nan=True)
