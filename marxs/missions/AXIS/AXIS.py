@@ -47,8 +47,7 @@ Need better numbers for that.
 '''
 
 
-conf = {'metashellgeometry': Table.read(get_pkg_data_filename('data/AXIS_metashellgeom.dat',
-                                                               package='marxslynx'),
+conf = {'metashellgeometry': Table.read(get_pkg_data_filename('AXIS_metashellgeom.dat'),
                                         format='ascii.ecsv'),
         # This gives a PSF HPD around 1 arcsec.
         # The nominal 1 arcsec includes alignment, but until I code that up, I just makes 

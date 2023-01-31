@@ -1,3 +1,4 @@
+# Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
 
 from marxs.source import PointSource, FixedPointing
