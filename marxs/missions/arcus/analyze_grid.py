@@ -100,7 +100,7 @@ def aeffRfromraygrid(inpath, conf,
     out : `astropy.table.QTable`
         Table with instrument performance metrics
     '''
-    rayfiles = glob.glob(os.path.join(inpath, '*.fits'))
+    rayfiles = glob.glob(os.path.join(inpath, 'wave*.fits'))
     rayfiles.sort()
     r0 = Table.read(rayfiles[0])
     energies = np.zeros(len(rayfiles)) * u.keV

@@ -255,7 +255,7 @@ def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
     analyzefunc : callable function or object
         This is called with a photon table and should return a dictionary
         of results. This could be, e.g. a
-        `marxs.design.tolerancing.CaptureResAeff` instance.
+        `marxs.analysis.gratings.CaptureResAeff` instance.
 
 
     Returns

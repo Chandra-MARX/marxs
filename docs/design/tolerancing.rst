@@ -4,7 +4,7 @@ Estimating tolerances requirements
 
 A common problem when designing an instrument is to estimate how much the performance degrades with increasing misalignments. Detailed alignment work costs time and money, in particular if the alignment has to be done under X-rays and in vacuum. It is much cheaper if the alignment tolerances are loose and machining a surface is precice enough.
 
-There are many different degrees of freedom to consider. Each element can be moved in space in 6 ways, rotation around all three principal axes and translation along all three principal axes. Usually, misalignment will lead to reduced performance, e.g. because a mirror covers only part of the beam or because a detector is not located at the focus position any longer. In addition to positional uncertainties, some elements have other parameters that effect the perfomance in much the same way as misalignment does. For example, for dispersion gratings the grating period could differ a little from the specificed value.
+There are different degrees of freedom to consider. Each element can be moved in space in 6 ways, rotation around all three principal axes and translation along all three principal axes. Usually, misalignment will lead to reduced performance, e.g. because a mirror covers only part of the beam or because a detector is not located at the focus position any longer. In addition to positional uncertainties, some elements have other parameters that effect the perfomance in much the same way as misalignment does. For example, for dispersion gratings the grating period could differ a little from the specificed value.
 MARXS provides tools to help with the tolerancing process. 
 
 
@@ -32,7 +32,7 @@ We will now explain each of these parameters in more detail.
 Photon list and definition of the instrument
 --------------------------------------------
 
-The ``instrum`` is the instrument that will be analyzed. This will
+The ``instrum`` is the instrument that will be analysed. This will
 typically be a `marxs.simulator.Sequence`. It can contain
 the entire instrument or only part of it. ``photons_in`` is a photon
 list. If ``instrum`` contains all elements of the instrument, then
@@ -50,7 +50,7 @@ Wiggle functions
 This function changes the properties of one or more element in
 ``instrum``. The particular element or a list of elements is given as
 ``wiggleparts`` parameter; the ``wiggleparts`` should also be part of
-``instrum`` or the wiggled parameters won't affact the photon
+``instrum`` or the wiggled parameters won't affect the photon
 propagation. The format of the ``wigglefunc`` is a function that
 accepts an optical element (given in ``wiggleparts``) and some
 parameters (given in ``parameters``, see below). This can function
@@ -91,13 +91,13 @@ list and returns a dictionary with resulting values will do::
     ...     return {'sy': np.std(photons['dety']), 'sx': np.std(photons['detx'])} 
 
 For the analysis of instruments with dispersion gratings, MARXS
-provides `~marxs.design.tolerancing.CaptureResAeff` which can be
+provides `~marxs.design.analysis.gratings.CaptureResAeff` which can be
 initialized with some parameters such as the grating orders that
 matter. The result is an object that can be called just like a
 function::
 
     >>> import astropy.units as u
-    >>> from marxs.design.tolerancing import CaptureResAeff
+    >>> from marxs.analysis.gratings import CaptureResAeff
     >>> resaeff = CaptureResAeff(A_geom=155 * u.cm**2,
     ...                          orders=[-1, 0, 1], dispersion_coord='tdetx')
 
@@ -151,7 +151,7 @@ Suggested modelling approach
 
 In a real instrument, there is misalignment on all degrees of freedom at the same time but. a study of the complete parameter space is usually not computationally feasible. If there are only four elements, each with six degrees of freedom (dof), and we want to simulated just 10 steps for each dof, we would need :math:`10^{4*6}` simulations. Fortunately, such a study is usually not required. Instead, MARXS provides tools to vary one (or a few) degree(s) of freedom at a time to understand how important each of them is. In practice, many dofs do not matter, because their alignment tolerances are loose. For example, if a circular mirror is rotated around its axis, the result will be the same. Another example is a detector that is larger than the image that the optics produce. If this detector is moved around a bit, it will still catch all photons.
 
-So, we suggest to run simulations for one dof at a time and decide on the maximal alignment tolerance for each dof. Then, decide on an alignment budget that assigns a tolerance to each dof. It's easy for those dof where the requirements are loose, for those where the requirements are close to what is technically feasible, this needs some judgement calls: Which element is easiest to calibrate? Which can be manufactured best? Which has the best probability of delivering tighter margins, freeing up some room in the total error budget for other elements?
+So, we suggest running simulations for one dof at a time and decide on the maximal alignment tolerance for each dof. Then, decide on an alignment budget that assigns a tolerance to each dof. It's easy for those dof where the requirements are loose, for those where the requirements are close to what is technically feasible, this needs some judgement calls: Which element is easiest to calibrate? Which can be manufactured best? Which has the best probability of delivering tighter margins, freeing up some room in the total error budget for other elements?
 
 Once this error budget has been build up, as a second step, build up an instrument model where all dof are varied at the same time with the numbers from the eror budget. Run ray-traces with several (e.g. 1000) realizations of this model and see what fraction of the ray-traces fullfills the requirements on e.g. PSF size, spectral resolving power, or effective area.
 
@@ -197,8 +197,9 @@ The HETG has two parts with different grating constants and spectral traces on t
 Then, we import from the `marxs.design.tolerancing` module::
   
     >>> from marxs.design.tolerancing import (moveglobal, run_tolerances_for_energies,
-    ...                                       CaptureResAeff, generate_6d_wigglelist,
+    ...                                       generate_6d_wigglelist,
     ...                                       load_and_plot)
+    >>> from marxs.analysis.gratings import CaptureResAeff
 
 Next, we generate input for the function that will move the HESS
 around in our simulation. We do seven steps for every translation
@@ -225,7 +226,7 @@ So, let's run it:
 We save the results in a file named ``wiggle_global.fits`` and then make a quick-look plot. We use normal `matplotlib.pyplot` commands to modify the plot appearance slightly.
    
 .. plot:: pyplots/chandra_tolerancing.py
-   :include-source:	  
+   :include-source:
 
 Looking at the plots we see the shifting the whole HETG by a few mm in
 any direction does not change the effective area or resolving power
@@ -233,7 +234,7 @@ significantly. The rings of photons coming from the mirror is very
 narrow, in fact much narrower than the size of the grating facets. So
 shifting the HETG a little just means that the photons hit a different
 part of the grating. A shift in x is a focus change, but as long as
-all all gratings are moved the same way, this has little
+all gratings are moved the same way, this has little
 impact. Similarly, a rotation around x just moves the position of
 the diffracted photons on the detector. As long as the rotation is
 small and the photons do not miss the detector, there is not much
