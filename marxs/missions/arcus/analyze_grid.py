@@ -5,13 +5,13 @@ import glob
 import numpy as np
 from astropy.table import QTable, Table
 import astropy.units as u
-from marxs.analysis.gratings import resolvingpower_from_photonlist_robust as r_from_photons
-from marxs.analysis.gratings import effectivearea_from_photonlist
+from marxs.analysis.gratings import (CaptureResAeff_CCDgaps,
+                                     average_R_Aeff)
 from marxs.base import check_meta_consistent, check_energy_consistent
 from marxs.missions.arcus.utils import id_num_offset
 
 
-def analyze_sim(photons, orders, reference_meta, conf, A_geom):
+def analyze_sim(photons, orders, reference_meta, conf):
     '''Get R and Aeff from a single photon event list
 
     Parameters
@@ -26,8 +26,6 @@ def analyze_sim(photons, orders, reference_meta, conf, A_geom):
     conf : dict
         Arcus configuration (the zero order position for each channel
         is taken from this dict).
-    A_geom : quantity
-        Geometric area of aperture that was used for photon list.
 
     Returns
     -------
@@ -59,29 +57,24 @@ def analyze_sim(photons, orders, reference_meta, conf, A_geom):
 
     for a in range(1, n_apertures + 1):
         pa = photons[(photons['aper_id'] == a) &
-                     (photons['probability'] > 0) &
                      (photons['order_L1'] == 0)]
-        plist = [pa[pa['CCD'] >= 0]]
-        zeropos = [conf['pos_opt_ax'][chan_name[a - 1]][0]]
-        cols = ['proj_x']
-        if 'circ_phi' in photons.colnames:
-            plist.append(pa[np.isfinite(pa['circ_phi'])])
-            zeropos.append(np.arcsin((conf['pos_opt_ax'][chan_name[a - 1]][0]) /
-                                      conf['rowland_detector'].r))
-            cols = ['proj_x', 'circ_phi']
+        zeropos = np.arcsin((conf['pos_opt_ax'][chan_name[a - 1]][0]) /
+                                      conf['rowland_detector'].r)
+        resaeff = CaptureResAeff_CCDgaps(A_geom=photons.meta['A_GEOM'] * u.cm**2,
+                                         order_col='order',
+                                         orders=orders,
+                                         dispersion_coord='circ_phi',
+                                         zeropos=zeropos,
+                                         aeff_filter_col='CCD',
+                                         )
+        out = resaeff(pa, n_photons=int(pa.meta['EXPOSURE']))
 
-
-        res_a, pos_a, std_a = r_from_photons(plist, orders, cols=cols,
-                                             zeropositions=zeropos)
-        res[a - 1, :] = res_a
-        aeff[a - 1, :] = effectivearea_from_photonlist(plist[0], orders,
-                                                       len(photons),
-                                                       A_geom=A_geom)
-        res[aeff == 0] = np.nan
+        res[a - 1, :] = out['R']
+        aeff[a - 1, :] = out['Aeff']
     return res, aeff
 
 
-def aeffRfromraygrid(inpath, aperture, conf,
+def aeffRfromraygrid(inpath, conf,
                      orders=np.arange(-15, 5),
                      allow_inconsistent_meta=False):
     '''Analyze a grid of simulations for R and Aeff
@@ -90,9 +83,6 @@ def aeffRfromraygrid(inpath, aperture, conf,
     ----------
     inpath : string
         Path to the simulations grid
-    aperture : `marxs.optics.aperture.BaseAperture`
-        Aperture used for the simulation (the geometric opening area is
-        taken from this)
     conf : dict
         Arcus configuration (the zero order position for each channel
         is taken from this dict).
@@ -122,25 +112,26 @@ def aeffRfromraygrid(inpath, aperture, conf,
         obs = Table.read(rayfile)
         res_i, aeff_i = analyze_sim(obs, orders,
                                     None if allow_inconsistent_meta else r0.meta,
-                                    conf, aperture.area)
+                                    conf)
         res[i, :, :] = res_i
         aeff[i, :, :] = aeff_i
-        energies[i] = obs['energy'][0] * obs['energy'].unit
+        energies[i] = obs.meta['ENERGY'] * u.keV
 
     wave = energies.to(u.Angstrom, equivalencies=u.spectral())
-    aeff_4 = aeff.sum(axis=1)
-    res_4 = np.ma.masked_invalid(np.ma.average(res,
-                                               weights=aeff, axis=1))
+    res_4, aeff_4 = average_R_Aeff(res, aeff, axis=1)
     indnon0 = orders != 0
-    res_disp = np.ma.average(res_4[:, indnon0],
-                             weights=np.ma.masked_equal(aeff_4[:, indnon0], 0),
-                             axis=1)
+    res_disp, aeff_disp = average_R_Aeff(res_4[:, indnon0], aeff_4[:, indnon0],
+                                         axis=1)
     # Columns get filled when writing to fits
     res_4.fill_value = np.nan
-    out = QTable([energies, wave, res,
-                 aeff, aeff_4, res_4.filled(np.nan), res_disp],
-                 names=['energy', 'wave', 'R',
-                        'Aeff', 'Aeff4', 'R4', 'R_disp'])
+    out = QTable([energies, wave,
+                  aeff, res,
+                  aeff_4, res_4.filled(np.nan),
+                  aeff_disp, res_disp],
+                 names=['energy', 'wave',
+                        'Aeff','R',
+                        'Aeff4', 'R4',
+                        'Aeff_disp', 'R_disp'])
     out.meta = r0.meta
     for i, o in enumerate(orders):
         out.meta['ORDER_{}'.format(i)] = o
