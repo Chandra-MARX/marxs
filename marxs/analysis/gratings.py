@@ -15,6 +15,8 @@ __all__ = ['AnalysisError',
            'resolvingpower_from_photonlist_robust',
            'weighted_per_order',
            'average_R_Aeff',
+           'CaptureResAeff',
+           'CaptureResAeff_CCDgaps',
            ]
 
 class AnalysisError(Exception):
@@ -382,3 +384,167 @@ def identify_photon_in_subaperture(angle, max_ang, ang_0=np.pi / 2):
     indplus = np.isclose(np.mod(angle, 2 * np.pi), ang_0, atol=max_ang)
     indminus = np.isclose(np.mod(angle, 2 * np.pi), 2 * np.pi - ang_0, atol=max_ang)
     return indplus | indminus
+
+
+class CaptureResAeff():
+    '''Capture resolving power and effective area for a simulation.
+
+    Instances of this class can be called with a photon list for a
+    simulation. The photon list will be analyzed for resolving power and
+    effective area in a number of relevant orders.
+
+    This is implemented as a class and not a simple function. When the class is
+    initialized a number of parameters that are true for any to the
+    analysis (e.g. the names of certain columns) are set and saved in the class
+    instance.
+
+    The implementation of this class is geared towards instruments with
+    gratings but can also serve as an example how a complex analysis that
+    derives several different parameters can be implemented.
+
+    Results for effective area and resolving power are reported on a per order
+    basis and also summarized for all grating orders combined and the zeroth
+    order separately.
+
+    Inherit form this class to customize the filters applied to the photon list
+    before effective area and resolving power are calculated.
+
+    Parameters
+    ----------
+    A_geom : number
+        Geometric area of aperture for the simulations that this instance
+        will analyze.
+    order_col : string
+        Column names for grating orders
+    orders : array
+        Order numbers to consider in the analysis
+    dispersion_coord : string
+        Dispersion coordinate for
+        `marxs.analysis.gratings.resolvingpower_from_photonlist`. Any photons
+        that have non-finite values or are masked in this column will be ignored
+        for the purpose of the resolving power calculation.
+    zeropos : float
+        Position of zeroth order in ``dispersion_coord``
+    '''
+    def __init__(self, A_geom=1, order_col='order',
+                 orders=np.arange(-10, 11),
+                 dispersion_coord='det_x',
+                 zeropos=None):
+        self.A_geom = A_geom
+        self.order_col = order_col
+        self.orders = np.asanyarray(orders)
+        self.dispersion_coord = dispersion_coord
+        self.zeropos = zeropos
+
+    def aeff_filter(self, photons):
+        '''Filter photon list before calculating the effective area.
+
+        Here: No-op (all photons are used.)
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Photon list.
+
+        Returns
+        -------
+        ind : numpy array
+           array of boolean values that can be used to index ``photons`` and select
+           a sub-set to be used to calculate the effective area.
+        '''
+        return np.ones(len(photons), dtype=bool)
+
+    def res_filter(self, photons):
+        ind = (np.isfinite(photons[self.dispersion_coord]) &
+                (photons['probability'] > 0))
+        if hasattr(photons[self.dispersion_coord], 'mask'):
+            ind = ind & ~photons[self.dispersion_coord].mask
+        return ind
+
+    def __call__(self, photons, n_photons=None):
+        '''Calculate Aeff and R for an input photon list.
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Photon list.
+        n_photons : int or `None`
+            Number of photons originally simulated. If ``None`` use length of
+            ``photons``.
+
+        Returns
+        -------
+        result : dict
+            Dictionary with per-order Aeff and R, as well as values
+            summed over all grating orders.
+        '''
+        if n_photons is None:
+            n_photons = len(photons)
+        ind = self.aeff_filter(photons)
+        aeff = effectivearea_from_photonlist(photons[ind], self.orders, n_photons,
+                                             self.A_geom, self.order_col)
+        try:
+            ind = self.res_filter(photons)
+            res, pos, std = resolvingpower_from_photonlist(photons[ind], self.orders,
+                                                           col=self.dispersion_coord,
+                                                           zeropos=self.zeropos,
+                                                           ordercol=self.order_col)
+        except AnalysisError:
+            # Something did not work, e.g. too few photons to find zeroth order
+            res = np.nan * np.ones(len(self.orders))
+
+        disporders = self.orders != 0
+        avggratres, aeffgrat = average_R_Aeff(res[disporders],
+                                              aeff[disporders])
+        aeff0 = np.sum(aeff[~disporders])
+        return {'Aeff0': aeff0, 'Aeffgrat': aeffgrat, 'Aeff': aeff,
+                'Rgrat': avggratres, 'R': res}
+
+
+class CaptureResAeff_CCDgaps(CaptureResAeff):
+    '''Capture resolving power and effective area for a tolerancing simulation.
+
+    Unlike `CaptureResAeff` this objects is set up to take into account CCD gaps.
+    For the resolving power calculation, one wants to ignore CCD gaps, because they
+    might make the observed LSF artificially small - if only half of the LSF falls
+    on a CCD, and the other photons are not counted, the LSF will appear only
+    half as wide. In contrast, for the effective area calculation, we *do* want to
+    ignore photons that miss a CCD.
+
+    Here, we following approach is taken: This class overrides
+    `~marxs.design.tolerancing.CaptureResAeff.aeff_filter`.
+    All photons with a probability >0 are presumed ot reach the focal plane.
+    For the effective area, an additional
+    filter is applied: Only photons with `photons['aeff_filter_col'] > 0` will
+    be used. Typically, this could be the CCD_ID.
+
+    Parameters
+    ----------
+    aeff_filter_col : string
+        Only photons where the value in this column is larger than 0 will be used
+        for the calculation of the effective area.
+
+    kwargs :
+        All other keyword arguments are passed to `CaptureResAeff`.
+    '''
+    def __init__(self, aeff_filter_col='CCD_ID', **kwargs):
+        super().__init__(**kwargs)
+        self.aeff_filter_col = aeff_filter_col
+
+    def aeff_filter(self, photons):
+        '''Filter photon list before calculating the effective area.
+
+        Only photons with ``photons[aeff_filter_col] >= 0`` are used.
+
+        Parameters
+        ----------
+        photons : `astropy.table.Table`
+            Photon list.
+
+        Returns
+        -------
+        ind : numpy array
+           array of boolean values that can be used to index ``photons`` and select
+           a sub-set to be used to calculate the effective area.
+        '''
+        return photons[self.aeff_filter_col] >= 0

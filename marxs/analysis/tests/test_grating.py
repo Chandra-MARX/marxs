@@ -9,6 +9,8 @@ from ..gratings import (resolvingpower_from_photonlist,
                         effectivearea_from_photonlist,
                         identify_photon_in_subaperture,
                         average_R_Aeff,
+                        CaptureResAeff,
+                        CaptureResAeff_CCDgaps
                         )
 
 def test_resolvingpower_from_photonlist():
@@ -143,3 +145,96 @@ def test_average_R_Aeff():
     r_out, aeff_out =  average_R_Aeff(r, aeff, axis=1)
     assert np.allclose(r_out, expected_r, equal_nan=True)
     assert np.allclose(aeff_out, expected_aeff, equal_nan=True)
+
+
+def test_capture_res_aeff():
+    '''Test the captures res/aeff class.
+
+    Similar to the previous test, this is not a complete functional test,
+    but it checks the interfaces.
+    The actual function to calculate the effective area is tested elsewhere.
+    '''
+    p = generate_test_photons(200)
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = -100
+    p['xpos'][50:] = np.random.normal(scale=1, size=150)
+
+    resaeff = CaptureResAeff(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos')
+    out = resaeff(p)
+    assert np.allclose(out['Aeff'], [2.5, 0., 7.5])
+    assert np.isclose(out['Aeff0'], 2.5)
+    assert np.isclose(out['Aeffgrat'], 7.5)
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][1])
+    # Large rtol to reduce risk of random failures
+    assert np.isclose(out['R'][2], 50., rtol=.8)
+
+
+def test_capture_res_aeff_filter():
+    '''Ensure that photons with probability 0 will be ignored.
+    '''
+    p = generate_test_photons(200)
+    p['probability'] = 0
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = -100
+    p['xpos'][50:] = np.random.normal(scale=1, size=150)
+
+    resaeff = CaptureResAeff(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos')
+    out = resaeff(p)
+    assert np.all(out['Aeff'] == 0)
+    assert out['Aeff0'] == 0
+    assert out['Aeffgrat'] == 0
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][2])
+
+
+def test_capture_res_aeff_nonfinite():
+    '''Ensure that photons with nonfinite values will be ignored for resolving power
+    but not for the effective area
+    '''
+    p = generate_test_photons(200)
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = np.nan
+
+    resaeff = CaptureResAeff(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos')
+    out = resaeff(p)
+    assert np.allclose(out['Aeff'], [2.5, 0., 7.5])
+    assert out['Aeff0'] == 2.5
+    assert out['Aeffgrat'] == 7.5
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][2])
+
+
+def test_capture_res_aeff_CCDgap():
+    '''Test the captures res/aeff class.
+
+    Similar to the previous test, this is not a complete functional test,
+    but it checks the interfaces.
+    The actual function to calculate the effective area is tested elsewhere.
+    '''
+    p = generate_test_photons(200)
+    p['order'] = 0
+    p['order'][50:] = 5
+    p['xpos'] = -100
+    p['xpos'][50:] = np.random.normal(scale=1, size=150)
+    p['CCD'] = 0
+    # the last 100 photons don't hit a CCD and thus the Aeff is smaller
+    p['CCD'][100:] = -1
+
+    resaeff = CaptureResAeff_CCDgaps(A_geom=10., order_col='order',
+                             orders=[0, 2, 5], dispersion_coord='xpos',
+                             aeff_filter_col='CCD')
+    out = resaeff(p)
+    assert np.allclose(out['Aeff'], [2.5, 0., 2.5])
+    assert np.isclose(out['Aeff0'], 2.5)
+    assert np.isclose(out['Aeffgrat'], 2.5)
+    assert len(out['R']) == 3
+    assert np.isnan(out['R'][1])
+    # Large rtol to reduce risk of random failures
+    assert np.isclose(out['R'][2], 50., rtol=8)
