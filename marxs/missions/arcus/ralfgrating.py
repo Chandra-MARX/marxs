@@ -104,7 +104,7 @@ class CATfromMechanical(Parallel):
         # This is the elem_args for the second level (the CAT gratings).
         # We need a list of dicts. Each window will then get one dict
         # which itself is a dict of lists
-        # currenty, 'd' is the only parameter passed down that way
+        # currently, 'd' is the only parameter passed down that way
         # but e.g. orderselector could be treated the same way
         kwargs['elem_args']['elem_args'] = [{'d': d,
                                              'order_selector': globalorderselector} for d in d_grat]

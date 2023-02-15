@@ -42,8 +42,8 @@ defaultconf['phi_det_start'] = 0.024  # was 0.037 at 600 mm channel spacing
 defaultconf['perpplanescatter'] = 1.5 / 2.3545 * u.arcsec
 # 2 * 0.68 converts HPD to sigma
 defaultconf['inplanescatter'] = 7. / (2 * 0.68) * u.arcsec
-defaultconf['spo_pos4d'] = spo.spos_large_pos4d
-defaultconf['spo_geom'] = spo.spos_large
+defaultconf['spo_pos4d'] = spo.spo_pos4d
+defaultconf['spo_geom'] = spo.spogeom
 defaultconf['reflectivity_interpolator'] = spo.reflectivity_interpolator
 defaultconf['det_kwargs']= {
     'elem_class': FlatDetector,
@@ -340,7 +340,8 @@ class PerfectArcus(Sequence):
     '''Default Definition of Arcus without any misalignments'''
     aper_class = Aperture
     spo_class = SimpleSPOs
-    gratings_class = RegularGrid  #CATGratings
+    #gratings_class = RegularGrid
+    gratings_class = CATGratings
     filter_and_qe_class = FiltersAndQE
     '''Set any of these classes to None to not have them included.
     (e.g. SIXTE does filters and QE itself).
