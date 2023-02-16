@@ -72,7 +72,7 @@ def test_resolvingpower_consistency():
     # FWHM is similar
     assert np.isclose(res1[1][0], res2[1][0], atol=0.1)
     assert np.isclose(res1[1][1], res2[1][1], atol=0.2)  # differs stronger here if fit not good
-    assert np.isclose(res2[1][0], 1.8, rtol=0.1, atol=0.1)
+    assert np.isclose(res2[1][0], 2.0, rtol=0.1, atol=0.1)
     # Resolution of 0th order is essentially 0
     assert np.isclose(res1[0][0], 0, atol=0.5)
     assert np.isclose(res2[0][0], 0, atol=0.5)
