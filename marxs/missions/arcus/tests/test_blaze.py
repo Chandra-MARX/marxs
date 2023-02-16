@@ -6,7 +6,7 @@ from ..defaults import DefaultSource, DefaultPointing
 
 
 def test_blaze():
-    '''Check that photons have a reasonable blaze. We do not want to hardocde a
+    '''Check that photons have a reasonable blaze. We do not want to hardcode a
     particular value here but if they are all zero or they are all over the
     place then something is probably wrong.
     '''

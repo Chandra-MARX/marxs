@@ -548,72 +548,8 @@ def select_1dof_changed(table, par,
     return table[ind]
 
 
-def plot_wiggle(tab, par, parlist, ax, axt=None,
-                R_col='Rgrat', Aeff_col='Aeffgrat',
-                axes_facecolor='w'):
-    '''Plotting function for overview plot wiggeling 1 dof at the time.
-
-    For parameters starting with "d" (e.g. "dx", "dy", "dz"), the plot axes
-    will be labeled as a shift, for parameters tarting with "r" as rotation.
-
-    Parameters
-    ----------
-    table : `astropy.table.Table`
-        Table with wiggle results
-    par : string
-        Name of parameter to be plotted
-    parlist : list of strings
-        Name of all parameters in ``table``
-    ax : `matplotlib.axes.Axes`
-        Axis object to plot into.
-    axt : ``None`` or  `matplotlib.axes.Axes`
-        If this is ``None``, twin axis are created to show resolving power
-        and effective area in one plot. Alternatively, a second axes instance
-        can be given here.
-    R_col : string
-        Column name in ``tab`` that hold the resolving power to be plotted.
-        Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
-    Aeff_col : string
-        Column name in ``tab`` that hold the effective area to be plotted.
-        Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
-    axes_facecolor : any matplotlib color specification
-        Color for the background in the plot.
-    '''
-    import matplotlib.pyplot as plt
-
-    t = select_1dof_changed(tab, par, parlist)
-    t.sort(par)
-    t_wave = t.group_by('wave')
-    if axt is None:
-        axt = ax.twinx()
-
-    for key, g in zip(t_wave.groups.keys, t_wave.groups):
-        if par[0] == 'd':
-            x = g[par]
-        elif par[0] == 'r':
-            x = np.rad2deg(g[par].data)
-        else:
-            raise ValueError("Don't know how to plot {}. Parameter names should start with 'd' for shifts and 'r' for rotations.".format(par))
-
-        ax.plot(x, g[R_col], label='{:3.1f} $\AA$'.format(key[0]), lw=1.5)
-        axt.plot(x, g[Aeff_col], ':', label='{:2.0f} $\AA$'.format(key[0]), lw=2)
-    ax.set_ylabel('Resolving power (solid lines)')
-    axt.set_ylabel('$A_{eff}$ [cm$^2$] (dotted lines)')
-    if par[0] == 'd':
-        ax.set_xlabel('shift [mm]')
-        ax.set_title('Shift along {}'.format(par[1]))
-    elif par[0] == 'r':
-        ax.set_xlabel('Rotation [degree]')
-        ax.set_title('Rotation around {}'.format(par[1]))
-
-    for a in [ax, axt]:
-        a.set_facecolor(axes_facecolor)
-        a.set_axisbelow(True)
-        a.grid(axis='x', c='1.0', lw=2, ls='solid')
-
-
 wiggle_plot_facecolors = {'global': '0.9',
-                          'individual': (1.0, 0.9, 0.9)}
+                        'individual': (1.0, 0.9, 0.9)}
 '''Default background colors for wiggle overview plots.
 
 If the key of the dict matches part of the filename, the color listed in
@@ -621,53 +557,142 @@ the dict is applied.
 '''
 
 
-def load_and_plot(filename, parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'],
-                  **kwargs):
-    '''Load a table with wiggle results and make default plot
+class WigglePlotter():
 
-    This is a function to generate a quicklook image with many
-    hardcoded defaults for figure size, colors etc.
-    In particular, this function is written for the display of
-    6d plots which vary 6 degrees of freedom, one at a time.
+    ylabel = 'left label (solid lines)'
+    y2label = 'right label (dotted lines)'
 
-    The color for the background in the plot is set depending on the filename
-    using the ``string : color`` assignments in
-    `~marxs.design.tolerancing.wiggle_plot_facecolors`. No fancy regexp based
-    match is applied, this is simply a check with ``in``.
+    def plot_wiggle(self, tab, par, parlist, ax, axt=None,
+                    axes_facecolor='w', **kwargs):
+        '''Plotting function for overview plot wiggeling 1 dof at the time.
 
-    Parameters
-    ----------
-    filename : string
-        Path to a file with data that can be plotted by
-        `~marxs.design.tolerancing.plot_wiggle`.
+        For parameters starting with "d" (e.g. "dx", "dy", "dz"), the plot axes
+        will be labeled as a shift, for parameters tarting with "r" as rotation.
 
-    parlist : list of strings
-        Name of all parameters in ``table``.
-        This function only plots six of them.
+        Parameters
+        ----------
+        table : `astropy.table.Table`
+            Table with wiggle results
+        par : string
+            Name of parameter to be plotted
+        parlist : list of strings
+            Name of all parameters in ``table``
+        ax : `matplotlib.axes.Axes`
+            Axis object to plot into.
+        axt : ``None`` or  `matplotlib.axes.Axes`
+            If this is ``None``, twin axis are created to show resolving power
+            and effective area in one plot. Alternatively, a second axes instance
+            can be given here.
+        R_col : string
+            Column name in ``tab`` that hold the resolving power to be plotted.
+            Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
+        Aeff_col : string
+            Column name in ``tab`` that hold the effective area to be plotted.
+            Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
+        axes_facecolor : any matplotlib color specification
+            Color for the background in the plot.
+        '''
+        t = select_1dof_changed(tab, par, parlist)
+        t.sort(par)
+        t_wave = t.group_by('wave')
+        axlist = [ax]
 
-    Returns
-    -------
-    tab : `astropy.table.Table`
-        Table of data read from ``filename``
-    fig : `matplotlib.figure.Figure`
-        Figure with plot.
-    kwargs :
-        All other parameters are passed to
-        `~marxs.design.tolerancing.plot_wiggle`.
-    '''
-    import matplotlib.pyplot as plt
+        import matplotlib
 
-    tab = Table.read(filename)
+        match axt:
+            case None if self.y2label is not None:
+               axt = ax.twinx()
+               axlist.append(axt)
+            case matplotlib.axes.SubplotBase():
+                axlist.append(axt)
 
-    if 'axis_facecolor' not in kwargs:
-        for n, c in wiggle_plot_facecolors.items():
-            if n in filename:
-                kwargs['axes_facecolor'] = c
+        for key, g in zip(t_wave.groups.keys, t_wave.groups):
+            if par[0] == 'r':
+                x = np.rad2deg(g[par].data)
+            else:
+                x = g[par]
 
-    fig = plt.figure(figsize=(12, 8))
-    fig.subplots_adjust(wspace=.6, hspace=.3)
-    for i, par in enumerate(parlist):
-        ax = fig.add_subplot(2, 3, i + 1)
-        plot_wiggle(tab, par, parlist, ax, **kwargs)
+            self.plot_one_line(ax, axt, key, g, x, **kwargs)
+        ax.set_ylabel(self.ylabel)
+        if len(axlist) > 1:
+            axt.set_ylabel(self.y2label)
+        if par[0] == 'd':
+            ax.set_xlabel('shift [mm]')
+            ax.set_title('Shift along {}'.format(par[1]))
+        elif par[0] == 'r':
+            ax.set_xlabel('Rotation [degree]')
+            ax.set_title('Rotation around {}'.format(par[1]))
+        else:
+            ax.set_xlabel(par)
 
-    return tab, fig
+        for a in axlist:
+            a.set_facecolor(axes_facecolor)
+            a.set_axisbelow(True)
+            a.grid(axis='x', c='1.0', lw=2, ls='solid')
+
+    def plot_one_line(self, ax, axt, key, g, x):
+        raise NotImplementedError
+
+    def load_and_plot(self, filename,
+                      parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'],
+                    **kwargs):
+        '''Load a table with wiggle results and make default plot
+
+        This is a function to generate a quicklook image with many
+        hardcoded defaults for figure size, colors etc.
+        In particular, this function is written for the display of
+        6d plots which vary 6 degrees of freedom, one at a time.
+
+        The color for the background in the plot is set depending on the filename
+        using the ``string : color`` assignments in
+        `~marxs.design.tolerancing.wiggle_plot_facecolors`. No fancy regexp based
+        match is applied, this is simply a check with ``in``.
+
+        Parameters
+        ----------
+        filename : string
+            Path to a file with data that can be plotted by
+            `~marxs.design.tolerancing.plot_wiggle`.
+
+        parlist : list of strings
+            Name of all parameters in ``table``.
+            This function only plots six of them.
+
+        Returns
+        -------
+        tab : `astropy.table.Table`
+            Table of data read from ``filename``
+        fig : `matplotlib.figure.Figure`
+            Figure with plot.
+        kwargs :
+            All other parameters are passed to
+            `~marxs.design.tolerancing.plot_wiggle`.
+        '''
+        import matplotlib.pyplot as plt
+
+        tab = Table.read(filename)
+
+        if 'axis_facecolor' not in kwargs:
+            for n, c in wiggle_plot_facecolors.items():
+                if n in filename:
+                    kwargs['axes_facecolor'] = c
+
+        fig = plt.figure(figsize=(12, 8))
+        fig.subplots_adjust(wspace=.6, hspace=.3)
+        for i, par in enumerate(parlist):
+            ax = fig.add_subplot(2, 3, i + 1)
+            self.plot_wiggle(tab, par, parlist, ax, **kwargs)
+
+        return tab, fig
+
+
+class DispersedWigglePlotter(WigglePlotter):
+
+    ylabel ='Resolving power (solid lines)'
+    y2label ='$A_{eff}$ [cm$^2$] (dotted lines)'
+
+    def plot_one_line(self, ax, axt, key, g, x,
+                      R_col='Rgrat', Aeff_col='Aeffgrat'):
+        ax.plot(x, g[R_col], label='{:3.1f} $\AA$'.format(key[0]), lw=1.5)
+        axt.plot(x, g[Aeff_col], ':', label='{:2.0f} $\AA$'.format(key[0]), lw=2)
+

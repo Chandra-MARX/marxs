@@ -14,7 +14,7 @@ from marxs.design.tolerancing import (oneormoreelements,
                            run_tolerances,
                            generate_6d_wigglelist,
                            select_1dof_changed,
-                           plot_wiggle, load_and_plot,
+                           DispersedWigglePlotter,
                            run_tolerances_for_energies,
                            run_tolerances_for_energies2,
                            )
@@ -335,7 +335,7 @@ def test_find_changed():
     t = select_1dof_changed(tab, 'par1', parlist=['par1', 'par2'])
     assert set(t['id']) == set([1, 2, 4, 5])
 
-@pytest.mark.skipif('not HAS_MPL')
+
 def test_plot_wiggle():
     '''Test that wiggle plot works. This does not test that the result
     looks correct, only that running through the plot function does not
@@ -344,26 +344,15 @@ def test_plot_wiggle():
     setting up the infrastructure to compare output pixel-by-pixel does not
     seem worth it as this point.
     '''
+    plt = pytest.importorskip("matplotlib.pyplot")
     fig, ax = plt.subplots()
 
     tab = Table({'wave': [1, 1],
                  'dd': [0, 1],
                  'Rgrat': [500, 500],
                  'Aeff': [20, 50]})
-    plot_wiggle(tab, 'dd', ['dd'], ax, Aeff_col='Aeff')
-
-@pytest.mark.skipif('not HAS_MPL')
-def test_plot_wiggle_exception():
-    '''Test that exception is raised for parameters not plotted.
-    '''
-    fig, ax = plt.subplots()
-
-    tab = Table({'wave': [1, 1],
-                 'qwe': [0, 1],
-                 'Rgrat': [500, 500],
-                 'Aeff': [20, 50]})
-    with pytest.raises(ValueError, match='Parameter names should start with'):
-        plot_wiggle(tab, 'qwe', ['qwe'], ax, Aeff_col='Aeff')
+    wiggle_plotter = DispersedWigglePlotter()
+    wiggle_plotter.plot_wiggle(tab, 'dd', ['dd'], ax, Aeff_col='Aeff')
 
 @pytest.mark.skipif('not HAS_MPL')
 def test_plot_6dof():
@@ -374,10 +363,11 @@ def test_plot_6dof():
                  'R': np.random.rand(8),
                  'Aeffgrat': np.arange(8)})
 
+    wiggle_plotter = DispersedWigglePlotter()
     with tempfile.TemporaryDirectory() as tmpdirname:
         name = os.path.join(tmpdirname, 'var_global.fits')
         tab.write(name)
-        fig, ax = load_and_plot(name, ['dd', 'rr'], R_col='R')
+        fig, ax = wiggle_plotter.load_and_plot(name, ['dd', 'rr'], R_col='R')
 
 @pytest.mark.skipif('not HAS_MPL')
 def test_plot_6dof_real_file():
@@ -386,5 +376,6 @@ def test_plot_6dof_real_file():
     in design/tolerancing (see docs/pyplot/chandra_tolerancing) so if this test
     breaks, the docs will likely have to be changed, too.
     '''
+    wiggle_plotter = DispersedWigglePlotter()
     filename = get_pkg_data_filename('data/wiggle_global.fits', 'marxs.design.tests')
-    fig, ax = load_and_plot(filename)
+    fig, ax = wiggle_plotter.load_and_plot(filename)
