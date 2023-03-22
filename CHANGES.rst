@@ -50,6 +50,8 @@ API Changes
 - `effectivearea_from_photonlist` now requires a unit for the input of the effective area. [#237]
 - ``CaptureResAeff_CCDgap`` and ``CaptureResAeff`` are moved to
   ``marxs.analysis.gratings``. [#237]
+- ``plot_wiggle`` and ``load_and_plot`` are now summarized in the class to make it
+  easier to derive from them. [#237]
 
 - Rename files that had a class of the same name, because this confuses the Sphinx autosummary
   extension. The following files have been renamed: `marxs.missions.chandra.chandra` to

@@ -40,7 +40,7 @@ class OnCCD:
     '''Class that calculates if a wavelength falls on a CCD or not
 
     Some of the Arcus parameters are taken from the dictionary, others (such as
-    the poisition of the CCDs are taken from loading in the Arcus simulator
+    the position of the CCDs are taken from loading in the Arcus simulator
     and inspecting its objects.
 
     Parameters
@@ -183,7 +183,7 @@ def mkarf(channel_edges, order,
         Edges of the channels in energy or wavelength. The ARF that is
         generated from  n edges will have n-1 bins.
     order : int
-        Dirrection order
+        Diffraction order
     mirr_grat : callable
         Function that interpolates mirror and grating efficiency
     trans_filter_qe : callable
@@ -235,6 +235,8 @@ def mkarf(channel_edges, order,
     return arf
 
 
+## Can I replace this with ogiprmffrom_Gauss_sigma?
+# I wrote it for that purpose, but need to compare output to make sure it works that same way.
 def mkrmf0(bin_edges, threshold=1e-6, ccdfwhm=ccdfwhm):
     '''Make RMF for 0 order
 
@@ -243,15 +245,15 @@ def mkrmf0(bin_edges, threshold=1e-6, ccdfwhm=ccdfwhm):
     Parameters
     ----------
     channel_edges : `~astropy.units.quantity.Quantity`
-        Edges of the channels in energy or wavelength. The ARF that is
-        generated from  n edges will have n-1 bins.
+        Edges of the channels in energy or wavelength. The RMF that is
+        generated from n edges will have n-1 bins.
     threshold : float
         To reduce the file size, RMF components below the threshold value
-        are cot-off
+        are cut-off
     ccdfwhm : `astropy.table.Table`
         Table with CCD properties. Two columns are expected with
         'energy' (in keV) and 'FWHM' (in eV). Note that the units are
-        hardcoded and different between orders.
+        hardcoded and different between columns.
     '''
     ebounds = ogip.RMF.ebounds_from_edges(bin_edges)
     matrix = Table(names=['ENERG_LO', 'ENERG_HI', 'N_GRP',
@@ -284,11 +286,13 @@ def mkrmf0(bin_edges, threshold=1e-6, ccdfwhm=ccdfwhm):
     return ogip.RMF(matrix, ebounds, CHANTYPE='PHA', HDUCLAS3='REDIST')
 
 
-def write_readme(self, outpath, outroot='', ARCCHAN='all'):
+def write_readme(osip, outpath, outroot='', ARCCHAN='all'):
         '''Write README file to directory with ARFs
 
         Parameters
         ----------
+        osip : `marxs.reduction.osip.OSIPBase` object
+            OSIP objet that generates data in this directory.
         outpath : string
             Location where the output ARFs are deposited
         outroot : string

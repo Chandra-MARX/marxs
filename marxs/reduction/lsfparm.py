@@ -114,7 +114,7 @@ def empty_lsfparmtable(widths, waves, model, extname, order):
     width : np.array
         extraction width
     waves
-    model : Sherpa moden instance
+    model : Sherpa model instance
         This instance is inspected for the name of the model components to
         set up the correct columns
     '''

@@ -333,7 +333,7 @@ class OSIPBase(ABC):
                     bbox_inches='tight')
 
     def apply_osip_all(self, inpath, outpath, orders,
-                       inroot='', outroot='', ARCCHAN='all',
+                       inroot='', outroot='',
                        overwrite=False,
                        filename_from_meta_kwargs={}):
         '''Apply OSIP to many arfs at once
@@ -363,8 +363,6 @@ class OSIPBase(ABC):
             prefix for input filename
         outroot : string
             prefix for output filename
-        ARCCHAN : string
-            Channel for Arcus
         overwrite : bool
             Overwrite existing files?
         filename_from_meta_kwargs : dict

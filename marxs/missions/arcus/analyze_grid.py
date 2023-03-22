@@ -9,6 +9,38 @@ from marxs.analysis.gratings import (CaptureResAeff_CCDgaps,
                                      average_R_Aeff)
 from marxs.base import check_meta_consistent, check_energy_consistent
 from marxs.missions.arcus.utils import id_num_offset
+from marxs.missions.arcus.arcus import defaultconf
+
+
+def zeropos(coord, channel, conf=defaultconf):
+    '''Get position of zeroth order
+
+    Parameters
+    ----------
+    coord : string
+        Name of coordinate
+    channel : string
+        Channel id, e.g. "1m"
+    conf : dict
+        Arcus configuration dictionary
+
+    Returns
+    -------
+    pos : float
+        coordinate of zeroth order
+    '''
+    match coord:
+        case "circ_phi":
+            return np.arcsin((conf['pos_opt_ax'][channel][0]) /
+                                      conf['rowland_detector'].r)
+        case "circ_y":
+            return -conf['pos_opt_ax'][channel][1]
+        case "proj_y":
+            return conf['pos_opt_ax'][channel][1]
+        case "proj_x":
+            return conf['pos_opt_ax'][channel][0]
+        case _:
+            raise NotImplementedError
 
 
 def analyze_sim(photons, orders, reference_meta, conf):
@@ -58,13 +90,13 @@ def analyze_sim(photons, orders, reference_meta, conf):
     for a in range(1, n_apertures + 1):
         pa = photons[(photons['aper_id'] == a) &
                      (photons['order_L1'] == 0)]
-        zeropos = np.arcsin((conf['pos_opt_ax'][chan_name[a - 1]][0]) /
-                                      conf['rowland_detector'].r)
         resaeff = CaptureResAeff_CCDgaps(A_geom=photons.meta['A_GEOM'] * u.cm**2,
                                          order_col='order',
                                          orders=orders,
                                          dispersion_coord='circ_phi',
-                                         zeropos=zeropos,
+                                         zeropos=zeropos('circ_phi',
+                                                         chan_name[a - 1],
+                                                         conf),
                                          aeff_filter_col='CCD',
                                          )
         out = resaeff(pa, n_photons=int(pa.meta['EXPOSURE']))

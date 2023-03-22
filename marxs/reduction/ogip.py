@@ -6,9 +6,11 @@ keywords are missing. Need to be stricter?
 '''
 from warnings import warn
 import numpy as np
-from astropy.table import QTable, Column
+from astropy.table import QTable, Column, Table
 from astropy.io import fits
 import astropy.units as u
+
+from marxs.base import TagVersion
 
 
 def filename_from_meta(filetype='fits', **kwargs):
@@ -122,6 +124,64 @@ class ARF(ColOrKeyTable):
         return self
 
 
+class PHAI(ARF):
+    '''
+
+
+    Parameters
+    ----------
+    CHANTYPE : 'PHA', 'PI' or None
+        If not None, set the CHANTYPE keyword to PHA (should be used if
+        possible) or PI. `None` indicates that the CHANTYPE is set already.
+    HDUCLAS2 : 'TOTAL', 'NET', 'BKG' or None
+        Set HDUCLAS2 to the value given. If none, do not set.
+
+
+
+    '''
+    # Note: Some dimensions are set to None, which means that checking
+    # must be done separately.
+    # If dtype is an object (a list for a variable length array), we don't
+    # check what's inside that object.
+    required_cols = [('CHANNEL', (np.int32,), 1),
+                     ('ENERG_HI', (np.float64,), 1),
+                            ('N_GRP', (np.int32,), 1),
+                            ('F_CHAN', (np.integer, object), None),
+                            ('N_CHAN', (np.integer, object), None),
+                            ('MATRIX', (np.float64, object), None)]
+
+
+    def __init__(self, pha, CHANTYPE=None, HDUCLAS2=None):
+
+        super().__init__(self, pha)
+        #self.meta['DETCHANS'] = len(self)
+        if CHANTYPE is not None:
+            self.meta['CHANTYPE'] = CHANTYPE
+        if HDUCLAS2 is not None:
+            self.meta['HDUCLAS2'] = HDUCLAS2
+
+    def write(self, *args, **kwargs):
+        self.meta.update({'EXTNAME': 'SPECTRUM',
+                          'HDUCLASS': 'OGIP',
+                          'HDUVERS':  '1.2.1',
+                          'HDUCLAS1': 'SPECTRUM',
+                          'HDUCLAS2': 'SPECRESP',
+                          'HDUCLAS3': 'COUNT' if 'COUNTS' in self.colnames else 'RATE',
+                          'HDUCLAS4': 'TYPE:I',
+                          })
+        _check_mandatory_keywords(self,['EXPOSURE', 'POISSERR'])
+        for n in ['BACKSCAL', 'AREASCAL', 'QUALITY', 'GROUPING', 'SYS_ERR']:
+            if n not in self.colnames and n not in self.meta:
+                raise OGIPFormatError('{} must be given as either keyword or column')
+        super().write(*args, **kwargs, format='fits')
+
+    @classmethod
+    def read(cls, *args, **kwargs):
+        self = super().read(*args, format='fits', **kwargs)
+        _check_col_and_type(self, self.required_cols)
+        return self
+
+
 class RMF:
     '''Read and represent OGIP RMF data
 
@@ -150,17 +210,17 @@ class RMF:
     ----------
     rmffile : filename
     '''
-    # Note: Some dimesions are set to None, which means that checking
+    # Note: Some dimensions are set to None, which means that checking
     # must be done separately.
     # If dtype is an object (a list for a variable length array), we don't
     # check what's inside that object.
     matrix_required_cols = [('ENERG_LO', (np.float64,), 1),
                             ('ENERG_HI', (np.float64,), 1),
                             ('N_GRP', (np.int32,), 1),
-                            ('F_CHAN', (np.integer, object), None),
-                            ('N_CHAN', (np.integer, object), None),
+                            ('F_CHAN', (np.int32, object), None),
+                            ('N_CHAN', (np.int32, object), None),
                             ('MATRIX', (np.float64, object), None)]
-    ebounds_required_cols = [('CHANNEL', (np.integer,), 1),
+    ebounds_required_cols = [('CHANNEL', (np.int32,), 1),
                              ('E_MIN', (np.float64,), 1),
                              ('E_MAX', (np.float64,), 1)]
 
@@ -199,7 +259,8 @@ class RMF:
         energy_edges = channel_edges.to(u.keV,
                                         equivalencies=u.spectral()).value
         sort_energies = np.argsort(energy_edges)
-        ebounds = ColOrKeyTable({'CHANNEL': np.arange(len(channel_edges) - 1),
+        ebounds = ColOrKeyTable({'CHANNEL': np.arange(len(channel_edges) - 1,
+                                                      dtype=np.int32),
                                  'E_MIN': energy_edges[sort_energies][:-1],
                                  'E_MAX': energy_edges[sort_energies][1:]})
         for col in ['E_MIN', 'E_MAX']:
@@ -211,7 +272,7 @@ class RMF:
         Paramters
         ---------
         TLMIN : int or `None`
-            If `None` then the TLMIN# keywords shoud already be set, if not,
+            If `None` then the TLMIN# keywords should already be set, if not,
             if is a convenient way to set them on writing.
        '''
         _check_col_and_type(self.matrix, self.matrix_required_cols)
@@ -230,7 +291,7 @@ class RMF:
         self.matrix.meta['HDUVERS'] = '1.1.0'
         self.matrix.meta['HDUCLAS1'] = 'RESPONSE'
         self.matrix.meta['HDUCLAS2'] = 'RSP_MATRIX'
-         # futher required keywords: CHANTYPE (PI or PHA), DETCHANS, TLMIN# (# is column number of F_CHAN)
+        # further required keywords: CHANTYPE (PI or PHA), DETCHANS, TLMIN# (# is column number of F_CHAN)
         # Recommended keywords: NUMGRP, NUMELT
 
 
@@ -255,8 +316,9 @@ class RMF:
         hdulist.writeto(rmffile, overwrite=overwrite, checksum=True)
 
     def row(self, energy):
-        rowind = (energy > self.matrix['ENERG_LO']) & \
-            (energy < self.matrix['ENERG_HI'])
+        with u.set_enabled_equivalencies(u.spectral()):
+            rowind = (energy >= self.matrix['ENERG_LO']) & \
+                (energy < self.matrix['ENERG_HI'])
         rows = rowind.nonzero()[0][0]
         return self.matrix[rows]
 
@@ -311,7 +373,7 @@ class RMF:
         return self.ebounds['E_MIN'][ind], self.ebounds['E_MAX'][ind], \
             np.asanyarray(row['MATRIX'])[ind]
 
-    def rmf_angtrom(self, energy):
+    def rmf_angstrom(self, energy):
         en_lo, en_hi, rmf = self.rmf(energy)
         return en_hi.to(u.Angstrom, equivalencies=u.spectral()), en_lo.to(u.Angstrom, equivalencies=u.spectral()), rmf
 
@@ -402,3 +464,59 @@ class RMF:
         m['F_CHAN'] = fchan.squeeze()
         m['N_CHAN'] = nchan.squeeze()
         m['MATRIX'] = matrix
+
+    @staticmethod
+    def from_Gauss_sigma(bin_edges, sigmatab, threshold=1e-6,
+                         headerkw={'SATELLIT': 'unknown', 'TELESCOP': 'unknown',
+                                   'INSTRUME': 'unknown', 'FILTER': 'unknown'}):
+        '''Make RMF for a Gaussian redistribution
+
+        This is a convenience function for a common, simple case.
+        For more complex parameterization of the redistributions, see
+        `marxs.reduction.lsfparm`.
+
+        Parameters
+        ----------
+        bin_edges : `~astropy.units.quantity.Quantity`
+            Edges of the channels in energy or wavelength. The RMF that is
+            generated from n edges will have n-1 bins.
+        sigmatab : `~astropy.units.table.Table`
+            sigma for a Gaussian in a table with columns ``'wave'``
+            and ``'sigma_wave'`` or ``'energy'`` and ``sigma_energy'``.
+            In the latter case, the information is converted to wavelength space.
+            Note that a Gaussian in energy space is not the same as in wavelength space,
+            so this should only be used if this approximate treatment is sufficient.
+        threshold : float
+            To reduce the file size, RMF components below the threshold value
+            are cut-off
+        headerkw : dict
+            Keywords arguments for the header of the RMF file. Minimum required list
+            are the header keywords SATELLIT, TELESCOP, INSTRUME, FILTER
+        '''
+        # This module requires sherpa, so we import it down here.
+        # That way, the rest of this class can be used even when Sherpa is not installed.
+        from marxs.reduction.lsfparm import make_rmf
+        if 'energy' in sigmatab.colnames and 'wave' not in sigmatab.colnames:
+            sigmatab['wave'] = sigmatab['energy'].to(u.Angstrom, equivalenicies=u.spectral())
+            sigmatab['sigma_wave'] = sigmatab['wave'] * sigmatab['sigma_energy'] / sigmatab['energy']
+        sigmatab.sort('wave')
+
+        lsfparm = Table({'NUM_WIDTHS': [1],
+                         # We are not using extraction width here, but the format requires a number
+                         'WIDTHS': [[1.]],
+                         'NUM_LAMBDAS': [len(sigmatab)],
+                         'EE_FRACS': [np.ones((1, len(sigmatab)))],
+                         'LAMBDAS': [sigmatab['wave']],
+                         'GAUSS1_PARMS': [np.stack([np.ones(len(sigmatab)),
+                                           sigmatab['sigma_wave'].to(u.Angstrom).value,
+                                           sigmatab['wave'].to(u.Angstrom).value
+                                           ]).T[None, :, :]]},
+                         units=[None, u.deg, None, None,  u.Angstrom, None]
+                        )
+        tagversion = TagVersion(**headerkw)
+        tagversion(lsfparm)
+        return make_rmf(lsfparm[0],
+                        bin_edges.to(u.Angstrom, equivalencies=u.spectral()),
+                        1 * u.deg,
+                        threshold=threshold,
+                        kw_interp={})
