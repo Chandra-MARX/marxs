@@ -382,6 +382,38 @@ def test_RectangularGridone():
     assert np.allclose(ccds.elements[0].pos4d, np.eye(4))
 
 
+def test_RegtangularGrid_offcenter_unaffected():
+    '''Make sure the coordinate system of the xyz_range is in global coordinates.
+    In this test, we check the z position, which in unchanged because the torus
+    center is moved only in the y direction.'''
+    R, r, pos4d = design_tilted_torus(5000, 0.07, 0.15)
+    rowland = RowlandTorus(R, r, pos4d=pos4d)
+    ccds = RectangularGrid(rowland=rowland, d_element=[5., 5.],
+                           z_range=[10, 20],
+                           y_range=[600, 615],
+                           elem_class=mock_facet,
+                           guess_distance=25)
+
+    for e in ccds.elements:
+        assert (e.geometry['center'][2] > 10) and (e.geometry['center'][2] < 20)
+
+
+def test_RegtangularGrid_offcenter_affected():
+    '''Make sure the coordinate system of the xyz_range is in global coordinates.
+    In this test, we check the y position.'''
+    R, r, pos4d = design_tilted_torus(50000, 0.007, 0.015)
+    rowland = RowlandTorus(R, r, pos4d=pos4d)
+    ccds = RectangularGrid(rowland=rowland, d_element=[50., 50.],
+                           y_range=[600, 800],
+                           elem_class=mock_facet,
+                           guess_distance=25)
+    y_offset = rowland.geometry['center'][1]
+    for e in ccds.elements:
+        assert (e.geometry['center'][1] > 600 + y_offset) and \
+               (e.geometry['center'][1] < 800 + y_offset)
+
+
+
 def test_nojumpsinCCDorientation():
     '''Regression test: CCD orientation should change smoothly along the circle.'''
     R, r, pos4d = design_tilted_torus(12e3, 0.07, 0.15)

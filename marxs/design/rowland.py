@@ -135,7 +135,7 @@ class RowlandTorus(MarxsElement, Geometry):
 
         This method solves the quartic equation for positions on the Rowland
         Torus, i.e. it intersects a line with the torus. To that end, the
-        location on the line is varied and the root of te quartic is found
+        location on the line is varied and the root of the quartic is found
         through numerical optimization.
 
         Parameters
@@ -447,7 +447,8 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
 
     Parameters
     ----------
-    rowland : RowlandTorus
+    rowland : `marxs.design.rowland.RowlandTorus`
+        Torus on which the elements are placed.
     d_element : list of two floats
         Size of the edge of elements along the two (y and z in canonical marxs orientation)
         edges.
@@ -462,7 +463,7 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
     optimize_axis : np.array
         Homogeneous coordinate of the axis along which elements will be moved. This will
         usually coincide with the optical axis of the telescope.
-        Default is the x-axis.
+        Default is the x-axis in the coordinate system of the torus.
     normal_spec : np.array or callable
         see `~marxs.simulator.simulator.ParallelCalculated` for details.
         Default for this class: Pointing **inward** into the Rowlandtorus,
@@ -511,7 +512,7 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
     def elempos(self):
         '''Generate 3D positions of elements
 
-        For each elements, y and z coordinates in the torus coordinate system
+        For each element, y and z coordinates in the torus coordinate system
         are generated from ``self.elemposyz`` and the elements are placed at
         x=0. Then, that initial coordinate is transformed into the global
         coordinate system and moved by
@@ -524,6 +525,9 @@ class ElementsOnTorus(ParallelCalculated, OpticalElement):
         origin = np.einsum('...ij,...j', self.rowland.pos4d, e2h(posyz.T, 1)) + self.guess_distance * self.optimize_axis
         # solve_quartic is not vectorized (because scipy.optimize is not)
         # so need to pass in one element at a time.
+
+        # now, origin is in the global coordinate system.
+        # Because transform=True is the default in solve_quartic that works.
         return np.vstack([self.rowland.solve_quartic(o, self.optimize_axis) for o in origin])
 
 
@@ -552,6 +556,9 @@ class RectangularGrid(ElementsOnTorus):
         To place only one element, make both limits the same, e.g.
         ``z_range=[5, 5]`` will place one element in each row in z
         centered on $z=5$.
+        This is given in the coordinate system of the torus, i.e. y is the
+        plane of the Rowland circle and both numbers are measured from the
+        center of the Rowland torus.
         Default for z-range: [-1e-10, 1e-10]. This will make one element
         centered on 0 in z-range.
 
@@ -605,11 +612,6 @@ class CircularMeshGrid(ElementsOnTorus):
         super().__init__(**kwargs)
 
     def elemposyz(self):
-        # For readability, this code is written using an explicit x,y,z notation for
-        # variable names assuming a circle in the y/z plane and a numerical
-        # solution for the Rowland torus in the x direction.
-        # In the last few lines, the variables are turned around to make it fit the
-        # chosen direction.
         n_y = int(np.ceil(2 * self.radius[1] / self.d_element[0]))
         y_width = n_y * self.d_element[0]
         y_pos = np.arange(- y_width / 2, self.radius[1], self.d_element[0])

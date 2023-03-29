@@ -64,7 +64,7 @@ conf = {'metashellgeometry': Table.read(get_pkg_data_filename('AXIS_metashellgeo
         'betafac': 4.4,
         'grating_size': np.array([30., 60.]),
         'grating_frame': 2.,
-        'det_kwargs': {'theta': [3.13, 3.17],
+        'det_kwargs': {'y_range': [400, 600],
                        'd_element': [24.576 * 2 + 0.824 * 2 + 0.5,
                                      24.576 + 0.824 * 2 + 0.5],
                        'elem_class': optics.FlatDetector,
@@ -78,7 +78,7 @@ conf = {'metashellgeometry': Table.read(get_pkg_data_filename('AXIS_metashellgeo
                                      }},
         'gas_kwargs': {'parallel_spec': np.array([0., 1., 0., 0.]),
                        'normal_spec': np.array([0, 0, 0, 1]),
-                       'x_range': [6e3, 1e4],
+                       'guess_distance': 9e3,
                        'elem_class': CATL1L2Stack,
                        'elem_args': {'d': 2e-4,
                                      'order_selector': order_selector_Si,
@@ -114,8 +114,20 @@ conf_chirp['chirp_order'] = -5.4
 
 class RowlandDetArray(design.rowland.RectangularGrid):
     def __init__(self, conf):
-        super(RowlandDetArray, self).__init__(conf['rowland'], **conf['det_kwargs'],
-                                              guess_distance=25.)
+        y_offset = conf['rowland'].geometry['center'][1]
+        super().__init__(rowland=conf['rowland'],
+                         y_range=np.array(conf['det_kwargs']['y_range']) - y_offset,
+                         d_element=conf['det_kwargs']['d_element'],
+                         elem_args=conf['det_kwargs']['elem_args'],
+                         elem_class=conf['det_kwargs']['elem_class'],
+                         guess_distance=25.,
+                         id_col='CCD_ID')
+
+
+imaging = FlatDetector(zoom=[1, 15, 15], pixsize=0.008)
+# zero-order detector based on https://axis.astro.umd.edu/images/proposal.pdf
+imaging.loc_coos_name = ['imaging_x', 'imaging_y']
+imaging.detpix_name = ['imaging_x', 'imaging_y']
 
 
 # Place an additional detector on the Rowland circle.
@@ -164,21 +176,16 @@ class PerfectAXIS(simulator.Sequence):
         detectors need different parameters. Placing this specific code in its own
         function makes it easy to override for derived classes.
         '''
-        zero = FlatDetector(zoom=[1, 15, 15], pixsize=0.008)
-            # zero-order detector based on https://axis.astro.umd.edu/images/proposal.pdf
-        zero.loc_coos_name = ['zero_x', 'zero_y']
-        zero.detpix_name = ['zero_x', 'zero_y']
         proj2 = analysis.ProjectOntoPlane()
         proj2.loc_coos_name = ['projcirc_y', 'projcirc_z']
         return [RowlandDetArray(conf),
+                imaging,
                 analysis.ProjectOntoPlane(),
                 Propagator(distance=-1000),
                 detcirc,
                 proj2,
                 Propagator(distance=-1000),
-                flatdet,
-                Propagator(distance=-1000),
-                zero]
+                flatdet]
 
     def post_process(self):
         self.KeepPos = simulator.KeepCol('pos')
@@ -206,11 +213,11 @@ class PerfectAXIS(simulator.Sequence):
 
 class AXISForPlot(PerfectAXIS):
     def add_detectors(self, conf):
-        zero = FlatDetector(zoom=[1, 50, 50])
+        zero = FlatDetector(zoom=[1, 15, 15])
         zero.loc_coos_name = ['zero_x', 'zero_y']
         zero.detpix_name = ['zero_x', 'zero_y']
         return [RowlandDetArray(conf),
-                zero]
+                imaging]
 
 
 class AXIS(PerfectAXIS):

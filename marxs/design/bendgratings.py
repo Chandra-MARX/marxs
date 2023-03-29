@@ -28,7 +28,7 @@ def bend_gratings(gratings, radius):
 
     Gratings are bend in one direction (the dispersion direction) only.
 
-    The numerical procudes used to calculate the bending takes the central ray as
+    The numerical procedure used to calculate the bending takes the central ray as
     a fixed ppoint assuming that the central ray always goes to the correct position!
 
     Parameters
