@@ -79,7 +79,7 @@ class OnCCD:
         order : ind
             Diffraction order
         opt_ax : string
-            Name of te optical axes
+            Name of the optical axes
         conf : dict
             Arcus configuration
 
@@ -314,8 +314,8 @@ def write_readme(osip, outpath, outroot='', ARCCHAN='all'):
             template = string.Template(t.read())
 
         output = template.substitute(tagversion=tagstring,
-                                     description=f'{self.__class__}: {self.osip_description}',
-                                     offsetorders=self.offset_orders,
+                                     description=f'{osip.__class__}: {osip.osip_description}',
+                                     offsetorders=osip.offset_orders,
                                      filenamemain=filename_from_meta(filetype='arf', ARCCHAN=ARCCHAN, ORDER=-4, CCDORDER=-4, TRUEORD=-4),
                                      filenameupper=filename_from_meta(filetype='arf', ARCCHAN=ARCCHAN, ORDER=-4, CCDORDER=-4, TRUEORD=-5),
                                      filenamelower=filename_from_meta(filetype='arf', ARCCHAN=ARCCHAN, ORDER=-4, CCDORDER=-4, TRUEORD=-3))

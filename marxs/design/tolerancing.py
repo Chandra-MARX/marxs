@@ -291,7 +291,7 @@ def run_tolerances_for_energies(source, energies,
     This function loops over `~marxs.design.tolerancing.run_tolerances` for
     different energies.
     This function takes an instrument configuration and a function to change
-    one aspect of it. For every change it runs a simulations and calculates a
+    one aspect of it. For every change it runs simulations and calculates a
     figure of merit. As the name indicates, this function is designed to derive
     alignment tolerances for certain instrument parts but it might be general
     enough for other parameter studies in instrument design.
@@ -548,19 +548,20 @@ def select_1dof_changed(table, par,
     return table[ind]
 
 
-wiggle_plot_facecolors = {'global': '0.9',
-                        'individual': (1.0, 0.9, 0.9)}
-'''Default background colors for wiggle overview plots.
-
-If the key of the dict matches part of the filename, the color listed in
-the dict is applied.
-'''
-
-
 class WigglePlotter():
 
     ylabel = 'left label (solid lines)'
     y2label = 'right label (dotted lines)'
+
+
+    bg_colors = {'global': '0.9',
+                 'individual': (1.0, 0.9, 0.9)}
+    '''Default background colors for wiggle overview plots.
+
+    If the key of the dict matches part of the filename, the color listed in
+    the dict is applied.
+    '''
+
 
     def plot_wiggle(self, tab, par, parlist, ax, axt=None,
                     axes_facecolor='w', **kwargs):
@@ -673,7 +674,7 @@ class WigglePlotter():
         tab = Table.read(filename)
 
         if 'axis_facecolor' not in kwargs:
-            for n, c in wiggle_plot_facecolors.items():
+            for n, c in self.bg_colors.items():
                 if n in filename:
                     kwargs['axes_facecolor'] = c
 
