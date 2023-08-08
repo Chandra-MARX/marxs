@@ -30,6 +30,19 @@ from x3d import x3d
 from . import utils
 from marxs.math import utils as mutils
 
+__all__ = ['Scene',
+           'empty_scene',
+           'indexed_triangle_set',
+           'surface',
+           'triangulation',
+           'box',
+           'container',
+           'plot_object',
+           'plot_rays',
+           'plot_registry',
+           ]
+
+
 doc_plot = '''
     {__doc__}
 
@@ -85,7 +98,6 @@ def empty_scene(func):
 
 
 @empty_scene
-@format_doc(doc_plot)
 def indexed_triangle_set(xyz, index, display, *, scene):
     '''Plot a set of triangles.
 
