@@ -118,7 +118,7 @@ Two helpful hints:
     
 Lastly, "energy" can be a function that assigns energy values based on the timing of each photon. This allows for time dependent spectra. As an example, we show a function where the photon energy is 0.5 keV for times smaller than 5 s and 2 keV for larger times.
   
-    >>> from marxs.source.source import Source
+    >>> from marxs.source import Source
     >>> import numpy as np
     >>> def time_dependent_energy(t):
     ...     t = t.value  # convert quantity to plain numpy array
