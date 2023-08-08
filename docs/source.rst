@@ -189,7 +189,7 @@ The following laboratory sources are provided:
 Design your own sources and pointing models
 ===========================================
 
-The base class for all marxs sources is `~marxs.source.Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
+The base class for all marxs sources is `~marxs.sources.Source`. The only method required for a source is ``generate_photons``. We recommend to look at the implementation of the included sources to see how this is done best.
 
 - `marxs.source.Source`
 

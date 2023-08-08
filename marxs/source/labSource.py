@@ -5,7 +5,7 @@ import astropy.units as u
 import transforms3d
 
 from ..optics.base import FlatOpticalElement
-from .source import Source
+from .basesources import Source
 from ..math.polarization import polarization_vectors
 from ..math.utils import h2e, e2h
 

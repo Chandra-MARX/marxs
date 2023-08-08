@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 import warnings
 
-__all__ = ['SimulationSetupWarning', 'generate_test_photons'
+__all__ = ['SimulationSetupWarning', 'generate_test_photons',
            'DataFileFormatException', 'tablerows_to_2d']
 
 

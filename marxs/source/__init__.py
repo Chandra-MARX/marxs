@@ -1,5 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-from .source import (Source, PointSource,
+from .basesources import (Source, PointSource,
                      RadialDistributionSource,
                      SphericalDiskSource,
                      DiskSource,
