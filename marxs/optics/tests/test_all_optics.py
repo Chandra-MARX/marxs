@@ -32,7 +32,7 @@ from ...design import (RowlandTorus, GratingArrayStructure,
 from ..baffles import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
-from ...missions.chandra.hess import HETG
+from ...missions.chandra import HETG
 from ...missions.mitsnl.catgrating import (QualityFactor, L1,
                                            L2Abs, L2Diffraction,
                                            CATL1L2Stack,
