@@ -6,7 +6,13 @@
 Define the source in a MARXS run
 ********************************
 
-A "source" in MARXS is anything that sends out X-ray photons. This can be an astrophyical object (such as a star or an AGN, but also a dust cloud that scatters photons from some other direction into our line-of-sight) or a man-made piece of hardware, such as a X-ray tube in the lab or a radioactive calibration source in a sattelite. An important distinction in Marxs is weather the source is located at a finite distance (lab source) or so far away that all rays can be treated as parallel (astrophysical source).
+A "source" in MARXS is anything that sends out X-ray photons. This can be an
+astrophysical object (such as a star or an AGN, but also a dust cloud that
+scatters photons from some other direction into our line-of-sight) or a
+man-made piece of hardware, such as a X-ray tube in the lab or a radioactive
+calibration source in a satellite. An important distinction in Marxs is weather
+the source is located at a finite distance (lab source) or so far away that all
+rays can be treated as parallel (astrophysical source).
 
 For each type of source, we need to specifiy the following properties:
 
@@ -18,22 +24,27 @@ MARXS offers many options to specify the flux, spectrum and polarization that ar
 
 In addition, we need to give the location of the source and its size and shape (most of the currently implemented sources are point sources, but additional shapes will be added in the future):
 
-- **Astrophysical source**: Needs coordiantes on the sky and a pointing model to translate from sky coordinates to the coordiante system of the satellite. See :ref:`sect-source-radec`. 
-- **Lab source**: Needs x,y,z coordianates in the coordinate system of the experiement as explained in :ref:`pos4d`. Lab sources are described in more detail in :ref:`sect-source-lab`.
+- **Astrophysical source**: Needs coordinates on the sky and a pointing model
+  to translate from sky coordinates to the coordinate system of the satellite.
+  See :ref:`sect-source-radec`.
+- **Lab source**: Needs x, y, z coordinates in the coordinate system of the
+  experiment as explained in :ref:`pos4d`. Lab sources are described in more
+  detail in :ref:`sect-source-lab`.
 
 
  .. _sect-source-fluxenpol:
 
-Specify flux, energy and polarizarion for a source
+Specify flux, energy and polarization for a source
 ==================================================
 
-The source flux, the energy and the polarization of sources are specified in the same way for astrophysical sources and lab sources. We show a few examples here and spell out the full specification below.
+The source flux, the energy and the polarization of sources are specified in
+the same way for astrophysical sources and lab sources. We show a few examples
+here and spell out the full specification below.
 
 Flux
 ----
 The source flux can just be a number with units::
 
-     >>> from __future__ import print_function
      >>> from marxs.source import PointSource
      >>> from astropy.coordinates import SkyCoord
      >>> import astropy.units as u
@@ -61,9 +72,12 @@ This will generate 5 counts per second for 20 seconds with an absolutely constan
     ...     return times[times < exposuretime] * u.s
     >>> star = PointSource(coords=SkyCoord(0, 0, unit="deg"), flux=poisson_rate)
 
-Note that this simple implementation is incomplete (it can happen by chance that it does not generate enough photons). MARXS provides a better implementation called `~marxs.source.poisson_process` which will generate the appropriate function automatically given the expected rate:
+Note that this simple implementation is incomplete (it can happen by chance
+that it does not generate enough photons). MARXS provides a better implementation
+called `~marxs.source.poisson_process` which will generate the appropriate
+function automatically given the expected rate:
 
-    >>> from marxs.source.source import poisson_process
+    >>> from marxs.source import poisson_process
     >>> star = PointSource(coords=SkyCoord("23h12m2.3s -3d4m12.3s"), flux=poisson_process(100. / u.s / u.cm**2))
 
 Energy
@@ -131,7 +145,9 @@ Polarization
 An unpolarized source can be created with ``polarization=None`` (this is also
 the default). In this case, a random polarization is assigned to every
 photon. The other options are very similar to "energy": Allowed are a constant
-angle or a table with columns "angle" and "probabilitydensity". Here is an example where most polarizations are randomly oriented, but an orientation around :math:`35^{\circ}` (0.6 in radian) is a lot more likely.
+angle or a table with columns "angle" and "probabilitydensity". Here is an example
+where most polarizations are randomly oriented, but an orientation around
+:math:`35^{\circ}` (0.6 in radian) is a lot more likely.
 
     >>> angles = np.array([0., 30., 40., 360]) * u.degree
     >>> prob = np.array([1, 1., 8., 1.]) / u.degree
@@ -140,7 +156,7 @@ angle or a table with columns "angle" and "probabilitydensity". Here is an examp
 Lastly, if polarization is a function, it will be called with time and energy
 as parameters allowing for time and energy dependent polarization
 distributions. The following function returns a 50% polarization fraction in
-the 6.4 keV Fe flourescence line after some polarized feature comes into view at t=1000 s.
+the 6.4 keV Fe florescence line after some polarized feature comes into view at t=1000 s.
 
     >>> def polfunc(time, energy):
     ...     pol = np.random.uniform(high=2*np.pi, size=len(time))
@@ -159,7 +175,7 @@ Specify the sky position of an astrophysical source
 An astrophysical source in marxs must be followed by a pointing model as first optical element that translates the sky coordiantes into the coordinate system of the satellite (see :ref:`pos4d`) and an entrace aperture that selects an initial position for each ray (all rays from astrophysical sources are parallel, thus the position of the source on the sky only determines the direction of a photon but not if it hits the left or the right side of a mirror). See :ref:`sect-apertures` for more details.
 
 
-The following astropysical sources are included in marxs:
+The following astrophysical sources are included in marxs:
 
 - `marxs.source.PointSource`
 - `marxs.source.RadialDistributionSource`
