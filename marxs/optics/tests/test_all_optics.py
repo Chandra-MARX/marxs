@@ -29,10 +29,10 @@ from ...base import _parse_position_keywords
 from ...design import (RowlandTorus, GratingArrayStructure,
                        LinearCCDArray, RowlandCircleArray,
                        RectangularGrid)
-from ..baffle import Baffle
+from ..baffles import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
-from ...missions.chandra.hess import HETG
+from ...missions.chandra import HETG
 from ...missions.mitsnl.catgrating import (QualityFactor, L1,
                                            L2Abs, L2Diffraction,
                                            CATL1L2Stack,

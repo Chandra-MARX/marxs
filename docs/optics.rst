@@ -152,7 +152,7 @@ For convenience the following elements can be imported directly from `marxs.opti
 
 This short from is recommended over the long form:
 
-  >>> from marxs.optics.baffle import Baffle
+  >>> from marxs.optics.baffles import Baffle
 
 .. _sect-apertures:
     

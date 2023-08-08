@@ -10,7 +10,7 @@ from ...source import (SymbolFSource, Source, poisson_process,
                        PointSource,
                        DiskSource, SphericalDiskSource, GaussSource)
 from ...optics import RectangleAperture
-from ..source import SourceSpecificationError
+from ..basesources import SourceSpecificationError
 
 
 def test_photons_header():

@@ -29,6 +29,13 @@ API Changes
 - ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a
   filename as parameter. [#237]
 
+- Rename files that had a class of the same name, because this confuses the Sphinx autosummary
+  extension. The following files have been renamed: `marxs.missions.chandra.chandra` to
+  `marxs.missions.chandra.chandra_global`, `marxs.source.source` to `marxs.source.basesources`,
+  and `marxs.optics.baffle` to `marxs.optics.baffles`. Users that follow the recommended practice
+  of importing from the higher level such as `from marxs.optics import Baffle` should not notice
+  any difference. [#424]
+
 Bug fixes
 ^^^^^^^^^
 

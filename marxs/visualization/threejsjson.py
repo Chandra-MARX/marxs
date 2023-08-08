@@ -62,7 +62,7 @@ doc_plot='''
         Dictionary with display settings.
 
     Returns
-    --------
+    -------
     outjson : dict
         ``outjson`` is a (possibly nested)  dictionaries that describes the scene
         in form that the included MARXSloader.js can read.
@@ -80,7 +80,7 @@ def plot_object(obj, display=None, **kwargs):
 
 
 def container(obj, display=None,  **kwargs):
-    ''''Recursivey output three.js json to describe all elements of a container.
+    ''''Recursively output three.js json to describe all elements of a container.
 
     Output of each element can be a dict (if it is a leaf) or a list
     (if it is a container). We need to flatten the list here to avoid
