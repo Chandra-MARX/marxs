@@ -5,7 +5,6 @@ from transforms3d.affines import compose
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_path
 from astropy.table import Table
-from numpy.core.umath_tests import inner1d
 from scipy.interpolate import interp1d
 
 from marxs.optics import (PerfectLens, GlobalEnergyFilter,
@@ -90,7 +89,7 @@ class PerfectLensSegment(PerfectLens):
         dir = norm_vector(e2h(focuspoints - h2e(interpos[intersect]), 0))
         pol = parallel_transport(photons['dir'].data[intersect, :], dir,
                                  photons['polarization'].data[intersect, :])
-        angle = np.arccos(np.abs(inner1d(h2e(dir),
+        angle = np.arccos(np.abs(np.einsum("ij,ij->i", h2e(dir),
                                          norm_vector(h2e(photons['dir'][intersect])))))
         return {'dir': dir, 'polarization': pol,
                 'probability': self.reflectivity_interpolator(photons['energy'][intersect],

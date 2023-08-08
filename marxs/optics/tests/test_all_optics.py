@@ -26,10 +26,10 @@ from ..aperture import BaseAperture
 from ...source import PointSource, FixedPointing
 from ..base import FlatStack
 from ...base import _parse_position_keywords
-from ...design import (RowlandTorus, GratingArrayStructure,
-                       LinearCCDArray, RowlandCircleArray,
-                       RectangularGrid)
-from ... import Baffle
+from marxs.design import (RowlandTorus, GratingArrayStructure,
+                       RectangularGrid,
+                       CircularMeshGrid)
+from marxs.optics import Baffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra import HETG

@@ -121,8 +121,9 @@ the data is stored in a file.
 
 .. doctest-skip::
     
-    >>> from marxs.design.tolerancing import load_and_plot
-    >>> tab, fig = load_and_plot('file.fits', ['dx', 'dy', 'dz', 'rx', 'ry', 'rz'])
+    >>> from marxs.design.tolerancing import DispersedWigglePlotter()
+    >>> plotter = DispersedWigglePlotter()
+    >>> tab, fig = plotter.load_and_plot('file.fits', ['dx', 'dy', 'dz', 'rx', 'ry', 'rz'])
 
 
 Differences for `~marxs.design.tolerancing.run_tolerances_for_energies`
@@ -197,8 +198,7 @@ The HETG has two parts with different grating constants and spectral traces on t
 Then, we import from the `marxs.design.tolerancing` module::
   
     >>> from marxs.design.tolerancing import (moveglobal, run_tolerances_for_energies,
-    ...                                       generate_6d_wigglelist,
-    ...                                       load_and_plot)
+    ...                                       generate_6d_wigglelist)
     >>> from marxs.analysis.gratings import CaptureResAeff
 
 Next, we generate input for the function that will move the HESS
@@ -223,7 +223,8 @@ So, let's run it:
     ...                                   resaeff,
     ...                                   t_source=10000)
 
-We save the results in a file named ``wiggle_global.fits`` and then make a quick-look plot. We use normal `matplotlib.pyplot` commands to modify the plot appearance slightly.
+We save the results in a file named ``wiggle_global.fits`` and then make a quick-look plot.
+ We use normal `matplotlib.pyplot` commands to modify the plot appearance slightly.
    
 .. plot:: pyplots/chandra_tolerancing.py
    :include-source:

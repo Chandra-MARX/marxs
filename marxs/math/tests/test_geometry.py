@@ -240,7 +240,7 @@ def test_tube_parametric():
 
 @pytest.mark.parametrize("geom", [FinitePlane, Cylinder])
 def test_local_coordsys(geom):
-    '''Ensure local coordiante systems are orthonormal'''
+    '''Ensure local coordinate systems are orthonormal'''
     rot = transforms3d.euler.euler2mat(*(np.pi * 2 * np.random.rand(3)))
     g = geom({'rotation': rot,
               'position': np.random.rand(3)})

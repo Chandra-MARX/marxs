@@ -54,6 +54,16 @@ def test_threshold():
 def test_arr_to_rmf_matrix_row():
     rmf = generate_RMF()
 
-    ngrp, fchan, nchan, matrix = rmf.arr_to_rmf_matrix_row()
+    arr = np.array([0, 1, 2, 0, 3.])
+    ngrp, fchan, nchan, matrix = rmf.arr_to_rmf_matrix_row(arr, TLMIN_F_CHAN=0)
+    assert ngrp == 2
+    assert fchan == [1, 4]
+    assert nchan == [2, 1]
+    assert np.allclose(matrix, np.array([1, 2, 3]))
 
+    ngrp, fchan, nchan, matrix = rmf.arr_to_rmf_matrix_row(arr, TLMIN_F_CHAN=1)
+    assert ngrp == 2
+    assert fchan == [2, 5]
+    assert nchan == [2, 1]
+    assert np.allclose(matrix, np.array([1, 2, 3]))
 
