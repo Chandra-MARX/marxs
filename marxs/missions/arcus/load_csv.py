@@ -5,23 +5,7 @@ import subprocess
 
 from astropy.table import Table
 import astropy.units as u
-from .utils import config
-
-
-
-# subprocess uses fork internally, which makes a child process
-# that essentially makes a copy of everything that python has
-# in memory, essentially doubling the memory footprint of python
-# at that point. For long running scripts with big simulations that
-# can be enough to run out of memory.
-# So, just get this info once during the first import and save in
-# module-level variables.
-git_hash = subprocess.check_output(["git", "describe", "--always"],
-                                   cwd=config['data']['caldb_inputdata'])[:-1]
-
-git_info = subprocess.check_output(['git', 'show', '-s', '--format=%ci',
-                                    git_hash],
-                                   cwd=config['data']['caldb_inputdata'])
+from .utils import config, git_hash, git_info
 
 hash_displayed = False
 
@@ -30,7 +14,7 @@ class DataFileFormatException(Exception):
     pass
 
 
-def log_tab_metadata(dirname, filename, tab):
+def log_tab_metadata(dirname, filename):
     '''Print information about loaded files to standard out.
 
     Parameters
@@ -39,12 +23,10 @@ def log_tab_metadata(dirname, filename, tab):
         Name for the directory in the caldb-input file structure
     filename : string
         Name of data file (without the ".csv" part)
-    valuename : string
-        Name of the column that hold the value
     '''
     global hash_displayed
     if not hash_displayed:
-        text = 'data files in {}: git hash {} (commited on {})'
+        text = 'data files in {}: git hash {} (committed on {})'
         logging.info(text.format(config['data']['caldb_inputdata'],
                                  git_hash, git_info))
         hash_displayed = True
@@ -71,7 +53,7 @@ def load_number(dirname, filename, valuename):
     '''
     tab = Table.read(os.path.join(config['data']['caldb_inputdata'], dirname,
                                   filename + '.csv'), format='ascii.ecsv')
-    log_tab_metadata(dirname, filename, tab)
+    log_tab_metadata(dirname, filename)
     if len(tab) != 1:
         raise DataFileFormatException('Table {} contains more than one row of data.'.format(filename))
     else:
@@ -97,5 +79,5 @@ def load_table(dirname, filename):
     '''
     tab = Table.read(os.path.join(config['data']['caldb_inputdata'], dirname,
                                   filename + '.csv'), format='ascii.ecsv')
-    log_tab_metadata(dirname, filename, tab)
+    log_tab_metadata(dirname, filename)
     return (tab)

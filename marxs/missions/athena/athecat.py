@@ -20,15 +20,14 @@ from marxs.missions.athena import spo
 from marxs.utils import tablerows_to_2d
 from marxs import simulator
 from marxs import analysis
-from marxs.missions.arcus.utils import config as arcus_config
 from marxs.missions.arcus.arcus import FiltersAndQE
 
 tagversion = TagVersion(SATELLIT='Athena', GRATING='CAT')
 
 # SPOs reflectivity tabulated data
-reflectivity = tablerows_to_2d(Table.read(os.path.join(arcus_config['data']['caldb_inputdata'],
-                                                       'spos', 'coated_reflectivity.csv'),
-                                          format='ascii.ecsv'))
+reflectivity = tablerows_to_2d(Table.read(
+    get_pkg_data_filename('data/Si_efficiency_5_7.dat'),
+    format='ascii.ecsv'))
 reflectivity_interpolator = RectBivariateSpline(reflectivity[0].to(u.keV),
                                                 reflectivity[1].to(u.rad),
                                                 reflectivity[2][0])
@@ -62,7 +61,7 @@ conf = {
         'spo_geom': spo.spogeom,
         'reflectivity_interpolator': reflectivity_interpolator,
 
-        # Due to the impelementation in Rowland circle array, this is reversed
+        # Due to the implementation in Rowland circle array, this is reversed
         # from what I would expect.
         'grating_size': np.array([60., 60.]),
         'grating_frame': 2.,
