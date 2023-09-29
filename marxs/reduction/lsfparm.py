@@ -8,6 +8,9 @@ from astropy.table import Column, Table
 import astropy.units as u
 from sherpa.models import NormGauss1D, Scale1D
 from sherpa.astro.models import Lorentz1D
+from sherpa import stats, optmethods
+from sherpa.fit import Fit
+from sherpa.data import Data1DInt
 
 from .ogip import RMF
 
@@ -337,3 +340,76 @@ def make_rmf(lsfparmrow, wave_edges, width, threshold=1e-6, kw_interp={}):
         for i, col in enumerate(['N_GRP', 'F_CHAN', 'N_CHAN', 'MATRIX']):
             matrix[col][r] = out[i]
     return RMF(matrix, ebounds, CHANTYPE='PHA', HDUCLAS3='REDIST')
+
+
+def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
+                stat=stats.LeastSq(), method=optmethods.LevMar()):
+    '''Fit an LSF model to a simulated set of photons
+
+    Photons are binned into a histogram and the model is fit to that.
+    Since the histogram is constructed using the "probability" column
+    in the event list, if will contain non-integer data, which does not
+    follow a Poisson distribution.
+    Unfortunately, the statistical error in each bin is not well defined,
+    but some number is needed for the fit. So, the square root of the
+    number of photons in each bin (with a floor of 1) is used.
+    This is not ideal, but it gives satisfactory results for typical cases.
+
+    evt : `astropy.table.Table`
+        Table with photons. Must have columns 'probability' and 'colname'.
+        This table must already be filtered to contain only photons
+        that are part of the LSF (e.g. filter on order and wavelength)
+    model : `sherpa.models.model.Model`
+        LSF model to be fit.
+    wavebin : float
+        Wavelength bin size for histogram
+    d_wave : float
+        Half-width of wavelength range to fit
+    colname : str
+        Name of column in evt that contains the wavelength. The default
+        name is taken from the Chandra terminaology.
+
+    Returns
+    -------
+    sdata : `sherpa.data.Data1D`
+        Data object with the histogram
+    res : `sherpa.fit.FitResults`
+        Results of the fit
+    '''
+    hist, edges = np.histogram(evt[colname].value, weights=evt['probability'],
+                               bins=evt[colname].value.mean() + np.arange(- d_wave, d_wave, wavebin))
+    # Get error with 0 in the uncertainties
+    # So, just setting to 1 for now. Should fix properly
+    # e.g. reduce binsize to prevent that or use other statistic and not use that
+    sdata = Data1DInt('counts_histogram', edges[:-1], edges[1:], hist,
+                      staterror=np.clip(np.sqrt(hist), 1, np.inf))
+    modfit = Fit(sdata, model, stat=stat, method=method)
+    res = modfit.fit()
+    # Check if fit was successful
+    return sdata, res
+
+
+def plot_LSFfit(sdata, model, axes):
+    '''Plot an LSF fit for visual inspection
+
+    Parameters
+    ----------
+    sdata : `sherpa.data.Data1D`
+        Data object with the histogram
+    model : `sherpa.models.model.Model`
+        LSF model from the fit to be plotted
+    axes : list of `matplotlib.axes.Axes`
+        The first axis is used linar plot, highligting the fit to the
+        line center and the second axis for a log plot, highlighting the
+        wings.
+    '''
+    for ax in axes:
+        ax.plot(sdata.x, sdata.y, 'k', label='Data')
+        ax.plot(sdata.x, model(sdata.xlo, sdata.xhi), linewidth=2, label='model')
+        for m in flatten_sherpa_model(model):
+            ax.plot(sdata.x, m(sdata.xlo, sdata.xhi), linewidth=2, label=m.name)
+        ax.set_xlabel('wavelength [Ang]')
+    wave = np.mean(sdata.x)  # Fitting regions are centered on wavelength
+    d_wave = (np.max(sdata.x) - np.min(sdata.x)) / 2
+    axes[1].set_yscale('log')
+    axes[1].set_ylim([1, np.max(sdata.y)])
