@@ -18,7 +18,8 @@ __all__ = ['oneormoreelements',
            'run_tolerances', 'run_tolerances_for_energies',
            'generate_6d_wigglelist', 'reset_6d',
            'select_1dof_changed',
-           'plot_wiggle', 'load_and_plot',
+           'WigglePlotter',
+           'DispersedWigglePlotter',
            ]
 
 
@@ -549,10 +550,17 @@ def select_1dof_changed(table, par,
 
 
 class WigglePlotter():
+    '''Object to plot results of tolerancing simulations
+
+    This class combines the `load_and_plot` and `plot_wiggle` functions
+    with reasonable defaults for the plot appearance.
+    '''
 
     ylabel = 'left label (solid lines)'
-    y2label = 'right label (dotted lines)'
+    'Label for the left axis of the plot'
 
+    y2label = 'right label (dotted lines)'
+    'Label for the right axis of the plot'
 
     bg_colors = {'global': '0.9',
                  'individual': (1.0, 0.9, 0.9)}
@@ -688,6 +696,7 @@ class WigglePlotter():
 
 
 class DispersedWigglePlotter(WigglePlotter):
+    '''A wiggle plotter for gratings'''
 
     ylabel ='Resolving power (solid lines)'
     y2label ='$A_{eff}$ [cm$^2$] (dotted lines)'
