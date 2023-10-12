@@ -309,7 +309,7 @@ def make_rmf(lsfparmrow, wave_edges, width, threshold=1e-6, kw_interp={}):
                           'F_CHAN', 'N_CHAN', 'MATRIX'],
                    data=[np.zeros(len(ebounds), dtype=d) for d in [
                        np.float32, np.float32, np.int16,
-                       np.object, np.object, np.object]],
+                       object, object, object]],
                    units=[u.keV, u.keV, None, None, None, None])
 
     matrix['ENERG_LO'] = ebounds['E_MIN']

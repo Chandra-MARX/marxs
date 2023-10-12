@@ -306,7 +306,7 @@ class RMF:
         # F_CHAN and N_CHAN are also. That's the case when this class
         # is used ot make them, but might not be true in general if
         # read in from a file.
-        if self.matrix['MATRIX'].dtype == np.object:
+        if self.matrix['MATRIX'].dtype == object:
             self.variable_length_to_fixed_length()
 
         hdulist = fits.HDUList([fits.PrimaryHDU(),
