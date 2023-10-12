@@ -6,8 +6,9 @@ import pytest
 from marxs.missions.arcus.arcus import (PerfectArcus,
                                         defaultconf as conf)
 from marxs.missions.arcus.defaults import DefaultSource, DefaultPointing
-from marxs.missions.arcus.utils import id_num_offset
+from marxs.missions.arcus.utils import id_num_offset, config
 from ..analyze_grid import zeropos
+
 
 class DirectLight(PerfectArcus):
     '''Default Definition of Arcus without any misalignments'''

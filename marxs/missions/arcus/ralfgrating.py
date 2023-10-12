@@ -1,36 +1,22 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-import os
-
-from astropy.table import Table
 import numpy as np
 from transforms3d.axangles import axangle2mat
 from transforms3d.affines import compose
 
 from marxs.design.rowland import RectangularGrid
 from marxs.simulator import Parallel, Sequence
-from marxs.missions.mitsnl.catgrating import (InterpolateEfficiencyTable,
-                                              CATL1L2Stack,
+from marxs.missions.mitsnl.catgrating import (CATL1L2Stack,
                                               catsupportbars)
 from marxs.missions.arcus.load_csv import load_table
 from marxs.missions.arcus.utils import config, id_num_offset
 from marxs.missions.arcus.spo import zoom_to_cover_all_spos, rmid_spo
 
 
-__all__ = ['globalorderselector',
+__all__ = [
            'CATfromMechanical',
            'CATWindow',
            'RegularGrid',
            ]
-
-globalorderselector = InterpolateEfficiencyTable(
-    Table.read(os.path.join(config['data']['caldb_inputdata'],
-                 'gratings', 'efficiency.csv'), format='ascii.ecsv'))
-'''Global instance of an order selector to use in all CAT gratings.
-
-As long as the efficiency table is the same for all CAT gratings, it makes
-sense to define that globally. If every grating had its own independent
-order selector, we would have to read the selector file a few hundred times.
-'''
 
 
 class CATfromMechanical(Parallel):
@@ -107,7 +93,7 @@ class CATfromMechanical(Parallel):
         # currently, 'd' is the only parameter passed down that way
         # but e.g. orderselector could be treated the same way
         kwargs['elem_args']['elem_args'] = [{'d': d,
-                                             'order_selector': globalorderselector} for d in d_grat]
+                                             'order_selector': self.conf['gratinggrid']['elem_args']['order_selector']} for d in d_grat]
         kwargs['elem_args']['elem_pos'] = gratingpos
         kwargs['elem_args']['id_num_offset'] = id_start
         super(CATfromMechanical, self).__init__(**kwargs)
@@ -149,7 +135,7 @@ class RegularGrid(Sequence):
         blazematm = axangle2mat(np.array([0, 0, 1]),
                                 np.deg2rad(conf['blazeang']))
         gratinggrid = conf['gratinggrid']
-        
+
         for chan in channels:
             sig = 1 if '1' in chan else -1
             is_m = -1 if 'm' in chan else +1

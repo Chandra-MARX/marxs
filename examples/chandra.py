@@ -33,8 +33,8 @@ Chandra.write_evt(photons, 'photons.fits')
 
 p = photons[(photons['order']==-1) & (photons['facet'] > 194)]
 xbest = find_best_detector_position(p, col='det_x')
-print xbest.x
-print measure_FWHM(p['det_x']), measure_FWHM(p['det_y'])
+print(xbest.x)
+print(measure_FWHM(p['det_x']), measure_FWHM(p['det_y']))
 
 #for x in [-50, 0, 50, xbest.x]:
 #    mdet = FlatDetector(position=np.array([x, 0, 0]), zoom=1e5, pixsize=1.)

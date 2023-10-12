@@ -5,12 +5,21 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 import astropy.units as u
-from astropy.table import Table
+from astropy.table import Table, QTable
+from astropy.utils.data import get_pkg_data_filename
 
 from marxs.reduction import osip
-from marxs.missions.arcus.arcus import defaultconf
+from marxs.missions.arcus.arcus import defaultconf as arcusconf
+from marxs.missions.arcus.utils import config
 from marxs.missions.arcus import arfrmf
-from marxs.missions.arcus.ccd import CCDRedist
+from marxs.optics.detector import CCDRedistNormal
+
+import pytest
+
+
+# In this example, we use a file that's included in MARXS for test purposes
+filename = get_pkg_data_filename('data/ccd_redist_normal.ecsv', 'marxs.optics.tests')
+tab_redist = QTable.read(filename)
 
 
 def test_filename():
@@ -33,32 +42,37 @@ def test_filename():
     assert n == 'chan_all_ccdord_-3_true_-3.fits'
 
 
+@pytest.mark.skipif('data' not in config,
+                    reason='Test requires Arcus CALDB')
 def test_onccd():
     '''Don't want to hardcode exact locations of CCDs in this test,
     because we might move around CCDs or aimpoints. So, instead, this test
     just checks a few generic properties and wavelengths that are wildly off
     chip.
     '''
-    out = arfrmf.onccd(np.arange(200) * u.Angstrom, 1, '1')
+    onccd = arfrmf.OnCCD(arcusconf)
+    out = onccd(np.arange(200) * u.Angstrom, 1, '1')
     assert out.sum() > 0  # Some wavelength fall on chips
     assert out.sum() < len(out)  # but not all of them
 
     # chip gaps are different for different orders
-    out1 = arfrmf.onccd(np.arange(25, 30, .001) * u.Angstrom, -5, '1')
-    out2 = arfrmf.onccd(np.arange(25, 30, .001) * u.Angstrom, -6, '1')
+    out1 = onccd(np.arange(25, 30, .001) * u.Angstrom, -5, '1')
+    out2 = onccd(np.arange(25, 30, .001) * u.Angstrom, -6, '1')
     assert not np.all(out1 == out2)
 
     # chip gaps are at same position in m * lambda space
-    out1 = arfrmf.onccd(np.arange(25, 30, .001) * u.Angstrom, -5, '1')
-    out2 = arfrmf.onccd(np.arange(25, 30, .001) * u.Angstrom / 6 * 5, -6, '1')
+    out1 = onccd(np.arange(25, 30, .001) * u.Angstrom, -5, '1')
+    out2 = onccd(np.arange(25, 30, .001) * u.Angstrom / 6 * 5, -6, '1')
     assert np.all(out1 == out2)
 
     # chip gaps are different for different opt ax
-    out1 = arfrmf.onccd(np.arange(30, 35, .001) * u.Angstrom, -4, '1')
-    out2 = arfrmf.onccd(np.arange(30, 35, .001) * u.Angstrom, -4, '2')
+    out1 = onccd(np.arange(30, 35, .001) * u.Angstrom, -4, '1')
+    out2 = onccd(np.arange(30, 35, .001) * u.Angstrom, -4, '2')
     assert not np.all(out1 == out2)
 
 
+@pytest.mark.skipif('data' not in config,
+                    reason='Test requires Arcus CALDB')
 def test_arf_nonzero():
     '''Arcus design will evolve, so I don't want to test exact numbers here
     but if we are off my orders of magnitude that that's likely a code error.
@@ -68,11 +82,13 @@ def test_arf_nonzero():
     assert np.all(arf['SPECRESP'] < 400 * u.cm**2)
 
 
+@pytest.mark.skipif('data' not in config,
+                    reason='Test requires Arcus CALDB')
 def test_arf_channels_addup():
     arfall = arfrmf.mkarf([33, 34, 35, 36] * u.Angstrom, -3)
 
     arflist = []
-    for k in defaultconf['pos_opt_ax'].keys():
+    for k in arcusconf['pos_opt_ax'].keys():
         arflist.append(arfrmf.mkarf([33, 34, 35, 36] * u.Angstrom, -3, channels=[k]))
 
     assert np.allclose(arfall['SPECRESP'],
@@ -80,15 +96,22 @@ def test_arf_channels_addup():
                        )
 
 
+@pytest.mark.skipif('data' not in config,
+                    reason='Test requires Arcus CALDB')
 def test_mirrgrat():
     '''Test that mirr_grat works. Don't want to hardcode specific numbers
     (since they will change), but test a range here.
     '''
-    aeff = arfrmf.mirr_grat([10, 20, 30] * u.Angstrom, -5)
+    aefforder = QTable.read(pjoin(config['data']['caldb_inputdata'], 'aeff',
+                                     'mirr_grat.tab'), format='ascii.ecsv')
+    mirrgrat = arfrmf.MirrGrat(aefforder=aefforder)
+    aeff = mirrgrat([10, 20, 30] * u.Angstrom, -5)
     assert np.all(aeff < [10, 50, 100] * u.cm**2)
     assert np.all(aeff > [.1, 5., 10.] * u.cm**2)
 
 
+@pytest.mark.skipif('data' not in config,
+                    reason='Test requires Arcus CALDB')
 def test_make_arf_osip():
     '''integration test: Generate and ARF and then apply an OSIP to it'''
     with TemporaryDirectory() as tmpdirname:
@@ -103,7 +126,7 @@ def test_make_arf_osip():
                             arfrmf.filename_from_meta('arf', **arf.meta))
             arf.write(basearf)
 
-        osipp = osip.FixedFractionOSIP(0.7, ccd_redist=CCDRedist(),
+        osipp = osip.FixedFractionOSIP(0.7, ccd_redist=CCDRedistNormal(tab_redist),
                                        filename_from_meta=arfrmf.filename_from_meta)
         osipp.apply_osip_all(tmpdirname, tmpdirname, [-5],
                              filename_from_meta_kwargs={'ARCCHAN': '1111'})

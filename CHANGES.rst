@@ -28,6 +28,22 @@ New Features
 - Add ``CircularMeshGrid`` as a new way to place gratings on the Rowlandtorus. Adapted from
   previous Lynx code. [#237]
 - Add various helper functions that previously lived in separate repros. [#237]
+- Add methods to fit the LSF to generate a Chandra-style LSFPARM file. [#237]
+- Include code for several missions (Athena, Arcus, Lynx, AXIS) into marxs.
+  This code had been previously developed separately, since none of it is really ready for
+  public consumption (e.g. the Lynx concept has been rejected, Arcus is under continuous redefinition).
+  However, given how few people except me currently use MARXS, "practicality beats purity"
+  and I'm now including this into marxs. Note that the mission code generally is not documented
+  in the docs and not tested as well.
+  It's simply either not interesting enough for general users (but needed to
+  replicate some of my SPIE proceedings so I want it publicly available)
+  or evolving too fast to write good docs and tests (e.g. the Arcus effective area
+  changes every time the coating or layout changes, tests that check Aeff are
+  thus more checks on the CALDB than on the code). [#240]
+- A number of updates that were developed for those individual missions and are
+  now included into marxs proper, e.g.: A class to make certain plots that display
+  the performance loss for misalignments and utilities to run tolerancing etc. [#240]
+
 
 API Changes
 ^^^^^^^^^^^

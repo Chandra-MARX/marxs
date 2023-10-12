@@ -3,8 +3,12 @@ import numpy as np
 import astropy.units as u
 from .. import Arcus
 from ..defaults import DefaultSource, DefaultPointing
+from marxs.missions.arcus.utils import config as arcusconf
 
+import pytest
 
+@pytest.mark.skipif('data' not in arcusconf,
+                    reason='Test requires Arcus CALDB')
 def test_blaze():
     '''Check that photons have a reasonable blaze. We do not want to hardcode a
     particular value here but if they are all zero or they are all over the

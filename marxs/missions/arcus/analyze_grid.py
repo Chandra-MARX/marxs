@@ -10,6 +10,7 @@ from marxs.analysis.gratings import (CaptureResAeff_CCDgaps,
 from marxs.base import check_meta_consistent, check_energy_consistent
 from marxs.missions.arcus.utils import id_num_offset
 from marxs.missions.arcus.arcus import defaultconf
+from marxs.missions.arcus.load_csv import load_table
 
 
 def zeropos(coord, channel, conf=defaultconf):
@@ -190,3 +191,32 @@ def csv_per_order(infile, col, outfile):
                                     in orders_from_meta(tab.meta)])
     outtab.add_column(tab['wave'], index=0)
     outtab.write(outfile, format='ascii.csv', overwrite=True)
+
+
+def tg_resolve_events_circdet(evt, defaultconf):
+    '''Resolve the tangent plane coordinates for a circular detector
+
+    .. warning::
+        This method is still under development.
+
+    Parameters
+    ----------
+    evt : `astropy.table.Table`
+        Table with photon events
+    defaultconf : dict
+        Arcus configuration dictionary
+    '''
+
+    facets = load_table('gratings', 'facets')
+    effective_grating_period = np.cos(defaultconf['blazeang'] * u.degree) * np.mean(facets['period']) * facets['period'].unit
+    # without the blaze angle would look like this
+    # effective_grating_period = np.mean(facets['period']) * facets['period'].unit
+
+
+    ang_r0 = zeropos('circ_phi', evt.meta['CHANNEL']) * u.rad
+    evt['tg_r'] = (-(ang_r0 - evt['circ_phi']) / 2).to(u.degree)
+    l = 2 * defaultconf['rowland_central'].r * u.mm * np.cos(ang_r0 - evt['circ_phi'])
+    dy = defaultconf['pos_opt_ax'][evt.meta['CHANNEL']][1] * u.mm - evt['circ_y']
+    evt['tg_d'] = np.arctan(dy / l).to(u.degree)
+
+    evt['tg_mlam'] = (effective_grating_period * np.sin(evt['tg_r'])).to(u.Angstrom)

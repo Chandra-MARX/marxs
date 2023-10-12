@@ -12,8 +12,6 @@ from sherpa.models import NormGauss1D
 from marxs.missions.arcus.utils import config
 from marxs.missions.arcus.arcus import defaultconf, DetCamera, FiltersAndQE
 from marxs.missions.arcus.load_csv import load_table
-from marxs.missions.arcus.ccd import ccdfwhm
-
 from marxs.missions.arcus.utils import tagversion
 from marxs.reduction import ogip
 
@@ -106,9 +104,6 @@ class OnCCD:
         return onanyccd
 
 
-onccd = OnCCD(defaultconf)
-
-
 class FiltersQE(FiltersAndQE):
     def __call__(self, en_mid):
         # Make it look like a photon table so that I can call MARXS element
@@ -118,16 +113,8 @@ class FiltersQE(FiltersAndQE):
         return tab['probability']
 
 
-filtersqe = FiltersQE(kwargs_interp1d={'bounds_error': False,
-                                       'fill_value': 0.})
-
-
-aefforder = QTable.read(os.path.join(config['data']['caldb_inputdata'], 'aeff',
-                                     'mirr_grat.tab'), format='ascii.ecsv')
-
-
 class MirrGrat:
-    def __init__(self, aefforder=aefforder,
+    def __init__(self, aefforder,
                  kind='quadratic', fill_value=0., bounds_error=False):
         # Bug in astropy <=4.2:
         # need to wrap into extra QTable or sort will fail
@@ -168,11 +155,8 @@ class MirrGrat:
         return np.clip(transmission, 0, None) * self.unit[str(order)]
 
 
-mirr_grat = MirrGrat(aefforder)
-
-
 def mkarf(channel_edges, order,
-          mirr_grat=mirr_grat, trans_filters_qe=filtersqe, onccd=onccd,
+          mirr_grat=None, trans_filters_qe=None,
           conf=defaultconf,
           channels=list(defaultconf['pos_opt_ax'].keys())):
     '''Make an ARF for 0th order or a grating spectrum
@@ -184,13 +168,13 @@ def mkarf(channel_edges, order,
         generated from  n edges will have n-1 bins.
     order : int
         Diffraction order
-    mirr_grat : callable
-        Function that interpolates mirror and grating efficiency
-    trans_filter_qe : callable
-        Function that interpolates filter curves and CCD QE
-    onccd : callable
-        Function that returns if a given energy for a given order falls onto
-        the CCDs or in e.g. a chip gap.
+    mirr_grat : callable or None
+        Function that interpolates mirror and grating efficiency. If None,
+        it is read from ``mirr_grat.tab`` in the caldb.
+    trans_filters_qe : callable or None
+        Function that interpolates filter curves and CCD QE. If None,
+        it is initialized from `FiltersQE` which uses Arcus defaults and
+        allows extrapolation.
     conf : dict
         Arcus configuration
     channels : list
@@ -206,9 +190,18 @@ def mkarf(channel_edges, order,
     energy_edges = np.sort(energy_edges)
     en_mid = 0.5 * (energy_edges[:-1] + energy_edges[1:])
 
+    onccd = OnCCD(conf)
+
+    if mirr_grat is None:
+        aefforder = QTable.read(os.path.join(config['data']['caldb_inputdata'], 'aeff',
+                                     'mirr_grat.tab'), format='ascii.ecsv')
+        mirr_grat = MirrGrat(aefforder)
+
+    if trans_filters_qe is None:
+        trans_filters_qe = FiltersQE(kwargs_interp1d={'bounds_error': False,
+                                       'fill_value': 0.})
     specresp_filtqe = trans_filters_qe(en_mid)
     specresp_sim = mirr_grat(en_mid, order)
-
     all_onccd = np.zeros(len(specresp_filtqe))
     for chan in channels:
         if chan not in defaultconf['pos_opt_ax'].keys():
@@ -237,7 +230,7 @@ def mkarf(channel_edges, order,
 
 ## Can I replace this with ogiprmffrom_Gauss_sigma?
 # I wrote it for that purpose, but need to compare output to make sure it works that same way.
-def mkrmf0(bin_edges, threshold=1e-6, ccdfwhm=ccdfwhm):
+def mkrmf0(bin_edges, *, ccdfwhm: QTable, threshold=1e-6):
     '''Make RMF for 0 order
 
     The RMF is a single Gaussian.
@@ -277,7 +270,7 @@ def mkrmf0(bin_edges, threshold=1e-6, ccdfwhm=ccdfwhm):
         func = NormGauss1D('name')
         func.pos = miden
         func.FWHM = np.interp(miden, ccdfwhm['energy'],
-                              ccdfwhm['FWHM'] / 1000)  # eV to keV
+                              ccdfwhm['FWHM'].to(u.keV))  # eV to keV
         fullmatrix = func(ebounds['E_MIN'], ebounds['E_MAX'])
         out = ogip.RMF.arr_to_rmf_matrix_row(fullmatrix, 0,
                                              threshold=threshold)

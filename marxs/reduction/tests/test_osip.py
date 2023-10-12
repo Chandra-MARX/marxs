@@ -7,13 +7,19 @@ import astropy.units as u
 from astropy.table import Table, QTable
 
 from marxs.missions.arcus import arfrmf
-from marxs.missions.arcus.ccd import CCDRedist
+from marxs.missions.arcus.utils import config as arcusconf
+from marxs.optics.detector import CCDRedistNormal
 from ..osip import FixedWidthOSIP, FixedFractionOSIP, FractionalDistanceOSIP
 
 import pytest
 
 
-ccd_redist = CCDRedist()
+# In this example, we use a file that's included in MARXS for test purposes
+from astropy.utils.data import get_pkg_data_filename
+filename = get_pkg_data_filename('data/ccd_redist_normal.ecsv', 'marxs.optics.tests')
+tab_redist = QTable.read(filename)
+
+ccd_redist = CCDRedistNormal(tab_redist)
 osipf = FixedWidthOSIP(40 * u.eV, ccd_redist=ccd_redist)
 osipp = FixedFractionOSIP(0.7, ccd_redist=ccd_redist)
 osipd = FractionalDistanceOSIP(ccd_redist=ccd_redist)
@@ -55,7 +61,7 @@ def test_osip_factor():
     '''test with fixed sigma'''
     sig = QTable({'energy': [0, 1, 2] * u.keV, 'sigma': [40, 40, 40] * u.eV})
     myosip = FixedWidthOSIP(40 * u.eV,
-                            ccd_redist=CCDRedist(sig))
+                            ccd_redist=CCDRedistNormal(sig))
 
     assert np.allclose(myosip.osip_factor([10] * u.Angstrom, -5, -5),
                        0.6827, rtol=1e-4)
@@ -79,9 +85,6 @@ def test_symmetry(thisosip):
     up = thisosip.osip_factor([10, 20, 30] * u.Angstrom, -5, -6)
     down = thisosip.osip_factor([10, 20, 30] * u.Angstrom, -5, -4)
     assert np.allclose(up, down, atol=1e-4)
-
-
-
 
 
 @pytest.mark.parametrize("frac", [.5, .7, 1.])
@@ -115,6 +118,8 @@ def test_Fixed_width_width():
     assert u.allclose(tab, 40 * u.eV)
 
 
+@pytest.mark.skipif('data' not in arcusconf,
+                    reason='Test requires Arcus CALDB')
 def test_Fixed_Fraction():
     '''Test FixedFractionOSIP end-to-end by actually making and
     changing a file'''

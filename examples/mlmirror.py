@@ -11,9 +11,9 @@ Note that string1 and string2 depend on the paths of those files.
 '''
 
 def normalEnergyFunc(mean, stdDev):
-	'''This creates and returns a function that assigns energies to photons randomly
-	according to the normal distribution with the given mean and standard deviation.
-	'''
+    '''This creates and returns a function that assigns energies to photons randomly
+    according to the normal distribution with the given mean and standard deviation.
+    '''
     def energyFunc(photonTimes):
         n = len(photonTimes)
         return np.random.normal(mean, stdDev, n)

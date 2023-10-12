@@ -1,7 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import os
 import logging
-import subprocess
 
 from astropy.table import Table
 import astropy.units as u

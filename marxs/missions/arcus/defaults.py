@@ -11,7 +11,7 @@ from marxs.source import PointSource, JitterPointing
 from marxs.math.utils import xyz2zxy
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from marxs.missions.arcus.arcus import jitter_sigma
+from marxs.missions.arcus.load_csv import load_number
 
 coords = SkyCoord(30. * u.deg, 30. * u.deg)
 
@@ -21,7 +21,6 @@ sourcekwargs = {'coords': coords,
                 }
 pointingkwargs = {'coords': coords,
                   'reference_transform': xyz2zxy,
-                  'jitter': jitter_sigma
                   }
 
 
@@ -29,15 +28,15 @@ class DefaultSource(PointSource):
     '''Default astronomical source for Arcus.
 
     This source will work with no parameters passed in and generate photons
-    with a sensible pre-set for Arucs simulations (e.g. a fixed energy in
+    with a sensible pre-set for Arcus simulations (e.g. a fixed energy in
     the range that is interesting for Arcus).
 
     Parameters
     ----------
     Set any parameters that the base class would accept. Parameters are
-    passed right through, the only difference in behaviour to the base class is
+    passed right through, the only difference in behavior to the base class is
     that defaults are provided for all required parameters (e.g. the
-    coordiantes on the sky).
+    coordinates on the sky).
     '''
     def __init__(self, **kwargs):
         for k in sourcekwargs:
@@ -51,18 +50,21 @@ class DefaultPointing(JitterPointing):
 
     This pointing will work with no parameters passed in and it will set
     sensible defaults for an Arcus simulation (e.g. photons passing along
-    the z-axis of the coordiante system for an on-axis source).
+    the z-axis of the coordinate system for an on-axis source).
 
     Parameters
     ----------
     Set any parameters that the base class would accept. Parameters are
-    passed right through, the only difference in behaviour to the base class is
+    passed right through, the only difference in behavior to the base class is
     that defaults are provided for all required parameters (e.g. the jitter and
-    the pointing direction.
+    the pointing direction).
     '''
 
     def __init__(self, **kwargs):
         for k in pointingkwargs:
             if k not in kwargs:
                 kwargs[k] = pointingkwargs[k]
+        if 'jitter' not in kwargs:
+            kwargs['jitter'] = load_number('other', 'pointingjitter',
+                           'FWHM') / 2.3545
         super(DefaultPointing, self).__init__(**kwargs)

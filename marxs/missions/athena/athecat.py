@@ -26,7 +26,7 @@ tagversion = TagVersion(SATELLIT='Athena', GRATING='CAT')
 
 # SPOs reflectivity tabulated data
 reflectivity = tablerows_to_2d(Table.read(
-    get_pkg_data_filename('data/Si_efficiency_5_7.dat'),
+    get_pkg_data_filename('data/coated_reflectivity.csv'),
     format='ascii.ecsv'))
 reflectivity_interpolator = RectBivariateSpline(reflectivity[0].to(u.keV),
                                                 reflectivity[1].to(u.rad),

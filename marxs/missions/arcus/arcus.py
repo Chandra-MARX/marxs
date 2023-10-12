@@ -2,8 +2,13 @@
 from copy import deepcopy
 import numpy as np
 import astropy.units as u
+from astropy.table import QTable
 from scipy.interpolate import interp1d
 import transforms3d
+import os
+
+from astropy.table import Table
+from scipy.interpolate import RectBivariateSpline
 
 import marxs
 from marxs.simulator import Sequence, KeepCol, ParallelCalculated
@@ -13,25 +18,29 @@ from marxs.optics import (GlobalEnergyFilter,
 from marxs import optics
 from marxs.design.rowland import RectangularGrid
 import marxs.analysis
+from marxs.math.utils import xyz2zxy
+from marxs.utils import tablerows_to_2d
 from marxs.design import tolerancing as tol
 from marxs.missions.mitsnl.catgrating import catsupportbars, CATL1L2Stack, l1_order_selector
+from marxs.missions.mitsnl.tolerances import wiggle_and_bar_tilt
 from marxs.missions.athena.spo import SPOChannelMirror, ScatterPerChannel, spomounting
-from .ralfgrating import CATfromMechanical, CATWindow, globalorderselector, RegularGrid
+from marxs.missions.athena.spo import spogeom2pos4d
+from marxs.missions.mitsnl.catgrating import InterpolateEfficiencyTable
 
+from .ralfgrating import CATfromMechanical, CATWindow
 from . import spo
 from . import boom
 from .load_csv import load_number, load_table
-from .utils import tagversion, id_num_offset
-from marxs.math.utils import xyz2zxy
+from .utils import tagversion, id_num_offset, config
 from .generate_rowland import make_rowland_from_d_BF_R_f
-from ..mitsnl.tolerances import wiggle_and_bar_tilt
+from .utils import config
+
+
 
 __all__ = ['xyz2zxy',
            'jitter_sigma',
            'Arcus', 'ArcusForPlot', 'ArcusForSIXTE']
 
-jitter_sigma = load_number('other', 'pointingjitter',
-                           'FWHM') / 2.3545
 defaultconf = make_rowland_from_d_BF_R_f(750., 5915.51307, 12000. - 123.569239)
 defaultconf['blazeang'] = 1.8
 defaultconf['n_CCDs'] = 16
@@ -42,9 +51,7 @@ defaultconf['phi_det_start'] = 0.024  # was 0.037 at 600 mm channel spacing
 defaultconf['perpplanescatter'] = 1.5 / 2.3545 * u.arcsec
 # 2 * 0.68 converts HPD to sigma
 defaultconf['inplanescatter'] = 7. / (2 * 0.68) * u.arcsec
-defaultconf['spo_pos4d'] = spo.spo_pos4d
-defaultconf['spo_geom'] = spo.spogeom
-defaultconf['reflectivity_interpolator'] = spo.reflectivity_interpolator
+
 defaultconf['det_kwargs']= {
     'elem_class': FlatDetector,
     # orientation flips around CCDs so that det_x increases
@@ -56,7 +63,40 @@ defaultconf['det_kwargs']= {
     'id_num_offset': 1,
 }
 
-defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
+# If we have the Arcus calibration database, load all the remaining
+# configuration from there.
+# If not (e.g. we are running in CI or readthedocs)
+# do not load anything and use the defaults.
+# Arcus specific tests will fail, but at least the model can be imported.
+if 'data' in config:
+    spogeom = load_table('spos', 'petallayout')
+    spogeom['r_mid'] = (spogeom['outer_radius'] + spogeom['inner_radius']) / 2
+
+    spo_pos4d = [np.dot(xyz2zxy, s) for s in spogeom2pos4d(spogeom)]
+
+    defaultconf['spo_pos4d'] = spo_pos4d
+    defaultconf['spo_geom'] = spogeom
+    reflectivity = tablerows_to_2d(Table.read(os.path.join(config['data']['caldb_inputdata'],
+                                                           'spos', 'coated_reflectivity.csv'),
+                                              format='ascii.ecsv'))
+    reflectivity_interpolator = RectBivariateSpline(reflectivity[0].to(u.keV),
+                                                reflectivity[1].to(u.rad),
+                                                reflectivity[2][0])
+
+    defaultconf['reflectivity_interpolator'] = reflectivity_interpolator
+
+    globalorderselector = InterpolateEfficiencyTable(
+        Table.read(os.path.join(config['data']['caldb_inputdata'],
+                 'gratings', 'efficiency.csv'), format='ascii.ecsv'))
+    '''Global instance of an order selector to use in all CAT gratings.
+
+    As long as the efficiency table is the same for all CAT gratings, it makes
+    sense to define that globally. If every grating had its own independent
+    order selector, we would have to read the selector file a few hundred times.
+    '''
+
+
+    defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
                               'elem_class': CATL1L2Stack,
                               'elem_args': {'zoom': [1., 28./2, 28.5/2],
                                             'order_selector': globalorderselector,
@@ -72,6 +112,18 @@ defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
                               },
                               'parallel_spec': np.array([1., 0., 0., 0.]),
                    }
+
+
+    ccdfwhm = QTable.read(os.path.join(config['data']['caldb_inputdata'],
+                                       'detectors',
+                                       'ccd_2021', 'arcus_ccd_rmf_20210211.txt'),
+                         format='ascii.no_header', names=['energy', 'FWHM'])
+    # Units currently not set in table
+    ccdfwhm['energy'] *= u.keV
+    ccdfwhm['FWHM'] *= u.eV
+    defaultconf['ccdredist'] = ccdfwhm
+
+
 # Other arguments for the detector - are they needed for something?
 #defaultconf['detector']['d_element'] = [
 #    defaultconf['det_kwargs']['elem_args']['zoom'][1] * 2 + 0.824 * 2 + 0.5,
@@ -79,7 +131,8 @@ defaultconf['gratinggrid'] = {'d_element': [32., 32.5],
 #]
 
 
-channels = list(defaultconf['pos_opt_ax'].keys())
+channels = ['1', '1m', '2', '2m']
+# set of all channels. Used as default for a number of functions below.
 
 
 def reformat_randall_errorbudget(budget, globalfac=0.8):
@@ -190,7 +243,10 @@ class SimpleSPOs(Sequence):
                                             perpplanescatter=conf['perpplanescatter'],
                                             orientation=xyz2zxy[:3, :3]))
         mirror.append(spomounting)
-        mirror.append(spo.geometricthroughput)
+        self.geometricopening = load_number('spos', 'geometricthroughput', 'transmission') * \
+            load_number('spos', 'porespecifications', 'transmission')
+        mirror.append(GlobalEnergyFilter(filterfunc=lambda e: self.geometricopening,
+                                         name='SPOgeometricthrougput'))
 
         tab = load_table('spos', 'lossterm')
         en = tab['energy'].to(u.keV, equivalencies=u.spectral())

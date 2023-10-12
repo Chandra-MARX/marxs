@@ -91,7 +91,7 @@ def _check_col_and_type(tab, req):
     for col, dtype, ndim in req:
         if not ((col in tab.colnames) or (col in tab.meta)):
             raise OGIPFormatError(f'Required column {col} missing.')
-        cancast = [np.can_cast(tab[col].dtype, d, 'same_kind') for d in dtype]
+        cancast = [np.can_cast(tab[col].dtype, d, 'unsafe') for d in dtype]
         if not any(cancast):
             raise OGIPFormatError(f'dtype for {col} must be {dtype}.')
         if ((ndim is None) or
@@ -371,7 +371,7 @@ class RMF:
                                         row['F_CHAN'][i] + row['N_CHAN'][i]-1)
                               for i in range(row['N_GRP'])])
         return self.ebounds['E_MIN'][ind], self.ebounds['E_MAX'][ind], \
-            np.asanyarray(row['MATRIX'])[ind]
+            np.asanyarray(row['MATRIX'])
 
     def rmf_angstrom(self, energy):
         en_lo, en_hi, rmf = self.rmf(energy)
