@@ -8,7 +8,8 @@ build:
     python: "3"
   apt_packages:
     - graphviz
-    - bison  # for sherpa
+    - bison  # to build sherpa
+    - flex  # to build sherpa
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
