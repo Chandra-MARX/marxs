@@ -8,6 +8,8 @@ marxs.test
 """
 import os
 
+from marxs.missions.arcus.utils import config as arcusconfig
+
 try:
     from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
     ASTROPY_HEADER = True
@@ -34,3 +36,13 @@ def pytest_configure(config):
         from . import __version__
         packagename = os.path.basename(os.path.dirname(__file__))
         TESTED_VERSIONS[packagename] = __version__
+
+
+collect_ignore = ["setup.py"]
+
+# Check if we haave the Arcus CALDB installed
+# If not, can't collect those tests, because on import, they will already
+# try to read from the CALDB
+if 'data' not in arcusconfig:
+    collect_ignore.append("missions/arcus/tests/test_analyzegrid.py")
+    collect_ignore.append("missions/arcus/tests/test_orders.py")

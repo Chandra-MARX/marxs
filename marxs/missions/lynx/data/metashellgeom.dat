@@ -1,0 +1,30 @@
+# %ECSV 0.9
+# ---
+# datatype:
+# - {name: Metashell Serial Number, datatype: int64}
+# - {name: r_inner, unit: mm, datatype: int64}
+# - {name: r_outer, unit: mm, datatype: int64}
+# meta: !!omap
+# - {ORIGFILE: EffectiveAreas4XGS.xlsx}
+# - {origin: "-------- Forwarded Message --------\nSubject: \tFW: request for XGS\nDate: \tFri, 9 Mar 2018 23:57:57 +0000\nFrom: \tGaskin,\
+#     \ Jessica A. (MSFC-ST12) <jessica.gaskin@nasa.gov>\nTo: \tBautz <mwb@space.mit.edu>, Heilmann <ralf@space.mit.edu>, rlm90@psu.edu\
+#     \ <rlm90@psu.edu>\n\n\nMark, Ralf, and Randy,\n\nThe attached is the EA vs energy vs radii for the meta-shell configuration. Do\
+#     \ you need more fidelity than this?\n\n-Best,\nJessica\n________________________________________\nFrom: Zhang, William W., Dr {Will}\
+#     \ (GSFC-6620)\nSent: Friday, March 09, 2018 4:05 PM\nTo: Gaskin, Jessica A. (MSFC-ST12)\nSubject: Re: request for XGS\n\nSee attachment.\
+#     \  Let me know if you want additional or different\ninformation.\n\n\n============================================================================================================\n\
+#     William W. Zhang ||  Goddard Space Flight Center || Bldg 34 Rm S266 || Greenbelt, MD 20771 || (301) 286 6230\n============================================================================================================"}
+# - {author: Hans Moritz Guenther}
+# schema: astropy-2.0
+"Metashell Serial Number" r_inner r_outer
+1 127 231
+2 242 346
+3 357 461
+4 472 576
+5 587 691
+6 702 806
+7 817 921
+8 932 1036
+9 1047 1151
+10 1162 1266
+11 1277 1381
+12 1392 1496

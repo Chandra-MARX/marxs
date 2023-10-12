@@ -7,14 +7,15 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
 
-from ..rowland import (RowlandTorus, GratingArrayStructure, LinearCCDArray,
-                       RowlandCircleArray,
+from ..rowland import (RowlandTorus, GratingArrayStructure,
+                       RectangularGrid,
                        find_radius_of_photon_shell, design_tilted_torus,
-                       ElementPlacementError)
+                       CircularMeshGrid,
+                       )
 from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, OrderSelector, FlatGrating
-from ...math.utils import h2e
+from ...math.utils import h2e, xyz2zxy
 
 class mock_facet(FlatOpticalElement):
     '''Lightweight class with no functionality for tests.'''
@@ -78,27 +79,21 @@ def test_torus():
     assert np.allclose(mytorus.quartic(xyz, transform=False), 0.)
 
 def test_torus_solve_quartic():
-    '''solve_quartic helps to find point on the torus if two coordinates are fixed.'''
-    mytorus = RowlandTorus(2., 1.)
+    '''solve_quartic helps to find points on the torus.
+
+    This test could make use of the hypothesis testing package.
+    '''
+    mytorus = RowlandTorus(5., 4.)
     xyzw = mytorus.parametric([.34, 1.23], [.4, 4.5])
-    xyz = h2e(xyzw)
 
     for i in [0, 1]:
-        for j in range(3):
-            kwargs = {'x': xyz[i, 0], 'y': xyz[i, 1], 'z': xyz[i, 2],
-                      'interval' : np.array([-0.1, 0.1]) + xyz[i, j]}
-            kwargs['xyz'[j]] = None
-            assert np.allclose(xyz[i, j], mytorus.solve_quartic(**kwargs))
+        # generate random direction in homogeneous coordinates
+        direction = np.random.rand(4) - 0.5
+        direction[3] = 0
+        assert np.allclose(xyzw[i, :],
+                            mytorus.solve_quartic(origin=xyzw[i, :] + 0.1 * direction,
+                                                  v=direction))
 
-    # Nothing to solve for
-    with pytest.raises(ValueError) as e:
-        out = mytorus.solve_quartic(x=1, y=1, z=1)
-    assert 'Exactly one of the input numbers' in str(e.value)
-
-    # Too many parameters to solve for
-    with pytest.raises(ValueError) as e:
-        out = mytorus.solve_quartic(x=1, y=None, z=None)
-    assert 'Exactly one of the input numbers' in str(e.value)
 
 def test_rotated_torus():
     '''Test the torus equation for a set of points.
@@ -212,7 +207,10 @@ def test_GratingArrayStructure():
     can be taken as known-good to prevent regressions later.
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[-0.2*np.pi, 0.2*np.pi], elem_class=mock_facet)
+    gas = GratingArrayStructure(rowland=myrowland,
+                                d_element=[30., 30.],
+                                radius=[300., 600.],
+                                phi=[-0.2*np.pi, 0.2*np.pi], elem_class=mock_facet)
     assert gas.max_elements_on_arc(300.) == 12
     angles = gas.distribute_elements_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
@@ -220,10 +218,6 @@ def test_GratingArrayStructure():
     assert gas.max_elements_on_radius(gas.radius) == 10
     assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
-    center = gas.calc_ideal_center()
-    assert center[2] == 0
-    assert center[1] == (300. + 600.) / 2.
-    assert 2e4 - center[0] < 20.  # R_rowland >> r_gas  -> center close to R_rowland
     # fig, axes = plt.subplots(2,2)
     # for elem in [[axes[0, 0], 0, 1], [axes[0, 1], 0, 2], [axes[1, 0], 1, 2]]:
     #     for f in gas.elem_pos:
@@ -240,9 +234,13 @@ def test_GratingArrayStructure():
 def test_GAS_multipleradii():
     '''Radius can be a list of many pairs.'''
     myrowland = RowlandTorus(1000., 1000.)
-    gas1 = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
-    gas2 = GratingArrayStructure(myrowland, 60., [1000., 2000.], [500., 540.], elem_class=mock_facet)
-    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400., 500., 540.], elem_class=mock_facet)
+    gas1 = GratingArrayStructure(rowland=myrowland, d_element=[60., 60.],
+                                 radius=[300., 400.], elem_class=mock_facet)
+    gas2 = GratingArrayStructure(rowland=myrowland, d_element=[60., 60.],
+                                 radius=[500., 540.], elem_class=mock_facet)
+    gas = GratingArrayStructure(rowland=myrowland, d_element=[60., 60.],
+                                radius=[300., 400., 500., 540.],
+                                elem_class=mock_facet)
 
     r1 = gas1.distribute_elements_on_radius()
     r2 = gas2.distribute_elements_on_radius()
@@ -254,7 +252,9 @@ def test_GratingArrayStructure_2pi():
     '''test that delta_phi = 2 pi means "full circle" and not 0
     '''
     myrowland = RowlandTorus(10000., 10000.)
-    gas = GratingArrayStructure(myrowland, 30., [10000., 20000.], [300., 600.], phi=[0, 2*np.pi], elem_class=mock_facet)
+    gas = GratingArrayStructure(rowland=myrowland, d_element=[30., 30.],
+                                radius=[300., 600.],
+                                phi=[0, 2*np.pi], elem_class=mock_facet)
     assert gas.max_elements_on_arc(300.) > 10
     n = len(gas.elem_pos)
     yz = np.empty((n, 2))
@@ -267,7 +267,8 @@ def test_GratingArrayStructure_2pi():
 def test_GAS_facets_on_radius():
     '''test distribution of elements on radius for d_r is non-integer multiple of d_element.'''
     myrowland = RowlandTorus(1000., 1000.)
-    gas = GratingArrayStructure(myrowland, 60., [1000., 2000.], [300., 400.], elem_class=mock_facet)
+    gas = GratingArrayStructure(rowland=myrowland, d_element=[60., 60.],
+                                radius=[300., 400.], elem_class=mock_facet)
     assert np.all(gas.distribute_elements_on_radius() == [320., 380.])
     gas.radius = [300., 340.]
     assert gas.distribute_elements_on_radius() == [320.]
@@ -276,9 +277,13 @@ def test_facet_rotation_via_facetargs():
     '''The numbers for the blaze are not realistic.'''
     gratingeff = OrderSelector(np.arange(-3, 4))
     mytorus = RowlandTorus(9e3/2, 9e3/2)
-    mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
+    mygas = GratingArrayStructure(rowland=mytorus, d_element=[60., 60.],
+                                  radius=[538., 550.], elem_class=FlatGrating,
+                                  elem_args={'zoom': 30, 'd':0.0002, 'order_selector': gratingeff})
     blaze = transforms3d.axangles.axangle2mat(np.array([0,1,0]), np.deg2rad(15.))
-    mygascat = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
+    mygascat = GratingArrayStructure(rowland=mytorus, d_element=[60., 60.],
+                                     radius=[538., 550.], elem_class=FlatGrating,
+                                     elem_args={'zoom': 30, 'orientation': blaze, 'd':0.0002, 'order_selector': gratingeff})
     assert np.allclose(np.rad2deg(np.arccos(np.dot(mygas.elements[0].geometry['e_x'][:3], mygascat.elements[0].geometry['e_x'][:3]))), 15.)
 
 def test_persistent_facetargs():
@@ -291,13 +296,15 @@ def test_persistent_facetargs():
     # id_col is automatically added in GAS is not present here.
     # So, pass in an id_col to make sure the comparison below will still work.
     facet_args = {'zoom': 30, 'd':0.0002, 'order_selector': gratingeff, 'id_col': 'facet'}
-    mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e4,1e5], radius=[5380., 5500.], elem_class=FlatGrating, elem_args=facet_args)
+    mygas = GratingArrayStructure(rowland=mytorus, d_element=[60., 60.],
+                                  radius=[5380., 5500.], elem_class=FlatGrating,
+                                  elem_args=facet_args)
     assert mygas.elem_args == facet_args
 
 def test_run_photons_through_gas():
     '''And check that they have the expected labels.
 
-    No need to check here that the grating equation works - that's part of the grating tests/
+    No need to check here that the grating equation works - that's part of the grating tests.
     '''
     # Setup only.
     mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
@@ -328,7 +335,9 @@ def test_run_photons_through_gas():
             f = 'uuu'
             kwargs = {'id_col': 'yyy'}
 
-        mygas = GratingArrayStructure(mytorus, d_element=60., x_range=[5e3,1e4], radius=[538., 550.], elem_class=FlatGrating, elem_args=facet_args, **kwargs)
+        mygas = GratingArrayStructure(rowland=mytorus, d_element=[60., 60.],
+                                      radius=[538., 550.], elem_class=FlatGrating,
+                                      elem_args=facet_args, **kwargs)
 
         p = mygas(photons.copy())
         indorder = np.isfinite(p['order'])
@@ -340,22 +349,8 @@ def test_run_photons_through_gas():
         allfacets = set([-1]).union(set(np.arange(len(mygas.elements))))
         assert set(p[f]).issubset(allfacets)
 
-def test_LinearCCDArray():
-    '''Test an array in default position'''
-    myrowland = RowlandTorus(10000., 10000.)
-    # Along the way we normally would orient the detector.
-    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                          radius=[-100., 100.], phi=0., elem_class=mock_facet)
-    assert len(ccds.elements) == 7
-    for e in ccds.elements:
-        # For this test we don't care if z and e_z are parallel or antiparallel
-        assert np.isclose(np.abs(np.dot([0, 0, 1, 0], e.geometry['e_z'])), 1.)
-        assert (e.pos4d[0, 3] >= 0) and (e.pos4d[0, 3] < 1.)
 
-    # center ccd is on the optical axis
-    assert np.allclose(ccds.elements[3].geometry['e_y'], [0, 1, 0, 0])
-
-def test_LinearCCDArray_rotatated():
+def test_RectangularGrid_rotated():
     '''Test an array with different rotations.
 
     In this case, we rotate the Rowland torus by -30 deg and then
@@ -365,63 +360,108 @@ def test_LinearCCDArray_rotatated():
     pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
     myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
     # Along the way we normally would orient the detector.
-    ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                          radius=[-100., 100.], phi=0., elem_class=mock_facet)
+    ccds = RectangularGrid(rowland=myrowland, d_element=[30., 30.],
+                           y_range=[-100, 100],
+                           elem_class=mock_facet,
+                           guess_distance=100)
     assert len(ccds.elements) == 7
     for e in ccds.elements:
         assert np.isclose(np.dot([0, -0.8660254, 0.5], e.geometry['e_z'][:3]), 0, atol=1e-4)
 
-def test_impossible_LinearCCDArray():
-    '''The rotation is chosen such that all requested detector positions are
-    INSIDE the rowland torus
-    '''
-    pos4d = transforms3d.axangles.axangle2aff([1, 0, 0], np.deg2rad(-30))
-    myrowland = RowlandTorus(10000., 10000., pos4d=pos4d)
-    with pytest.raises(ElementPlacementError) as e:
-        ccds = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                              radius=[-100., 100.], phi=np.deg2rad(30.), elem_class=mock_facet)
-    assert 'No intersection with Rowland' in str(e.value)
 
-def test_RowlandCircleArrayone():
+def test_RectangularGridone():
     '''Test an array of one element in default position'''
     myrowland = RowlandTorus(10000., 10000.)
     # Along the way we normally would orient the detector.
-    ccds = RowlandCircleArray(myrowland, d_element=300., theta=[np.pi - 0.0001, np.pi + 0.0001],
-                              elem_class=mock_facet)
+    ccds = RectangularGrid(rowland=myrowland, d_element=[300., 300.],
+                           y_range=[-1, 1],
+                           elem_class=mock_facet,
+                           guess_distance=25)
     assert len(ccds.elements) == 1
     # multiply because of pointing inward vs. outward
-    assert np.allclose(ccds.elements[0].pos4d, np.eye(4) * np.array([-1,-1,1,1]))
+    assert np.allclose(ccds.elements[0].pos4d, np.eye(4))
 
-def test_compareRowlandCircle2LinearCCD_rotatated():
-    '''Test an array with different rotations.
 
-    The RowlandCircleArray and the LinearCCDArray should be very similar
-    for phi = 0.
-    '''
-    myrowland = RowlandTorus(10000., 10000.)
-    ccd1 = RowlandCircleArray(myrowland, d_element=30., theta=[np.pi - 0.03, np.pi],
-                              elem_class=mock_facet)
-    ccd2 = LinearCCDArray(myrowland, d_element=30., x_range=[0., 2000.],
-                          radius=[0., 10000. * np.sin(0.03)], phi=0., elem_class=mock_facet)
-    # reversed because the one element orders it differently then the other.
-    # Should really compare sets here or standardize order in some way, I guess.
-    for e1, e2 in zip(ccd1.elements, reversed(ccd2.elements)):
-        t1, r1, z1, s1 = transforms3d.affines.decompose44(e1.pos4d)
-        t2, r2, z2, s2 = transforms3d.affines.decompose44(e2.pos4d)
-        assert np.allclose(t1, t2, rtol=1e-3, atol=0.01)
-        # orientation is not too important, so allow some -1 factors
-        assert np.allclose(np.abs(r1), np.abs(r2), rtol=1e-3, atol=0.01)
+def test_RegtangularGrid_offcenter_unaffected():
+    '''Make sure the coordinate system of the xyz_range is in global coordinates.
+    In this test, we check the z position, which in unchanged because the torus
+    center is moved only in the y direction.'''
+    R, r, pos4d = design_tilted_torus(5000, 0.07, 0.15)
+    rowland = RowlandTorus(R, r, pos4d=pos4d)
+    ccds = RectangularGrid(rowland=rowland, d_element=[5., 5.],
+                           z_range=[10, 20],
+                           y_range=[600, 615],
+                           elem_class=mock_facet,
+                           guess_distance=25)
+
+    for e in ccds.elements:
+        assert (e.geometry['center'][2] > 10) and (e.geometry['center'][2] < 20)
+
+
+def test_RegtangularGrid_offcenter_affected():
+    '''Make sure the coordinate system of the xyz_range is in global coordinates.
+    In this test, we check the y position.'''
+    R, r, pos4d = design_tilted_torus(50000, 0.007, 0.015)
+    rowland = RowlandTorus(R, r, pos4d=pos4d)
+    ccds = RectangularGrid(rowland=rowland, d_element=[50., 50.],
+                           y_range=[600, 800],
+                           elem_class=mock_facet,
+                           guess_distance=25)
+    y_offset = rowland.geometry['center'][1]
+    for e in ccds.elements:
+        assert (e.geometry['center'][1] > 600 + y_offset) and \
+               (e.geometry['center'][1] < 800 + y_offset)
+
+
 
 def test_nojumpsinCCDorientation():
     '''Regression test: CCD orientation should change smoothly along the circle.'''
     R, r, pos4d = design_tilted_torus(12e3, 0.07, 0.15)
     rowland = RowlandTorus(R, r, pos4d=pos4d)
-    det = RowlandCircleArray(rowland=rowland,
+    det = RectangularGrid(rowland=rowland,
                              elem_class=mock_facet,
-                             d_element=49.652, #theta=[np.pi - 0.2, np.pi + 0.5])
-                             theta=[np.pi - 0.2, np.pi - 0.1])
+                             d_element=[49.652, 49.652],
+                             y_range=[-200, +200],
+                             guess_distance=25.)
 
     # If all is right, this will vary very smoothly along the circle.
     xcomponent = np.array([e.geometry['e_y'][0] for e in det.elements])
     xcompdiff = np.diff(xcomponent)
     assert (np.max(np.abs(xcompdiff)) / np.median(np.abs(xcompdiff))) < 1.1
+
+
+def test_circularMeshGrid():
+    '''Check MeshGrid against a hand-checked and thus known-good solution'''
+    myrowland = RowlandTorus(10000., 10000.)
+    gas = CircularMeshGrid(rowland=myrowland,
+                           radius=(100., 300.),
+                           d_element=(30., 50),
+                           elem_class=mock_facet,
+                           optimize_axis=np.array([1, 0, 0, 0]),
+                           parallel_spec=np.array([0., 1., 0., 0.]),
+                           normal_spec=np.array([1, 0, 0, 1]))
+    assert len(gas.elements) == 178
+    poslist = np.stack(gas.elem_pos)
+    assert np.all(poslist[:, 0, 3] > 19000)
+    assert np.all(poslist[:, 0, 3] < 20000)
+    assert np.all(np.abs(poslist[:, 1, 3] < 300))
+    assert np.all(np.abs(poslist[:, 2, 3] < 300))
+
+def test_circularMeshGrid_rotated():
+    '''Check MeshGrid against a hand-checked and thus known-good solution.
+    Repeats previous test but for a different axes'''
+    myrowland = RowlandTorus(10000., 10000.)
+    myrowland.pos4d = xyz2zxy @ myrowland.pos4d
+    gas = CircularMeshGrid(rowland=myrowland,
+                           radius=(100., 300.),
+                           d_element=(30., 50),
+                           elem_class=mock_facet,
+                           optimize_axis=np.array([0, 0, 1, 0]),
+                           parallel_spec=np.array([0., 1., 0., 0.]),
+                           normal_spec=np.array([0, 1, 0, 1]))
+    assert len(gas.elements) == 178
+    poslist = np.stack(gas.elem_pos)
+    assert np.all(poslist[:, 2, 3] > 19000)
+    assert np.all(poslist[:, 2, 3] < 20000)
+    assert np.all(np.abs(poslist[:, 0, 3] < 300))
+    assert np.all(np.abs(poslist[:, 1, 3] < 300))

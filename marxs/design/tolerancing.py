@@ -9,20 +9,17 @@ from transforms3d import affines, euler
 from astropy.table import Table
 from astropy import table
 import astropy.units as u
-from ..simulator import Sequence
-from .uncertainties import generate_facet_uncertainty as genfacun
-from ..analysis.gratings import (resolvingpower_from_photonlist,
-                                 effectivearea_from_photonlist)
-from ..analysis.gratings import AnalysisError
+from marxs.simulator import Sequence
+from marxs.design.uncertainties import generate_facet_uncertainty as genfacun
 
 __all__ = ['oneormoreelements',
            'wiggle', 'moveglobal', 'moveindividual', 'moveelem',
            'varyperiod', 'varyorderselector', 'varyattribute',
            'run_tolerances', 'run_tolerances_for_energies',
-           'CaptureResAeff',
            'generate_6d_wigglelist', 'reset_6d',
            'select_1dof_changed',
-           'plot_wiggle', 'load_and_plot',
+           'WigglePlotter',
+           'DispersedWigglePlotter',
            ]
 
 
@@ -259,7 +256,7 @@ def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
     analyzefunc : callable function or object
         This is called with a photon table and should return a dictionary
         of results. This could be, e.g. a
-        `marxs.design.tolerancing.CaptureResAeff` instance.
+        `marxs.analysis.gratings.CaptureResAeff` instance.
 
 
     Returns
@@ -285,184 +282,6 @@ def run_tolerances(photons_in, instrum, wigglefunc, wiggleparts,
     return out
 
 
-class CaptureResAeff():
-    '''Capture resolving power and effective area for a tolerancing simulation.
-
-    Instances of this class can be called with a photon list for a tolerancing
-    simulation. The photon list will be analysed for resolving power and
-    effective area in a number of relevant orders.
-
-    This is implemented as a class and not a simple function. When the class is
-    initialized a number of parameters that are true for any to the
-    analysis (e.g. the names of certain columns) are set and saved in the class
-    instance.
-
-    The implementation of this class is geared towards instruments with
-    gratings but can also serve as an example how a complex analysis that
-    derives several different parameters can be implemented.
-
-    Results for effective area and resolving power are reported on a per order
-    basis and also summarized for all grating orders combined and the zeroth
-    order separately.
-
-    Inherit form this class to customize the filters applied to the photon list
-    before effective area and resolving power are calculated.
-
-    Parameters
-    ----------
-    A_geom : number
-        Geometric area of aperture for the simulations that this instance
-        will analyze.
-    order_col : string
-        Column names for grating orders
-    orders : array
-        Order numbers to consider in the analysis
-    dispersion_coord : string
-        Dispersion coordinate for
-        `marxs.analysis.gratings.resolvingpower_from_photonlist`. Any photons
-        that have non-finite values or are masked in this column will be ignored
-        for the purpose of the resolving power calculation.
-    '''
-    def __init__(self, A_geom=1, order_col='order',
-                 orders=np.arange(-10, 11),
-                 dispersion_coord='det_x'):
-        self.A_geom = A_geom
-        self.order_col = order_col
-        self.orders = np.asanyarray(orders)
-        self.dispersion_coord = dispersion_coord
-
-    def aeff_filter(self, photons):
-        '''Filter photon list before calculating the effective area.
-
-        Here: No-op (all photons are used.)
-
-        Parameters
-        ----------
-        photons : `astropy.table.Table`
-            Photon list.
-
-        Returns
-        -------
-        ind : numpy array
-           array of boolean values that can be used to index ``photons`` and select
-           a sub-set to be used to calcualte the effective area.
-        '''
-        return np.ones(len(photons), dtype=bool)
-
-    def res_filter(self, photons):
-        ind = (np.isfinite(photons[self.dispersion_coord]) &
-                (photons['probability'] > 0))
-        if hasattr(photons[self.dispersion_coord], 'mask'):
-            ind = ind & ~photons[self.dispersion_coord].mask
-        return ind
-
-    def __call__(self, photons):
-        '''Calculate Aeff and R for an input photon list.
-
-        Parameters
-        ----------
-        photons : `astropy.table.Table`
-            Photon list.
-
-        Returns
-        -------
-        result : dict
-            Dictionary with per-order Aeff and R, as well as values
-            summed over all grating orders.
-        '''
-        ind = self.aeff_filter(photons)
-        aeff = effectivearea_from_photonlist(photons[ind], self.orders, len(photons),
-                                             self.A_geom, self.order_col)
-        try:
-            ind = self.res_filter(photons)
-            res, pos, std = resolvingpower_from_photonlist(photons[ind], self.orders,
-                                                           col=self.dispersion_coord,
-                                                           zeropos=None,
-                                                           ordercol=self.order_col)
-        except AnalysisError:
-            # Something did not work, e.g. too few photons to find zeroth order
-            res = np.nan * np.ones(len(self.orders))
-
-        disporders = self.orders != 0
-        # The following lines work for an empty photon list, too.
-        aeffgrat = np.sum(aeff[disporders])
-        aeff0 = np.sum(aeff[~disporders])
-
-        # Division by 0 causes more nans, so filter those out
-        # Also, res is nan if less than 20 photons are detected
-        # so we need to filter those out, too.
-        ind = disporders & (aeff > 0) & np.isfinite(res)
-        if ind.sum() == 0:  # Dispersed spectrum misses detector
-            avggratres = np.nan
-        else:
-            avggratres = np.average(res[ind],
-                                    weights=aeff[ind] / aeff[ind].sum())
-        return {'Aeff0': aeff0, 'Aeffgrat': aeffgrat, 'Aeff': aeff,
-                'Rgrat': avggratres, 'R': res}
-
-
-class CaptureResAeff_CCDgaps(CaptureResAeff):
-    '''Capture resolving power and effective area for a tolerancing simulation.
-
-    Unlike `CaptureResAeff` this objects is set up to take into account CCD gaps.
-    For the resolving power calculation, one wants to ignore CCD gaps, because they
-    might make the observed LSF artificially small - if only half of the LSF falls
-    on a CCD, and the other photons are not counted, the LSF will appear only
-    half as wide. In contrast, for the effective area calcalution, we *do* want to
-    ignore photons that miss a CCD.
-
-    Here, we following approach is taken: This class ovverrides
-    `~marxs.design.tolerancing.CaptureResAeff.aeff_filter`.
-    All photons with a probability >0 are presumed ot reach the focal plane.
-    For the effective area, an additional
-    filter is applied: Only photons with `photons['aeff_filter_col'] > 0` will
-    be used. Typically, this could be the CCD_ID.
-
-    Parameters
-    ----------
-    A_geom : number
-        Geometric area of aperture for the simulations that this instance
-        will analyze.
-    order_col : string
-        Column names for grating orders
-    orders : array
-        Order numbers to consider in the analysis
-    dispersion_coord : string
-        Dispersion coordinate for
-        `marxs.analysis.gratings.resolvingpower_from_photonlist`. Any photons
-        that have non-finite values or are masked in this column will be ignored
-        for the purpose of the resolving power calculation.
-    aeff_filter_col : string
-        Only photons where the value in this column is larger than 0 will be used
-        for the calculation of the effective area.
-    '''
-    def __init__(self, A_geom=1, order_col='order',
-                 orders=np.arange(-10, 11),
-                 dispersion_coord='det_x', aeff_filter_col='CCD_ID'):
-        super().__init__(A_geom=A_geom, order_col=order_col,
-                 orders=orders,
-                 dispersion_coord=dispersion_coord)
-        self.aeff_filter_col = aeff_filter_col
-
-    def aeff_filter(self, photons):
-        '''Filter photon list before calculating the effective area.
-
-        Only photons with ``photons[aeff_filter_col] >= 0`` are used.
-
-        Parameters
-        ----------
-        photons : `astropy.table.Table`
-            Photon list.
-
-        Returns
-        -------
-        ind : numpy array
-           array of boolean values that can be used to index ``photons`` and select
-           a sub-set to be used to calcualte the effective area.
-        '''
-        return photons[self.aeff_filter_col] >= 0
-
-
 def run_tolerances_for_energies(source, energies,
                                 instrum_before, instrum_remaining,
                                 wigglefunc, wiggleparts,
@@ -473,7 +292,7 @@ def run_tolerances_for_energies(source, energies,
     This function loops over `~marxs.design.tolerancing.run_tolerances` for
     different energies.
     This function takes an instrument configuration and a function to change
-    one aspect of it. For every change it runs a simulations and calculates a
+    one aspect of it. For every change it runs simulations and calculates a
     figure of merit. As the name indicates, this function is designed to derive
     alignment tolerances for certain instrument parts but it might be general
     enough for other parameter studies in instrument design.
@@ -730,126 +549,160 @@ def select_1dof_changed(table, par,
     return table[ind]
 
 
-def plot_wiggle(tab, par, parlist, ax, axt=None,
-                R_col='Rgrat', Aeff_col='Aeffgrat',
-                axes_facecolor='w'):
-    '''Plotting function for overview plot wiggeling 1 dof at the time.
+class WigglePlotter():
+    '''Object to plot results of tolerancing simulations
 
-    For parameters starting with "d" (e.g. "dx", "dy", "dz"), the plot axes
-    will be labeled as a shift, for parameters tarting with "r" as rotation.
-
-    Parameters
-    ----------
-    table : `astropy.table.Table`
-        Table with wiggle results
-    par : string
-        Name of parameter to be plotted
-    parlist : list of strings
-        Name of all parameters in ``table``
-    ax : `matplotlib.axes.Axes`
-        Axis object to plot into.
-    axt : ``None`` or  `matplotlib.axes.Axes`
-        If this is ``None``, twin axis are created to show resolving power
-        and effective area in one plot. Alternatively, a second axes instance
-        can be given here.
-    R_col : string
-        Column name in ``tab`` that hold the resolving power to be plotted.
-        Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
-    Aeff_col : string
-        Column name in ``tab`` that hold the effective area to be plotted.
-        Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
-    axes_facecolor : any matplotlib color specification
-        Color for the background in the plot.
+    This class combines the `load_and_plot` and `plot_wiggle` functions
+    with reasonable defaults for the plot appearance.
     '''
-    import matplotlib.pyplot as plt
 
-    t = select_1dof_changed(tab, par, parlist)
-    t.sort(par)
-    t_wave = t.group_by('wave')
-    if axt is None:
-        axt = ax.twinx()
+    ylabel = 'left label (solid lines)'
+    'Label for the left axis of the plot'
 
-    for key, g in zip(t_wave.groups.keys, t_wave.groups):
+    y2label = 'right label (dotted lines)'
+    'Label for the right axis of the plot'
+
+    bg_colors = {'global': '0.9',
+                 'individual': (1.0, 0.9, 0.9)}
+    '''Default background colors for wiggle overview plots.
+
+    If the key of the dict matches part of the filename, the color listed in
+    the dict is applied.
+    '''
+
+
+    def plot_wiggle(self, tab, par, parlist, ax, axt=None,
+                    axes_facecolor='w', **kwargs):
+        '''Plotting function for overview plot wiggeling 1 dof at the time.
+
+        For parameters starting with "d" (e.g. "dx", "dy", "dz"), the plot axes
+        will be labeled as a shift, for parameters tarting with "r" as rotation.
+
+        Parameters
+        ----------
+        table : `astropy.table.Table`
+            Table with wiggle results
+        par : string
+            Name of parameter to be plotted
+        parlist : list of strings
+            Name of all parameters in ``table``
+        ax : `matplotlib.axes.Axes`
+            Axis object to plot into.
+        axt : ``None`` or  `matplotlib.axes.Axes`
+            If this is ``None``, twin axis are created to show resolving power
+            and effective area in one plot. Alternatively, a second axes instance
+            can be given here.
+        R_col : string
+            Column name in ``tab`` that hold the resolving power to be plotted.
+            Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
+        Aeff_col : string
+            Column name in ``tab`` that hold the effective area to be plotted.
+            Default is set to work with `marxs.design.tolerancing.CaptureResAeff`.
+        axes_facecolor : any matplotlib color specification
+            Color for the background in the plot.
+        '''
+        t = select_1dof_changed(tab, par, parlist)
+        t.sort(par)
+        t_wave = t.group_by('wave')
+        axlist = [ax]
+
+        import matplotlib
+
+        match axt:
+            case None if self.y2label is not None:
+               axt = ax.twinx()
+               axlist.append(axt)
+            case matplotlib.axes.SubplotBase():
+                axlist.append(axt)
+
+        for key, g in zip(t_wave.groups.keys, t_wave.groups):
+            if par[0] == 'r':
+                x = np.rad2deg(g[par].data)
+            else:
+                x = g[par]
+
+            self.plot_one_line(ax, axt, key, g, x, **kwargs)
+        ax.set_ylabel(self.ylabel)
+        if len(axlist) > 1:
+            axt.set_ylabel(self.y2label)
         if par[0] == 'd':
-            x = g[par]
+            ax.set_xlabel('shift [mm]')
+            ax.set_title('Shift along {}'.format(par[1]))
         elif par[0] == 'r':
-            x = np.rad2deg(g[par].data)
+            ax.set_xlabel('Rotation [degree]')
+            ax.set_title('Rotation around {}'.format(par[1]))
         else:
-            raise ValueError("Don't know how to plot {}. Parameter names should start with 'd' for shifts and 'r' for rotations.".format(par))
+            ax.set_xlabel(par)
 
+        for a in axlist:
+            a.set_facecolor(axes_facecolor)
+            a.set_axisbelow(True)
+            a.grid(axis='x', c='1.0', lw=2, ls='solid')
+
+    def plot_one_line(self, ax, axt, key, g, x):
+        raise NotImplementedError
+
+    def load_and_plot(self, filename,
+                      parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'],
+                    **kwargs):
+        '''Load a table with wiggle results and make default plot
+
+        This is a function to generate a quicklook image with many
+        hardcoded defaults for figure size, colors etc.
+        In particular, this function is written for the display of
+        6d plots which vary 6 degrees of freedom, one at a time.
+
+        The color for the background in the plot is set depending on the filename
+        using the ``string : color`` assignments in
+        `~marxs.design.tolerancing.wiggle_plot_facecolors`. No fancy regexp based
+        match is applied, this is simply a check with ``in``.
+
+        Parameters
+        ----------
+        filename : string
+            Path to a file with data that can be plotted by
+            `~marxs.design.tolerancing.plot_wiggle`.
+
+        parlist : list of strings
+            Name of all parameters in ``table``.
+            This function only plots six of them.
+
+        Returns
+        -------
+        tab : `astropy.table.Table`
+            Table of data read from ``filename``
+        fig : `matplotlib.figure.Figure`
+            Figure with plot.
+        kwargs :
+            All other parameters are passed to
+            `~marxs.design.tolerancing.plot_wiggle`.
+        '''
+        import matplotlib.pyplot as plt
+
+        tab = Table.read(filename)
+
+        if 'axis_facecolor' not in kwargs:
+            for n, c in self.bg_colors.items():
+                if n in filename:
+                    kwargs['axes_facecolor'] = c
+
+        fig = plt.figure(figsize=(12, 8))
+        fig.subplots_adjust(wspace=.6, hspace=.3)
+        for i, par in enumerate(parlist):
+            ax = fig.add_subplot(2, 3, i + 1)
+            self.plot_wiggle(tab, par, parlist, ax, **kwargs)
+
+        return tab, fig
+
+
+class DispersedWigglePlotter(WigglePlotter):
+    '''A wiggle plotter for gratings'''
+
+    ylabel ='Resolving power (solid lines)'
+    y2label ='$A_{eff}$ [cm$^2$] (dotted lines)'
+
+    def plot_one_line(self, ax, axt, key, g, x,
+                      R_col='Rgrat', Aeff_col='Aeffgrat'):
         ax.plot(x, g[R_col], label='{:3.1f} $\AA$'.format(key[0]), lw=1.5)
         axt.plot(x, g[Aeff_col], ':', label='{:2.0f} $\AA$'.format(key[0]), lw=2)
-    ax.set_ylabel('Resolving power (solid lines)')
-    axt.set_ylabel('$A_{eff}$ [cm$^2$] (dotted lines)')
-    if par[0] == 'd':
-        ax.set_xlabel('shift [mm]')
-        ax.set_title('Shift along {}'.format(par[1]))
-    elif par[0] == 'r':
-        ax.set_xlabel('Rotation [degree]')
-        ax.set_title('Rotation around {}'.format(par[1]))
 
-    for a in [ax, axt]:
-        a.set_facecolor(axes_facecolor)
-        a.set_axisbelow(True)
-        a.grid(axis='x', c='1.0', lw=2, ls='solid')
-
-
-wiggle_plot_facecolors = {'global': '0.9',
-                          'individual': (1.0, 0.9, 0.9)}
-'''Default background colors for wiggle overview plots.
-
-If the key of the dict matches part of the filename, the color listed in
-the dict is applied.
-'''
-
-
-def load_and_plot(filename, parlist=['dx', 'dy', 'dz', 'rx', 'ry', 'rz'],
-                  **kwargs):
-    '''Load a table with wiggle results and make default plot
-
-    This is a function to generate a quicklook image with many
-    hardcoded defaults for figure size, colors etc.
-    In particular, this function is written for the display of
-    6d plots which vary 6 degrees of freedom, one at a time.
-
-    The color for the background in the plot is set depending on the filename
-    using the ``string : color`` assignments in
-    `~marxs.design.tolerancing.wiggle_plot_facecolors`. No fancy regexp based
-    match is applied, this is simply a check with ``in``.
-
-    Parameters
-    ----------
-    filename : string
-        Path to a file with data that can be plotted by
-        `~marxs.design.tolerancing.plot_wiggle`.
-
-    parlist : list of strings
-        Name of all parameters in ``table``.
-        This function only plots six of them.
-
-    Returns
-    -------
-    tab : `astropy.table.Table`
-        Table of data read from ``filename``
-    fig : `matplotlib.figure.Figure`
-        Figure with plot.
-    kwargs :
-        All other parameters are passed to
-        `~marxs.design.tolerancing.plot_wiggle`.
-    '''
-    import matplotlib.pyplot as plt
-
-    tab = Table.read(filename)
-
-    if 'axis_facecolor' not in kwargs:
-        for n, c in wiggle_plot_facecolors.items():
-            if n in filename:
-                kwargs['axes_facecolor'] = c
-
-    fig = plt.figure(figsize=(12, 8))
-    fig.subplots_adjust(wspace=.6, hspace=.3)
-    for i, par in enumerate(parlist):
-        ax = fig.add_subplot(2, 3, i + 1)
-        plot_wiggle(tab, par, parlist, ax, **kwargs)
-
-    return tab, fig

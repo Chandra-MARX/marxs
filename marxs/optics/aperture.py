@@ -122,7 +122,6 @@ class CircleAperture(FlatAperture):
         stacked into each other, ``self.display['inner_factor']`` can be used
         to restrict the radius range where the inner disk is displayed in a
         plot.
-
     '''
 
     default_geometry = CircularHole

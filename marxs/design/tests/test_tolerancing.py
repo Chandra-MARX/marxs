@@ -8,25 +8,24 @@ from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from astropy.utils.data import get_pkg_data_filename
 
-from ..tolerancing import (oneormoreelements,
+from marxs.design.tolerancing import (oneormoreelements,
                            wiggle, moveglobal, moveindividual, moveelem,
                            varyperiod, varyorderselector, varyattribute,
                            run_tolerances,
-                           CaptureResAeff,
-                           CaptureResAeff_CCDgaps,
                            generate_6d_wigglelist,
                            select_1dof_changed,
-                           plot_wiggle, load_and_plot,
+                           DispersedWigglePlotter,
                            run_tolerances_for_energies,
                            run_tolerances_for_energies2,
                            )
-from ...optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
+from marxs.optics import (FlatGrating, OrderSelector, RadialMirrorScatter,
                        RectangleAperture, ThinLens, FlatDetector)
 
-from ...design import RowlandTorus, GratingArrayStructure
-from ...utils import generate_test_photons
-from ...source import PointSource, FixedPointing
-from ...simulator import Sequence
+from marxs.design import RowlandTorus, GratingArrayStructure
+from marxs.utils import generate_test_photons
+from marxs.source import PointSource, FixedPointing
+from marxs.simulator import Sequence
+from marxs.analysis.gratings import CaptureResAeff
 
 try:
     import matplotlib.pyplot as plt
@@ -34,13 +33,13 @@ try:
 except ImportError:
     HAS_MPL = False
 
-
 mytorus = RowlandTorus(0.5, 0.5, position=[1.5, 0, -3])
 
-def gsa():
+def gsa(elem_class=FlatGrating):
     '''make a parallel structure - fresh for every test'''
-    g = GratingArrayStructure(mytorus, d_element=0.1, x_range=[0.5, 1.], radius=[0.1,.2],
-                              elem_class=FlatGrating,
+    g = GratingArrayStructure(rowland=mytorus,
+                              d_element=[0.1, 0.1], radius=[0.1,.2],
+                              elem_class=elem_class,
                               elem_args={'zoom':0.2, 'd':0.002,
                                          'order_selector': OrderSelector([1])
                                      })
@@ -135,7 +134,7 @@ def test_wiggle():
     wiggle(g, dx=10, dy=.1)
     diff = elempos - np.stack([e.pos4d for e in g.elements])
     # Given the numbers, wiggle in x must be larger than y
-    # This also tests that not all diff number are the same
+    # This also tests that not all diff numbers are the same
     # (as they would be with move).
     assert np.std(diff[:, 0, 3]) > np.std(diff[:, 1, 3])
 
@@ -187,7 +186,6 @@ def test_errormessage_attribute():
         varyattribute(gsa, attributenotpresent=1., notpresenteither=2.)
 
     assert 'does not have' in str(e.value)
-
 
 
 def test_orderselector():
@@ -304,99 +302,6 @@ def test_run_tolerances_for_energies2():
     assert res['R'].data[2, 1] > res['R'].data[0, 1]
 
 
-def test_capture_res_aeff():
-    '''Test the captures res/aeff class.
-
-    Similar to the previous test, this is not a complete functional test,
-    but it checks the interfaces.
-    The actual function to calculate the effective area is tested elsewhere.
-    '''
-    p = generate_test_photons(200)
-    p['order'] = 0
-    p['order'][50:] = 5
-    p['xpos'] = -100
-    p['xpos'][50:] = np.random.normal(scale=1, size=150)
-
-    resaeff = CaptureResAeff(A_geom=10., order_col='order',
-                             orders=[0, 2, 5], dispersion_coord='xpos')
-    out = resaeff(p)
-    assert np.allclose(out['Aeff'], [2.5, 0., 7.5])
-    assert np.isclose(out['Aeff0'], 2.5)
-    assert np.isclose(out['Aeffgrat'], 7.5)
-    assert len(out['R']) == 3
-    assert np.isnan(out['R'][1])
-    # Large rtol to reduce risk of random failures
-    assert np.isclose(out['R'][2], 50., rtol=.8)
-
-
-def test_capture_res_aeff_filter():
-    '''Ensure that photons with probability 0 will be ignored.
-    '''
-    p = generate_test_photons(200)
-    p['probability'] = 0
-    p['order'] = 0
-    p['order'][50:] = 5
-    p['xpos'] = -100
-    p['xpos'][50:] = np.random.normal(scale=1, size=150)
-
-    resaeff = CaptureResAeff(A_geom=10., order_col='order',
-                             orders=[0, 2, 5], dispersion_coord='xpos')
-    out = resaeff(p)
-    assert np.all(out['Aeff'] == 0)
-    assert out['Aeff0'] == 0
-    assert out['Aeffgrat'] == 0
-    assert len(out['R']) == 3
-    assert np.isnan(out['R'][2])
-
-
-def test_capture_res_aeff_nonfinite():
-    '''Ensure that photons with nonfinite values will be ignored for resolving power
-    but not for the effective area
-    '''
-    p = generate_test_photons(200)
-    p['order'] = 0
-    p['order'][50:] = 5
-    p['xpos'] = np.nan
-
-    resaeff = CaptureResAeff(A_geom=10., order_col='order',
-                             orders=[0, 2, 5], dispersion_coord='xpos')
-    out = resaeff(p)
-    assert np.allclose(out['Aeff'], [2.5, 0., 7.5])
-    assert out['Aeff0'] == 2.5
-    assert out['Aeffgrat'] == 7.5
-    assert len(out['R']) == 3
-    assert np.isnan(out['R'][2])
-
-
-
-def test_capture_res_aeff_CCDgap():
-    '''Test the captures res/aeff class.
-
-    Similar to the previous test, this is not a complete functional test,
-    but it checks the interfaces.
-    The actual function to calculate the effective area is tested elsewhere.
-    '''
-    p = generate_test_photons(200)
-    p['order'] = 0
-    p['order'][50:] = 5
-    p['xpos'] = -100
-    p['xpos'][50:] = np.random.normal(scale=1, size=150)
-    p['CCD'] = 0
-    # the last 100 photons don't hit a CCD and thus the Aeff is smaller
-    p['CCD'][100:] = -1
-
-    resaeff = CaptureResAeff_CCDgaps(A_geom=10., order_col='order',
-                             orders=[0, 2, 5], dispersion_coord='xpos',
-                             aeff_filter_col='CCD')
-    out = resaeff(p)
-    assert np.allclose(out['Aeff'], [2.5, 0., 2.5])
-    assert np.isclose(out['Aeff0'], 2.5)
-    assert np.isclose(out['Aeffgrat'], 2.5)
-    assert len(out['R']) == 3
-    assert np.isnan(out['R'][1])
-    # Large rtol to reduce risk of random failures
-    assert np.isclose(out['R'][2], 50., rtol=8)
-
 def test_6dlist():
     '''Check the list of dicts in 3 translations dof and 3 rotations'''
     cglob, cind = generate_6d_wigglelist([0, 1.] * u.cm, [0., 1.] * u.degree,
@@ -430,7 +335,7 @@ def test_find_changed():
     t = select_1dof_changed(tab, 'par1', parlist=['par1', 'par2'])
     assert set(t['id']) == set([1, 2, 4, 5])
 
-@pytest.mark.skipif('not HAS_MPL')
+
 def test_plot_wiggle():
     '''Test that wiggle plot works. This does not test that the result
     looks correct, only that running through the plot function does not
@@ -439,26 +344,15 @@ def test_plot_wiggle():
     setting up the infrastructure to compare output pixel-by-pixel does not
     seem worth it as this point.
     '''
+    plt = pytest.importorskip("matplotlib.pyplot")
     fig, ax = plt.subplots()
 
     tab = Table({'wave': [1, 1],
                  'dd': [0, 1],
                  'Rgrat': [500, 500],
                  'Aeff': [20, 50]})
-    plot_wiggle(tab, 'dd', ['dd'], ax, Aeff_col='Aeff')
-
-@pytest.mark.skipif('not HAS_MPL')
-def test_plot_wiggle_exception():
-    '''Test that exception is raised for parameters not plotted.
-    '''
-    fig, ax = plt.subplots()
-
-    tab = Table({'wave': [1, 1],
-                 'qwe': [0, 1],
-                 'Rgrat': [500, 500],
-                 'Aeff': [20, 50]})
-    with pytest.raises(ValueError, match='Parameter names should start with'):
-        plot_wiggle(tab, 'qwe', ['qwe'], ax, Aeff_col='Aeff')
+    wiggle_plotter = DispersedWigglePlotter()
+    wiggle_plotter.plot_wiggle(tab, 'dd', ['dd'], ax, Aeff_col='Aeff')
 
 @pytest.mark.skipif('not HAS_MPL')
 def test_plot_6dof():
@@ -469,10 +363,11 @@ def test_plot_6dof():
                  'R': np.random.rand(8),
                  'Aeffgrat': np.arange(8)})
 
+    wiggle_plotter = DispersedWigglePlotter()
     with tempfile.TemporaryDirectory() as tmpdirname:
         name = os.path.join(tmpdirname, 'var_global.fits')
         tab.write(name)
-        fig, ax = load_and_plot(name, ['dd', 'rr'], R_col='R')
+        fig, ax = wiggle_plotter.load_and_plot(name, ['dd', 'rr'], R_col='R')
 
 @pytest.mark.skipif('not HAS_MPL')
 def test_plot_6dof_real_file():
@@ -481,5 +376,6 @@ def test_plot_6dof_real_file():
     in design/tolerancing (see docs/pyplot/chandra_tolerancing) so if this test
     breaks, the docs will likely have to be changed, too.
     '''
+    wiggle_plotter = DispersedWigglePlotter()
     filename = get_pkg_data_filename('data/wiggle_global.fits', 'marxs.design.tests')
-    fig, ax = load_and_plot(filename)
+    fig, ax = wiggle_plotter.load_and_plot(filename)

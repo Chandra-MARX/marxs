@@ -175,7 +175,7 @@ def color_tuple_to_hex(color):
     Parameters
     ----------
     color : tuple
-        tuple has three elements (rgb) that are floats betwen 0 and 1
+        tuple has three elements (rgb) that are floats between 0 and 1
         or ints between 0 and 255.
 
     Returns

@@ -1,12 +1,19 @@
 # Licensed under GPL version 3 - see LICENSE.rst
+import math
 import warnings
 
+import astropy.units as u
+from astropy.table import QTable
 import numpy as np
 from transforms3d.affines import decompose44
+from scipy.stats import norm
 
 from .base import FlatOpticalElement, OpticalElement
 from ..utils import SimulationSetupWarning
 from ..math.geometry import Cylinder
+
+
+__all__ = ['FlatDetector', 'CircularDetector', 'CCDRedistNormal']
 
 
 class FlatDetector(FlatOpticalElement):
@@ -109,3 +116,67 @@ class CircularDetector(OpticalElement):
         detx = intercoos[intersect, 0] * self.geometry['R'] / self.pixsize + self.centerpix[0]
         dety = intercoos[intersect, 1] / self.pixsize + self.centerpix[1]
         return {self.detpix_name[0]: detx, self.detpix_name[1]: dety}
+
+
+class CCDRedistNormal():
+    '''Redistribute energies according to a normal distribution
+
+    No detector has infinite energy resolution. This class redistributes the
+    the energy according to a normal distribution.
+
+    Parameters
+    ----------
+    tab_width : astropy.table.QTable
+        Table with columns "energy" and either "sigma" or "energy"
+
+    Notes
+    -----
+    For now, I'm just putting in methods one by one as I need them.
+    However, in principle this class could inherit from `scipy.stat.norm`
+    or maybe from a sherpa norm1d distribution or from astropy.modelling
+    (which should be quantity aware already).
+    Eventually, this might be a good application of a metaclass
+    e.g. as in https://stackoverflow.com/questions/11349183/how-to-wrap-every-method-of-a-class
+    to handles scale and loc arguments automatically in the way shown
+    below, but for now it's easier ot just copy and paste that wrapping
+    a few times as needed.
+
+
+    Also, this is for instance methods. I think "norm" might use class methods
+    so that's just one step more complicated...
+
+    '''
+    fwhm2sig = 2 * math.sqrt(2 * math.log(2))
+
+    def __init__(self, tab_width: QTable):
+        self.tab_width = tab_width
+        if 'sigma' not in self.tab_width.colnames:
+            self.tab_width['sigma'] = self.tab_width['FWHM'] / self.fwhm2sig
+
+    @u.quantity_input(energy=u.keV, equivalencies=u.spectral())
+    def sig_ccd(self, energy):
+        '''Return the Gaussian sigma of the width of the CCD resolution
+
+        Parameters
+        ----------
+        energy : `~astropy.units.quantity.Quantity`
+            True photon energy.
+
+        Returns
+        -------
+        sigma : `~astropy.units.quantity.Quantity`
+            Width of the Gaussian
+        '''
+        return np.interp(energy.to(u.keV, equivalencies=u.spectral()),
+                         self.tab_width['energy'],
+                         self.tab_width['sigma'])
+
+    @u.quantity_input(x=u.keV, loc=u.keV, equivalencies=u.spectral())
+    def cdf(self, x, loc):
+        scale = self.sig_ccd(loc)
+        return norm().cdf(((x - loc) / scale).decompose())
+
+    @u.quantity_input(loc=u.keV, equivalencies=u.spectral())
+    def interval(self, alpha, loc):
+        scale = self.sig_ccd(loc)
+        return np.broadcast_to(norm.interval(alpha), (len(loc), 2)).T * scale + loc

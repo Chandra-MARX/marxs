@@ -50,8 +50,7 @@ def test_resolvingpower_consistency():
     blazeang = 1.91
     rowland = RowlandTorus(6000., 6000.)
     blazemat = transforms3d.axangles.axangle2mat(np.array([0, 0, 1]), np.deg2rad(blazeang))
-    gas = GratingArrayStructure(rowland=rowland, d_element=30.,
-                                x_range=[1e4, 1.4e4],
+    gas = GratingArrayStructure(rowland=rowland, d_element=[30., 30.],
                                 radius=[50, 100],
                                 elem_class=CATGrating,
                                 elem_args={'d': 1e-4, 'zoom': [1., 10., 10.],
@@ -73,7 +72,7 @@ def test_resolvingpower_consistency():
     # FWHM is similar
     assert np.isclose(res1[1][0], res2[1][0], atol=0.1)
     assert np.isclose(res1[1][1], res2[1][1], atol=0.2)  # differs stronger here if fit not good
-    assert np.isclose(res2[1][0], 1.8, rtol=0.1, atol=0.1)
+    assert np.isclose(res2[1][0], 2.0, rtol=0.1, atol=0.1)
     # Resolution of 0th order is essentially 0
     assert np.isclose(res1[0][0], 0, atol=0.5)
     assert np.isclose(res2[0][0], 0, atol=0.5)

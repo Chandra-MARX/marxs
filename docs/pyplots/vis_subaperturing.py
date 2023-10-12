@@ -26,15 +26,14 @@ class ColoredFlatGrating(optics.FlatGrating):
         out['colorid'] = self.colorid if hasattr(self, 'colorid') else np.nan
         return out
 
-gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=180,
-                                           x_range=[8000, 10000],
+gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=[180, 180],
                                            radius=[870, 910],
                                            elem_class=ColoredFlatGrating,
                                            elem_args={'d': 2e-4, 'zoom': [1, 80, 80],
                                                       'order_selector': optics.OrderSelector([-1, 0, 1])})
-det_kwargs = {'d_element': 105, 'elem_class': optics.FlatDetector,
+det_kwargs = {'d_element': [105, 105], 'elem_class': optics.FlatDetector,
               'elem_args': {'zoom': [1, 50, 20], 'pixsize': 0.01}}
-det = design.rowland.RowlandCircleArray(rowland, theta=[3.1, 3.2], **det_kwargs)
+det = design.rowland.RectangularGrid(rowland=rowland, y_range=[-120, +120], **det_kwargs)
 projectfp = analysis.ProjectOntoPlane()
 
 gratingcolors = 'bgr'

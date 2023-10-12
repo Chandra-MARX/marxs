@@ -22,7 +22,6 @@ from marxs.math.utils import norm_vector
 from marxs.optics.scatter import RandomGaussianScatter
 from marxs.utils import tablerows_to_2d
 
-
 __all__ = ['l1transtab', 'l1_order_selector',
            'l1_dims', 'l2_dims',
            'qualityfactor', 'd',
@@ -39,7 +38,7 @@ __all__ = ['l1transtab', 'l1_order_selector',
 d = 0.0002
 '''Spacing of grating bars'''
 
-l1transtab = Table.read(get_pkg_data_filename('SiTransmission.csv'), format='ascii.ecsv')
+l1transtab = Table.read(get_pkg_data_filename('data/SiTransmission.csv'), format='ascii.ecsv')
 '''Transmission through 1 mu of Si'''
 
 l1_order_selector = OrderSelector(orderlist=np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]),
@@ -189,7 +188,9 @@ class L1(CATGrating):
         check_lx_dims(l1_dims)
         self.openfraction = 1 - l1_dims['barwidth'] / l1_dims['period']
         energy = l1transtab['energy'].to(u.keV, equivalencies=u.spectral())
-        trans = np.exp(np.log(l1transtab['transmission']) * l1_dims['bardepth'] / (1 * u.micrometer))
+        with np.errstate(divide='ignore'):
+            logtranstab = np.log(l1transtab['transmission'])
+        trans = np.exp(logtranstab * l1_dims['bardepth'] / (1 * u.micrometer))
         self.transfunc = interp1d(energy, trans)
         kwargs['d'] = l1_dims['period'].to(u.mm).value
         super().__init__(**kwargs)
@@ -330,7 +331,7 @@ class CATL1L2Stack(FlatStack):
     This element combines all parts of a CAT grating into a single object.
     These include the grating membrane and the absorption and diffraction due
     to the L1 and L2 support.
-    Approximations are done for all those elements, see the individial classes
+    Approximations are done for all those elements, see the individual classes
     for more details. Except for `order_selector` all other parameters are set with
     defaults defined in module level variables.
 
@@ -339,7 +340,7 @@ class CATL1L2Stack(FlatStack):
     order_selector : `marxs.optics.OrderSelector`
         Order selector for the grating membrane
     groove_angle : float
-        Goove angle of grating bars (in rad). Default: 0
+        Groove angle of grating bars (in rad). Default: 0
     l1_order_selector : `marxs.optics.OrderSelector`
         Order selector for L1 dispersion (cross-dispersion direction for grating)
     qualityfactor : dict

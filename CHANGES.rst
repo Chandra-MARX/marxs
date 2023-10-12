@@ -17,17 +17,59 @@ New Features
 - To avoid probabilities <0 or >1, values assigned to this column are now
   tested and a ``ValueError`` may be raised. [#230]
 
-- Added a new class `CaptureResAeff_CCDgap` that selects photons differently for
+- Added a new class ``CaptureResAeff_CCDgap`` that selects photons differently for
   calculation of the effective area and resolving power to account for chip gaps. [#235]
 
 - Add direct X3D visualization backend to avoid the need for Mayavi. [#238]
+- Add several missions under development that were previously developed in separate
+  repros. As it turn out, keeping the code separate lead to significant parallel
+  work that can be simplified by keeping all of them in marxs itself. However, those
+  mission are less fleshed out then marxs itself, less documented and less tested. [#237]
+- Add ``CircularMeshGrid`` as a new way to place gratings on the Rowlandtorus. Adapted from
+  previous Lynx code. [#237]
+- Add various helper functions that previously lived in separate repros. [#237]
+- Add methods to fit the LSF to generate a Chandra-style LSFPARM file. [#237]
+- Include code for several missions (Athena, Arcus, Lynx, AXIS) into marxs.
+  This code had been previously developed separately, since none of it is really ready for
+  public consumption (e.g. the Lynx concept has been rejected, Arcus is under continuous redefinition).
+  However, given how few people except me currently use MARXS, "practicality beats purity"
+  and I'm now including this into marxs. Note that the mission code generally is not documented
+  in the docs and not tested as well.
+  It's simply either not interesting enough for general users (but needed to
+  replicate some of my SPIE proceedings so I want it publicly available)
+  or evolving too fast to write good docs and tests (e.g. the Arcus effective area
+  changes every time the coating or layout changes, tests that check Aeff are
+  thus more checks on the CALDB than on the code). [#240]
+- A number of updates that were developed for those individual missions and are
+  now included into marxs proper, e.g.: A class to make certain plots that display
+  the performance loss for misalignments and utilities to run tolerancing etc. [#240]
+
 
 API Changes
 ^^^^^^^^^^^
-- ``load_table2d`` has been replaced by ```marxs.utils.tablerows_to_2d``, which perform
+- For all classes that place elements on the Rowland torus, the API has been
+  standardized. That means changes to almost all of them. In particular:
+
+  - ``rowland.RectangularGrid`` replaces ``RowlandTorusArray`` and ``LinearCCDArray``.
+    Inputs are specified the y and z ranges now instead of Rowland circle
+    :math:`$\phi` coordinates that are hard to visualize since it's measure from the
+    center of the Rowland circle and the origin of :math:`$\phi=0` depends on the
+    rotation of the torus. ``rowland.RectangularGrid`` can be used for 1D or 2D
+    arrangements and thus ``d_element`` must always be two numbers for dimension in
+    both directions.
+  - All classes now use a minimizer instead of a brackets root finder. So, instead
+    of a bracketing interval, they now need a ``guess_distance`` where the minimization
+    starts.
+
+- ``load_table2d`` has been replaced by ``marxs.utils.tablerows_to_2d``, which performs
   the same reformatting of a table, but does not read it in. [#237]
 - ``marxs.missions.mitsnl.InterpolateEfficiencyTable`` now takes a table, instead of a
   filename as parameter. [#237]
+- `effectivearea_from_photonlist` now requires a unit for the input of the effective area. [#237]
+- ``CaptureResAeff_CCDgap`` and ``CaptureResAeff`` are moved to
+  ``marxs.analysis.gratings``. [#237]
+- ``plot_wiggle`` and ``load_and_plot`` are now summarized in the class to make it
+  easier to derive from them. [#237]
 
 - Rename files that had a class of the same name, because this confuses the Sphinx autosummary
   extension. The following files have been renamed: `marxs.missions.chandra.chandra` to
@@ -47,6 +89,13 @@ Bug fixes
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Previously, MARXS only contained modules for currently operating missions.
+  However, in practice, it's mostly used to simulate proposed missions. Thus,
+  we changed the policy to include simulation code for proposed missions here.
+  That code may not be of general use, but it simplifies the workflow for
+  developers considerably and serve example on how to build your own
+  instrument from the building blocks provided by the main marxs modules. [#237]
 
 - Updates of CI and simplify _astropy_init and conftest for new Python and
   astropy verisons. [#236]

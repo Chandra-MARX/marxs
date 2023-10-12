@@ -4,6 +4,7 @@ from transforms3d.affines import decompose44
 
 from ..math.utils import translation2aff, zoom2aff, mat2aff, e2h, h2e
 from ..math.geometry import Geometry
+from ..math.rotations import ex2vec_fix
 from ..base import SimulationSequenceElement, _parse_position_keywords
 import transforms3d
 from transforms3d.utils import normalized_vector
@@ -512,16 +513,9 @@ class ParallelCalculated(Parallel):
         xyzw = self.get_elemxyzw()
         normals = self.get_spec('normal_spec', xyzw)
         parallels = self.get_spec('parallel_spec', xyzw, normals)
-        normals = h2e(normals)
-        parallels = h2e(parallels)
 
         for i in range(xyzw.shape[0]):
-            n = normalized_vector(normals[i, :])
-            p = parallels[i, :]
-            rot_mat = np.zeros((3,3))
-            rot_mat[:, 0] = n
-            rot_mat[:, 1] = normalized_vector(p - n * np.dot(n, p))
-            rot_mat[:, 2] = normalized_vector(np.cross(n, rot_mat[:, 1]))
+            rot_mat = ex2vec_fix(h2e(normals[i, :]), h2e(parallels[i, :]))
             pos4d.append(transforms3d.affines.compose(h2e(xyzw[i, :]), rot_mat, np.ones(3)))
         return pos4d
 
@@ -591,7 +585,7 @@ class KeepCol(object):
         Parameters
         ----------
         atol : float or None
-            Sometimes several consequtive elements record identical photon positions in
+            Sometimes several consecutive elements record identical photon positions in
             `keepcol`. Those are removed from the output to speed up rendering in 3D
             programs.
             ``atol`` sets the limit up to which two positions are considered *identical*.
@@ -602,7 +596,7 @@ class KeepCol(object):
         -------
         pos : np.array
             Array of shape (N, n, 3), where N is the number of photons and n the number of
-            unique photon positions in eukledian coordinates.
+            unique photon positions in euclidean coordinates.
         '''
         if len(self.data) == 0:
             raise ValueError('KeepCol object contains no data.')

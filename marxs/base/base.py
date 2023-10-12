@@ -1,21 +1,33 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 from collections import OrderedDict
 import inspect
-import warnings
 from copy import deepcopy
+import re
+from datetime import datetime
 
 import numpy as np
 from transforms3d import affines
 from astropy.table import Column
 
 from ..visualization.utils import DisplayDict
+from marxs import __version__
+
+__all__ = ['GeometryError',
+           'DocMeta',
+           'MarxsElement',
+           'TagVersion',
+           'check_meta_consistent',
+           'check_energy_consistent',
+           'SimulationSequenceElement',
+           ]
+
 
 class GeometryError(Exception):
     pass
 
 
 class DocMeta(type):
-    '''Metaclass to inherit docstrings when reqired.
+    '''Metaclass to inherit docstrings when required.
 
     When a derived class overwrites a method that was already defined in its
     base class, the new method usually has the same purpose as the original
@@ -76,6 +88,107 @@ class MarxsElement(metaclass=DocMeta):
 
     def describe(self):
         return OrderedDict(element=self.name)
+
+
+reexp = re.compile(r"(?P<version>[\d.dev]+[\d]+)[+]?(g(?P<gittag>\w+))?[.]?(d(?P<dirtydate>[\d]+))?")
+'''Regex to parse scm version string'''
+
+ver = reexp.match(__version__)
+'''Parsed version of the marxs code'''
+
+
+class TagVersion(MarxsElement):
+    '''Tag a photons list with diagnostic information such as a the program version.
+
+    All keyword arguments passed when this element is initialized or when it is called
+    will be added to the meta information of the photon list, some additional
+    information on program version and runtime is added automatically.
+    As such, the format of the keyword values is very flexible. However, if they are
+    going to be written to fits files it is useful to follow fits conventions and
+    the default paraemter values also invoke fits conventions.
+
+
+    Parameters
+    ----------
+    origin : tuple of strings
+        according to fits convention, the Institution where file was created
+    creator : string or tuple of strings
+        according to fits convention, the Person or program creating file'
+    '''
+    def __init__(self,
+                 ORIGIN=('unkwown', 'Institution where file was created'),
+                 CREATOR=('MARXS', 'Person or program creating file'),
+                 **kwargs):
+        super().__init__(name=kwargs.pop('name', self.__class__))
+
+        kwargs['MARXSVER'] = (ver.group('version'), 'MARXS code version')
+        if not ver.group('gittag') is None:
+            kwargs['MARXSGIT'] = (ver.group('gittag'),
+                                        'Git hash of MARXS code')
+        if not ver.group('dirtydate') is None:
+            kwargs['MARXSTIM'] = (ver.group('dirtydate'),
+                                        'Date of dirty version ARCUS code')
+        self.tags = kwargs
+
+    def __call__(self, photons, *args, **kwargs):
+        photons.meta['DATE'] = (datetime.now().isoformat()[:10], 'Date/time of computation')
+        for k, v in self.tags.items():
+            photons.meta[k] = v
+        for k, v in kwargs.items():
+            photons.meta[k] = v
+        return photons
+
+
+def check_meta_consistent(meta1, meta2, keywords=['ORIGIN', 'CREATOR',
+                                                  'MARXSVER', 'MARXSGIT', 'MARXSTIM',
+                                                  ],
+                          allow_missing=True):
+    '''Check that the meta data between two simulations indicates consistency.
+
+    This check compares a number of keywords (e.g. the version of marxs) to
+    indicate if the simulations where run with the same version of marxs.
+    If a simulation records more information in the metadata,
+    the check can be more complete.
+    This function raises an `AssertionError` if the two sets of
+    meta information are different.
+
+    Parameters
+    ----------
+    meta1 : dict
+        header from photon list 1
+    meta2 : dict
+        header from photon list 2
+    keywords : list
+        Keywords to be checked
+    allow_missing : bool
+        This flag allows a keyword to be missing from both dictionaries
+        (e.g. MARXSGIT is not set if run with a released version); however,
+        it is still an error if a key is present only in one, but not the
+        dictionary.
+
+    Raises
+    ------
+    AssertionError, KeyError
+    '''
+    for k in keywords:
+        if (k in meta1) and (k in meta2):
+            assert meta1[k] == meta2[k]
+        else:
+            if not allow_missing:
+                raise KeyError(f'{k} not found in both dicts.')
+            # Even with allow_missing=True
+            # it's an error to have a key in only one dict
+            if (k in meta1) or (k in meta2):
+                raise KeyError(f'{k} found in one, but not both dicts.')
+
+
+def check_energy_consistent(photons):
+    '''Check if the energy is the same for all photons.
+
+    If there is no energy colum, then this also passes.
+    '''
+    if 'energy' in photons.colnames:
+        assert np.allclose(photons['energy'], photons['energy'][0])
 
 
 class SimulationSequenceElement(MarxsElement):
