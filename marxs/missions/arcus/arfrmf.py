@@ -7,7 +7,6 @@ import numpy as np
 import astropy.units as u
 from astropy.table import Table, QTable
 from scipy.interpolate import interp1d
-from sherpa.models import NormGauss1D
 
 from marxs.missions.arcus.utils import config
 from marxs.missions.arcus.arcus import defaultconf, DetCamera, FiltersAndQE
@@ -248,6 +247,8 @@ def mkrmf0(bin_edges, *, ccdfwhm: QTable, threshold=1e-6):
         'energy' (in keV) and 'FWHM' (in eV). Note that the units are
         hardcoded and different between columns.
     '''
+    from sherpa.models import NormGauss1D
+
     ebounds = ogip.RMF.ebounds_from_edges(bin_edges)
     matrix = Table(names=['ENERG_LO', 'ENERG_HI', 'N_GRP',
                           'F_CHAN', 'N_CHAN', 'MATRIX'],

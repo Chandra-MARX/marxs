@@ -6,11 +6,15 @@ import numpy as np
 from scipy import interpolate
 from astropy.table import Column, Table
 import astropy.units as u
-from sherpa.models import NormGauss1D, Scale1D
-from sherpa.astro.models import Lorentz1D
-from sherpa import stats, optmethods
-from sherpa.fit import Fit
-from sherpa.data import Data1DInt
+
+# We want Sherpa to be an optional dependency, so the imports happen in
+# individual functions, not here.
+# from sherpa.models import NormGauss1D, Scale1D
+# from sherpa.astro.models import Lorentz1D
+# from sherpa import stats, optmethods
+# from sherpa.fit import Fit
+# from sherpa.data import Data1DInt
+
 
 from .ogip import RMF
 
@@ -56,6 +60,9 @@ def caldb2sherpa(caldb, row, iwidth, iwave):
         CALDB lsfparm table
 
     '''
+    from sherpa.astro.models import Lorentz1D
+    from sherpa.models import NormGauss1D, Scale1D
+
     model = []
     for col in caldb.colnames:
         if col == 'EE_FRACS':
@@ -96,6 +103,9 @@ def sherpa2caldb(shmodel):
     '''
     shmodel : Sherpa model instance
     '''
+    from sherpa.astro.models import Lorentz1D
+    from sherpa.models import NormGauss1D
+
     d = {}
     for comp in flatten_sherpa_model(shmodel):
         if isinstance(comp, NormGauss1D):
@@ -121,6 +131,9 @@ def empty_lsfparmtable(widths, waves, model, extname, order):
         This instance is inspected for the name of the model components to
         set up the correct columns
     '''
+    from sherpa.astro.models import Lorentz1D
+    from sherpa.models import NormGauss1D
+
     tab = Table()
     tab.add_column(Column(data=[len(widths)], name='NUM_WIDTHS',
                           dtype=np.int32))
@@ -267,6 +280,9 @@ def sherpa_from_spline(splines, width, wave):
       goes below 0. Setting to 0 or linearly interpolating
       would be better, but I simply want a fast solution right now.
     '''
+    from sherpa.models import NormGauss1D, Scale1D
+    from sherpa.astro.models import Lorentz1D
+
     model = []
     for col in splines:
         if col == 'EE_FRACS':
@@ -343,7 +359,7 @@ def make_rmf(lsfparmrow, wave_edges, width, threshold=1e-6, kw_interp={}):
 
 
 def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
-                stat=stats.LeastSq(), method=optmethods.LevMar()):
+                stat=None, method=None):
     '''Fit an LSF model to a simulated set of photons
 
     Photons are binned into a histogram and the model is fit to that.
@@ -368,6 +384,10 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     colname : str
         Name of column in evt that contains the wavelength. The default
         name is taken from the Chandra terminaology.
+    stat : `sherpa.stats.Stat`
+        If None, use `sherpa.stats.LeastSq`
+    method : `sherpa.optmethods.OptMethod`
+        If None, use `sherpa.optmethods.LevMar`
 
     Returns
     -------
@@ -376,6 +396,15 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     res : `sherpa.fit.FitResults`
         Results of the fit
     '''
+    from sherpa.fit import Fit
+    from sherpa.data import Data1DInt
+    from sherpa import stats, optmethods
+
+    if stat is None:
+        stat = stats.LeastSq()
+    if method is None:
+        method = optmethods.LevMar()
+
     hist, edges = np.histogram(evt[colname].value, weights=evt['probability'],
                                bins=evt[colname].value.mean() + np.arange(- d_wave, d_wave, wavebin))
     # Get error with 0 in the uncertainties
