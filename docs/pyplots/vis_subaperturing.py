@@ -2,7 +2,6 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from marxs import optics, design, analysis, source, simulator
-from marxs.design import rowland
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
