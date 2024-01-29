@@ -3,7 +3,7 @@ import re
 import datetime
 
 import numpy as np
-from scipy import interpolate
+from scipy.interpolate import RegularGridInterpolator as RGI
 from astropy.table import Column, Table
 import astropy.units as u
 
@@ -15,6 +15,13 @@ import astropy.units as u
 # from sherpa.fit import Fit
 # from sherpa.data import Data1DInt
 
+__all__ = [
+    'sherpa2caldb',
+    'empty_lsfparmtable', 'lsfparmtable_add_Chandra_header',
+    'CALDB_interp', 'sherpa_from_spline',
+    'make_rmf',
+    'fit_LSF', 'plot_LSFfit',
+    ]
 
 from .ogip import RMF
 
@@ -35,73 +42,36 @@ gconv = np.array([1, 2 * np.sqrt(2 * np.log(2)), 1])
 lconv = np.array([1, 1, 1])
 
 
-# Is this used anywhere? Usually, do it from spline.
-# Can always convert CALDB to spline and then use that.
-# So I think this is just a second implementation of the same thing
-# which should be be here because now I have to debug etc. twice.
-def caldb2sherpa(caldb, row, iwidth, iwave):
-    '''Convert CALDB entries to Sherpa model
-
-    Convert entries in a CALDB lsfparm files to a Sherpa model.  The
-    lsfparm files can contain several rows, for different off-axis
-    angles and radii and in each row there will be entries for a
-    number of wavelength points and extraction width.
-
-    This function expects as input the index numbers for row,
-    wavelength as index for the wavelength array etc. In practical
-    applications, the CALDB file will be queried for a specific
-    position, wavelength etc., but for development purposes it is
-    useful to go into the raw array, e.g. to read some unrelated CALDB
-    file (say for a different detector) to use as a starting point to
-    fit the lsfparm parameters or to plot different settings for
-    comparison.
-
-    caldb : `astropy.table.Table`
-        CALDB lsfparm table
-
-    '''
-    from sherpa.astro.models import Lorentz1D
-    from sherpa.models import NormGauss1D, Scale1D
-
-    model = []
-    for col in caldb.colnames:
-        if col == 'EE_FRACS':
-            eef = Scale1D(name='EE_FRACS')
-            eef.c0 = caldb['EE_FRACS'][row][iwidth, iwave]
-            # model is underdetermined if this the ampl of all functions
-            # is left free
-            eef.c0.frozen = True
-        elif gaussn.match(col):
-            newg = NormGauss1D(name=col)
-            newg.ampl, newg.fwhm, newg.pos = caldb[col][row][iwidth, iwave, :] * gconv
-            model.append(newg)
-        elif lorentzn.match(col):
-            newg = Lorentz1D(name=col)
-            newg.ampl, newg.fwhm, newg.pos = caldb[col][row][iwidth, iwave, :] * lconv
-            model.append(newg)
-
-    sumampl = np.sum([m.ampl.val for m in model if isinstance(m, NormGauss1D) or isinstance(m, Lorentz1D)])
-    for m in model:
-        if isinstance(m, NormGauss1D) or isinstance(m, Lorentz1D):
-            m.ampl.val = m.ampl.val / sumampl
-    # Start value is 0, unless we explicitly set the start value. So, split models and pass [0]
-    # as start value to avoid a numerical 0.0 in the model expression.
-    return eef * sum(model[1:], model[0])
-
-
 def flatten_sherpa_model(model):
-    if hasattr(model, 'parts'):
-        modellist = []
-        for p in model.parts:
-            modellist.extend(flatten_sherpa_model(p))
-        return modellist
-    else:
-        return [model]
+    '''Flatten a Sherpa model into a list to make easy to iterate over
+
+    Parameters
+    ----------
+    model : `sherpa.models.model.BinaryOpModel`
+        Sherpa model consisting of different parts
+
+    Returns
+    -------
+    modellist : list of `sherpa.models.model.Model`
+        Flat list of individual models
+    '''
+    return [m for m in model if not hasattr(m, 'parts')]
 
 
 def sherpa2caldb(shmodel):
-    '''
-    shmodel : Sherpa model instance
+    '''Get parameters from Sherpa model into tabular CALDB format
+
+    Parameters
+    ----------
+    shmodel : `sherpa.models.model.BinaryOpModel`
+        This model should consists of Gauss and Lorentz components.
+        The component model parameters will be extracted into the order
+        and naming expected for LSFPARM files in the CALDB.
+
+    Returns
+    -------
+    d : dict
+        Dictionary with model parameters in CALDB format.
     '''
     from sherpa.astro.models import Lorentz1D
     from sherpa.models import NormGauss1D
@@ -109,11 +79,13 @@ def sherpa2caldb(shmodel):
     d = {}
     for comp in flatten_sherpa_model(shmodel):
         if isinstance(comp, NormGauss1D):
-            modelpars = np.array([comp.ampl.val, comp.fwhm.val,
-                                  comp.pos.val]) / gconv
+            # convert to np.array to make sure we can divide by gconv
+            # but then convert back to list to make sure it's JSON serializable
+            modelpars = list(np.array([comp.ampl.val, comp.fwhm.val,
+                                  comp.pos.val]) / gconv)
         elif isinstance(comp, Lorentz1D):
-            modelpars = np.array([comp.ampl.val, comp.fwhm.val,
-                                  comp.pos.val]) / lconv
+            modelpars = list(np.array([comp.ampl.val, comp.fwhm.val,
+                                  comp.pos.val]) / lconv)
         else:
             raise Exception(f'Component {comp} not valid for LSFPARM files')
         d[comp.name] = modelpars
@@ -226,68 +198,69 @@ def lsfparmtable_add_Chandra_header(tab, evt):
     return tab
 
 
-class interp1d_2dsignature(interpolate.interp1d):
-    '''1D interp with the same signature as `scipy.interpolate.interp2d`
-
-    For use with LSFPARM files that have only one WIDTH.
-
-    '''
-    def __init__(self, x, y, z, **kwargs):
-        super().__init__(y, z, **kwargs)
-
-    def __call__(self, x, y):
-        return super().__call__(y)
-
-
-def CALDB_interp(row, kind='cubic', **kwargs):
+def CALDB_interp(row, method='linear', bounds_error=False,
+                 fill_value=None):
     '''Get interpolating functions from values in LSFPARM
 
     Parameters
     ----------
     row : `astropy.table.Row`
         Table row from CALDB LSFPARM file
-    **kwargs
-        All other keywords arguments are passed to
-        `scipy.interpolate.interp1d` or `scipy.interpolate.interp2d`.
+    method : str
+        Interpolation method, passed to `scipy.interpolate.RegularGridInterpolator`
+    bounds_error : bool
+        Passed to `scipy.interpolate.RegularGridInterpolator`
+    fill_value : float
+        Passed to `scipy.interpolate.RegularGridInterpolator`
     '''
     interpolators = {}
 
-    if row['NUM_WIDTHS'] > 1:
-        interp = interpolate.interp2d
-    else:
-        interp = interp1d_2dsignature
-
     for col in row.colnames:
         if col == 'EE_FRACS':
-            interpolators[col] = interp(row['WIDTHS'],
-                                        row['LAMBDAS'], row[col],
-                                        kind=kind,
-                                        **kwargs)
+            interpolators[col] = RGI((row['WIDTHS'], row['LAMBDAS']),
+                                     row[col],
+                                     method=method,
+                                     bounds_error=bounds_error,
+                                     fill_value=fill_value)
         elif modelnames.match(col):
-            interpolators[col] = [interp(row['WIDTHS'],
-                                         row['LAMBDAS'],
-                                         row[col][:, :, i].squeeze(),
-                                         kind=kind,
-                                         **kwargs)
+            interpolators[col] = [RGI((row['WIDTHS'], row['LAMBDAS']),
+                                      row[col][:, :, i].squeeze(),
+                                      method=method,
+                                      bounds_error=bounds_error,
+                                      fill_value=fill_value)
                                   for i in [0, 1, 2]]
     return interpolators
 
 
-def sherpa_from_spline(splines, width, wave):
-    '''
-    To-Do: Convert to correct unit before calling .value
-    To-Do: np.abs is really just there if an interpolation
-      goes below 0. Setting to 0 or linearly interpolating
-      would be better, but I simply want a fast solution right now.
+def sherpa_from_spline(interpolators, width, wave):
+    '''Make a Sherpa model function from CALDB LSFPARM parameters
+
+    Parameters
+    ----------
+    interpolators : dict
+        Dictionary with interpolating functions for each column in the
+        LSFPARM table
+    width : `astropy.units.Quantity`
+        Extraction width
+    wave : `astropy.units.Quantity`
+        Wavelength
+
+    Returns
+    -------
+    model : `sherpa.models.model.Model`
+        Sherpa model with parameters set to the LSFPARM values
     '''
     from sherpa.models import NormGauss1D, Scale1D
     from sherpa.astro.models import Lorentz1D
 
+    width_deg = width.to(u.deg).value
+    wave_ang = wave.to(u.Angstrom).value
+
     model = []
-    for col in splines:
+    for col in interpolators:
         if col == 'EE_FRACS':
             eef = Scale1D(name='EE_FRACS')
-            eef.c0 = splines[col](width.value, wave.value)
+            eef.c0 = interpolators[col]((width_deg, wave_ang))
             # model is underdetermined if this the ampl of all functions
             # is left free
             eef.c0.frozen = True
@@ -299,8 +272,8 @@ def sherpa_from_spline(splines, width, wave):
                 new = Lorentz1D(name=col)
                 conv = lconv
             new.ampl, new.fwhm, new.pos = \
-                np.abs(np.stack([splines[col][i](width.value, wave.value)
-                          for i in [0, 1, 2]]).flatten() * conv)
+                np.stack([interpolators[col][i]((width_deg, wave_ang))
+                          for i in [0, 1, 2]]).flatten() * conv
             model.append(new)
 
     sumampl = np.sum([m.ampl.val for m in model
@@ -316,9 +289,28 @@ def sherpa_from_spline(splines, width, wave):
 
 
 def make_rmf(lsfparmrow, wave_edges, width, threshold=1e-6, kw_interp={}):
-    '''
-    makes PHA channels (because that's what the lsfparm files are made for)
-    I made a choice here: writing with TLMIN=0, which is valid OGIP
+    '''Make an RMF from a CALDB LSFPARM input
+
+    Generate an RMF in PHA channels. This routine generates RMFs with
+    TLMIN=0, which is valid OGIP.
+
+    Parameters
+    ----------
+    lsfparmrow : `astropy.table.Row`
+        Table row from CALDB LSFPARM file
+    wave_edges : `astropy.units.Quantity`
+        Wavelength edges for the RMF
+    width : `astropy.units.Quantity`
+        Extraction width
+    threshold : float
+        Threshold for RMF matrix
+    kw_interp : dict
+        Keyword arguments passed to `CALDB_interp`
+
+    Returns
+    -------
+    rmf : `marxs.reduction.ogip.RMF`
+        RMF object
     '''
     ebounds = RMF.ebounds_from_edges(wave_edges)
     matrix = Table(names=['ENERG_LO', 'ENERG_HI', 'N_GRP',
@@ -363,8 +355,8 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     '''Fit an LSF model to a simulated set of photons
 
     Photons are binned into a histogram and the model is fit to that.
-    Since the histogram is constructed using the "probability" column
-    in the event list, if will contain non-integer data, which does not
+    If a "probability" column is given in the event list,
+    the histogram it will contain non-integer data, which does not
     follow a Poisson distribution.
     Unfortunately, the statistical error in each bin is not well defined,
     but some number is needed for the fit. So, the square root of the
@@ -372,9 +364,10 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     This is not ideal, but it gives satisfactory results for typical cases.
 
     evt : `astropy.table.Table`
-        Table with photons. Must have columns 'probability' and 'colname'.
+        Table with photons.
         This table must already be filtered to contain only photons
-        that are part of the LSF (e.g. filter on order and wavelength)
+        that are part of the LSF (e.g. filter on order and wavelength
+        before calling this function).
     model : `sherpa.models.model.Model`
         LSF model to be fit.
     wavebin : float
@@ -384,9 +377,9 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     colname : str
         Name of column in evt that contains the wavelength. The default
         name is taken from the Chandra terminaology.
-    stat : `sherpa.stats.Stat`
-        If None, use `sherpa.stats.LeastSq`
-    method : `sherpa.optmethods.OptMethod`
+    stat : `sherpa.stats.Stat` or None
+        If None, use `sherpa.stats.Cash`
+    method : `sherpa.optmethods.OptMethod` or None
         If None, use `sherpa.optmethods.LevMar`
 
     Returns
@@ -399,22 +392,37 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
     from sherpa.fit import Fit
     from sherpa.data import Data1DInt
     from sherpa import stats, optmethods
+    from sherpa.models import NormGauss1D, Scale1D
+    from sherpa.astro.models import Lorentz1D
 
     if stat is None:
-        stat = stats.LeastSq()
+        stat = stats.Cash()
     if method is None:
         method = optmethods.LevMar()
+    probability = evt['probability'] if 'probability' in evt.colnames else None
 
-    hist, edges = np.histogram(evt[colname].value, weights=evt['probability'],
+    hist, edges = np.histogram(evt[colname].value, weights=probability,
                                bins=evt[colname].value.mean() + np.arange(- d_wave, d_wave, wavebin))
-    # Get error with 0 in the uncertainties
-    # So, just setting to 1 for now. Should fix properly
-    # e.g. reduce binsize to prevent that or use other statistic and not use that
+    # Avoid error of 0 in the uncertainty,
+    # setting a minimum to 1.
+    # Better to run longer simulations to get more photons, but need to
+    # avoid numerical error if it happens.
     sdata = Data1DInt('counts_histogram', edges[:-1], edges[1:], hist,
-                      staterror=np.clip(np.sqrt(hist), 1, np.inf))
+                      staterror=np.sqrt(hist.clip(1, np.inf)))
     modfit = Fit(sdata, model, stat=stat, method=method)
     res = modfit.fit()
-    # Check if fit was successful
+
+    # Normalize functional models to 1 in norm and put all normalization
+    # in Scale1D (the EEF)
+    sumampl = np.sum([m.ampl.val for m in model
+                      if isinstance(m, NormGauss1D) or
+                      isinstance(m, Lorentz1D)])
+    for m in model:
+        if isinstance(m, NormGauss1D) or isinstance(m, Lorentz1D):
+            m.ampl.val = m.ampl.val / sumampl
+        if isinstance(m, Scale1D):
+            m.c0 = m.c0.val * sumampl
+
     return sdata, res
 
 
@@ -435,10 +443,11 @@ def plot_LSFfit(sdata, model, axes):
     for ax in axes:
         ax.plot(sdata.x, sdata.y, 'k', label='Data')
         ax.plot(sdata.x, model(sdata.xlo, sdata.xhi), linewidth=2, label='model')
-        for m in flatten_sherpa_model(model):
-            ax.plot(sdata.x, m(sdata.xlo, sdata.xhi), linewidth=2, label=m.name)
+        eef = model.parts[0]
+        for m in flatten_sherpa_model(model.parts[1]):
+            ax.plot(sdata.x, (eef * m)(sdata.xlo, sdata.xhi), linewidth=2,
+                    label=f'EEF * {m.name}')
         ax.set_xlabel('wavelength [Ang]')
-    wave = np.mean(sdata.x)  # Fitting regions are centered on wavelength
-    d_wave = (np.max(sdata.x) - np.min(sdata.x)) / 2
+        ax.set_ylabel('counts / bin')
     axes[1].set_yscale('log')
     axes[1].set_ylim([1, np.max(sdata.y)])
