@@ -99,10 +99,15 @@ class Scene(x3d.Scene):
 def empty_scene(func):
     @wraps(func)
     def with_scene(*args, **kwargs):
-        if not 'scene' in kwargs or kwargs['scene'] is None:
+        if 'scene' not in kwargs or kwargs['scene'] is None:
             kwargs['scene'] = Scene(children=[])
         return func(*args, **kwargs)
     return with_scene
+
+
+def _diffuse_material(display):
+    return x3d.Material(diffuseColor=display['color'],
+                        transparency=1 - display.get('opacity', 1.))
 
 
 @empty_scene
@@ -126,7 +131,7 @@ def indexed_triangle_set(xyz, index, display, *, scene):
     scene : `marxs.visualization.x3d.Scene` object
         Scene with object added.
     '''
-    scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=x3d.Material(diffuseColor=display['color'])),
+    scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                      geometry=x3d.IndexedTriangleSet(coord=x3d.Coordinate(point=[tuple(p) for p in xyz]),
                                                      index=[int(i) for i in index.reshape(-1, 3).flatten()],
                                                      solid=False, colorPerVertex=False)))
@@ -153,7 +158,7 @@ def surface(obj, display, *, scene):
     index = np.vstack([np.arange(i, i + 2 * n, 2, dtype=int) for i in [0, 2, 3, 1]] + 
                       # Add -1 at the end of each row to mark end of each face
                       [-1 * np.ones(n, dtype=int)]).T.flatten()
-    scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=x3d.Material(diffuseColor=display['color'])),
+    scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                                     geometry=x3d.IndexedFaceSet(coord=
                                         x3d.Coordinate(point=[tuple(p) for p in xyz.reshape((-1, 3))]),
                                         coordIndex=[int(i) for i in index],
@@ -183,7 +188,7 @@ def box(obj, display, *, scene):
     photon interaction happens on the surface, not in the substrate.
     '''
     corners = utils.halfbox_corners(obj, display)
-    shape = x3d.Shape(appearance=x3d.Appearance(material=x3d.Material(diffuseColor=display['color'])),
+    shape = x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                      geometry=x3d.IndexedFaceSet(coord=x3d.Coordinate(point=[tuple(p) for p in corners]),
                                                  coordIndex=[0, 2, 3, 1, -1, 
                                                              4, 6, 7, 5, -1,

@@ -33,7 +33,7 @@ def test_box():
     out_expected = '''<Scene>
   <Shape>
     <Appearance>
-      <Material diffuseColor='1.0 1.0 0.0'/>
+      <Material diffuseColor='1.0 1.0 0.0' transparency='0.9'/>
     </Appearance>
     <IndexedFaceSet colorPerVertex='false' coordIndex='0 2 3 1 -1 4 6 7 5 -1 0 4 6 2 -1 1 5 7 3 -1 0 4 5 1 -1 2 6 7 3 -1' solid='false'>
       <Coordinate point='0.0 1.0 2.0 0.0 5.0 2.0 0.0 1.0 6.0 0.0 5.0 6.0 2.0 1.0 2.0 2.0 5.0 2.0 2.0 1.0 6.0 2.0 5.0 6.0'/>
@@ -52,7 +52,7 @@ def test_aperture():
     out_expected = '''<Scene>
   <Shape>
     <Appearance>
-      <Material diffuseColor='0.0 0.75 0.75'/>
+      <Material diffuseColor='0.0 0.75 0.75' transparency='0.7'/>
     </Appearance>
     <IndexedTriangleSet colorPerVertex='false' index='0 4 5 0 1 5 1 5 6 1 2 6 2 6 7 2 3 7 3 7 4 3 0 4' solid='false'>
       <Coordinate point='0.0 15.0 15.0 0.0 -15.0 15.0 0.0 -15.0 -15.0 0.0 15.0 -15.0 0.0 5.0 5.0 0.0 -5.0 5.0 0.0 -5.0 -5.0 0.0 5.0 -5.0'/>
