@@ -29,6 +29,7 @@ from matplotlib.pyplot import get_cmap
 from x3d import x3d
 
 from . import utils
+from . import conf
 from marxs.math import utils as mutils
 
 __all__ = ['Scene',
@@ -110,6 +111,10 @@ def _diffuse_material(display):
                         transparency=1 - display.get('opacity', 1.))
 
 
+def _format_points(xyz):
+    return [tuple(np.round(p, conf.xyz_precision)) for p in xyz]
+
+
 @empty_scene
 def indexed_triangle_set(xyz, index, display, *, scene):
     '''Plot a set of triangles.
@@ -132,7 +137,7 @@ def indexed_triangle_set(xyz, index, display, *, scene):
         Scene with object added.
     '''
     scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
-                     geometry=x3d.IndexedTriangleSet(coord=x3d.Coordinate(point=[tuple(p) for p in xyz]),
+                     geometry=x3d.IndexedTriangleSet(coord=x3d.Coordinate(point=_format_points(xyz)),
                                                      index=[int(i) for i in index.reshape(-1, 3).flatten()],
                                                      solid=False, colorPerVertex=False)))
 
@@ -164,7 +169,7 @@ def surface(obj, display, *, scene):
     coordIndex = coordIndex.flatten()
     scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                                     geometry=x3d.IndexedFaceSet(coord=
-                                        x3d.Coordinate(point=[tuple(p) for p in xyz.reshape((-1, 3))]),
+                                        x3d.Coordinate(point=_format_points(xyz.reshape((-1, 3)))),
                                         coordIndex=list(coordIndex),
                                         solid=False, colorPerVertex=False)))
 
@@ -193,7 +198,7 @@ def box(obj, display, *, scene):
     '''
     corners = utils.halfbox_corners(obj, display)
     shape = x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
-                     geometry=x3d.IndexedFaceSet(coord=x3d.Coordinate(point=[tuple(p) for p in corners]),
+                     geometry=x3d.IndexedFaceSet(coord=x3d.Coordinate(point=_format_points(corners)),
                                                  coordIndex=[0, 2, 3, 1, -1, 
                                                              4, 6, 7, 5, -1,
                                                              0, 4, 6, 2, -1,
@@ -286,6 +291,7 @@ def plot_rays(data, scalar=None, *, scene=None, cmap=get_cmap('viridis')):
     # practice.
     for s in scalarset:
         color = cmap(s)
+        color = tuple(np.round(color, conf.color_precision))
         # color is RGBA, but I have not figured out the alpha in X3D, so just drop that
         # and use RGB
         # Also, round to two digits to reduce X3D filesize
@@ -297,7 +303,7 @@ def plot_rays(data, scalar=None, *, scene=None, cmap=get_cmap('viridis')):
             geometry=x3d.LineSet(vertexCount=[N] * ind.sum(),
                                  # Rounding to two post-comma digits (i.e. 0.1 mm in MARXS default units)
                                  # to keep file size down
-                                coord=x3d.Coordinate(point=[tuple(np.round(p, 2)) for p in data[ind, :].reshape(-1, 3)]),
+                                coord=x3d.Coordinate(point=_format_points(data[ind, :].reshape(-1, 3))),
                                 )
         )
         scene.children.append(lines)
