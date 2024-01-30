@@ -63,6 +63,24 @@ def test_aperture():
     compare_trimmed(out.XML(), out_expected)
 
 
+def test_surface():
+    '''Test an object that's represented as a surface.'''
+    rowland = RowlandTorus(R=1000, r=100)
+    out = plot_object(rowland)
+    out_expected = '''<Scene>
+  <Shape>
+    <Appearance>
+      <Material diffuseColor='1.0 0.3 0.3' transparency='0.8'/>
+    </Appearance>
+    <IndexedFaceSet colorPerVertex='false' coordIndex='0 1 4 3 -1 1 2 5 4 -1 3 4 7 6 -1 4 5 8 7 -1 6 7 10 9 -1 7 8 11 10 -1' solid='false'>
+      <Coordinate point='1033.0198010324336 84.14709848078965 -209.4034805484464 1054.030230586814 84.14709848078965 0.0 1033.0198010324336 84.14709848078965 209.4034805484464 1003.1214261859155 97.19379013633127 -203.34277992165713 1023.523757330299 97.19379013633127 0.0 1003.1214261859155 97.19379013633127 203.34277992165713 970.6850328291146 99.54079577517649 -196.76759747252672 990.4276451985625 99.54079577517649 0.0 970.6850328291146 99.54079577517649 196.76759747252672 939.28141724382 90.92974268256818 -190.40176944213098 958.3853163452858 90.92974268256818 0.0 939.28141724382 90.92974268256818 190.40176944213098'/>
+    </IndexedFaceSet>
+  </Shape>
+</Scene>
+'''
+    compare_trimmed(out.XML(), out_expected)
+
+
 def test_rays():
     '''Just two rays to make sure the format is right.'''
     rays = plot_rays(np.arange(12).reshape(2,2,3))

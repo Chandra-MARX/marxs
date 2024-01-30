@@ -148,20 +148,24 @@ def surface(obj, display, *, scene):
     for a detailed description of parameters.
     '''
     xyz = obj.geometry.parametric_surface(display.get('coo1', None),
-                                              display.get('coo2', None),
-                                              display)
+                                          display.get('coo2', None),
+                                          display)
     xyz = mutils.h2e(xyz)
     # number of faces. "-1" because last row just closes last face, but does not start a new one.
-    n = xyz.shape[0] - 1
-    # Each face has 4 vertices, 0 1 2 3, then 2 3 4 5, so need to step by 2 for each new face
+    # Each face has 4 vertices
     # [0, 2, 3, 1] is simply the right order to go around the polygon
-    index = np.vstack([np.arange(i, i + 2 * n, 2, dtype=int) for i in [0, 2, 3, 1]] + 
-                      # Add -1 at the end of each row to mark end of each face
-                      [-1 * np.ones(n, dtype=int)]).T.flatten()
+    ind = np.arange(xyz.shape[0] * xyz.shape[1], dtype=int).reshape(xyz.shape[0], xyz.shape[1])
+    coordIndex = np.stack([ind[:-1, :-1].flatten(),
+                           ind[:-1, 1:].flatten(),
+                           ind[1:, 1:].flatten(),
+                           ind[1:, :-1].flatten(),
+                            - np.ones((ind.shape[0] - 1) * (ind.shape[1] - 1),
+                                      dtype=int)]).T
+    coordIndex = coordIndex.flatten()
     scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                                     geometry=x3d.IndexedFaceSet(coord=
                                         x3d.Coordinate(point=[tuple(p) for p in xyz.reshape((-1, 3))]),
-                                        coordIndex=[int(i) for i in index],
+                                        coordIndex=list(coordIndex),
                                         solid=False, colorPerVertex=False)))
 
 
