@@ -92,7 +92,111 @@ In this example, we use MARXS to explain how sub-aperturing works. Continuing th
 
 We want to know how photons that go through a particular set of gratings are distributed compared to the total point-spread function (PSF). Therefore, we assign a color to every sector of gratings and in our plots, we color gratings in this sector and photons that passed through it accordingly.
 
-.. plot:: pyplots/vis_subaperturing.py
+.. plot::
+
+   import copy
+   import numpy as np
+   import matplotlib.pyplot as plt
+   from marxs import optics, design, analysis, source, simulator
+   from astropy.coordinates import SkyCoord
+   import astropy.units as u
+
+   rowland = design.rowland.RowlandTorus(5000, 5000)
+   aper = optics.CircleAperture(position=[12000, 0, 0],
+                                zoom=[1, 1000, 1000],
+                                r_inner=960)
+   mirr = optics.FlatStack(position=[11000, 0, 0], zoom=[20, 1000, 1000],
+                           elements=[optics.PerfectLens,
+                                     optics.RadialMirrorScatter],
+                           keywords = [{'focallength': 11000},
+                                       {'inplanescatter': 4 * u.arcsec,
+                                        'perpplanescatter': 0.6 * u.arcsec}])
+   mirr.display['opacity'] = 0.5
+
+   class ColoredFlatGrating(optics.FlatGrating):
+       '''Flat grating that also assigns a color to all passing photons.'''
+       def specific_process_photons(self, *args, **kwargs):
+           out = super(ColoredFlatGrating, self).specific_process_photons(*args, **kwargs)
+           out['colorid'] = self.colorid if hasattr(self, 'colorid') else np.nan
+           return out
+
+   gas = design.rowland.GratingArrayStructure(rowland=rowland, d_element=[180, 180],
+                                              radius=[870, 910],
+                                              elem_class=ColoredFlatGrating,
+                                              elem_args={'d': 2e-4, 'zoom': [1, 80, 80],
+                                                         'order_selector': optics.OrderSelector([-1, 0, 1])})
+   det_kwargs = {'d_element': [105, 105], 'elem_class': optics.FlatDetector,
+                 'elem_args': {'zoom': [1, 50, 20], 'pixsize': 0.01}}
+   det = design.rowland.RectangularGrid(rowland=rowland, y_range=[-120, +120], **det_kwargs)
+   projectfp = analysis.ProjectOntoPlane()
+
+   gratingcolors = 'bgr'
+   for e in gas.elements:
+       e.display = copy.deepcopy(e.display)
+       e.ang = (np.arctan(e.pos4d[1,3] / e.pos4d[2, 3]) + np.pi/2) % (np.pi)
+       e.colorid = int(e.ang / np.pi * 3)
+       e.display['color'] = gratingcolors[e.colorid]
+
+   instrum = simulator.Sequence(elements=[aper, mirr, gas, det, projectfp])
+   star = source.PointSource(coords=SkyCoord(30., 30., unit='deg'),
+                             energy=1. * u.keV, flux=1. / u.s / u.cm**2)
+   pointing = source.FixedPointing(coords=SkyCoord(30., 30., unit='deg'))
+
+   photons = star.generate_photons(4000 * u.s)
+   photons = pointing(photons)
+   photons = instrum(photons)
+   ind = (photons['probability'] > 0) & (photons['facet'] >=0)
+
+   fig = plt.figure()
+   ax0 = fig.add_subplot(221, aspect='equal')
+   ax1 = fig.add_subplot(222, aspect='equal', sharey=ax0)
+   ax0h = fig.add_subplot(223, sharex=ax0)
+   ax1h = fig.add_subplot(224, sharex=ax1, sharey=ax0h)
+
+   ind0 = photons['order'] == 0
+   # It is arbitrary which direction if called +1 or -1 order
+   ind1 = np.abs(photons['order']) == 1
+   out = ax0h.hist(photons['proj_x'][ind & ind0], range=[-1, 1], bins=20,
+                   lw=0, color='0.8')
+   out = ax1h.hist(photons['proj_x'][ind & ind1], range=[61, 63], bins=20,
+                   lw=0, color='0.8')
+
+   for i in [0, 2, 1]:  # make green plotted on top
+       c = gratingcolors[i]
+       indcolor = photons['colorid'] == i
+       ax0.plot(photons['proj_x'][ind & ind0 & indcolor],
+                photons['proj_y'][ind & ind0 & indcolor],
+                '.', color=c)
+       ax1.plot(photons['proj_x'][ind & ind1 & indcolor],
+                photons['proj_y'][ind & ind1 & indcolor],
+                '.', color=c)
+       out = ax0h.hist(photons['proj_x'][ind & ind0 & indcolor],
+                       range=[-1, 1], bins=20,
+                       histtype='step', color=c, lw=2)
+       out = ax1h.hist(photons['proj_x'][ind & ind1 & indcolor],
+                       range=[61, 63], bins=20,
+                       histtype='step', color=c, lw=2)
+
+   ax0.set_xlim([-.5,0.5])
+   ax1.set_xlim([61.65, 62.4])
+   ax0h.set_xlim([-.5,0.5])
+   ax1h.set_xlim([61.65, 62.4])
+
+   ax0.text(0.1, 0.9, '0th order', transform=ax0.transAxes)
+   ax1.text(0.1, 0.9, '1st order', transform=ax1.transAxes)
+   ax0h.set_xlabel('dispersion direction [mm]')
+   ax0.set_ylabel('cross-dispersion [mm]')
+   ax0.tick_params(axis='x', labelbottom='off')
+   ax1.tick_params(axis='both', labelleft='off', labelbottom='off')
+   ax1h.tick_params(axis='y', labelleft='off')
+   ax0h.set_ylabel('photons / bin')
+
+   for ax in [ax0, ax1, ax0h, ax1h]:
+       ax.xaxis.set_major_locator(plt.MaxNLocator(4))
+       ax.yaxis.set_major_locator(plt.MaxNLocator(4))
+
+   fig.subplots_adjust(hspace=0, wspace=0, left=.18, right=.96, top=.97, bottom=.1)
+
 
 On the plot, we see that photons from each sector (e.g. the sector that colors photons red) form a strip on the detector. Only adding up photons from all sectors gives us a round PSF. Subaperturing is the idea to disperse only photons from one sector, such that the PSF in cross-dispersion direction is large, but the dispersion in cross-dispersion direction is much smaller (the green sector in the figure). Thus, the spectral resolution of the dispersed spectrum will be higher than for a spectrograph that uses the full PSF. Note that the first order photons are asymmetrically distributed unlike the zeroth order. This is due to the finite sizes of the flat diffraction gratings that deviate from the curved Rowland torus. Based on this simulation, we can now decide to implement sub-aperturing in our instrument. We will instruct the engineers to mount ggratings only at the green colored positions so that we get a sharper line (a better resolving power) compared with using every photon that passes through the mirror.
 
