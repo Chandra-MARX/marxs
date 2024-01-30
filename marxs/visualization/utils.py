@@ -302,7 +302,7 @@ def triangulate_parametricsurface(xyz):
     xyz = xyz.reshape(-1, 3)
     index = np.arange(xyz.shape[0] - 2)
     indarr = np.vstack([index, index + 1, index + 2]).T
-    return xyz, np.vstack([index, index + 1, index + 2]).T
+    return xyz, indarr
 
 
 def halfbox_corners(obj, display):
