@@ -9,18 +9,18 @@ Coordinate system
 =================
 Marxs employs a cartesian coordinate system. All optical elements can be freely placed at any position
 and any angle in this space, but we recommend the following conventions for simplicity (examples and
-predefined missions in this pckage follow those conventions as far as possible):
+predefined missions in this package follow those conventions as far as possible):
 
 - The optical axis of the telescope coincides with the x-axis. A source on the optical axis is
   at :math:`x=+\infty` and photons travel towards the origin.
-- The origin of the coordiante system is at the telescope focus.
+- The origin of the coordinate system is at the telescope focus.
 - The y-axis coincides with the dispersion direction of gratings.
 
 Marxs uses `homogeneous coordinates <https://en.wikipedia.org/wiki/Homogeneous_coordinates>`_, which
 describe position and direction in a 4 dimensional coordinate space, for example
 :math:`[3, 0, 0, 1]` describes a point at x=3, y=0 and z=0; :math:`[3, 0, 0, 0]` describes the
 vector from the origin to that point. Homogeneous coordinates have one important advantage compared
-with a normal 3-d description of euklidean space: In homogenous coordinates, rotation, zoom, and
+with a normal 3-d description of Euklidean space: In homogeneous coordinates, rotation, zoom, and
 translations together can be described by a :math:`[4, 4]` matrix and several of these operations can
 be chained simply by multiplying the matrices.
 
@@ -29,7 +29,7 @@ associated with it in an attribute called ``element.pos4d``.
 
 All optical elements have some default location and position. Typically, their active surface (e.g.
 the surface of a mirror or detector) is in the y-z plane. The center is at the origin of the
-coordiante system and the default size in each dimenstion is 1, measured from the center.
+coordinate system and the default size in each dimension is 1, measured from the center.
 Thus, e.g. the default definition for a `marxs.optics.detector.FlatDetector`, makes a detector surface with
 the following corners (in 3-d x,y,z coordinates): [0, -1, -1], [0, -1, 1], [0,
 1, 1] and [0, 1, -1].
@@ -41,19 +41,35 @@ sketch below. Details depend on the capabilities of the plotting backend
 
 However, when running the ray-trace the code
 calculates the intersection with the "active surface" in the y-z plane independent of the
-thickeness in x-direction. There are exceptions to these defaults, those are noted in the description
+thickness in x-direction. There are exceptions to these defaults, those are noted in the description
 of the individual optical elements.
 See the following sketch, where the "active surface" is shown in red:
 
-.. plot:: plots/sketch_coords.py optical_element_coords
+.. plot::
    :scale: 50
    :align: center
    :include-source: False
-   :alt: Layout of the default size and position of an optical elements. The "active surface" (e.g. the surface of a mirror) is shown in red.
+   :alt: Layout of the default size and position of an optical element. The "active surface" (e.g. the surface of a mirror) is shown in red.
+
+   import matplotlib.pyplot as plt
+   from mpl_toolkits.mplot3d import Axes3D
+   import numpy as np
+
+   fig = plt.figure()
+   ax = fig.add_subplot(111, projection='3d')
+   ax.quiver([2,0,0],[0,2,0],[0,0, 2],[1,0,0],[0,1,0], [0,0,1], length=4, arrow_length_ratio=.05, color='k', lw=2)
+   ax.bar3d(-1, -1, -1, 1, 2, 2, zsort='average', alpha=0.5, color=['b'] *5 + ['r'], zorder=1)
+   ax.set_axis_off()
+   ax.text(2.1, 0, 0, 'x', None, fontsize='x-large')
+   ax.text(0, 2.1, 0, 'y', None, fontsize='x-large')
+   ax.text(0, 0, 2.1, 'z', None, fontsize='x-large')
+   ax.set_xlim([-1.2,1.2])
+   ax.set_ylim([-1.2,1.2])
+   ax.set_zlim([-1.2,1.2])
 
 
 In order to place elements in the experiment, the optical element needs to be
-scaled (zoomed), rotatated and translated to the the new position.
+scaled (zoomed), rotated and translated to the new position.
 There are two ways to specify that:
 
 - Pass a :math:`[4,4]` matrix to the optical element:
@@ -133,11 +149,10 @@ coordinates. This makes quantities having a specific unit and avoids confusion
 between degree and radian, eV and keV and so on.
 
 Internally, however, this extra unit makes the computation too slow. Thus, all
-properties are converted to float when they his the first optical element using
-the following conventions:
+properties are converted to float using the following conventions:
 
 - Length: base unit is mm.
 - Energy: base unit is keV.
 - Angles: Always expressed in radian.
 
-When designing an instrument, these units much be used.
+When designing an instrument, these units must be used.
