@@ -16,7 +16,7 @@ from marxs.optics import (GlobalEnergyFilter,
                           FlatDetector,
                           CircularDetector)
 from marxs import optics
-from marxs.design.rowland import RectangularGrid
+from marxs.design import rowland
 import marxs.analysis
 from marxs.math.utils import xyz2zxy
 from marxs.utils import tablerows_to_2d
@@ -32,16 +32,19 @@ from . import spo
 from . import boom
 from .load_csv import load_number, load_table
 from .utils import tagversion, id_num_offset, config
-from .generate_rowland import make_rowland_from_d_BF_R_f
-from .utils import config
 
 
 
 __all__ = ['xyz2zxy',
-           'jitter_sigma',
            'Arcus', 'ArcusForPlot', 'ArcusForSIXTE']
 
-defaultconf = make_rowland_from_d_BF_R_f(750., 5915.51307, 12000. - 123.569239)
+defaultconf = rowland.double_rowland_from_channel_distance(750., 5915.51307, 12000. - 123.569239)
+rowland.add_offset_double_rowland_channels(defaultconf,
+                                   offsets={'1': [-2.5, -7.5, 0],
+                                            '1m': [-2.5, -2.5, 0],
+                                            '2': [2.5, 2.5, 0],
+                                            '2m': [2.5, 7.5, 0],
+                                            })
 defaultconf['blazeang'] = 1.8
 defaultconf['n_CCDs'] = 16
 defaultconf['phi_det_start'] = 0.024  # was 0.037 at 600 mm channel spacing
@@ -303,7 +306,7 @@ class FiltersAndQE(Sequence):
         super(FiltersAndQE, self).__init__(elements=elems, **kwargs)
 
 
-class DetMany(RectangularGrid):
+class DetMany(rowland.RectangularGrid):
 
     y_range=[-400, 400]
 
