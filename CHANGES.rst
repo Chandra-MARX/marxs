@@ -43,7 +43,8 @@ New Features
 - A number of updates that were developed for those individual missions and are
   now included into marxs proper, e.g.: A class to make certain plots that display
   the performance loss for misalignments and utilities to run tolerancing etc. [#240]
-
+- Add new functions to `marxs.design.rowland` to construct Rowland tori in a
+  double tilted Rowland torus design. [#245]
 
 API Changes
 ^^^^^^^^^^^

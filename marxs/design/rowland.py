@@ -25,7 +25,10 @@ from ..math.utils import e2h, h2e, anglediff
 from ..simulator import ParallelCalculated
 from ..math.geometry import Geometry
 
-__all__ = ['find_radius_of_photon_shell', 'design_tilted_torus',
+__all__ = ['find_radius_of_photon_shell',
+           'design_tilted_torus',
+           'double_rowland_from_channel_distance',
+           'add_offset_double_rowland_channels',
            'RowlandTorus',
            'ElementsOnTorus',
            'GratingArrayStructure',
@@ -429,6 +432,124 @@ def design_tilted_torus(f, alpha, beta):
     orientation = transforms3d.axangles.axangle2mat([0, 0, -1], np.pi/2 - alpha - gamma)
     pos4d = transforms3d.affines.compose([x_Ct, y_Ct, z_Ct], orientation, np.ones(3))
     return R, r, pos4d
+
+
+def double_rowland_from_channel_distance(d_BF, R, f):
+    '''This prescription is borne out of the engineering needs where it turns out
+    that the spacing between channels d_BF is actually an important parameter
+    so it makes sense to use that here to parameterize the torus, too.
+
+    f is the distance between a theoretical on-axis CAT grating and the focal
+    point.  It's default is a little smaller than 12 m, to leave space to mount
+    the SPOs.
+
+    Parameters
+    ----------
+    d_BF : float
+        Distance between the optical axes of two channels measured
+        in the dispersion direction.
+    R : float
+        Radius of Rowland torus.
+    f : float
+        Distance between a theoretical on-axis CAT grating and the focal
+        point.
+
+    Returns
+    -------
+    geometry : dict
+        Dictionary with the keys that hold the input parameters,
+        derived dimensions of the geometry, and the constructed
+        Rowland tori. Three Rowland tori are constructed: One for
+        each channel called (rowland_central, rowland_central_m) and
+        one for the detector (rowland_detector).
+
+    '''
+    d = 0.5 * d_BF
+    r = 0.5 * np.sqrt(f**2 + d_BF**2)
+    alpha = np.arctan2(d_BF, f)
+    pos = [(r + R) * np.sin(alpha),
+           0, f - (r + R) * np.cos(alpha)]
+    orient = [[-np.sin(alpha), np.cos(alpha), 0],
+              [0., 0., 1],
+              [np.cos(alpha), np.sin(alpha), 0]]
+
+    posm = [(r + R) * np.sin(-alpha),
+            0, f - (r + R) * np.cos(-alpha)]
+
+    orientm = [[-np.sin(alpha), -np.cos(alpha), 0],
+               [0., 0., 1],
+               [-np.cos(alpha), np.sin(alpha), 0]]
+
+    geometry = {'d_BF': d_BF,
+                'd': d,
+                'f': f,
+                'rowland_central': RowlandTorus(R=R, r=r, position=pos,
+                                                orientation=orient),
+                'rowland_central_m': RowlandTorus(R=R, r=r, position=posm,
+                                                  orientation=orientm)}
+
+    geometry['pos_det_rowland'] = np.array([-d, 0, 0, 1])
+    geometry['shift_det_rowland'] = np.eye(4)
+    geometry['shift_det_rowland'][:, 3] = geometry['pos_det_rowland']
+    geometry['rowland_detector'] = RowlandTorus(R, r,
+                                                pos4d=geometry['rowland_central'].pos4d)
+    geometry['rowland_detector'].pos4d = np.dot(geometry['shift_det_rowland'],
+                                                geometry['rowland_detector'].pos4d)
+    geometry['pos_opt_ax'] = {'1': np.array([-d, 0, 0, 1]),
+                              '1m': np.array([d, 0, 0, 1])}
+    return geometry
+
+
+def add_offset_double_rowland_channels(geometry,
+                                       offsets={'1': [-2.5, -7.5, 0],
+                                                '1m': [-2.5, -2.5, 0],
+                                                '2': [2.5, 2.5, 0],
+                                                '2m': [2.5, 7.5, 0],
+                                                }):
+    '''Generate Rowland tori for multiple spectral channels in a double-tori design.
+
+    While this function can generate four separate channels (splitting the
+    original and the original mirrored channel in two each).
+    Rowland tori are added to the input geometry dictionary.
+
+    Parameters
+    ----------
+    geometry : dict
+        Dictionary with the keys from ` double_rowland_from_channel_distance`.
+    offsets : dict
+        Dictionary with the keys that hold the channel ids and the
+        values that hold the offsets in the x, y, and z direction.
+        The default value is set for a total of four channels, where each
+        of the original and the original mirrored channel is split in two.
+        However, the function can be used to generate any number of channels
+        with the naming convention that channels 1, 2, 3, ... are generated
+        from the original channel and channels 1m, 2m, 3m, ... are generated
+        from the original mirrored channel.
+    '''
+    d = geometry['d']
+    geometry['pos_opt_ax'] = {}
+    for k in offsets:
+        sign = 1 if 'm' in k else -1
+        geometry['pos_opt_ax'][k] = np.array([sign * d, 0, 0, 1])
+
+    for k, v in offsets.items():
+        geometry['pos_opt_ax'][k][:3] += v
+    # Now offset that Rowland torus in a z axis by a few mm.
+    # Shift is measured from point on symmetry plane.
+    for channel in geometry['pos_opt_ax']:
+        name = 'shift_optical_axis_' + channel
+        geometry[name] = np.eye(4)
+        geometry[name][:, 3] = geometry['pos_opt_ax'][channel][:]
+        if channel in ['1', '2']:
+            base_rowland = 'rowland_central'
+        elif channel in ['1m', '2m']:
+            base_rowland = 'rowland_central_m'
+        namer = 'rowland_' + channel
+        geometry[namer] = RowlandTorus(geometry[base_rowland].R,
+                                       geometry[base_rowland].r,
+                                       pos4d=geometry[base_rowland].pos4d)
+        geometry[namer].pos4d = np.dot(geometry[name],
+                                       geometry[namer].pos4d)
 
 
 class ElementsOnTorus(ParallelCalculated, OpticalElement):
