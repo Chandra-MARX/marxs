@@ -11,6 +11,8 @@ from ..rowland import (RowlandTorus, GratingArrayStructure,
                        RectangularGrid,
                        find_radius_of_photon_shell, design_tilted_torus,
                        CircularMeshGrid,
+                       double_rowland_from_channel_distance,
+                       add_offset_double_rowland_channels,
                        )
 from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
@@ -465,3 +467,33 @@ def test_circularMeshGrid_rotated():
     assert np.all(poslist[:, 2, 3] < 20000)
     assert np.all(np.abs(poslist[:, 0, 3] < 300))
     assert np.all(np.abs(poslist[:, 1, 3] < 300))
+
+
+def test_double_rowland_from_channel_distance():
+    '''Check that the double torus is in the right position.
+    The numbers are hand-checked and thus known-good.
+    '''
+    geom = double_rowland_from_channel_distance(600., 6000, 12000)
+    assert geom['pos_opt_ax']['1'] == pytest.approx([-300, 0, 0, 1])
+    assert geom['pos_opt_ax']['1m'] == pytest.approx([300, 0, 0, 1])
+
+    assert geom['rowland_detector'].R == pytest.approx(6000)
+    assert geom['rowland_detector'].r == pytest.approx(6007.495318350236)
+    assert geom['rowland_central'].geometry['center'] == pytest.approx([599.62570166, 0., 7.48596673, 1.])
+
+
+def test_offset_double_rowland_channels():
+    '''Split the double torus into two and offset all four channels.
+
+    Checked against the version of the code that's been in use for years
+    for Arcus.
+    '''
+    geom = double_rowland_from_channel_distance(600., 6000, 12000)
+    add_offset_double_rowland_channels(geom,
+                                   offsets={'1': [-2.5, -7.5, 0],
+                                            '1m': [-2.5, -2.5, 0],
+                                            '2': [2.5, 2.5, 0],
+                                            '2m': [2.5, 12.5, 0],
+                                            })
+    assert geom['pos_opt_ax']['2m'] == pytest.approx([302.5, 12.5, 0. , 1. ])
+    assert geom['rowland_1'].geometry['center'] == pytest.approx([297.12570166,  -7.5, 7.48596673, 1.])
