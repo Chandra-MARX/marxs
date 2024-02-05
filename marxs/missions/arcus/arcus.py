@@ -39,12 +39,13 @@ __all__ = ['xyz2zxy',
            'Arcus', 'ArcusForPlot', 'ArcusForSIXTE']
 
 defaultconf = rowland.double_rowland_from_channel_distance(750., 5915.51307, 12000. - 123.569239)
-rowland.add_offset_double_rowland_channels(defaultconf,
-                                   offsets={'1': [-2.5, -7.5, 0],
-                                            '1m': [-2.5, -2.5, 0],
-                                            '2': [2.5, 2.5, 0],
-                                            '2m': [2.5, 7.5, 0],
-                                            })
+rowland.add_offset_double_rowland_channels(defaultconf)
+for k, v in defaultconf.items():
+    if isinstance(v, rowland.RowlandTorus):
+        v.pos4d = xyz2zxy @ v.pos4d
+for k, v in defaultconf['pos_opt_ax'].items():
+    defaultconf['pos_opt_ax'][k] = xyz2zxy @ v
+
 defaultconf['blazeang'] = 1.8
 defaultconf['n_CCDs'] = 16
 defaultconf['phi_det_start'] = 0.024  # was 0.037 at 600 mm channel spacing
@@ -265,7 +266,10 @@ class CATGratings(Sequence):
         elements = []
 
         for chan in channels:
-            elements.append(CATfromMechanical(pos4d=conf['shift_optical_axis_' + chan],
+            shift_matrix = np.eye(4)
+            shift_matrix[:, 3] = conf['pos_opt_ax'][chan][:]
+
+            elements.append(CATfromMechanical(pos4d=shift_matrix,
                                               channel=chan, conf=conf,
                                               id_num_offset=id_num_offset[chan],
                                               ))

@@ -467,18 +467,22 @@ def double_rowland_from_channel_distance(d_BF, R, f):
     d = 0.5 * d_BF
     r = 0.5 * np.sqrt(f**2 + d_BF**2)
     alpha = np.arctan2(d_BF, f)
-    pos = [(r + R) * np.sin(alpha),
-           0, f - (r + R) * np.cos(alpha)]
-    orient = [[-np.sin(alpha), np.cos(alpha), 0],
-              [0., 0., 1],
-              [np.cos(alpha), np.sin(alpha), 0]]
+    pos = [f - (r + R) * np.cos(alpha),
+           (r + R) * np.sin(alpha),
+           0]
+    orient = [[np.cos(alpha), np.sin(alpha), 0],
+              [-np.sin(alpha), np.cos(alpha), 0],
+              [0., 0., 1]]
 
-    posm = [(r + R) * np.sin(-alpha),
-            0, f - (r + R) * np.cos(-alpha)]
 
-    orientm = [[-np.sin(alpha), -np.cos(alpha), 0],
-               [0., 0., 1],
-               [-np.cos(alpha), np.sin(alpha), 0]]
+    posm = [f - (r + R) * np.cos(-alpha),
+           (r + R) * np.sin(-alpha),
+            0]
+
+    orientm = [[-np.cos(alpha), np.sin(alpha), 0],
+               [-np.sin(alpha), -np.cos(alpha), 0],
+               [0., 0., 1]]
+
 
     geometry = {'d_BF': d_BF,
                 'd': d,
@@ -488,23 +492,23 @@ def double_rowland_from_channel_distance(d_BF, R, f):
                 'rowland_central_m': RowlandTorus(R=R, r=r, position=posm,
                                                   orientation=orientm)}
 
-    geometry['pos_det_rowland'] = np.array([-d, 0, 0, 1])
+    geometry['pos_det_rowland'] = np.array([0, -d, 0, 1])
     geometry['shift_det_rowland'] = np.eye(4)
     geometry['shift_det_rowland'][:, 3] = geometry['pos_det_rowland']
     geometry['rowland_detector'] = RowlandTorus(R, r,
                                                 pos4d=geometry['rowland_central'].pos4d)
     geometry['rowland_detector'].pos4d = np.dot(geometry['shift_det_rowland'],
                                                 geometry['rowland_detector'].pos4d)
-    geometry['pos_opt_ax'] = {'1': np.array([-d, 0, 0, 1]),
-                              '1m': np.array([d, 0, 0, 1])}
+    geometry['pos_opt_ax'] = {'1': np.array([0, -d, 0, 1]),
+                              '1m': np.array([0, d, 0, 1])}
     return geometry
 
 
 def add_offset_double_rowland_channels(geometry,
-                                       offsets={'1': [-2.5, -7.5, 0],
-                                                '1m': [-2.5, -2.5, 0],
-                                                '2': [2.5, 2.5, 0],
-                                                '2m': [2.5, 7.5, 0],
+                                       offsets={'1': [0, -2.5, -7.5],
+                                                '1m': [0, -2.5, -2.5],
+                                                '2': [0, 2.5, 2.5],
+                                                '2m': [0, 2.5, 7.5],
                                                 }):
     '''Generate Rowland tori for multiple spectral channels in a double-tori design.
 
@@ -530,16 +534,15 @@ def add_offset_double_rowland_channels(geometry,
     geometry['pos_opt_ax'] = {}
     for k in offsets:
         sign = 1 if 'm' in k else -1
-        geometry['pos_opt_ax'][k] = np.array([sign * d, 0, 0, 1])
+        geometry['pos_opt_ax'][k] = np.array([0, sign * d, 0, 1])
 
     for k, v in offsets.items():
         geometry['pos_opt_ax'][k][:3] += v
     # Now offset that Rowland torus in a z axis by a few mm.
     # Shift is measured from point on symmetry plane.
     for channel in geometry['pos_opt_ax']:
-        name = 'shift_optical_axis_' + channel
-        geometry[name] = np.eye(4)
-        geometry[name][:, 3] = geometry['pos_opt_ax'][channel][:]
+        shift_matrix = np.eye(4)
+        shift_matrix[:, 3] = geometry['pos_opt_ax'][channel][:]
         if channel in ['1', '2']:
             base_rowland = 'rowland_central'
         elif channel in ['1m', '2m']:
@@ -548,7 +551,7 @@ def add_offset_double_rowland_channels(geometry,
         geometry[namer] = RowlandTorus(geometry[base_rowland].R,
                                        geometry[base_rowland].r,
                                        pos4d=geometry[base_rowland].pos4d)
-        geometry[namer].pos4d = np.dot(geometry[name],
+        geometry[namer].pos4d = np.dot(shift_matrix,
                                        geometry[namer].pos4d)
 
 
