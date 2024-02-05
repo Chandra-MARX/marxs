@@ -474,12 +474,12 @@ def test_double_rowland_from_channel_distance():
     The numbers are hand-checked and thus known-good.
     '''
     geom = double_rowland_from_channel_distance(600., 6000, 12000)
-    assert geom['pos_opt_ax']['1'] == pytest.approx([-300, 0, 0, 1])
-    assert geom['pos_opt_ax']['1m'] == pytest.approx([300, 0, 0, 1])
+    assert geom['pos_opt_ax']['1'] == pytest.approx([0, -300, 0, 1])
+    assert geom['pos_opt_ax']['1m'] == pytest.approx([0, 300, 0, 1])
 
     assert geom['rowland_detector'].R == pytest.approx(6000)
     assert geom['rowland_detector'].r == pytest.approx(6007.495318350236)
-    assert geom['rowland_central'].geometry['center'] == pytest.approx([599.62570166, 0., 7.48596673, 1.])
+    assert geom['rowland_central'].geometry['center'] == pytest.approx([7.48596673, 599.62570166, 0.,  1.])
 
 
 def test_offset_double_rowland_channels():
@@ -490,10 +490,10 @@ def test_offset_double_rowland_channels():
     '''
     geom = double_rowland_from_channel_distance(600., 6000, 12000)
     add_offset_double_rowland_channels(geom,
-                                   offsets={'1': [-2.5, -7.5, 0],
-                                            '1m': [-2.5, -2.5, 0],
-                                            '2': [2.5, 2.5, 0],
-                                            '2m': [2.5, 12.5, 0],
+                                   offsets={'1': [0, -2.5, -7.5],
+                                            '1m': [0, -2.5, -2.5],
+                                            '2': [0, 2.5, 2.5],
+                                            '2m': [0, 2.5, 12.5],
                                             })
-    assert geom['pos_opt_ax']['2m'] == pytest.approx([302.5, 12.5, 0. , 1. ])
-    assert geom['rowland_1'].geometry['center'] == pytest.approx([297.12570166,  -7.5, 7.48596673, 1.])
+    assert geom['pos_opt_ax']['2m'] == pytest.approx([0, 302.5, 12.5, 1. ])
+    assert geom['rowland_1'].geometry['center'] == pytest.approx([297.12570166, 7.48596673,  -7.5, 1.])
