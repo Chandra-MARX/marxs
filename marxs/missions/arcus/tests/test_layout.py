@@ -15,11 +15,6 @@ def test_layout_to_EdHertz():
     Ed Hertz and Casey.'''
     assert np.isclose(np.rad2deg(np.sin(conf['rowland_central'].pos4d[2, 1])), 2.89214, rtol=1e-3)
 
-
-# Licensed under GPL version 3 - see LICENSE.rst
-
-
-
 class DirectLight(PerfectArcus):
     '''Default Definition of Arcus without any misalignments'''
     gratings_class = None

@@ -40,9 +40,9 @@ def pytest_configure(config):
 
 collect_ignore = ["setup.py"]
 
-# Check if we haave the Arcus CALDB installed
+# Check if we have the Arcus CALDB installed
 # If not, can't collect those tests, because on import, they will already
 # try to read from the CALDB
 if 'data' not in arcusconfig:
-    collect_ignore.append("missions/arcus/tests/test_analyzegrid.py")
+    collect_ignore.append("missions/arcus/tests/test_layout.py")
     collect_ignore.append("missions/arcus/tests/test_orders.py")
