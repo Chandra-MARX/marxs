@@ -496,4 +496,4 @@ def test_offset_double_rowland_channels():
                                             '2m': [0, 2.5, 12.5],
                                             })
     assert geom['pos_opt_ax']['2m'] == pytest.approx([0, 302.5, 12.5, 1. ])
-    assert geom['rowland_1'].geometry['center'] == pytest.approx([297.12570166, 7.48596673,  -7.5, 1.])
+    assert geom['rowland_1'].geometry['center'] == pytest.approx([7.48596673, 297.12570166, -7.5, 1.])
