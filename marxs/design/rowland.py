@@ -479,10 +479,11 @@ def double_rowland_from_channel_distance(d_BF, R, f):
            (r + R) * np.sin(-alpha),
             0]
 
-    orientm = [[-np.cos(alpha), np.sin(alpha), 0],
-               [-np.sin(alpha), -np.cos(alpha), 0],
-               [0., 0., 1]]
-
+    orientm = [
+        [np.cos(-alpha), np.sin(-alpha), 0],
+        [-np.sin(-alpha), np.cos(-alpha), 0],
+        [0.0, 0.0, 1],
+    ]
 
     geometry = {'d_BF': d_BF,
                 'd': d,

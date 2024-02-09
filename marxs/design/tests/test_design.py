@@ -1,5 +1,6 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
+from numpy.testing import assert_allclose
 from scipy.stats import kstest
 import transforms3d
 import pytest
@@ -497,3 +498,19 @@ def test_offset_double_rowland_channels():
                                             })
     assert geom['pos_opt_ax']['2m'] == pytest.approx([0, 302.5, 12.5, 1. ])
     assert geom['rowland_1'].geometry['center'] == pytest.approx([7.48596673, 297.12570166, -7.5, 1.])
+
+
+def test_rowlands_are_oriented_the_same_way():
+    """When there are two rowland tori, they should be oriented the same way."""
+    double = double_rowland_from_channel_distance(100, 500, 1000.0)
+    add_offset_double_rowland_channels(
+        double, offsets={"1": [0, -5, 0], "1m": [0, +5, 0]}
+    )
+    assert_allclose(
+        double["rowland_central"].parametric(0, 0),
+        double["rowland_central_m"].parametric(0, 0),
+    )
+    # The "top" points in the same direction. Of course, they are offset from each other
+    # so the numbers are not exactly the same.
+    assert_allclose(double["rowland_1"].parametric(0, 0), [1000.0, -55.0, 0.0, 1.0])
+    assert_allclose(double["rowland_1m"].parametric(0, 0), [1000.0, 55.0, 0.0, 1.0])
