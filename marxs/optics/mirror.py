@@ -9,16 +9,30 @@ from ..math.polarization import parallel_transport
 
 
 class PerfectLens(FlatOpticalElement):
-    '''This describes an infinitely large lens that focusses all rays exactly.
+    """This describes an infinitely large lens that focusses all rays exactly.
 
     This lens is just perfect, it has no astigmatism, no absorption, etc.  It
     is computationally cheap and if the details of the mirror are not important
     to the simulation, a perfect lens might provide an approximation for X-ray
     focussing. In many cases the ``PerfectLens`` will be combined with some
-    blur function (e.g. random scatter by 1 arsec) to achieve a simple
+    blur function (e.g. random scatter by 1 arcsec) to achieve a simple
     approximation to some mirror specification.
 
-    '''
+    Parameters
+    ----------
+    focal_length : float
+        The focal length of the lens in mm.
+    d_center_optical_axis : float
+        Distance between the optical axis and the center of this element in mm. The optical axis is
+        located in -z direction, and the normal pos4d keywords should be used to give the size,
+        location, and rotation of this element.
+    reflectivity_interpolator : callable
+        Callable that accepts energy and reflectivity angle and `grid` as input and returns the probability
+        of single reflection. The calling signature is written to match a
+        `scipy.interpolate.RectBivariateSpline`; ``grid`` is set to False to
+        evaluate on a list of points.
+        Default is to always return 1.
+    """
 
     display = {'color': (0., 0.5, 0.),
                'opacity': 0.5,
@@ -29,16 +43,44 @@ class PerfectLens(FlatOpticalElement):
 
     def __init__(self, **kwargs):
         self.focallength = kwargs.pop('focallength')
+        self.d_center_optax = kwargs.pop("d_center_optical_axis", 0)
+        self.reflectivity_interpolator = kwargs.pop(
+            "reflectivity_interpolator", lambda pos, ang, grid: np.ones_like(pos)
+        )
+
         super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
         # A ray through the center is not broken.
         # So, find out where a central ray would go.
-        focuspoints = h2e(self.geometry['center']) + self.focallength * norm_vector(h2e(photons['dir'][intersect]))
-        dir = e2h(focuspoints - h2e(interpos[intersect]), 0)
-        pol = parallel_transport(photons['dir'].data[intersect, :], dir,
-                                 photons['polarization'].data[intersect, :])
-        return {'dir': dir, 'polarization': pol}
+        p_opt_axis = (
+            self.geometry["center"] - self.d_center_optax * self.geometry["e_z"]
+        )
+        focuspoints = h2e(p_opt_axis) + self.focallength * norm_vector(
+            h2e(photons["dir"][intersect])
+        )
+        dir = norm_vector(e2h(focuspoints - h2e(interpos[intersect]), 0))
+        pol = parallel_transport(
+            photons["dir"].data[intersect, :],
+            dir,
+            photons["polarization"].data[intersect, :],
+        )
+        angle = np.arccos(
+            np.abs(
+                np.einsum(
+                    "ij,ij->i", h2e(dir), norm_vector(h2e(photons["dir"][intersect]))
+                )
+            )
+        )
+        return {
+            "dir": dir,
+            "polarization": pol,
+            "probability": self.reflectivity_interpolator(
+                photons["energy"][intersect], angle / 4, grid=False
+            )
+            ** 2,
+        }
+
 
 class ThinLens(FlatOpticalElement):
     '''Focus rays with the thin lens approximation

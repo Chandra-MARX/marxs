@@ -3,8 +3,11 @@ import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from scipy.interpolate import RectBivariateSpline
+
 from ... import source, optics
 from ...math.utils import h2e
+from marxs.utils import generate_test_photons
 
 
 @pytest.mark.parametrize("ra", [0., 30., -60.])
@@ -35,3 +38,43 @@ def test_PerfectLens(ra):
     photons = mdet(photons)
     assert np.std(photons['det_x']) > 1e-4
     assert np.std(photons['det_y']) > 1e-4
+
+
+def test_PerfectLens_offset():
+    """Test a lens that is not centered on the optical axis."""
+    lens = optics.PerfectLens(focallength=100, position=[0, 0, 10], zoom=400)
+    lens2 = optics.PerfectLens(
+        focallength=100, position=[0, 0, 0], zoom=400, d_center_optical_axis=-10
+    )
+    lens3 = optics.PerfectLens(
+        focallength=100, position=[0, 0, 0], zoom=400, d_center_optical_axis=0
+    )
+    photons = generate_test_photons(1)
+    p2 = generate_test_photons(1)
+    p3 = generate_test_photons(1)
+    photons = lens(photons)
+    p2 = lens2(p2)
+    p3 = lens3(p3)
+    np.testing.assert_allclose(photons["dir"], p2["dir"])
+    not np.allclose(photons["dir"], p3["dir"])
+
+
+def test_PerfectLens_refl():
+    """Test a reflection.
+
+    This test sis a bit silly in the sense that it
+    uses an unnecessarily complicated reflectivity function
+    but then reflect at 0 deg."""
+    xarr = np.linspace(-3, 3, 100)
+    yarr = np.linspace(-3, 3, 100)
+    xgrid, ygrid = np.meshgrid(xarr, yarr, indexing="ij")
+    zdata = np.exp(-np.sqrt((xgrid / 2) ** 2 + ygrid**2))
+    interp = RectBivariateSpline(xarr, yarr, zdata, kx=1, ky=1)
+
+    lens = optics.PerfectLens(focallength=123.0, reflectivity_interpolator=interp)
+    photons = generate_test_photons(1)
+    photons = lens(photons)
+
+    assert np.allclose(photons["energy"], 1)
+    assert np.allclose(photons["polarization"], [0, 1, 0, 0])
+    assert np.allclose(photons["probability"], 0.367205)

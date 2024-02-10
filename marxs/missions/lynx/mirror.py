@@ -90,26 +90,11 @@ class MetaShell(Sequence):
 
 class PerfectLensSegment(optics.PerfectLens):
     def __init__(self, conf, **kwargs):
+        super().__init__(focallength=conf["focallength"], **kwargs)
         refl =  Table.read(get_pkg_data_filename(f"data/{conf['mirrorcoating']}"),
                            format='ascii.ecsv')
-        self.refl_interpol = RectBivariateSpline(refl['energy'],
-             [np.deg2rad(float(c)) for c in refl.colnames[1:]],
-             np.stack([refl[c] for c in refl.columns[1:]]).T)
-
-        #self.d_center_optax = kwargs.pop('d_center_optical_axis')
-        super().__init__(focallength=conf['focallength'], **kwargs)
-
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
-        # A ray through the center is not broken.
-        # So, find out where a central ray would go.
-        p_opt_axis = self.geometry['center'] #- self.d_center_optax * self.geometry['e_z']
-        focuspoints = h2e(p_opt_axis) + self.focallength * norm_vector(h2e(photons['dir'][intersect]))
-        dir = norm_vector(e2h(focuspoints - h2e(interpos[intersect]), 0))
-        pol = parallel_transport(photons['dir'].data[intersect, :], dir,
-                                 photons['polarization'].data[intersect, :])
-        angle = np.arccos(np.abs(np.einsum('ij,ij->i', h2e(dir),
-                                         norm_vector(h2e(photons['dir'][intersect])))))
-        return {'dir': dir, 'polarization': pol,
-                'probability': self.refl_interpol(photons['energy'][intersect],
-                                                 angle / 4, grid=False)**2
-                }
+        self.reflectivity_interpolator = RectBivariateSpline(
+            refl["energy"],
+            [np.deg2rad(float(c)) for c in refl.colnames[1:]],
+            np.stack([refl[c] for c in refl.columns[1:]]).T,
+        )

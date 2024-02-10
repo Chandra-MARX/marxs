@@ -7,22 +7,22 @@ from astropy.utils.data import get_pkg_data_path
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
-from marxs.optics import (PerfectLens, GlobalEnergyFilter,
-                          RadialMirrorScatter)
-from marxs.optics import aperture
+from marxs.optics import PerfectLens, GlobalEnergyFilter, RadialMirrorScatter
 from marxs.optics.aperture import CircleAperture
 from marxs.simulator import Parallel, Sequence
-from marxs.math.utils import e2h, h2e, norm_vector
-from marxs.math.polarization import parallel_transport
 from marxs.math.utils import xyz2zxy
 
-__all__ = ['aperture',
-           'spogeom', 'spo_pos4d', 'spogeom2pos4d',
-           'PerfectLensSegment',
-           'SPOChannelMirror', 'ScatterPerChannel',
-           'geometricthroughput', 'willingaleloss',
-           'spomounting',
-           ]
+__all__ = [
+    "aperture",
+    "spogeom",
+    "spo_pos4d",
+    "spogeom2pos4d",
+    "SPOChannelMirror",
+    "ScatterPerChannel",
+    "geometricthroughput",
+    "willingaleloss",
+    "spomounting",
+]
 
 spogeom = Table.read(get_pkg_data_path('data/xous.csv'), format='ascii.ecsv')
 spogeom['r_mid'] = (spogeom['outer_radius'] + spogeom['inner_radius']) / 2
@@ -57,46 +57,6 @@ aperture = CircleAperture(position=[0, 0, 12200],
                                 np.max(spogeom['outer_radius']) * 1.05],
                           orientation=xyz2zxy[:3, :3])
 
-class PerfectLensSegment(PerfectLens):
-    '''A segment of a perfect lens
-
-    This represents a single pair of XOUs or a single SPO.
-    It acts as a perfect lens, where a ray through the center is not broken at all.
-
-    Parameters
-    ----------
-    d_center_optical_axis : float
-        Distance between the optical axis and the center of this element in mm. The optical axis is
-        located in -z direction, and the normal pos4d keywords should be used to give the size,
-        location, and rotation of this element.
-    reflectivity_interpolator : callable
-        Callable that accepts energy and reflectivity angle as input an returns the probability
-        of single reflection. The calling signature is written to match a
-        `scipy.interpolate.RectBivariateSpline`.
-        Default is to always return 1.
-    '''
-    def __init__(self, **kwargs):
-        self.d_center_optax = kwargs.pop('d_center_optical_axis')
-        self.reflectivity_interpolator = kwargs.pop('reflectivity_interpolator',
-                                                    lambda pos, ang, grid: np.ones_like(pos))
-        super().__init__(**kwargs)
-
-    def specific_process_photons(self, photons, intersect, interpos, intercoos):
-        # A ray through the center is not broken.
-        # So, find out where a central ray would go.
-        p_opt_axis = self.geometry['center'] - self.d_center_optax * self.geometry['e_z']
-        focuspoints = h2e(p_opt_axis) + self.focallength * norm_vector(h2e(photons['dir'][intersect]))
-        dir = norm_vector(e2h(focuspoints - h2e(interpos[intersect]), 0))
-        pol = parallel_transport(photons['dir'].data[intersect, :], dir,
-                                 photons['polarization'].data[intersect, :])
-        angle = np.arccos(np.abs(np.einsum("ij,ij->i", h2e(dir),
-                                         norm_vector(h2e(photons['dir'][intersect])))))
-        return {'dir': dir, 'polarization': pol,
-                'probability': self.reflectivity_interpolator(photons['energy'][intersect],
-                                                         angle / 4,
-                                                         grid=False)**2
-                }
-
 
 class SPOChannelMirror(Parallel):
     '''A collection of PerfectLensSegments into plates
@@ -117,7 +77,7 @@ class SPOChannelMirror(Parallel):
     def __init__(self, **kwargs):
         kwargs['elem_pos'] = kwargs.pop('spo_pos4d')
         spogeom = kwargs.pop('spo_geom')
-        kwargs['elem_class'] = PerfectLensSegment
+        kwargs["elem_class"] = PerfectLens
         kwargs['elem_args'] = {'d_center_optical_axis': list(spogeom['r_mid']),
                                'focallength': list(spogeom['focal_length']),
                                'reflectivity_interpolator': kwargs.pop('reflectivity_interpolator')}
