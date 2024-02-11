@@ -45,6 +45,8 @@ New Features
   the performance loss for misalignments and utilities to run tolerancing etc. [#240]
 - Add new functions to `marxs.design.rowland` to construct Rowland tori in a
   double tilted Rowland torus design. [#245]
+- Add more options to ``PerfectLens`` to account for non-perfect reflectivity and
+  the option to have the optical axis offset from the geometrical center of the element. [#248]
 
 API Changes
 ^^^^^^^^^^^
