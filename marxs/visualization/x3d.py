@@ -250,8 +250,10 @@ def plot_object(obj, display=None, *, scene=None, **kwargs):
 
 
 @empty_scene
-def plot_rays(data, scalar=None, *, scene=None, cmap=get_cmap('viridis')):
-    '''Plot lines for simulated rays.
+def plot_rays(
+    data, scalar=None, *, scene=None, cmap=get_cmap("viridis"), normalize_kwargs={}
+):
+    """Plot lines for simulated rays.
 
     Parameters
     ----------
@@ -262,12 +264,15 @@ def plot_rays(data, scalar=None, *, scene=None, cmap=get_cmap('viridis')):
     scene : `marxs.visualization.x3d.Scene` object
         A scene that rays are added to.
         If `None`, a new scene will be created.
+    normalize_kwargs : dict
+        Keyword arguments for the normalization of the scalar quantity
+        see `matplotlib.colors.Normalize` for accepted keywords.
 
     Returns
     -------
     scene : `marxs.visualization.x3d.Scene` object
         Scene with object added.
-    '''
+    """
     # The number of points per line
     N = data.shape[1]
     # number of lines
@@ -284,7 +289,7 @@ def plot_rays(data, scalar=None, *, scene=None, cmap=get_cmap('viridis')):
     else:
         raise ValueError('Scalar quantity for each point must have shape ({0},) or ({0}, {1})'.format(n, N))
 
-    scalar = Normalize()(scalar)
+    scalar = Normalize(**normalize_kwargs)(scalar)
     scalarset = set(scalar)
     # If scalar is a float quantity it makes smaller X3D file to bin and have e.g. no more than 100 colors.
     # Not hard to implement, but punt for now since I don't know if that optimization is needed in
