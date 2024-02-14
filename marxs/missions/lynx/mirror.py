@@ -9,10 +9,6 @@ from marxs import optics
 from marxs.simulator import Sequence
 from marxs.base import SimulationSequenceElement
 
-from marxs.math.utils import e2h, h2e, norm_vector
-from marxs.math.polarization import parallel_transport
-
-
 class MetaShellAperture(optics.MultiAperture):
 
     def __init__(self, conf, **kwargs):
@@ -58,8 +54,7 @@ class MetaShellMirror(optics.FlatStack):
 
 
 class MetaShellEfficiency(SimulationSequenceElement):
-
-    def __init__(self):
+    def __init__(self, conf):
         data = conf['metashellgeometry']
         eff = conf['metashelleff']
         aeff = np.stack([eff[str(c)].data for c in data['Metashell Serial Number']])
