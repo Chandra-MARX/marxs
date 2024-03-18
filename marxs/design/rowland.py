@@ -367,7 +367,7 @@ class RowlandTorus(MarxsElement, Geometry):
 
 
 def design_tilted_torus(f, alpha, beta):
-    '''Design a torus with specifications similar to Heilmann et al. 2010
+    """Design a torus with specifications similar to Heilmann et al. 2010
 
     A `RowlandTorus` is fully specified with the parameters ``r``, ``R`` and
     ``pos4d``.  However, in practice, these numbers might be derived from other
@@ -410,27 +410,13 @@ def design_tilted_torus(f, alpha, beta):
     code are in order:
 
     - Cat : position of on-axis CAT grating (where the Rowland circle intersects the on-axis beam)
-    - H : position of hinge
-    - Ct : Center of Rowland Torus
-    - F : Focal point on axis (at the origin of the coordinate system)
-    - CatH, HF, FCt, etc. : distance between Cat and H, F and Ct, etc.
-    - gamma : see sketch.
-    '''
+    """
     r = f / (2. * np.cos(alpha))
-    CatH = r * np.sqrt(2 * (1 + np.cos(2 * (beta - alpha))))
-    HF = np.sqrt(f**2 + CatH**2 - 2 * f * CatH * np.cos(beta))
-    # If alpha is negative, then everything is "on the other side".
-    # The sign of gamma cannot be found through the arccos, so need to set it here
-    # with sign(alpha).
-    # Another gotcha: np.sign(0) = 0, but we want 1 (or -1)
-    gamma = np.arccos(HF / (2 * r)) * (np.sign(alpha) or 1)
-    R = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha + gamma) - r
-    FCt = f / np.sin(np.pi - alpha - (alpha + gamma)) * np.sin(alpha)
-    x_Ct = FCt * np.cos(alpha + gamma)
-    z_Ct = 0
-    y_Ct = FCt * np.sin(alpha + gamma)
-    orientation = transforms3d.axangles.axangle2mat([0, 0, -1], np.pi/2 - alpha - gamma)
-    pos4d = transforms3d.affines.compose([x_Ct, y_Ct, z_Ct], orientation, np.ones(3))
+    R = r * np.sin(np.pi / 2 - beta)
+    orientation = transforms3d.axangles.axangle2mat([0, 0, -1], beta - alpha)
+    x_Ct = f / 2 - R * np.cos(beta - alpha)
+    y_Ct = f / 2 * np.tan(alpha) + R * np.sin(beta - alpha)
+    pos4d = transforms3d.affines.compose([x_Ct, y_Ct, 0], orientation, np.ones(3))
     return R, r, pos4d
 
 

@@ -90,6 +90,9 @@ Bug fixes
 - To avoid probabilities <0 or >1, the default interpolation for MIT grating
   efficiency tables is now linear. [#229]
 
+- Fig bug in ``design_tilted_torus``. The equations implemented previously
+  implicitly assumed 2 * alpha = beta. [#250]
+
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
