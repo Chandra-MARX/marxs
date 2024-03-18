@@ -20,6 +20,10 @@ Under the hood, the XML is constructed using the
 '''
 from functools import wraps
 from warnings import warn
+import os
+import urllib.request
+import tempfile
+from shutil import make_archive
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -78,12 +82,12 @@ class Scene(x3d.Scene):
         html = f"""
 <html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/> 
-     <script type='text/javascript' src='{self.js_source}'> </script> 
-     <link rel='stylesheet' type='text/css' href='{self.css_source}'></link> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+     <script type='text/javascript' src='{self.js_source}'> </script>
+     <link rel='stylesheet' type='text/css' href='{self.css_source}'></link>
   </head>
   <body>
-    <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'> 
+    <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'>
       {self.XML()}
     </x3d>
     """
@@ -95,6 +99,45 @@ class Scene(x3d.Scene):
 </html>
 """
         return html
+
+    def write_html_archive(self, base_name: str, format: str, *args, **kwargs) -> None:
+        """Write to an HTML archive with local copies of js and css requirements.
+
+        This zip file can be shared with others and opened in a web browser.
+        In particular, it can be used for journal submission for journals
+        that accept interactive js-based content such as ApJ or AJ.
+
+        Parameters
+        ----------
+        base_name : str
+            Name of the file to create, including the path,
+            minus any format-specific extension.
+
+        format : {"zip", "tar", "gztar", "bztar", "xztar"}
+            The archive format, see `shutil.make_archive` for details.
+
+        *args : tuple
+            Other arguments are passed to `shutil.make_archive`.
+
+        **kwargs : dict, optional
+            Other keyword arguments are passed to `shutil.make_archive`
+        """
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            for f in (self.js_source, self.css_source):
+                urllib.request.urlretrieve(
+                    f, os.path.join(tmpdirname, os.path.basename(f))
+                )
+            try:
+                old_js = self.js_source
+                old_css = self.css_source
+                self.js_source = os.path.basename(self.js_source)
+                self.css_source = os.path.basename(self.css_source)
+                with open(os.path.join(tmpdirname, "figure.html"), "w") as f:
+                    f.write(self._repr_html_())
+            finally:
+                self.js_source = old_js
+                self.css_source = old_css
+            make_archive(base_name, format, root_dir=tmpdirname, *args, **kwargs)
 
 
 def empty_scene(func):
@@ -197,15 +240,46 @@ def box(obj, display, *, scene):
     photon interaction happens on the surface, not in the substrate.
     '''
     corners = utils.halfbox_corners(obj, display)
-    shape = x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
-                     geometry=x3d.IndexedFaceSet(coord=x3d.Coordinate(point=_format_points(corners)),
-                                                 coordIndex=[0, 2, 3, 1, -1, 
-                                                             4, 6, 7, 5, -1,
-                                                             0, 4, 6, 2, -1,
-                                                             1, 5, 7, 3, -1,
-                                                             0, 4, 5, 1, -1,
-                                                             2, 6, 7, 3, -1],
-                                                  solid=False, colorPerVertex=False))
+    shape = x3d.Shape(
+        appearance=x3d.Appearance(material=_diffuse_material(display)),
+        geometry=x3d.IndexedFaceSet(
+            coord=x3d.Coordinate(point=_format_points(corners)),
+            coordIndex=[
+                0,
+                2,
+                3,
+                1,
+                -1,
+                4,
+                6,
+                7,
+                5,
+                -1,
+                0,
+                4,
+                6,
+                2,
+                -1,
+                1,
+                5,
+                7,
+                3,
+                -1,
+                0,
+                4,
+                5,
+                1,
+                -1,
+                2,
+                6,
+                7,
+                3,
+                -1,
+            ],
+            solid=False,
+            colorPerVertex=False,
+        ),
+    )
     scene.children.append(shape)
 
 @empty_scene

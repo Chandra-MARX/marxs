@@ -1,6 +1,7 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import copy
 import numpy as np
+import pytest
 
 from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
@@ -98,3 +99,16 @@ def test_rays():
 </Scene>
 '''
     compare_trimmed(rays.XML(), out_expected)
+
+
+def test_zip_file(tmp_path):
+    """Check that a zipfile is created and contains the right files."""
+    zipfile = pytest.importorskip("zipfile", reason="Test writes zip file")
+    rays = plot_rays(np.arange(12).reshape(2, 2, 3))
+    rays.write_html_archive(base_name=tmp_path / "figure", format="zip")
+    assert (tmp_path / "figure.zip").exists()
+
+    zip = zipfile.ZipFile(tmp_path / "figure.zip")
+    assert "figure.html" in zip.namelist()
+    assert "x3dom.js" in zip.namelist()
+    assert "x3dom.css" in zip.namelist()
