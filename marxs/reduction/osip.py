@@ -21,10 +21,10 @@ __all__ = ['OSIPBase',
 
 
 class OSIPBase(ABC):
-    '''Modify ARF files to account for order-sorting effects
+    """Modify ARF files to account for order-sorting effects
 
     This is a base class that implements order sorting and integration of
-    the probabilities (OSIP). This includes order-sorting of a photons list
+    the probabilities (OSIP). This includes order-sorting of a photon list
     (not yet implemented) and  methods to modify ARF files
     to account for order-sorting. Different diffraction orders fall on
     the same physical space on the CCD. The CCD energy resolution can
@@ -48,7 +48,7 @@ class OSIPBase(ABC):
         Function that return the width the Gaussian sigma of the CCD
         resolution, given an input energy.
         TODO: Better docs here
-    '''
+    """
     osip_description = 'Not implemented'
     '''String to be added to FITS header in OSIP keyword for ARFs written.'''
 
@@ -395,7 +395,7 @@ class OSIPBase(ABC):
 
 
 class FixedWidthOSIP(OSIPBase):
-    '''Modify ARF files to account for order-sorting effects
+    """Modify ARF files to account for order-sorting effects
 
     This class implements order sorting and integration of
     the probabilities (OSIP) for order-sorting regions that have a fixed witdh
@@ -420,9 +420,9 @@ class FixedWidthOSIP(OSIPBase):
     offset_orders : list of int
         Offset from main order that is relevant.
     ccd_redist : callable
-        Function that return the width the Gaussian sigma of the CCD
+        Function that returns the width the Gaussian sigma of the CCD
         resolution, given an input energy.
-    '''
+    """
     def __init__(self, halfwidth, **kwargs):
         self.halfwidth = halfwidth
         super().__init__(**kwargs)
