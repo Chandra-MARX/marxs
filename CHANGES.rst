@@ -1,5 +1,5 @@
-1.3 (unreleased)
-----------------
+2.0 (02-May-2024)
+-----------------
 
 New Features
 ^^^^^^^^^^^^
@@ -36,7 +36,7 @@ New Features
   and I'm now including this into marxs. Note that the mission code generally is not documented
   in the docs and not tested as well.
   It's simply either not interesting enough for general users (but needed to
-  replicate some of my SPIE proceedings so I want it publicly available)
+  replicate some of my SPIE proceedings so Moritz Guenther wants it publicly available)
   or evolving too fast to write good docs and tests (e.g. the Arcus effective area
   changes every time the coating or layout changes, tests that check Aeff are
   thus more checks on the CALDB than on the code). [#240]
