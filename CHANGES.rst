@@ -110,7 +110,7 @@ Other changes and additions
   instrument from the building blocks provided by the main marxs modules. [#237]
 
 - Updates of CI and simplify _astropy_init and conftest for new Python and
-  astropy verisons. [#236]
+  astropy versions. [#236]
 
 
 1.2 (06-Nov-2020)
@@ -118,7 +118,7 @@ Other changes and additions
 
 New Features
 ^^^^^^^^^^^^
-- Unit milimeter on ``"pos"`` and ``"dir"`` columns of photonlist. [#169]
+- Unit millimeter on ``"pos"`` and ``"dir"`` columns of photonlist. [#169]
 
 - Add method `marxs.simulator.Parallel.move_center` to change the ``pos4d``
   value of a `marxs.simulator.Parallel` and adjust position of elements at
@@ -151,13 +151,13 @@ API Changes
 ^^^^^^^^^^^
 
 - Sources now require input for flux, energy, and polarization as astropy
-  quantities. Any table-like input must not be a astropy `QTable` and flux and
+  quantities. Any table-like input must not be an astropy `QTable` and flux and
   polarization values are *densities* not per-bin. [#218]
 
 - The geometry of a class is now defined as a separate object from the new
   `marxs.math.geometry` module. Before, the geometry was backed into the
   optical components itself which led to significant code duplication. The new
-  scheme allows to make e.g. cylindrical and flat gratings with the same
+  scheme allows making e.g. cylindrical and flat gratings with the same
   gratings objects. However, not all geometries work with all objects and there
   is currently no way to check automatically - the user has to use caution or
   check the code. [#182]
@@ -166,7 +166,7 @@ API Changes
   ``detector.geometry['center']`` instead of a function interface with
   ``(...)``. [#182]
 
-- Remove ``utils.MergeIdentical`` merge strategy since it is not longer used
+- Remove ``utils.MergeIdentical`` merge strategy since it is no longer used
   after #189. [#191]
 
 - `~astropy.units.Quantity` is used in more places, and thus
@@ -281,7 +281,7 @@ Other changes and additions
 
 - Docs: Add example to calculate flux from normalized spectrum [#160]
 
-- Add experiemental data for comparison to the polarization example [#158]
+- Add experimental data for comparison to the polarization example [#158]
 
 1.0 (14-Apr-2017)
 -----------------
@@ -290,5 +290,5 @@ with this release.
 
 0.1 (experimental release)
 --------------------------
-This release was not intended to be used, but the verisioning scheme in the
+This release was not intended to be used, but the versioning scheme in the
 development branch required a tagged commit.
