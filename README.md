@@ -5,7 +5,7 @@ Multi-Architecture-Raytrace-Xraymission-Simulator
 
 [![PyPI - Version](https://img.shields.io/pypi/v/marxs)](https://pypi.org/project/marxs/)
 
-[![DOI](https://zenodo.org/badge/34215358.svg)](https://zenodo.org/badge/latestdoi/34215358)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4255147.svg)](https://doi.org/10.5281/zenodo.4255147)
 
 [![CI tests](https://github.com/Chandra-MARX/marxs/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/Chandra-MARX/marxs/actions/)
 
