@@ -3,28 +3,17 @@ MARXS
 
 Multi-Architecture-Raytrace-Xraymission-Simulator
 
-.. image:: https://img.shields.io/pypi/v/marxs
-   :alt: PyPI - Version
+[![PyPI - Version](https://img.shields.io/pypi/v/marxs)](https://pypi.org/project/marxs/)
 
-.. image:: https://zenodo.org/badge/34215358.svg
-   :target: https://zenodo.org/badge/latestdoi/34215358
-   :alt: Link to last release with DOI
+[![DOI](https://zenodo.org/badge/34215358.svg)](https://zenodo.org/badge/latestdoi/34215358)
 
-.. image:: https://github.com/Chandra-MARX/marxs/actions/workflows/ci_tests.yml/badge.svg
-   :target: https://github.com/Chandra-MARX/marxs/actions/
-   :alt: Continuous integration status
+[![CI tests](https://github.com/Chandra-MARX/marxs/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/Chandra-MARX/marxs/actions/)
 
-.. image:: https://readthedocs.org/projects/marxs/badge/?version=latest
-   :target: http://marxs.readthedocs.io/en/latest/
-   :alt: Documentation Status
+[![Documentation Status](https://readthedocs.org/projects/marxs/badge/?version=latest)](http://marxs.readthedocs.io/en/latest/)
 
-.. image:: https://coveralls.io/repos/github/Chandra-MARX/marxs/badge.svg?branch=master 
-   :target: https://coveralls.io/github/Chandra-MARX/marxs?branch=master
-   :alt: Fraction of code covered by tests
+[![Coverage Status](https://coveralls.io/repos/github/Chandra-MARX/marxs/badge.svg?branch=master)](https://coveralls.io/github/Chandra-MARX/marxs?branch=master)
 
-.. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
-   :target: http://www.astropy.org/
-   :alt: Powered by astropy
+[![Powered by Astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 What does MARXS do?
 -------------------
