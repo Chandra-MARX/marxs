@@ -1,13 +1,17 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import numpy as np
-from astropy.table import Table
+from astropy.table import Table, QTable
+import astropy.units as u
 import transforms3d
+import pytest
 
-from ..detector import FlatDetector, CircularDetector
+from ..detector import FlatDetector, CircularDetector, CCDRedistNormal
 from ...tests import closeornan
 from ...math.utils import h2e
 from ...design import RowlandTorus
 from ...math.geometry import Cylinder
+from ...utils import generate_test_photons
+
 
 def test_pixelnumbers():
     pos = np.array([[0, 0., -0.25, 1.],
@@ -47,3 +51,22 @@ def test_CircularDetector_from_Rowland():
     points = detcirc.geometry.parametric_surface(phi)
     # Quartic < 1e5 is very close for these large values of r and R.
     assert np.max(np.abs(rowland.quartic(h2e(points)))) < 1e5
+
+
+def test_CCD_Redist_Normal():
+    """We're not checking the implementation of a normal function, but just that the
+    right columns are read and used."""
+    photons = generate_test_photons(100)
+    photons["energy"][:50] = 1
+    photons["energy"][50:] = 5
+
+    res = QTable({"energy": [1, 10] * u.keV, "sigma": [0.1, 1.0] * u.keV})
+
+    ccdre = CCDRedistNormal(tab_width=res)
+    photons = ccdre(photons)
+
+    assert "energy_detected" in photons.colnames
+    assert np.mean(photons["energy_detected"][:50]) == pytest.approx(1.0, rel=0.02)
+    assert np.mean(photons["energy_detected"][50:]) == pytest.approx(5.0, rel=0.1)
+    assert np.std(photons["energy_detected"][:50]) == pytest.approx(0.1, rel=0.2)
+    assert np.std(photons["energy_detected"][50:]) == pytest.approx(0.5, rel=0.2)

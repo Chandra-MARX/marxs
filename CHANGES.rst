@@ -82,6 +82,11 @@ API Changes
   of importing from the higher level such as `from marxs.optics import Baffle` should not notice
   any difference. [#424]
 
+- The unit of photon energy is now set to keV. [#252]
+
+- ``CCDRedistNormal`` now inherits from an optical element and takes the sigma for redistribution
+  as a keyword argument. [#252]
+
 Bug fixes
 ^^^^^^^^^
 

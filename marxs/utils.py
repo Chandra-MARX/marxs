@@ -1,5 +1,6 @@
 import numpy as np
 from astropy.table import Table
+import astropy.units as u
 import warnings
 
 __all__ = ['SimulationSetupWarning', 'generate_test_photons',
@@ -38,12 +39,15 @@ def generate_test_photons(n=1):
     dir = np.tile(np.array([-1., 0., 0., 0.]), (n, 1))
     pos = np.tile(np.array([1., 0., 0., 1.]), (n, 1))
     pol = np.tile(np.array([0., 1., 0., 0.]), (n, 1))
-    photons = Table({'pos': pos,
-                     'dir': dir,
-                     'energy': np.ones(n),
-                     'polarization': pol,
-                     'probability': np.ones(n),
-                     })
+    photons = Table(
+        {
+            "pos": pos,
+            "dir": dir,
+            "energy": np.ones(n) * u.keV,
+            "polarization": pol,
+            "probability": np.ones(n),
+        }
+    )
     return photons
 
 

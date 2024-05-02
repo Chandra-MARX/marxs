@@ -3,7 +3,6 @@ import math
 import warnings
 
 import astropy.units as u
-from astropy.table import QTable
 import numpy as np
 from transforms3d.affines import decompose44
 from scipy.stats import norm
@@ -118,21 +117,29 @@ class CircularDetector(OpticalElement):
         return {self.detpix_name[0]: detx, self.detpix_name[1]: dety}
 
 
-class CCDRedistNormal():
-    '''Redistribute energies according to a normal distribution
+
+class CCDRedistNormal(FlatOpticalElement):
+    """Redistribute energies according to a normal distribution
 
     No detector has infinite energy resolution. This class redistributes the
     the energy according to a normal distribution.
 
+    This class serves a dual role. It can be used as an optical element within an
+    instrument to cheaply simulate a CCD response (not including effects like frame
+    transfer or CTI), but it can also be used in the OSIP generators in
+    `marxs.reduction.osip`.
+
     Parameters
     ----------
     tab_width : astropy.table.QTable
-        Table with columns "energy" and either "sigma" or "energy"
+        Table with columns "energy" and either "sigma" or "FWHM"
 
     Notes
     -----
-    For now, I'm just putting in methods one by one as I need them.
-    However, in principle this class could inherit from `scipy.stat.norm`
+    EXPERIMENTAL.
+    For now, I'm just putting in methods one by one as I need them to help
+    me develop how the stable API should look like.
+    In principle this class could inherit from `scipy.stat.norm`
     or maybe from a sherpa norm1d distribution or from astropy.modelling
     (which should be quantity aware already).
     Eventually, this might be a good application of a metaclass
@@ -145,13 +152,17 @@ class CCDRedistNormal():
     Also, this is for instance methods. I think "norm" might use class methods
     so that's just one step more complicated...
 
-    '''
+    """
+
     fwhm2sig = 2 * math.sqrt(2 * math.log(2))
 
-    def __init__(self, tab_width: QTable):
-        self.tab_width = tab_width
+    energycol = "energy_detected"
+
+    def __init__(self, **kwargs):
+        self.tab_width = kwargs.pop("tab_width")
         if 'sigma' not in self.tab_width.colnames:
             self.tab_width['sigma'] = self.tab_width['FWHM'] / self.fwhm2sig
+        super().__init__(**kwargs)
 
     @u.quantity_input(energy=u.keV, equivalencies=u.spectral())
     def sig_ccd(self, energy):
@@ -180,3 +191,12 @@ class CCDRedistNormal():
     def interval(self, alpha, loc):
         scale = self.sig_ccd(loc)
         return np.broadcast_to(norm.interval(alpha), (len(loc), 2)).T * scale + loc
+
+    def specific_process_photons(self, photons, intersect, interpos, intercoos):
+        # Implicit unit of photon energy is keV, but here we need it written out.
+        phot_en = u.Quantity(photons["energy"])
+        det_en = norm.rvs(
+            loc=phot_en,
+            scale=self.sig_ccd(phot_en).to(u.keV, equivalencies=u.spectral()),
+        )
+        return {self.energycol: det_en}

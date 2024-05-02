@@ -126,8 +126,11 @@ def test_make_arf_osip():
                             arfrmf.filename_from_meta('arf', **arf.meta))
             arf.write(basearf)
 
-        osipp = osip.FixedFractionOSIP(0.7, ccd_redist=CCDRedistNormal(tab_redist),
-                                       filename_from_meta=arfrmf.filename_from_meta)
+        osipp = osip.FixedFractionOSIP(
+            0.7,
+            ccd_redist=CCDRedistNormal(tab_width=tab_redist),
+            filename_from_meta=arfrmf.filename_from_meta,
+        )
         osipp.apply_osip_all(tmpdirname, tmpdirname, [-5],
                              filename_from_meta_kwargs={'ARCCHAN': '1111'})
 

@@ -19,7 +19,7 @@ from astropy.utils.data import get_pkg_data_filename
 filename = get_pkg_data_filename('data/ccd_redist_normal.ecsv', 'marxs.optics.tests')
 tab_redist = QTable.read(filename)
 
-ccd_redist = CCDRedistNormal(tab_redist)
+ccd_redist = CCDRedistNormal(tab_width=tab_redist)
 osipf = FixedWidthOSIP(40 * u.eV, ccd_redist=ccd_redist)
 osipp = FixedFractionOSIP(0.7, ccd_redist=ccd_redist)
 osipd = FractionalDistanceOSIP(ccd_redist=ccd_redist)
@@ -60,8 +60,7 @@ def test_osip_factor():
     assert np.allclose(wide.osip_factor([10] * u.Angstrom, -5, -5), 1)
     '''test with fixed sigma'''
     sig = QTable({'energy': [0, 1, 2] * u.keV, 'sigma': [40, 40, 40] * u.eV})
-    myosip = FixedWidthOSIP(40 * u.eV,
-                            ccd_redist=CCDRedistNormal(sig))
+    myosip = FixedWidthOSIP(40 * u.eV, ccd_redist=CCDRedistNormal(tab_width=sig))
 
     assert np.allclose(myosip.osip_factor([10] * u.Angstrom, -5, -5),
                        0.6827, rtol=1e-4)
