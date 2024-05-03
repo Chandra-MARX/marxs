@@ -1,0 +1,31 @@
+{
+    "creators": [
+        {
+            "orcid": "0000-0003-4243-2840",
+            "affiliation": "MIT Kavli Institute for Astrophysics and Space Research",
+            "name": "Günther, Hans Moritz"
+        },
+        {
+            "name": "Frost, Jason"
+        }
+        ,
+        {
+            "name": "Theriault-Shay, Adam"
+        }
+    ],
+    "license": "gpl-3.0-or-later",
+    "title": "MARXS",
+    "related_identifiers": [
+        {
+            "scheme": "doi",
+            "identifier": "10.3847/1538-3881/aa943b",
+            "relation": "isDocumentedBy",
+            "resource_type": "publication-article"
+        }
+    ],
+    "keywords": [
+        "ray-tracing",
+        "X-ray",
+        "instrumentation"
+    ]
+}
