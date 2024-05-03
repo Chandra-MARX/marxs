@@ -1,3 +1,19 @@
+2.1 (unreleased)
+----------------
+
+New Features
+^^^^^^^^^^^^
+
+
+API Changes
+^^^^^^^^^^^
+
+Bug fixes
+^^^^^^^^^
+
+Other changes and additions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 2.0 (02-May-2024)
 -----------------
 
@@ -290,5 +306,6 @@ with this release.
 
 0.1 (experimental release)
 --------------------------
-This release was not intended to be used, but the versioning scheme in the
+This release was not intended to be used, but the ver
+sioning scheme in the
 development branch required a tagged commit.
