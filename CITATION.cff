@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Günther"
+  given-names: "Hans Moritz"
+  orcid: "https://orcid.org/0000-0003-4243-2840"
+- family-names: "Frost"
+  given-names: "Jason"
+- family-names: "Theriault-Shay"
+  given-names: "Adam"
+title: "MARXS"
+version: 2.0
+doi: 10.5281/zenodo.11104969
+date-released: 2024-05-02
+url: "https://github.com/github-linguist/linguist"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Günther"
+    given-names: "Hans Moritz"
+    orcid: "https://orcid.org/0000-0003-4243-2840"
+  - family-names: "Frost"
+    given-names: "Jason"
+  - family-names: "Theriault-Shay"
+    given-names: "Adam"
+  doi: "10.3847/1538-3881/aa943b "
+  journal: "Journal Title"
+  month: 12
+  eid: 243
+  pages: 243 
+  title: "MARXS: A Modular Software to Ray-trace X-Ray Instrumentation "
+  issue: 6
+  volume: 154
+  year: 2017
