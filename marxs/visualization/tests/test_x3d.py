@@ -50,17 +50,17 @@ def test_aperture():
     det.display = det.display
     det.display['opacity'] = 0.3
     out = plot_object(det)
-    out_expected = '''<Scene>
+    out_expected = """<Scene>
   <Shape>
     <Appearance>
       <Material diffuseColor='0.0 0.75 0.75' transparency='0.7'/>
     </Appearance>
-    <IndexedTriangleSet colorPerVertex='false' index='0 4 5 0 1 5 1 5 6 1 2 6 2 6 7 2 3 7 3 7 4 3 0 4' solid='false'>
+    <IndexedTriangleSet colorPerVertex='false' index='0 4 5 1 0 5 1 5 6 2 1 6 2 6 7 3 2 7 3 7 4 0 3 4' solid='false'>
       <Coordinate point='0.0 15.0 15.0 0.0 -15.0 15.0 0.0 -15.0 -15.0 0.0 15.0 -15.0 0.0 5.0 5.0 0.0 -5.0 5.0 0.0 -5.0 -5.0 0.0 5.0 -5.0'/>
     </IndexedTriangleSet>
   </Shape>
 </Scene>
-'''
+"""
     compare_trimmed(out.XML(), out_expected)
 
 
@@ -112,3 +112,4 @@ def test_zip_file(tmp_path):
     assert "figure.html" in zip.namelist()
     assert "x3dom.js" in zip.namelist()
     assert "x3dom.css" in zip.namelist()
+

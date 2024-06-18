@@ -6,7 +6,6 @@ import copy
 from ...optics import FlatDetector, RectangleAperture
 from ...design import RowlandTorus
 from ..threejsjson import plot_rays, plot_object, write
-from ..utils import MARXSVisualizationWarning
 
 try:
     import jsonschema
@@ -108,20 +107,50 @@ def test_aperture():
     det.display = det.display
     det.display['opacity'] = 0.3
     out = plot_object(det)
-    out_expected = {'faces': [[0, 4, 5, 0, 1, 5, 1, 5, 6, 1, 2, 6, 2, 6, 7, 2, 3, 7,
-                               3, 7, 4, 3, 0, 4]],
-                    'geometry': 'BufferGeometry',
-                    'geometrytype': 'Mesh',
-                    'material': 'MeshStandardMaterial',
-                    'materialproperties': {'color': '#00bfff',
-                                           'opacity': 0.3,
-                                           'side': 2,
-                                           'transparent': 'true'},
-                    'n': 1,
-                    'name': "<class 'marxs.optics.aperture.RectangleAperture'>",
-                    'pos': [[0.0, 15.0, 15.0, 0.0, -15.0, 15.0, 0.0, -15.0, -15.0,
-                             0.0, 15.0, -15.0, 0.0, 5.0, 5.0, 0.0, -5.0, 5.0, 0.0,
-                             -5.0, -5.0, 0.0, 5.0, -5.0]]}
+    out_expected = {
+        "faces": [
+            [0, 4, 5, 1, 0, 5, 1, 5, 6, 2, 1, 6, 2, 6, 7, 3, 2, 7, 3, 7, 4, 0, 3, 4]
+        ],
+        "geometry": "BufferGeometry",
+        "geometrytype": "Mesh",
+        "material": "MeshStandardMaterial",
+        "materialproperties": {
+            "color": "#00bfff",
+            "opacity": 0.3,
+            "side": 2,
+            "transparent": "true",
+        },
+        "n": 1,
+        "name": "<class 'marxs.optics.aperture.RectangleAperture'>",
+        "pos": [
+            [
+                0.0,
+                15.0,
+                15.0,
+                0.0,
+                -15.0,
+                15.0,
+                0.0,
+                -15.0,
+                -15.0,
+                0.0,
+                15.0,
+                -15.0,
+                0.0,
+                5.0,
+                5.0,
+                0.0,
+                -5.0,
+                5.0,
+                0.0,
+                -5.0,
+                -5.0,
+                0.0,
+                5.0,
+                -5.0,
+            ]
+        ],
+    }
 
     # out_expected is only a subset
     for k in out_expected:

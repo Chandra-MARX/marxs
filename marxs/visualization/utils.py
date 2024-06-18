@@ -200,7 +200,7 @@ def color_tuple_to_hex(color):
 
 
 def plane_with_hole(outer, inner):
-    '''Triangulation of a plane with an inner hole
+    """Triangulation of a plane with an inner hole
 
     This function constructs a triangulation for a plane with an inner
     hole, e.g. a rectangular plane where an inner circle is cut out.
@@ -213,7 +213,7 @@ def plane_with_hole(outer, inner):
         points, but points need to be listed in the same orientation
         (e.g. clockwise) for both and the starting points need to have a
         similar angle as seen from the center (e.g. for a plane with z=0, both
-        ``outer`` and ``inner`` could list a point close to the y-axis first.
+        ``outer`` and ``inner`` could list a point close to the y-axis first).
 
     Returns
     -------
@@ -229,20 +229,20 @@ def plane_with_hole(outer, inner):
 
     >>> import numpy as np
     >>> from marxs.visualization.utils import plane_with_hole
-    >>> outer = np.array([[-1, -1, 1, 1], [-1, 1, 1, -1], [0,0,0,0]]).T
+    >>> outer = np.array([[-1, -1, 1, 1], [-1, 1, 1, -1], [0, 0, 0, 0]]).T
     >>> inner = 0.5 * outer
     >>> xyz, triangles = plane_with_hole(outer, inner)
     >>> triangles
     array([[0, 4, 5],
-       [0, 1, 5],
-       [1, 5, 6],
-       [1, 2, 6],
-       [2, 6, 7],
-       [2, 3, 7],
-       [3, 7, 4],
-       [3, 0, 4]])
+           [1, 0, 5],
+           [1, 5, 6],
+           [2, 1, 6],
+           [2, 6, 7],
+           [3, 2, 7],
+           [3, 7, 4],
+           [0, 3, 4]])
 
-    '''
+    """
     n_out = outer.shape[0]
     n_in = inner.shape[0]
     n = n_out + n_in
@@ -254,12 +254,12 @@ def plane_with_hole(outer, inner):
     i_out = 0
     for i in range(n_out + n_in):
         if i/n >= i_in/n_in:
-            triangles[i, :] = [i_out, n_out + i_in,
-                               n_out + ((i_in + 1) % n_in)]
+            triangles[i, :] = [i_out, n_out + i_in, n_out + ((i_in + 1) % n_in)]
             i_in += 1
         else:
-            triangles[i, :] = [i_out, (i_out + 1) % n_out,
-                               n_out + (i_in % n_in)]
+            # Note that the order of the points is reversed here
+            # to match the orientation of the outer boundary for the case above.
+            triangles[i, :] = [(i_out + 1) % n_out, i_out, n_out + (i_in % n_in)]
             i_out = (i_out + 1) % n_out
     return xyz, triangles
 
