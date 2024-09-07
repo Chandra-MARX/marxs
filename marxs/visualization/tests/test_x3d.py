@@ -31,17 +31,17 @@ def test_box():
     det.display = det.display
     det.display['opacity'] = 0.1
     out = plot_object(det)
-    out_expected = '''<Scene>
+    out_expected = """<Scene>
   <Shape>
     <Appearance>
       <Material diffuseColor='1.0 1.0 0.0' transparency='0.9'/>
     </Appearance>
     <IndexedFaceSet colorPerVertex='false' coordIndex='0 2 3 1 -1 4 6 7 5 -1 0 4 6 2 -1 1 5 7 3 -1 0 4 5 1 -1 2 6 7 3 -1' solid='false'>
-      <Coordinate point='0.0 1.0 2.0 0.0 5.0 2.0 0.0 1.0 6.0 0.0 5.0 6.0 2.0 1.0 2.0 2.0 5.0 2.0 2.0 1.0 6.0 2.0 5.0 6.0'/>
+      <Coordinate point='0.0 0.001 0.002 0.0 0.005 0.002 0.0 0.001 0.006 0.0 0.005 0.006 0.002 0.001 0.002 0.002 0.005 0.002 0.002 0.001 0.006 0.002 0.005 0.006'/>
     </IndexedFaceSet>
   </Shape>
 </Scene>
-'''
+"""
     compare_trimmed(out.XML(), out_expected)
 
 def test_aperture():
@@ -56,7 +56,7 @@ def test_aperture():
       <Material diffuseColor='0.0 0.75 0.75' transparency='0.7'/>
     </Appearance>
     <IndexedTriangleSet colorPerVertex='false' index='0 4 5 1 0 5 1 5 6 2 1 6 2 6 7 3 2 7 3 7 4 0 3 4' solid='false'>
-      <Coordinate point='0.0 15.0 15.0 0.0 -15.0 15.0 0.0 -15.0 -15.0 0.0 15.0 -15.0 0.0 5.0 5.0 0.0 -5.0 5.0 0.0 -5.0 -5.0 0.0 5.0 -5.0'/>
+      <Coordinate point='0.0 0.015 0.015 0.0 -0.015 0.015 0.0 -0.015 -0.015 0.0 0.015 -0.015 0.0 0.005 0.005 0.0 -0.005 0.005 0.0 -0.005 -0.005 0.0 0.005 -0.005'/>
     </IndexedTriangleSet>
   </Shape>
 </Scene>
@@ -70,17 +70,17 @@ def test_surface():
     rowland.display['coo1'] = np.linspace(1, 2, 4)
     rowland.display['coo2'] = np.linspace(-.2, .2, 3)
     out = plot_object(rowland)
-    out_expected = '''<Scene>
+    out_expected = """<Scene>
   <Shape>
     <Appearance>
       <Material diffuseColor='1.0 0.3 0.3' transparency='0.8'/>
     </Appearance>
     <IndexedFaceSet colorPerVertex='false' coordIndex='0 1 4 3 -1 1 2 5 4 -1 3 4 7 6 -1 4 5 8 7 -1 6 7 10 9 -1 7 8 11 10 -1' solid='false'>
-      <Coordinate point='1033.0 84.1 -209.4 1054.0 84.1 0.0 1033.0 84.1 209.4 1003.1 97.2 -203.3 1023.5 97.2 0.0 1003.1 97.2 203.3 970.7 99.5 -196.8 990.4 99.5 0.0 970.7 99.5 196.8 939.3 90.9 -190.4 958.4 90.9 0.0 939.3 90.9 190.4'/>
+      <Coordinate point='1.033 0.0841 -0.2094 1.054 0.0841 0.0 1.033 0.0841 0.2094 1.0031 0.0972 -0.2033 1.0235 0.0972 0.0 1.0031 0.0972 0.2033 0.9707 0.0995 -0.1968 0.9904 0.0995 0.0 0.9707 0.0995 0.1968 0.9393 0.0909 -0.1904 0.9584 0.0909 0.0 0.9393 0.0909 0.1904'/>
     </IndexedFaceSet>
   </Shape>
 </Scene>
-'''
+"""
     compare_trimmed(out.XML(), out_expected)
 
 
@@ -93,7 +93,7 @@ def test_rays():
       <Material emissiveColor='0.27 0.0 0.33'/>
     </Appearance>
     <LineSet vertexCount='2 2'>
-      <Coordinate point='0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0'/>
+      <Coordinate point='0.0 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.011'/>
     </LineSet>
   </Shape>
 </Scene>
@@ -113,3 +113,15 @@ def test_zip_file(tmp_path):
     assert "x3dom.js" in zip.namelist()
     assert "x3dom.css" in zip.namelist()
 
+def test_zip_file_X_ITE(tmp_path):
+    """Check that a zipfile is created and contains the right files."""
+    zipfile = pytest.importorskip("zipfile", reason="Test writes zip file")
+    rays = plot_rays(np.arange(12).reshape(2, 2, 3))
+    rays.set_X3D_implementation("X_ITE")
+    rays.write_html_archive(base_name=tmp_path / "figure", format="zip")
+    assert (tmp_path / "figure.zip").exists()
+
+    zip = zipfile.ZipFile(tmp_path / "figure.zip")
+    assert "figure.html" in zip.namelist()
+    assert "x_ite.min.js" in zip.namelist()
+    assert "x3dom.css" not in zip.namelist()

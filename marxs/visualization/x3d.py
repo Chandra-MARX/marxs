@@ -1,5 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
-'''`X3D <https://www.web3d.org/x3d/what-x3d>`__ plotting backend
+"""`X3D <https://www.web3d.org/x3d/what-x3d>`__ plotting backend
 
 X3D is an open standard for interactive 3D models on the Web.
 X3D models are stored in XML files and can be viewed in the
@@ -17,7 +17,13 @@ an empty one is generated.)
 
 Under the hood, the XML is constructed using the
 `x3d <https://pypi.org/project/x3d/>`__ Python package.
-'''
+
+The default unit for length in X3D is meter. While MARXS is
+technically scale-free, in practice it is often used with
+lengths in mm. The plotting routines here convert from mm to m
+by dividing by 1000. This number could be made into a parameter
+in the future.
+"""
 from functools import wraps
 from warnings import warn
 import os
@@ -25,6 +31,7 @@ import urllib.request
 import tempfile
 from shutil import make_archive
 import xml.etree.ElementTree as ET
+from typing import Literal
 
 import numpy as np
 from astropy.utils.decorators import format_doc
@@ -69,26 +76,46 @@ doc_plot = '''
 '''
 
 class Scene(x3d.Scene):
-    '''X3D Scene with added _repr_html_ for notebook output'''
-    js_source = 'https://www.x3dom.org/download/x3dom.js'
-    css_source = 'https://www.x3dom.org/download/x3dom.css'
+    """X3D Scene with added _repr_html_ for notebook output"""
+
     dimension_px = (600, 400)
+
+    def __init__(self, children=None, **kwargs):
+        super().__init__(children=children, **kwargs)
+        self.set_X3D_implementation("X3DOM")
+
+    def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> str:
+        match implementation:
+            case "X3DOM":
+                self.js_source = "https://www.x3dom.org/download/x3dom.js"
+                self.css_source = "https://www.x3dom.org/download/x3dom.css"
+                self.x3d_implementation = implementation
+            case "X_ITE":
+                self.js_source = (
+                    "https://cdn.jsdelivr.net/npm/x_ite@9.7.0/dist/x_ite.min.js"
+                )
+                self.css_source = ""
+                self.x3d_implementation = implementation
+            case _:
+                raise ValueError(
+                    f"Unknown X3D implementation {implementation}, pick one of X3DOM or X_ITE."
+                )
 
     # see https://doc.x3dom.org/tutorials/animationInteraction/viewpoint/index.html
     # for how to add buttons for viewpoints
 
-    def _repr_html_(self):
+    def repr_html_X3DOM(self):
         root = ET.fromstring(self.XML())
-        html = f"""
+        html = f"""<!DOCTYPE html>
 <html>
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
      <script type='text/javascript' src='{self.js_source}'> </script>
-     <link rel='stylesheet' type='text/css' href='{self.css_source}'></link>
+     <link rel='stylesheet' type='text/css' href='{self.css_source}'>`
   </head>
   <body>
     <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'>
-      {self.XML()}
+      {ET.tostring(root, encoding='unicode', method='html')}
     </x3d>
     """
         for vp in root.findall('Viewpoint'):
@@ -99,6 +126,37 @@ class Scene(x3d.Scene):
 </html>
 """
         return html
+
+    def repr_html_X_ITE(self) -> str:
+        html = f"""<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <script type='text/javascript' src="{self.js_source}"></script>
+    <style>
+        x3d-canvas {{
+            width: {self.dimension_px[0]}px;
+            height: {self.dimension_px[1]}px;
+        }}
+    </style>
+</head>
+
+<body>
+    <x3d-canvas>
+
+        <X3D profile='Immersive' version='4.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance'
+            xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-4.0.xsd'>
+        {ET.tostring(ET.fromstring(self.XML()), encoding='unicode', method='html')}
+        </X3D>
+        </x3d-canvas>
+</body>
+</html>
+"""
+        return html
+
+    def _repr_html_(self) -> str:
+        return getattr(self, f"repr_html_{self.x3d_implementation}")()
 
     def write_html_archive(self, base_name: str, format: str, *args, **kwargs) -> None:
         """Write to an HTML archive with local copies of js and css requirements.
@@ -124,9 +182,10 @@ class Scene(x3d.Scene):
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
             for f in (self.js_source, self.css_source):
-                urllib.request.urlretrieve(
-                    f, os.path.join(tmpdirname, os.path.basename(f))
-                )
+                if f:  # for X_ITE css_source is empty because it it is not needed
+                    urllib.request.urlretrieve(
+                        f, os.path.join(tmpdirname, os.path.basename(f))
+                    )
             try:
                 old_js = self.js_source
                 old_css = self.css_source
@@ -159,7 +218,7 @@ def _diffuse_material(display):
 def _format_points(xyz):
     # Need to use float() to convert to Python float.
     # Otherwise numpy >= 2.0 will print as "np.float64(1.234)" in the XML
-    return [tuple(float(a) for a in np.round(p, conf.xyz_precision)) for p in xyz]
+    return [tuple(float(a) for a in np.round(p, conf.xyz_precision + 3)) for p in xyz / 1000]
 
 
 @empty_scene
