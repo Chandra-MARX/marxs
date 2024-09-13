@@ -150,12 +150,16 @@ def empty_scene(func):
 
 
 def _diffuse_material(display):
-    return x3d.Material(diffuseColor=display['color'],
-                        transparency=1 - display.get('opacity', 1.))
+    return x3d.Material(
+        diffuseColor=[float(a) for a in display["color"]],
+        transparency=float(1 - display.get("opacity", 1.0)),
+    )
 
 
 def _format_points(xyz):
-    return [tuple(np.round(p, conf.xyz_precision)) for p in xyz]
+    # Need to use float() to convert to Python float.
+    # Otherwise numpy >= 2.0 will print as "np.float64(1.234)" in the XML
+    return [tuple(float(a) for a in np.round(p, conf.xyz_precision)) for p in xyz]
 
 
 @empty_scene
@@ -209,7 +213,8 @@ def surface(obj, display, *, scene):
                            ind[1:, :-1].flatten(),
                             - np.ones((ind.shape[0] - 1) * (ind.shape[1] - 1),
                                       dtype=int)]).T
-    coordIndex = coordIndex.flatten()
+    # Explicitly convert to Python int to avoid numpy printing as "np.int64(1)"
+    coordIndex = [int(i) for i in coordIndex.flatten()]
     scene.children.append(x3d.Shape(appearance=x3d.Appearance(material=_diffuse_material(display)),
                                     geometry=x3d.IndexedFaceSet(coord=
                                         x3d.Coordinate(point=_format_points(xyz.reshape((-1, 3)))),
@@ -378,12 +383,15 @@ def plot_rays(
         ind = scalar == s
 
         lines = x3d.Shape(
-            appearance=x3d.Appearance(material=x3d.Material(emissiveColor=color[:3])),
-            geometry=x3d.LineSet(vertexCount=[N] * ind.sum(),
-                                 # Rounding to two post-comma digits (i.e. 0.1 mm in MARXS default units)
-                                 # to keep file size down
-                                coord=x3d.Coordinate(point=_format_points(data[ind, :].reshape(-1, 3))),
-                                )
+            appearance=x3d.Appearance(
+                material=x3d.Material(emissiveColor=[float(a) for a in color[:3]])
+            ),
+            geometry=x3d.LineSet(
+                vertexCount=[N] * ind.sum(),
+                # Rounding to two post-comma digits (i.e. 0.1 mm in MARXS default units)
+                # to keep file size down
+                coord=x3d.Coordinate(point=_format_points(data[ind, :].reshape(-1, 3))),
+            ),
         )
         scene.children.append(lines)
     return scene

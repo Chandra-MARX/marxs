@@ -217,7 +217,7 @@ def test_GratingArrayStructure():
     assert gas.max_elements_on_arc(300.) == 12
     angles = gas.distribute_elements_on_arc(315.) % (2. * np.pi)
     # This is a wrap-around case. Hard to test in general, but here I know the numbers
-    assert np.alltrue((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
+    assert np.all((angles < 0.2 * np.pi) | (angles > 1.8 * np.pi))
     assert gas.max_elements_on_radius(gas.radius) == 10
     assert np.all(gas.distribute_elements_on_radius() == np.arange(315., 600., 30.))
     assert len(gas.elem_pos) == 177
@@ -248,7 +248,7 @@ def test_GAS_multipleradii():
     r1 = gas1.distribute_elements_on_radius()
     r2 = gas2.distribute_elements_on_radius()
     r = gas.distribute_elements_on_radius()
-    assert np.all(np.in1d(r, np.union1d(r1, r2)))
+    assert np.all(np.isin(r, np.union1d(r1, r2)))
 
 
 def test_GratingArrayStructure_2pi():
