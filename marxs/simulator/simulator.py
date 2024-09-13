@@ -143,7 +143,7 @@ class BaseContainer(SimulationSequenceElement):
 
 
 class Sequence(BaseContainer):
-    '''A `Sequence` is a container that summarizes several optical elements.
+    """A `Sequence` is a container that summarizes several optical elements.
 
     Parameters
     ----------
@@ -192,11 +192,11 @@ class Sequence(BaseContainer):
     Now, let us check where the photons fall on the detector:
 
     >>> set(photons_out['detpix_x'].round())
-    {19.0, 20.0}
+    {np.float64(19.0), np.float64(20.0)}
 
     As expected, they fall right around the center of the detector (row 19 and 20 of a
     40 * 40 pixel detector).
-    '''
+    """
 
     def __init__(self, **kwargs):
         self.elements = kwargs.pop('elements')

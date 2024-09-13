@@ -87,17 +87,17 @@ def test_surface():
 def test_rays():
     '''Just two rays to make sure the format is right.'''
     rays = plot_rays(np.arange(12).reshape(2,2,3))
-    out_expected = '''<Scene>
+    out_expected = """<Scene>
   <Shape>
     <Appearance>
       <Material emissiveColor='0.27 0.0 0.33'/>
     </Appearance>
     <LineSet vertexCount='2 2'>
-      <Coordinate point='0 1 2 3 4 5 6 7 8 9 10 11'/>
+      <Coordinate point='0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0'/>
     </LineSet>
   </Shape>
 </Scene>
-'''
+"""
     compare_trimmed(rays.XML(), out_expected)
 
 

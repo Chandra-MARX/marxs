@@ -92,7 +92,7 @@ There are two ways to specify that:
 
       >>> baf2 = Baffle(zoom=[1., 2., 2.], position=[5., 0., 0.])
       >>> np.all(baf2.pos4d == baf1.pos4d)
-      True
+      np.True_
 
 
   It is an error to specify ``pos4d`` and any of the ``orientation``, ``zoom``, and ``position``
