@@ -11,6 +11,8 @@ API Changes
 Bug fixes
 ^^^^^^^^^
 
+- Fix test failures with numpy 2.0 [#254]
+
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
