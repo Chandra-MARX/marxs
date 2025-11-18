@@ -36,7 +36,7 @@ MARXS modular structure is designed to serve two main use cases:
 
 Installation
 ------------
-See the [installation instructions](https://marxs.readthedocs.io/en/latest/installation.html)
+See the [installation instructions](https://marxs.readthedocs.io/en/latest/install.html)
 in the documentation.
 
 Citation
