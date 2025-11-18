@@ -38,7 +38,7 @@ in the documentation.
 
 ## Citation
 
-Look at the [CITATION](CITATION) file for the citation information.
+Look at the [CITATION](CITATION.cff) file for the citation information.
 
 ## Contributions
 
