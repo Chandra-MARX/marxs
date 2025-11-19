@@ -1,5 +1,4 @@
-MARXS
-=====
+# MARXS
 
 Multi-Architecture-Raytrace-Xraymission-Simulator
 
@@ -15,8 +14,7 @@ Multi-Architecture-Raytrace-Xraymission-Simulator
 
 [![Powered by Astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
-What does MARXS do?
--------------------
+## What does MARXS do?
 
 MARXS (Multi-Architecture-Raytrace-Xraymission-Simulator) is a toolsuite to simulate
 X-ray observatories. It is primarily aimed at astronomical X-ray satellites and sounding rocket
@@ -33,20 +31,16 @@ MARXS modular structure is designed to serve two main use cases:
   Given an instrument configuration, simulate the detector output for any set of X-ray
   sources in the lab or on the sky.
 
+## Installation
 
-Installation
-------------
-See the [installation instructions](https://marxs.readthedocs.io/en/latest/installation.html)
+See the [installation instructions](https://marxs.readthedocs.io/en/latest/install.html)
 in the documentation.
 
-Citation
---------
-Look at the [CITATION](CITATION) file for the citation information.
+## Citation
 
-Contributions
--------------
+Look at the [CITATION](CITATION.cff) file for the citation information.
+
+## Contributions
+
 We welcome contributions through [pull requests on Github](https://github.com/Chandra-MARX/marxs/pulls).
 Please follow our [code of conduct](CODE_OF_CONDUCT.md).
-
-
-
