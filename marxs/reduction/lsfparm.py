@@ -80,31 +80,85 @@ def sherpa2caldb(shmodel):
     for comp in flatten_sherpa_model(shmodel):
         if isinstance(comp, NormGauss1D):
             # convert to np.array to make sure we can divide by gconv
-            # but then convert back to list to make sure it's JSON serializable
-            modelpars = list(np.array([comp.ampl.val, comp.fwhm.val,
-                                  comp.pos.val]) / gconv)
+            modelpars = np.array([comp.ampl.val, comp.fwhm.val, comp.pos.val]) / gconv
         elif isinstance(comp, Lorentz1D):
-            modelpars = list(np.array([comp.ampl.val, comp.fwhm.val,
-                                  comp.pos.val]) / lconv)
+            modelpars = np.array([comp.ampl.val, comp.fwhm.val, comp.pos.val]) / lconv
         else:
             raise Exception(f'Component {comp} not valid for LSFPARM files')
         d[comp.name] = modelpars
     return d
 
 
-def empty_lsfparmtable(widths, waves, model, extname, order):
-    '''
+def compnames_from_model(model) -> list[str]:
+    """Extract names of model components for the LSF in the format of the Chandra CALDB
+
+    Parameters
+    ----------
+    model : Sherpa model instance
+        This instance is inspected for the name of the model components to
+        set up the correct columns.
+
+    Returns
+    -------
+    compnames : list
+        List of strings with names of the components as used in Chandra LSFPARM files
+        e.g. ['GAUSS1_PARMS']
+
+    Examples
+    --------
+    We make an LSF with a single Gaussian component
+
+        >>> from sherpa.models import NormGauss1D
+        >>> lsf = NormGauss1D(name='GAUSS1')
+        >>> compnames_from_model(lsf)
+        ['GAUSS1_PARMS']
+    """
+    from sherpa.astro.models import Lorentz1D
+    from sherpa.models import NormGauss1D
+
+    # See which columns are needed to describe the models
+    modelcomps = flatten_sherpa_model(model)
+    compnames = [m.name for m in modelcomps]
+    # Check names are unique and follow DPID naming scheme
+    if not len(set(compnames)) == len(compnames):
+        raise ValueError(
+            "Names of model components are not unique (using default names?)"
+        )
+    # Check models are right type and follow DPID naming rules:
+    for m in modelcomps:
+        if not isinstance(m, (NormGauss1D, Lorentz1D)):
+            raise ValueError(
+                "Model can only contain Sherpa NormGauss1D and Lorentz1D components."
+            )
+    # Check model and name match
+    # Check count starts at 1 (not 0), consecutive numbers
+    return [m + "_PARMS" for m in compnames]
+
+
+def empty_lsfparmtable(
+    widths, waves, compnames: list[str], extname, order: int
+) -> Table:
+    """Create an empty LSFPARM table in the format used by the Chandra CALDB
+
     Parameters
     ----------
     width : np.array
         extraction width
-    waves
-    model : Sherpa model instance
-        This instance is inspected for the name of the model components to
-        set up the correct columns
-    '''
-    from sherpa.astro.models import Lorentz1D
-    from sherpa.models import NormGauss1D
+    waves : np.array
+        Array of wavelength
+    compnames : list
+        List of strings with names of the components as used in Chandra LSFPARM files
+        e.g. ['GAUSS1_PARMS']
+    extname : str
+        Name of the extension for the header of the table/fits file
+    order : int
+        Order to record in header
+
+    Returns
+    -------
+    tab : astropy.table.Table
+        empty LSFPARM file in Chandra CALDB format
+    """
 
     tab = Table()
     tab.add_column(Column(data=[len(widths)], name='NUM_WIDTHS',
@@ -127,23 +181,17 @@ def empty_lsfparmtable(widths, waves, model, extname, order):
     tab.add_column(Column(data=[waves + dwave], name='TG_LAM_HI',
                           dtype=np.float32, shape=(len(waves)),
                           unit=u.Angstrom))
-    tab.add_column(Column(name='EE_FRACS', length=1, dtype=np.float32,
-                          shape=(len(widths), len(waves))))
-    # See which columns are needed to describe the models
-    modelcomps = flatten_sherpa_model(model)
-    compnames = [m.name for m in modelcomps]
-    # Check names are unique and follow DPID naming scheme
-    if not len(set(compnames)) == len(compnames):
-        raise ValueError("Names of model components are not unique (using default names?)")
-    # Check models are right type and follow DPID naming rules:
-    for m in modelcomps:
-        if not isinstance(m, (NormGauss1D, Lorentz1D)):
-            raise ValueError('Model can only contain Sherpa NormGauss1D and Lorentz1D components.')
-    # Check model and name match
-    # Check count starts at 1 (not 0), consequtive numbers
+    tab.add_column(
+        Column(
+            name="EE_FRACS", length=1, dtype=np.float32, shape=(len(widths), len(waves))
+        )
+    )
     for m in compnames:
-        tab.add_column(Column(name=m + '_PARMS', length=1, dtype=np.float32,
-                              shape=(len(widths), len(waves), 3)))
+        tab.add_column(
+            Column(
+                name=m, length=1, dtype=np.float32, shape=(len(widths), len(waves), 3)
+            )
+        )
 
     # Add header keywords.
     # TODO: Not done yet, just adding what I can to make mkrmf read it
@@ -154,7 +202,7 @@ def empty_lsfparmtable(widths, waves, model, extname, order):
     tab.meta['CCNM0001'] = 'LSFPARM'
     tab.meta['RAND_TG'] = '0.0'   # make this a parameter
     tab.meta['LONGSTRN'] = 'OGIP 1.0'
-    tab.meta['CREATOR'] = 'lsfparm.py'  # update
+    tab.meta["CREATOR"] = "MARXS"
     tab.meta['DATE'] = str(datetime.datetime.now()).replace(' ', 'T')[:19],
     tab.meta['CONTENT'] = 'CDB_' + tab.meta['EXTNAME'] + '_LSFPARM'
     tab.meta['HDUCLASS'] = 'ASC',
@@ -167,7 +215,7 @@ def empty_lsfparmtable(widths, waves, model, extname, order):
     tab.meta['INSTRUME'] = 'UNKNOWN'
     tab.meta['CVSD0001'] = '1999-07-22T00:00:00'  # Chandra as an example
     tab.meta['CVST0001'] = '00:00:00'
-    tab.meta['TELESCOP'] = 'UNKOWN'
+    tab.meta["TELESCOP"] = "UNKNOWN"
     tab.meta['FILTER'] = 'UNKNOWN'
     return tab
 
@@ -223,12 +271,16 @@ def CALDB_interp(row, method='linear', bounds_error=False,
                                      bounds_error=bounds_error,
                                      fill_value=fill_value)
         elif modelnames.match(col):
-            interpolators[col] = [RGI((row['WIDTHS'], row['LAMBDAS']),
-                                      row[col][:, :, i].squeeze(),
-                                      method=method,
-                                      bounds_error=bounds_error,
-                                      fill_value=fill_value)
-                                  for i in [0, 1, 2]]
+            interpolators[col] = [
+                RGI(
+                    (row["WIDTHS"], row["LAMBDAS"]),
+                    row[col][:, :, i],
+                    method=method,
+                    bounds_error=bounds_error,
+                    fill_value=fill_value,
+                )
+                for i in [0, 1, 2]
+            ]
     return interpolators
 
 
@@ -427,19 +479,19 @@ def fit_LSF(evt, model, wavebin=0.001, d_wave=0.03, colname='tg_mlam',
 
 
 def plot_LSFfit(sdata, model, axes):
-    '''Plot an LSF fit for visual inspection
+    """Plot an LSF fit for visual inspection
 
     Parameters
     ----------
     sdata : `sherpa.data.Data1D`
         Data object with the histogram
-    model : `sherpa.models.model.Model`
+    model : `sherpa.models.model.Model``
         LSF model from the fit to be plotted
     axes : list of `matplotlib.axes.Axes`
         The first axis is used linar plot, highligting the fit to the
         line center and the second axis for a log plot, highlighting the
         wings.
-    '''
+    """
     for ax in axes:
         ax.plot(sdata.x, sdata.y, 'k', label='Data')
         ax.plot(sdata.x, model(sdata.xlo, sdata.xhi), linewidth=2, label='model')

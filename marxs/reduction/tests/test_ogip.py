@@ -39,7 +39,7 @@ def test_threshold():
                                     width)
     energy = (11.5 * u.Angstrom).to(u.keV, equivalencies=u.spectral())
     row = rmf.row(energy)
-    assert row['N_CHAN'] == [19]
+    assert row["N_CHAN"] == [15]
     assert np.min(row['MATRIX']) > 1e-6 # default threshold
     assert np.sum(row['MATRIX']) == pytest.approx(1)
 

@@ -10,7 +10,7 @@ from ..labSource import LabPointSourceCone
 def test_labsource_eukledian():
     with pytest.raises(ValueError) as err:
         source = LabPointSourceCone(position=[1, 2, 3, 1.])
-    assert 'in Eukledian coordinates' in str(err.value)
+    assert "in Euclidean coordinates" in str(err.value)
 
 
 def test_photon_generation():
