@@ -64,7 +64,7 @@ def facet_table(container, project_plane=ProjectOntoPlane()):
     -------
     facettab : `astropy.table.Table`
         Table with facet properties.
-        All output columns are prevaced with "facet_" to avoid a clash with columns likely
+        All output columns are prefaced with "facet_" to avoid a clash with columns likely
         to be found in photon tables. That enables easy merging of facet tables with photon tables
         to add the properties of a facet that the photon passed through into the photon table
         like so:

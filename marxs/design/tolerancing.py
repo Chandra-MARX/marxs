@@ -436,7 +436,7 @@ def run_tolerances_for_energies2(source, energies, instrum, cls, wigglefunc,
     '''
     ind = instrum.first_of_class_top_level(cls, subclass_ok)
     if ind is None:
-        raise Exception(f'{cls} nor part of {instrum}')
+        raise Exception(f"{cls} not part of {instrum}")
 
     tab = run_tolerances_for_energies(source, energies,
                                       Sequence(elements=instrum.elements[:ind]),

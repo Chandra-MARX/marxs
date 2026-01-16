@@ -106,19 +106,19 @@ class Geometry(NoGeometry):
         super().__init__(kwargs=kwargs)
 
     def __getitem__(self, key):
-        '''This function wraps access to the pos4d matrix.
+        """This function wraps access to the pos4d matrix.
 
         This is mostly a convenience method that gives access to
         vectors from the ``pos4d`` matrix in familiar terms with
         string labels:
 
-        - ``center``: The ``center`` is the origin of the local coordiante system
-          of the optical elemement. Typically, if will be the center of the
+        - ``center``: The ``center`` is the origin of the local coordinate system
+          of the optical element. Typically, if will be the center of the
           active plane, e.g. the center of the mirror surface.
         - :math:`\hat v_{y,z}`: The box stretches in the y and z direction for
           :math:`\pm \hat v_y` and :math:`\pm \hat v_z`. In optics, the relevant
           interaction often happens on a surface, e.g. the surface of a mirror or
-          of a reflection grating. In the defaul configuration, this surface is in
+          of a reflection grating. In the default configuration, this surface is in
           the yz-plane.
         - :math:`\hat v_x`: The thickness of the box is not as important in many
           cases,
@@ -138,7 +138,7 @@ class Geometry(NoGeometry):
         mirror does not really have a "plane").
         Access through this method is slower than direct indexing of ``self.pos4d``.
 
-        '''
+        """
 
         if key == 'center':
             return self.pos4d[:, 3]
@@ -160,7 +160,7 @@ class Geometry(NoGeometry):
             return val
 
     def intersect(self, dir, pos):
-        '''Calculate the intersection point between a ray and the element
+        """Calculate the intersection point between a ray and the element
 
         Parameters
         ----------
@@ -177,24 +177,24 @@ class Geometry(NoGeometry):
             homogeneous coordinates of the intersection point. Values are set
             to ``np.nan`` if no intersection point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane.
-        '''
+            y and z coordinates in the coordinate system of the active plane.
+        """
         raise NotImplementedError
 
     def get_local_euklid_bases(self, interpos_local):
-        '''Obtain a local eukledian base at a set of positions.
+        """Obtain a local eucledian base at a set of positions.
 
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (e.g. (x, y),
+            coordinates in the coordinate system of the geometry (e.g. (x, y),
             or (r, phi)).
 
         Returns
         -------
         e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
             Vectors pointing in direction 1, 2, and normal to the surface.
-        '''
+        """
         raise NotImplementedError
 
 
@@ -209,7 +209,7 @@ class FinitePlane(Geometry):
     '''name for output columns with interaction point in local coordinates.'''
 
     def intersect(self, dir, pos):
-        '''Calculate the intersection point between a ray and the element
+        """Calculate the intersection point between a ray and the element
 
         Parameters
         ----------
@@ -226,15 +226,15 @@ class FinitePlane(Geometry):
             homogeneous coordinates of the intersection point. Values are set
             to ``np.nan`` if no intersection point is found.
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            y and z coordinates in the coordiante system of the active plane
+            y and z coordinates in the coordinate system of the active plane
             (not normalized to the dimensions of the element in question, but
             in absolute units).
-        '''
+        """
         k_nominator = np.dot(self['center'] - pos, self['e_x'])
         k_denom = np.dot(dir, self['e_x'])
 
         is_parallel = k_denom == 0
-        # To avoid warning for parallel rays, which is handeled expicitly below
+        # To avoid warning for parallel rays, which is handled explicitly below
         with np.errstate(divide='ignore'):
             k = k_nominator / k_denom
 
@@ -261,18 +261,18 @@ class FinitePlane(Geometry):
         return intersect, interpos, interpos_local
 
     def get_local_euklid_bases(self, interpos_local):
-        '''Obtain a local eukledian base at a set of positions.
+        """Obtain a local euclidean base at a set of positions.
 
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (x, y)
+            coordinates in the coordinate system of the geometry (x, y)
 
         Returns
         -------
         e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
             Vectors pointing in direction 1, 2, and normal to the surface.
-        '''
+        """
 
         n = interpos_local.shape[0]
         x = np.tile(self['e_x'], (n, 1))
@@ -292,7 +292,7 @@ class PlaneWithHole(FinitePlane):
         super().__init__(kwargs)
 
     def triangulate(self, display={}):
-        '''Return a triangulation of the aperture hole embedded in a square.
+        """Return a triangulation of the aperture hole embedded in a square.
 
         The size of the outer square is determined by the ``'outer_factor'``
         element in ``self.display``.
@@ -300,10 +300,10 @@ class PlaneWithHole(FinitePlane):
         Returns
         -------
         xyz : np.array
-            Numpy array of vertex positions in Eukeldian space
+            Numpy array of vertex positions in Euclidean space
         triangles : np.array
             Array of index numbers that define triangles
-        '''
+        """
         outer_disp = self.outer_display(display)
         outer_shape = self.outer_shape(display)
 
@@ -320,16 +320,16 @@ class PlaneWithHole(FinitePlane):
 
         return xyz, triangles
 
-    def outer_shape(self, diplay):
+    def outer_shape(self, display):
         raise NotImplementedError
 
-    def outer_display(self, diplay):
+    def outer_display(self, display):
         raise NotImplementedError
 
-    def inner_shape(self, diplay):
+    def inner_shape(self, display):
         raise NotImplementedError
 
-    def inner_display(self, diplay):
+    def inner_display(self, display):
         raise NotImplementedError
 
 
@@ -356,7 +356,7 @@ class CircularHole(PlaneWithHole):
         super().__init__(kwargs)
 
     def outer_display(self, display):
-        '''Return values in Eukledian space.'''
+        """Return values in Euclidean space."""
         return xyz_circle(self, r_factor=display['outer_factor'])
 
     def outer_shape(self, display):

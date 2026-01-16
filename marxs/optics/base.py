@@ -52,13 +52,13 @@ def _assign_col_value(photons, col, index, value):
 
 
 class OpticalElement(SimulationSequenceElement):
-    '''Base class for all optical elements in marxs.
+    """Base class for all optical elements in marxs.
 
-    This class cannot be used to instanciate an optical element directly,
+    This class cannot be used to instantiate an optical element directly,
     rather it serves as a base class from with other optical elements will be
     derived.
 
-    At the very minumum, any derived class needs to implement `__call__` which
+    At the very minimum, any derived class needs to implement `__call__` which
     typically calls `intersect` and either `process_photon` or
     `process_photons`. If the interaction with the photons (e.g. scattering of
     a mirror surface) can be implemented in a vectorized way using numpy array
@@ -69,7 +69,7 @@ class OpticalElement(SimulationSequenceElement):
     overwritten) contains a simple for-loop to loop over all photons in the
     array and call `process_photon` on each of them.
 
-    '''
+    """
 
     default_geometry = FinitePlane
     '''If no geometry is specified on initialization, an instance of this class will be used.'''
@@ -147,7 +147,7 @@ class OpticalElement(SimulationSequenceElement):
         return self.process_photons(photons, *intersect_out)
 
     def process_photons(self, photons, intersect, interpos, intercoos):
-        '''Simulate interaction of optical element with photons - vectorized.
+        """Simulate interaction of optical element with photons - vectorized.
 
         Derived classes should overwrite this function or `process_photon`.
 
@@ -160,7 +160,7 @@ class OpticalElement(SimulationSequenceElement):
             element.
         interpos, intercoos : array (N, 4)
             The array ``interpos`` contains the intersection points in the
-            global coordinate system, ``intercoos`` in a local coordiante
+            global coordinate system, ``intercoos`` in a local coordinate
             system (2d in most cases).
 
         Returns
@@ -172,7 +172,7 @@ class OpticalElement(SimulationSequenceElement):
             a copy. Do not rely on either - use ``photons.copy()`` if you want
             to ensure you are working with an independent copy.
 
-        '''
+        """
         if intersect.sum() == 0:
             return photons
         if hasattr(self, "specific_process_photons"):

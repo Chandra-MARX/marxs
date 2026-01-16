@@ -194,7 +194,7 @@ def check_energy_consistent(photons):
 class SimulationSequenceElement(MarxsElement):
     '''Base class for all elements in a simulation that processes photons.'''
 
-    output_columns = []
+    output_columns: list[str] = []
     '''This is a list of strings that names the output properties.
 
     This gives the names of the output properties from this optical
@@ -247,7 +247,7 @@ class SimulationSequenceElement(MarxsElement):
         super().__init__(**kwargs)
 
     def add_output_cols(self, photons, colnames=[]):
-        '''Add output columns to the photon array.
+        """Add output columns to the photon array.
 
         This function takes the column names that are added to ``photons`` from
         several sources:
@@ -262,12 +262,12 @@ class SimulationSequenceElement(MarxsElement):
             Table columns are added to.
         colnames : list of elements
             Each element can be a string (in this case a float column with
-            initial value ``np.nan`` is added) or a dictionay of arguments
-            for `astropy.table.column.Column`. If the dictionay has a keys
+            initial value ``np.nan`` is added) or a dictionary of arguments
+            for `astropy.table.column.Column`. If the dictionary has a keys
             "value" then the column will be initialized to that value.
             Column names to be added; in addition several object properties can
             be used to set the column names, see description above.
-        '''
+        """
         for n in self.output_columns + colnames:
             if (n is not None) and (n not in photons.colnames):
                 if not isinstance(n, dict):
