@@ -75,6 +75,11 @@ Above, we discussed elements that are physically present, such as mirrors or det
   ...     return photons
   >>> photons = backupcopy(photons)
 
+.. testcleanup::
+
+    >>> import os
+    >>> os.remove('backup.fits')
+
 Why have we chosen to return a copy of photons here, although no value in the photon list was changed? This allows us to sneak in the new function into a list of optical elements::
 
   >>> from marxs import simulator
