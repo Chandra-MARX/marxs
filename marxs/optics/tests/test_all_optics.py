@@ -29,7 +29,7 @@ from ...base import _parse_position_keywords
 from marxs.design import (RowlandTorus, GratingArrayStructure,
                        RectangularGrid,
                        CircularMeshGrid)
-from marxs.optics import Baffle
+from marxs.optics import Baffle, CircularBaffle
 from ..multiLayerMirror import MultiLayerMirror
 from ...simulator import Sequence
 from ...missions.chandra import HETG
@@ -43,56 +43,68 @@ from ..filter import EnergyFilter
 # Initialize all optical elements to be tested
 mytorus = RowlandTorus(0.5, 0.5)
 
-all_oe = [ThinLens(focallength=100),
-          RectangleAperture(),
-          CircleAperture(),
-          MultiAperture(elements=[RectangleAperture(),
-                                  CircleAperture(position=[0, 200, 0])]),
-          FlatDetector(pixsize=2., zoom=100.),
-          CircularDetector(),
-          FlatGrating(d=0.001, order_selector=OrderSelector([0])),
-          MarxMirror(parfile=get_pkg_data_filename('hrma.par',
-                                                   package='marxs.optics')),
-          GratingArrayStructure(rowland=mytorus, d_element=[0.1, 0.1],
-                                radius=[0,.5],
-                                elem_class=FlatGrating,
-                                elem_args={'zoom':0.05, 'd':0.002,
-                                           'order_selector': OrderSelector([1])
-                                           }),
-          CircularMeshGrid(rowland=mytorus, d_element=[0.05, 0.05],
-                          radius=[0., 0.5], elem_class=FlatGrating,
-                          elem_args={'zoom': 0.05, 'd':0.002,
-                                    'order_selector': OrderSelector([2])
-                                }),
-          RectangularGrid(rowland=mytorus, elem_class=FlatGrating,
-                          elem_args={'zoom': 0.04, 'd': 1e-3,
-                                     'order_selector': OrderSelector([-1, 0])},
-                          d_element=[0.1, 0.1], y_range=[0, 0.1],
-                          z_range=[0, 0.1],
-                          guess_distance=1.),
-          Baffle(),
-          # MLMirror assumes 45 deg angle and will return nan otherwise
-          MultiLayerMirror(reflFile=get_pkg_data_filename('data/testFile_mirror.txt',
-                                                          package='marxs.optics'),
-                           testedPolarization=get_pkg_data_filename('data/ALSpolarization2.txt',
-                                                                    package='marxs.optics'),
-                           orientation=transforms3d.axangles.axangle2mat([0,1,0], np.pi/4)),
-          Sequence(elements=[]),
-          HETG(),
-          RadialMirrorScatter(inplanescatter=0.1 * u.arcsec),
-          RandomGaussianScatter(scatter=.1 * u.arcmin),
-          # not a useful filterfunc, but OK for testing with a few other dependencies
-          EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
-          FlatStack(elements=[EnergyFilter, FlatDetector], keywords=[{'filterfunc': lambda x: 0.5}]),
-          # elements in MIT SNL
-          # Most of them have defaults for all parameters
-          QualityFactor(),
-          L1(order_selector=OrderSelector([0])),
-          L2Abs(),
-          L2Diffraction(),
-          CATL1L2Stack(order_selector=OrderSelector([2])),
-          NonParallelCATGrating(order_selector=OrderSelector([2]), d=0.0001),
-          ]
+all_oe = [
+    ThinLens(focallength=100),
+    RectangleAperture(),
+    CircleAperture(),
+    MultiAperture(elements=[RectangleAperture(), CircleAperture(position=[0, 200, 0])]),
+    FlatDetector(pixsize=2.0, zoom=100.0),
+    CircularDetector(),
+    FlatGrating(d=0.001, order_selector=OrderSelector([0])),
+    MarxMirror(parfile=get_pkg_data_filename("hrma.par", package="marxs.optics")),
+    GratingArrayStructure(
+        rowland=mytorus,
+        d_element=[0.1, 0.1],
+        radius=[0, 0.5],
+        elem_class=FlatGrating,
+        elem_args={"zoom": 0.05, "d": 0.002, "order_selector": OrderSelector([1])},
+    ),
+    CircularMeshGrid(
+        rowland=mytorus,
+        d_element=[0.05, 0.05],
+        radius=[0.0, 0.5],
+        elem_class=FlatGrating,
+        elem_args={"zoom": 0.05, "d": 0.002, "order_selector": OrderSelector([2])},
+    ),
+    RectangularGrid(
+        rowland=mytorus,
+        elem_class=FlatGrating,
+        elem_args={"zoom": 0.04, "d": 1e-3, "order_selector": OrderSelector([-1, 0])},
+        d_element=[0.1, 0.1],
+        y_range=[0, 0.1],
+        z_range=[0, 0.1],
+        guess_distance=1.0,
+    ),
+    Baffle(),
+    CircularBaffle(),
+    # MLMirror assumes 45 deg angle and will return nan otherwise
+    MultiLayerMirror(
+        reflFile=get_pkg_data_filename(
+            "data/testFile_mirror.txt", package="marxs.optics"
+        ),
+        testedPolarization=get_pkg_data_filename(
+            "data/ALSpolarization2.txt", package="marxs.optics"
+        ),
+        orientation=transforms3d.axangles.axangle2mat([0, 1, 0], np.pi / 4),
+    ),
+    Sequence(elements=[]),
+    HETG(),
+    RadialMirrorScatter(inplanescatter=0.1 * u.arcsec),
+    RandomGaussianScatter(scatter=0.1 * u.arcmin),
+    # not a useful filterfunc, but OK for testing with a few other dependencies
+    EnergyFilter(filterfunc=lambda x: np.abs(np.cos(x))),
+    FlatStack(
+        elements=[EnergyFilter, FlatDetector], keywords=[{"filterfunc": lambda x: 0.5}]
+    ),
+    # elements in MIT SNL
+    # Most of them have defaults for all parameters
+    QualityFactor(),
+    L1(order_selector=OrderSelector([0])),
+    L2Abs(),
+    L2Diffraction(),
+    CATL1L2Stack(order_selector=OrderSelector([2])),
+    NonParallelCATGrating(order_selector=OrderSelector([2]), d=0.0001),
+]
 
 # Each elements will be used multiple times.
 # Can I add a test to check that using them does not leave any

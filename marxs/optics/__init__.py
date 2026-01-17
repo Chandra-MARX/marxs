@@ -6,7 +6,7 @@ from .grating import (FlatGrating, CATGrating,
                       OrderSelector, EfficiencyFile
                       )
 from .mirror import ThinLens, PerfectLens
-from .baffles import Baffle
+from .baffles import Baffle, CircularBaffle
 from .scatter import RadialMirrorScatter, RandomGaussianScatter
 from .filter import EnergyFilter, GlobalEnergyFilter
 from .base import OpticalElement, FlatOpticalElement, FlatStack

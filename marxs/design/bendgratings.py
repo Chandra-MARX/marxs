@@ -24,20 +24,20 @@ from marxs.optics import OrderSelector
 
 
 def bend_gratings(gratings, radius):
-    '''Bend gratings to follow the Rowland cirle.
+    """Bend gratings to follow the Rowland circle.
 
     Gratings are bend in one direction (the dispersion direction) only.
 
     The numerical procedure used to calculate the bending takes the central ray as
-    a fixed ppoint assuming that the central ray always goes to the correct position!
+    a fixed point assuming that the central ray always goes to the correct position!
 
     Parameters
     ----------
     gratings : list
         List of gratings to be bend
     radius : float
-        Radius of the newly bend gratings
-    '''
+        Radius of the newly bent gratings
+    """
     for e in gratings:
         t, rot, z, s = decompose(e.geometry.pos4d)
         d_phi = np.arctan(z[1] / radius)

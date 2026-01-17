@@ -7,7 +7,7 @@ Coordinates, physical units and polarization
 
 Coordinate system
 =================
-Marxs employs a cartesian coordinate system. All optical elements can be freely placed at any position
+Marxs employs a Cartesian coordinate system. All optical elements can be freely placed at any position
 and any angle in this space, but we recommend the following conventions for simplicity (examples and
 predefined missions in this package follow those conventions as far as possible):
 
@@ -20,7 +20,7 @@ Marxs uses `homogeneous coordinates <https://en.wikipedia.org/wiki/Homogeneous_c
 describe position and direction in a 4 dimensional coordinate space, for example
 :math:`[3, 0, 0, 1]` describes a point at x=3, y=0 and z=0; :math:`[3, 0, 0, 0]` describes the
 vector from the origin to that point. Homogeneous coordinates have one important advantage compared
-with a normal 3-d description of Euklidean space: In homogeneous coordinates, rotation, zoom, and
+with a normal 3-d description of Euclidean space: In homogeneous coordinates, rotation, zoom, and
 translations together can be described by a :math:`[4, 4]` matrix and several of these operations can
 be chained simply by multiplying the matrices.
 
@@ -139,7 +139,7 @@ polarization.
 		    (2011) <https://doi.org/10.1364/AO.50.002855>`_
 
 .. [Yun_2011] `Polarization Ray Tracing: G. Yun, University of Arizona, dissertation <http://hdl.handle.net/10150/202979>`_
-  
+
 Physical units
 ==============
 MARXS uses `astropy units

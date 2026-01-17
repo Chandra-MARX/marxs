@@ -308,6 +308,8 @@ def box(obj, display, *, scene):
         appearance=x3d.Appearance(material=_diffuse_material(display)),
         geometry=x3d.IndexedFaceSet(
             coord=x3d.Coordinate(point=_format_points(corners)),
+            # This should be 6 lines with 5 entries each for readability
+            # but I can't figure out how to switch off ruff for this bit.
             coordIndex=[
                 0,
                 2,

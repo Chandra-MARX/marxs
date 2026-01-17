@@ -11,7 +11,7 @@ from ..math.utils import h2e, e2h
 
 
 class FarLabPointSource(Source, FlatOpticalElement):
-    '''Simple in-lab point source used with aperture
+    """Simple in-lab point source used with aperture
 
     - assumes point source is far from a rectangular aperture, and only the photons that pass through are tracked
     - photon start positions uniformly distributed within rectangular aperture (reasonable approximation if source is far)
@@ -25,11 +25,11 @@ class FarLabPointSource(Source, FlatOpticalElement):
     kwargs:
         ``pos4d`` or ``position``, ``orientation``, and ``zoom`` can
         be used to set the position, size and orientation of the
-        rectangular apeture; see `pos4d` for details.  Other keyword
+        rectangular aperture; see `pos4d` for details.  Other keyword
         arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
 
-    '''
+    """
     def __init__(self, sourcePos, **kwargs):
         self.sourcePos = sourcePos
         if 'flux' not in kwargs:
@@ -58,7 +58,7 @@ class FarLabPointSource(Source, FlatOpticalElement):
 
 
 class LabPointSourceCone(Source):
-    '''In-lab point source
+    """In-lab point source
 
     - Photons are uniformly distributed in all directions in cone (from the point). Cone is meant to refer to the volume swept out by a solid angle in a unit sphere centered at the point source.
     - Photon start position is source position (tip of cone)
@@ -66,10 +66,10 @@ class LabPointSourceCone(Source):
     Parameters
     ----------
     position: array-like of shape(3,)
-        Eukledian coordinates of photon source. Default is at the origin
+        Euclidean coordinates of photon source. Default is at the origin
         of the coordinate system.
     half_opening: float
-        This is half the openning angle of the cone. It is given in steradians.
+        This is half the opening angle of the cone. It is given in steradians.
         The default is pi, which distributes the photons evenly over the entire
         sphere.
     direction: array-like of shape (3,)
@@ -78,12 +78,14 @@ class LabPointSourceCone(Source):
     kwargs : see `Source`
         Other keyword arguments include ``flux``, ``energy`` and ``polarization``.
         See `Source` for details.
-    '''
+    """
     def __init__(self, position=[0, 0, 0], half_opening=np.pi,
                  direction=[1., 0., 0.],
                  **kwargs):
         if (len(position) != 3) or (len(direction) != 3):
-            raise ValueError('Direction and position are expected in Eukledian coordinates.')
+            raise ValueError(
+                "Direction and position are expected in Euclidean coordinates."
+            )
         self.dir = e2h(np.asanyarray(direction) / np.linalg.norm(direction), 0)
         self.position = e2h(np.asanyarray(position), 1)
         self.half_opening = half_opening

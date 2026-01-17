@@ -5,6 +5,8 @@ New Features
 ^^^^^^^^^^^^
 - Make X3D output compatible with X_ITE. This includes cleanup up of a few pieces
   that X3DOM is not strict about. [#253]
+- Add a new class `marxs.optics.CircularBaffle` that implements a baffle with a circular
+  hole. [#258]
 
 API Changes
 ^^^^^^^^^^^

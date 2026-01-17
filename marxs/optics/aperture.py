@@ -155,7 +155,7 @@ class CircleAperture(FlatAperture):
 class MultiAperture(BaseAperture, BaseContainer):
     '''Group several apertures into one class.
 
-    Sometimes a single intrument has several physical openings where photons
+    Sometimes a single instrument has several physical openings where photons
     from an astrophysical source can enter, an example is XMM-Newton that
     operates three telescopes in parallel. While it is often more efficient to
     simulate these as entirely separate by running separate simulations, that

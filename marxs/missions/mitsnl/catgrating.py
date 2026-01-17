@@ -158,8 +158,7 @@ class QualityFactor(FlatOpticalElement):
         super().__init__(**kwargs)
 
     def specific_process_photons(self, photons, intersect, interpos, intercoos):
-        return {'probability': self.factor**(photons['order'][intersect]**2)}
-        return photons
+        return {"probability": self.factor ** (photons["order"][intersect] ** 2)}
 
 
 def check_lx_dims(lx_dims):

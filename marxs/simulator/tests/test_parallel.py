@@ -54,8 +54,7 @@ def test_Parallel_moving():
     detect1.generate_elements()
 
     for i in range(len(detect.elements)):
-        assert ~np.allclose(detect.elements[i].pos4d,
-                            detect1.elements[i].pos4d)
+        assert not np.allclose(detect.elements[i].pos4d, detect1.elements[i].pos4d)
 
 def test_Parallel_offset_numbering():
     '''The randomly generated positions might generate overlapping elements,
