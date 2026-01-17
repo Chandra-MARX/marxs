@@ -13,12 +13,23 @@ on:
     # branches: # only build on PRs against 'main' if you need to further limit when CI is run.
     #    - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+permissions:
+  contents: read
+
+
+
 jobs:
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
       matrix:
         include:
@@ -27,10 +38,10 @@ jobs:
           #  python: 3.x
           #  toxenv: codestyle
 
-          - name: Python 3.10 with sherpa fitting
+          - name: Python 3.12 with sherpa fitting
             os: ubuntu-latest
-            python: "3.10"
-            toxenv: py310-test-fit
+            python: "3.12"
+            toxenv: py312-test-fit
 
           #- name: Python 3.8 with all optional dependencies and coverage checking
           #  os: ubuntu-latest
@@ -52,10 +63,10 @@ jobs:
           #   python: 3.7
           #   toxenv: py37-test-oldestdeps
 
-          # - name: Python 3.8 with latest dev versions of key dependencies
-          #   os: ubuntu-latest
-          #   python: 3.8
-          #   toxenv: py38-test-devdeps
+          - name: Python 3.14 with latest dev versions of key dependencies
+            os: ubuntu-latest
+            python: 3.14
+            toxenv: py314-test-devdeps
 
           # - name: Test building of Sphinx docs
           #   os: ubuntu-latest
@@ -73,18 +84,18 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Download and unpack marx C code
       run: |
-        wget https://github.com/Chandra-MARX/marx/archive/v5.4.0.tar.gz
-        tar -xvf v5.4.0.tar.gz
+        wget https://github.com/Chandra-MARX/marx/archive/v6.0.1.tar.gz
+        tar -xvf v6.0.1.tar.gz
     - name: Install marx C code
       run: |
-        cd marx-5.4.0
+        cd marx-6.0.1
         ./configure --prefix=$HOME/marx/ CFLAGS="-O2 -g -fPIC"
         make
         make install
         cd ..
     - name: configure setup.cfg
       run: |
-        sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-5.4.0/|g' setup.cfg
+        sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-6.0.1/|g' setup.cfg
         sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
     - name: Install base dependencies
       run: |
