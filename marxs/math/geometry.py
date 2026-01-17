@@ -282,10 +282,9 @@ class FinitePlane(Geometry):
 
 
 class PlaneWithHole(FinitePlane):
-
-    shape = 'triangulation'
-    outer_factor = 3
+    shape = "triangulation"
     inner_factor = 0
+    outer_factor = 3
 
     def __init__(self, kwargs):
         self._geometry['r_inner'] = kwargs.pop('r_inner', 0.)
@@ -373,6 +372,12 @@ class CircularHole(PlaneWithHole):
         return xyz_circle(self,
                           r_factor=display['inner_factor'] * self['r_inner'] / np.linalg.norm(self['v_y']),
                           philim=self.phi)
+
+    def intersect(self, dir, pos):
+        intersect, interpos, interpos_local = super().intersect(dir, pos)
+        r = np.linalg.norm(interpos_local, axis=1)
+        intersect &= r <= 1.0
+        return intersect, interpos, interpos_local
 
 
 class Cylinder(Geometry):

@@ -26,10 +26,10 @@ def test_photon_generation():
 
 
 def test_directions_range_cone():
-    '''This tests that all of the photons in the returned table have directions within the given parameters.
-    - Ensures that all direciton vectors are normed
+    """This tests that all of the photons in the returned table have directions within the given parameters.
+    - Ensures that all direction vectors are normed
     - Ensures that all direction vectors are within specified range
-    '''
+    """
 
     # parameters
     pos = [5 * np.random.random(), 5 * np.random.random(), 5 * np.random.random()]
