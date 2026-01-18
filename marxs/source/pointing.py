@@ -10,7 +10,7 @@ from ..math.utils import norm_vector, h2e, e2h
 
 
 class PointingModel(SimulationSequenceElement):
-    '''A base model for all pointing models
+    r"""A base model for all pointing models
 
     Conventions:
 
@@ -26,7 +26,7 @@ class PointingModel(SimulationSequenceElement):
     interpretation *z axis points north* is meaningless, but the
     combination of ``ra``, ``dec`` and ``roll`` still uniquely
     determines the position of the coordinate system.
-    '''
+    """
     def add_dir(self, photons):
         linecoords = Column(name='dir', length=len(photons),
                             shape=(4,))
@@ -43,7 +43,7 @@ class PointingModel(SimulationSequenceElement):
 
 
 class FixedPointing(PointingModel):
-    r'''Transform spacecraft to fixed sky system.
+    r"""Transform spacecraft to fixed sky system.
 
     This matrix transforms from the spacecraft system to a
     right-handed Cartesian system that is defined in the following
@@ -52,7 +52,7 @@ class FixedPointing(PointingModel):
 
     Parameters
     ----------
-    coords : `astropy.coordinates.SkySoord`
+    coords : `astropy.coordinates.SkyCoord`
         Position of the source on the sky.
     roll : `~astropy.units.quantity.Quantity`
         ``roll = 0`` means: z axis points North (measured N -> E).
@@ -82,7 +82,7 @@ class FixedPointing(PointingModel):
     interpretation *z axis points north* is meaningless, but the
     combination of ``ra``, ``dec`` and ``roll`` still uniquely
     determines the position of the coordinate system.
-    '''
+    """
     def __init__(self, **kwargs):
         self.coords = kwargs.pop('coords')
         if not self.coords.isscalar:
