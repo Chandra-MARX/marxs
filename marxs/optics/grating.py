@@ -143,7 +143,7 @@ class FlatGrating(FlatOpticalElement):
     '''Column name for blaze angle.'''
 
     def order_sign_convention(self, p, e_perp_groove):
-        '''Set sign convention for grating orders.
+        r"""Set sign convention for grating orders.
 
         This sets the following, somewhat arbitrary convention:
         Positive grating orders will are displaced along the local
@@ -166,7 +166,7 @@ class FlatGrating(FlatOpticalElement):
         e_perp_groove : np.array
             Array of local groove directions at the positions where the photons
             hit
-        '''
+        """
         # -1 because n, l, d should be right-handed coordinate system
         # while n = e_x, l = e_x, and d = e_y would be left-handed.
         return -1

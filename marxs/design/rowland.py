@@ -754,7 +754,7 @@ class CircularMeshGrid(ElementsOnTorus):
 
 
 class GratingArrayStructure(ElementsOnTorus):
-    '''Collection of diffraction gratings on the Rowland Torus
+    r"""Collection of diffraction gratings on the Rowland Torus
 
     When a ``GratingArrayStructure`` (GAS) is initialized, it places elements
     in the space available on the Rowland circle, most commonly, this class is
@@ -783,7 +783,7 @@ class GratingArrayStructure(ElementsOnTorus):
         Alternatively, ``phi`` can just be a single number. In that case, there
         will be exactly one element per radius.
 
-    '''
+    """
     def __init__(self, **kwargs):
         self.phi = kwargs.pop('phi', [0., 2*np.pi])
         self.radius = kwargs.pop('radius')

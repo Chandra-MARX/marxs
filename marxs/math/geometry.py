@@ -106,7 +106,7 @@ class Geometry(NoGeometry):
         super().__init__(kwargs=kwargs)
 
     def __getitem__(self, key):
-        """This function wraps access to the pos4d matrix.
+        r"""This function wraps access to the pos4d matrix.
 
         This is mostly a convenience method that gives access to
         vectors from the ``pos4d`` matrix in familiar terms with
