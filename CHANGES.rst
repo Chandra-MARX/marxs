@@ -19,6 +19,8 @@ API Changes
 - ``marxs.version`` has been removed. Use ``marxs.__version__`` instead which is
   default throughout the Python ecosystem. [#260]
 
+- Replace hrma.par with the marx 6.0 version
+
 Bug fixes
 ^^^^^^^^^
 
