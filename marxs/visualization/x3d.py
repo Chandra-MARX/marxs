@@ -20,9 +20,9 @@ Under the hood, the XML is constructed using the
 
 The default unit for length in X3D is meter. While MARXS is
 technically scale-free, in practice it is often used with
-lengths in mm. The plotting routines here convert from mm to m
-by dividing by 1000. This number could be made into a parameter
-in the future.
+lengths in mm. Thus, this module has a module-level variable
+``scale_factor``, which is set to 1e-3 to convert from mm to m
+and can be changed by the user if needed.
 """
 from functools import wraps
 from warnings import warn
@@ -54,6 +54,15 @@ __all__ = ['Scene',
            'plot_rays',
            'plot_registry',
            ]
+
+scale_factor = 1e-3
+"""Conversion between MARXS default length unit and X3D unit (m).
+
+The default unit for length in X3D is meter. While MARXS is
+technically scale-free, in practice it is often used with
+lengths in mm. The plotting routines here convert from mm to m
+by dividing by 1000. This number could be made into a parameter
+in the future."""
 
 
 doc_plot = '''
@@ -217,7 +226,10 @@ def _diffuse_material(display):
 def _format_points(xyz):
     # Need to use float() to convert to Python float.
     # Otherwise numpy >= 2.0 will print as "np.float64(1.234)" in the XML
-    return [tuple(float(a) for a in np.round(p, conf.xyz_precision + 3)) for p in xyz / 1000]
+    return [
+        tuple(float(a) for a in np.round(p, conf.xyz_precision + 3))
+        for p in xyz * scale_factor
+    ]
 
 
 @empty_scene
