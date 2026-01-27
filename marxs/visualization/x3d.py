@@ -62,7 +62,9 @@ scale_factor = 1e-3
 
 The default unit for length in X3D is meter. While MARXS is
 technically scale-free, in practice it is often used with
-lengths in mm."""
+lengths in mm. The plotting routines here convert from mm to m
+by dividing by 1000. This number could be made into a parameter
+in the future."""
 
 
 doc_plot = '''
