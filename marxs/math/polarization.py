@@ -159,6 +159,7 @@ def parallel_transport(dir_old, dir_new, pol_old, **kwargs):
         Old polarization vector in homogeneous coordinates.
     kwargs : dict
         All other arguments are passed on to `~marxs.math.polarization.paralleltransport_matrix`.
+
     Returns
     -------
     pol : np.array of shape (m, 4)

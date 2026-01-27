@@ -84,22 +84,21 @@ class Scene(x3d.Scene):
         super().__init__(children=children, **kwargs)
         self.set_X3D_implementation("X3DOM")
 
-    def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> str:
+    def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> None:
         match implementation:
             case "X3DOM":
                 self.js_source = "https://www.x3dom.org/download/x3dom.js"
                 self.css_source = "https://www.x3dom.org/download/x3dom.css"
-                self.x3d_implementation = implementation
             case "X_ITE":
                 self.js_source = (
-                    "https://cdn.jsdelivr.net/npm/x_ite@9.7.0/dist/x_ite.min.js"
+                    "https://cdn.jsdelivr.net/npm/x_ite@14.0.0/dist/x_ite.min.js"
                 )
                 self.css_source = ""
-                self.x3d_implementation = implementation
             case _:
                 raise ValueError(
                     f"Unknown X3D implementation {implementation}, pick one of X3DOM or X_ITE."
                 )
+        self.x3d_implementation = implementation
 
     # see https://doc.x3dom.org/tutorials/animationInteraction/viewpoint/index.html
     # for how to add buttons for viewpoints
@@ -111,11 +110,11 @@ class Scene(x3d.Scene):
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
      <script type='text/javascript' src='{self.js_source}'> </script>
-     <link rel='stylesheet' type='text/css' href='{self.css_source}'>`
+     <link rel='stylesheet' type='text/css' href='{self.css_source}'>
   </head>
   <body>
     <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'>
-      {ET.tostring(root, encoding='unicode', method='html')}
+      {ET.tostring(root, encoding="unicode", method="html")}
     </x3d>
     """
         for vp in root.findall('Viewpoint'):
@@ -174,10 +173,10 @@ class Scene(x3d.Scene):
         format : {"zip", "tar", "gztar", "bztar", "xztar"}
             The archive format, see `shutil.make_archive` for details.
 
-        *args : tuple
+        args : tuple
             Other arguments are passed to `shutil.make_archive`.
 
-        **kwargs : dict, optional
+        kwargs : dict, optional
             Other keyword arguments are passed to `shutil.make_archive`
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -401,6 +400,7 @@ def plot_rays(
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Euclidean position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
+        Scalar quantity that is used to color the rays.
     scene : `marxs.visualization.x3d.Scene` object
         A scene that rays are added to.
         If `None`, a new scene will be created.

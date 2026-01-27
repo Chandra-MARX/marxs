@@ -105,7 +105,7 @@ class RowlandTorus(MarxsElement, Geometry):
         MarxsElement.__init__(self, **kwargs)
 
     def quartic(self, xyz, transform=True):
-        '''Quartic torus equation.
+        """Quartic torus equation.
 
         Roots of this equation are points on the torus.
 
@@ -118,13 +118,13 @@ class RowlandTorus(MarxsElement, Geometry):
             If ``True`` transform ``xyz`` from the global coordinate system
             into the local coordinate system of the torus. If this
             transformation is done in the calling function already, set to
-        ``False``.
+            ``False``.
 
         Returns
         -------
         q : np.array of shape (N) or scalar
             Quartic at the input location
-        '''
+        """
         if xyz.shape[-1] != 3:
             raise ValueError('Input coordinates must be defined in Euclidean space.')
 
@@ -402,6 +402,8 @@ def design_tilted_torus(f, alpha, beta):
     r : float
         Radius of Rowland circle
     pos4d : np.array of shape (4, 4)
+        Position and orientation of the Rowland torus in homogeneous
+        coordinates.
 
     Notes
     -----

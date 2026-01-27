@@ -76,7 +76,7 @@ class FlatDetector(FlatOpticalElement):
 
 
 class CircularDetector(OpticalElement):
-    '''A detector shaped like a ring or tube.
+    """A detector shaped like a ring or tube.
 
     This detector is shaped like a tube. The form is a circle in the xy plane
     and and flat along the z-direction.  While most CCDs are flat in practice,
@@ -91,9 +91,10 @@ class CircularDetector(OpticalElement):
         `pos4d`.  Use ``zoom[0] == zoom[1]`` to make a circular
         tube. ``zoom[0] != zoom[1]`` gives an elliptical
         profile. ``zoom[2]`` sets the extension in the z direction.
-    pixsize : float size of pixels in mm
+    pixsize : float
+        size of pixels in mm
 
-    '''
+    """
     loc_coos_name = ['det_phi', 'det_y']
 
     detpix_name = ['detpix_x', 'detpix_y']
@@ -119,7 +120,7 @@ class CircularDetector(OpticalElement):
 
 
 class CCDRedistNormal(FlatOpticalElement):
-    """Redistribute energies according to a normal distribution
+    r"""Redistribute energies according to a normal distribution
 
     No detector has infinite energy resolution. This class redistributes the
     the energy according to a normal distribution.

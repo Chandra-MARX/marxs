@@ -27,7 +27,7 @@ def get_obj_name(obj):
 
 
 class DisplayDict(dict):
-    '''A dictionary to store how an element is displayed in plotting.
+    """A dictionary to store how an element is displayed in plotting.
 
     A dictionary of this type works just like a normal dictionary,
     except for an additional look-up step for keys that are not found
@@ -37,7 +37,7 @@ class DisplayDict(dict):
     searched for in the object's geometry. This allows us to set any
     and all display settings in the ``DisplayDict`` to customize
     plotting in any way without affecting how the ray-trace is run
-    (which uses only the parameters set in the geoemtry), but for
+    (which uses only the parameters set in the geometry), but for
     those values that are not set, fall back to the settings of the
     geometry (e.g. the shape of an object is typically taken from the
     geometry, while the color is not).
@@ -46,9 +46,10 @@ class DisplayDict(dict):
     ----------
     parent : `marxs.base.MarxsElement`
         Reference to the object that is described by this ``DisplayDict``
-    args, kwargs: see `dict`
+    args, kwargs: keyword arguments
+        see `dict` for details
 
-    '''
+    """
     def __init__(self, parent, *args, **kwargs):
         self.parent = parent
         super().__init__(*args, **kwargs)
