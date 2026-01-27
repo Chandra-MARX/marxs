@@ -45,17 +45,20 @@ from . import conf
 from marxs.math import utils as mutils
 import marxs
 
-__all__ = ['Scene',
-           'empty_scene',
-           'indexed_triangle_set',
-           'surface',
-           'triangulation',
-           'box',
-           'container',
-           'plot_object',
-           'plot_rays',
-           'plot_registry',
-           ]
+__all__ = [
+    "Scene",
+    "empty_scene",
+    "indexed_triangle_set",
+    "surface",
+    "triangulation",
+    "box",
+    "container",
+    "plot_object",
+    "plot_rays",
+    "labelled_arrow",
+    "coord_system",
+    "plot_registry",
+]
 
 scale_factor = 1e-3
 """Conversion between MARXS default length unit and X3D unit (m).
@@ -499,6 +502,165 @@ def plot_rays(
         scene.children.append(lines)
     return scene
 
+
+def labelled_arrow(
+    rotation: tuple[float, float, float, float],
+    text: str,
+    diffusive_color: tuple[float, float, float],
+    emissive_color: tuple[float, float, float],
+) -> x3d.Group:
+    """Create an arrow with a label in X3D
+
+    Parameters
+    ----------
+    rotation : tuple
+        Rotation of the arrow in the form (x, y, z, angle)
+    text : str
+        Text to display
+    diffusive_color : tuple
+        Color of the arrow and label if illuminated
+    emissive_color : tuple
+        Color of the arrow and label in the dark
+
+    Returns
+    -------
+    rotated_arrow : x3d.Group
+        Arrow with label as an X3D group
+    """
+    arrow_material = x3d.Material(
+        diffuseColor=diffusive_color, emissiveColor=emissive_color
+    )
+    arrow_appearance = x3d.Appearance(material=arrow_material)
+    cylinder = x3d.Cylinder(radius=0.025, top=False)
+    cylinder_shape = x3d.Shape(geometry=cylinder, appearance=arrow_appearance)
+    cone = x3d.Cone(bottomRadius=0.05, height=0.1)
+    cone_shape = x3d.Shape(geometry=cone, appearance=arrow_appearance)
+    cone_trans = x3d.Transform(translation=(0, 1, 0), children=[cone_shape])
+    arrow = x3d.Group(children=[cylinder_shape, cone_trans])
+
+    # Some of this could be pulled out, but it seems like a sensible default
+    font_style = x3d.FontStyle(family="SANS", justify=["MIDDLE", "MIDDLE"], size=0.2)
+
+    bill_shape = x3d.Shape(
+        appearance=arrow_appearance,
+        geometry=x3d.Text(string=text, fontStyle=font_style),
+    )
+    label = x3d.Billboard(children=[bill_shape])
+    label_trans = x3d.Transform(
+        translation=(0, 1.1, 0),
+        rotation=(rotation[0], rotation[1], rotation[2], -rotation[3]),
+        children=[label],
+    )
+
+    arrow_and_label = x3d.Group(children=[arrow, label_trans])
+    rotated_arrow = x3d.Transform(rotation=rotation, children=[arrow_and_label])
+    return rotated_arrow
+
+
+@empty_scene
+def coord_system(
+    *,
+    scene: x3d.Scene,
+    pushback_vector: tuple[float, float, float] = (-0.023, -0.023, -0.1),
+    pushback_scale: float = 0.01,
+) -> x3d.Scene:
+    """Add a coordinate system to the X3D scene
+
+    The coordinate system is transformed to be always seen in one spot in the display and to rotate with the objects.
+
+    Parameters
+    ----------
+    scene : x3d.Scene
+        X3D scene to add the coordinate system to
+    pushback_vector : tuple, optional
+        Vector to position the coordinate system in the view, the default will place it in the lower left corner
+        for a canvas that is about 600x600 pixels
+    pushback_scale : float, optional
+        Scale factor for the coordinate system
+
+    Returns
+    -------
+    scene : `marxs.visualization.x3d.Scene` object
+        Scene with object added.
+    """
+
+    y = labelled_arrow(
+        (0, 0, 1, 0),
+        "+Y",
+        (0.1, 0.6, 0.1),
+        (0.05, 0.2, 0.05),
+    )
+    x = labelled_arrow(
+        (0, 0, 1, -np.pi / 2),
+        "+X",
+        (0.7, 0.1, 0.1),
+        (0.33, 0, 0),
+    )
+    z = labelled_arrow((1, 0, 0, np.pi / 2), "+Z", (0.3, 0.3, 1.0), (0.1, 0.1, 0.33))
+
+    scene.children.append(
+        x3d.ProximitySensor(DEF="HereIAm", size=(100000, 100000, 100000))
+    )
+
+    layer2 = x3d.Transform(DEF="layer2", children=[y, x, z])
+    pushback = x3d.Transform(
+        translation=pushback_vector,
+        scale=(pushback_scale, pushback_scale, pushback_scale),
+        children=[layer2],
+    )
+    hud = x3d.Transform(DEF="HUD", children=[pushback])
+    scene.children.append(hud)
+
+    src = x3d.Script(
+        DEF="InvertRotationScript",
+        # type="model/x3d+xml",
+        sourceCode="""
+        ecmascript:
+        function invert_rotation (value, time)
+        {
+          inverted_rotation = new SFRotation (value[0], value[1], value[2], -value[3]);
+        }
+        """,
+    )
+    src.field = [
+        x3d.field(accessType="inputOnly", name="invert_rotation", type="SFRotation"),
+        x3d.field(accessType="outputOnly", name="inverted_rotation", type="SFRotation"),
+    ]
+
+    scene.children.append(src)
+    scene.children.append(
+        x3d.ROUTE(
+            fromNode="HereIAm",
+            fromField="orientation_changed",
+            toNode="HUD",
+            toField="rotation",
+        )
+    )
+    scene.children.append(
+        x3d.ROUTE(
+            fromNode="HereIAm",
+            fromField="position_changed",
+            toNode="HUD",
+            toField="translation",
+        )
+    )
+    scene.children.append(
+        x3d.ROUTE(
+            fromNode="HereIAm",
+            fromField="orientation_changed",
+            toNode="InvertRotationScript",
+            toField="invert_rotation",
+        )
+    )
+    scene.children.append(
+        x3d.ROUTE(
+            fromNode="InvertRotationScript",
+            fromField="inverted_rotation",
+            toNode="layer2",
+            toField="rotation",
+        )
+    )
+    return scene
 
 
 plot_registry = {'triangulation': triangulation,
