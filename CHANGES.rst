@@ -7,6 +7,8 @@ New Features
   that X3DOM is not strict about. [#253]
 - Add a new class `marxs.optics.CircularBaffle` that implements a baffle with a circular
   hole. [#258]
+- Add a ``scale_factor`` variable to the X3D visualization module
+  to allow easy changing of the length unit conversion between MARXS and X3D. [#253]
 
 API Changes
 ^^^^^^^^^^^

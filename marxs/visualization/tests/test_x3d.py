@@ -100,6 +100,30 @@ def test_rays():
 """
     compare_trimmed(rays.XML(), out_expected)
 
+
+def test_scale_factor():
+    """Change the module level scale_factor.
+    Otherwise, this test is identical to test_rays."""
+    from .. import x3d
+
+    old_scale = x3d.scale_factor
+    x3d.scale_factor = 1e-2  # now use cm as unit
+    rays = plot_rays(np.arange(12).reshape(2, 2, 3))
+    out_expected = """<Scene>
+  <Shape>
+    <Appearance>
+      <Material emissiveColor='0.27 0.0 0.33'/>
+    </Appearance>
+    <LineSet vertexCount='2 2'>
+      <Coordinate point='0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.11'/>
+    </LineSet>
+  </Shape>
+</Scene>
+"""
+    compare_trimmed(rays.XML(), out_expected)
+    x3d.scale_factor = old_scale  # reset to old value
+
+
 @pytest.mark.remote_data
 def test_zip_file(tmp_path):
     """Check that a zipfile is created and contains the right files."""
