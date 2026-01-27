@@ -1,4 +1,4 @@
-2.1 (unreleased)
+3.0 (unreleased)
 ----------------
 
 New Features
@@ -10,6 +10,9 @@ New Features
 
 API Changes
 ^^^^^^^^^^^
+- Remove the mayavi plotting backend.
+  Mayavi is a very heavy dependency that is hard to build and really an analysis system,
+  while marxs just used it as a plotting backend. [#261]
 
 - ``marxs.version`` has been removed. Use ``marxs.__version__`` instead which is
   default throughout the Python ecosystem. [#260]
@@ -18,6 +21,10 @@ Bug fixes
 ^^^^^^^^^
 
 - Fix test failures with numpy 2.0 [#254]
+
+Other
+^^^^^
+- Change included .par file for marx >= 6.0 [#261]
 
 Other changes and additions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
