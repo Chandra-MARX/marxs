@@ -24,6 +24,7 @@ lengths in mm. Thus, this module has a module-level variable
 ``scale_factor``, which is set to 1e-3 to convert from mm to m
 and can be changed by the user if needed.
 """
+from datetime import datetime
 from functools import wraps
 from warnings import warn
 import os
@@ -31,7 +32,7 @@ import urllib.request
 import tempfile
 from shutil import make_archive
 import xml.etree.ElementTree as ET
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 from astropy.utils.decorators import format_doc
@@ -42,6 +43,7 @@ from x3d import x3d
 from . import utils
 from . import conf
 from marxs.math import utils as mutils
+import marxs
 
 __all__ = ['Scene',
            'empty_scene',
@@ -60,9 +62,7 @@ scale_factor = 1e-3
 
 The default unit for length in X3D is meter. While MARXS is
 technically scale-free, in practice it is often used with
-lengths in mm. The plotting routines here convert from mm to m
-by dividing by 1000. This number could be made into a parameter
-in the future."""
+lengths in mm."""
 
 
 doc_plot = '''
@@ -88,10 +88,33 @@ class Scene(x3d.Scene):
     """X3D Scene with added _repr_html_ for notebook output"""
 
     dimension_px = (600, 400)
+    """Dimension in pixels for default embedding in HTML."""
+
+    meta: dict[str, Any] = {}
+    """Dictionary of metadata to add to the X3D header."""
 
     def __init__(self, children=None, **kwargs):
         super().__init__(children=children, **kwargs)
         self.set_X3D_implementation("X3DOM")
+
+    def embed_in_X3D(self) -> x3d.X3D:
+        """Embed the scene in a full X3D element.
+
+        Returns
+        -------
+        x3d_element : `x3d.X3D` object
+            X3D element containing this scene.
+        """
+        my_head = x3d.head(
+            children=[
+                # x3d.meta(name='title', content='My first X3D'),
+                x3d.meta(name="creator", content=f"MARXS {marxs.__version__}"),
+                x3d.meta(name="created", content=f"{datetime.now().isoformat()}"),
+            ]
+        )
+        for k, v in self.meta.items():
+            my_head.children.append(x3d.meta(name=k, content=v))
+        return x3d.X3D(profile="Immersive", head=my_head, Scene=self)
 
     def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> None:
         match implementation:
@@ -152,11 +175,7 @@ class Scene(x3d.Scene):
 
 <body>
     <x3d-canvas>
-
-        <X3D profile='Immersive' version='4.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance'
-            xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-4.0.xsd'>
-        {ET.tostring(ET.fromstring(self.XML()), encoding='unicode', method='html')}
-        </X3D>
+        {ET.tostring(ET.fromstring(self.embed_in_X3D().XML()), encoding="unicode", method="html")}
         </x3d-canvas>
 </body>
 </html>
