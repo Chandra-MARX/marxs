@@ -1,6 +1,130 @@
 [build-system]
-requires = ["setuptools",
-            "setuptools_scm",
+requires = ["setuptools>=80",
+            "setuptools_scm[simple]>=8",
             "wheel",
 	        "cffi"]
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "marxs"
+dynamic = ["version"]
+description = "Multi Architecture Raytracer for X-ray satellites"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "MIT / H. M. Günther", email = "hgunther@mit.edu" },
+    { name = "Jason Frost" },
+    { name = "and Adem Theriault-Shay" },
+]
+dependencies = [
+    "numpy>=2.0",
+    "astropy>=6.0.1",
+    "transforms3d",
+    "scipy>=1.10",
+    "matplotlib",
+    "cffi",
+    "x3d",
+]
+
+keywords = ["astronomy", "x-ray", "ray-tracing", "simulator"]
+classifiers = [
+  # How mature is this project? Common values are
+  "Development Status :: 5 - Production/Stable",
+
+  # Indicate who your project is intended for
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Astronomy",
+
+  # Specify the Python versions you support here.
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+
+  "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx-astropy",
+    "pyyaml",
+]
+test = [
+    "pytest-astropy>=0.10.0",
+    "pyyaml",
+    "sphinx-astropy"
+]
+
+fit = [
+    "sherpa",
+]
+
+all = [
+    "jsonschema",
+]
+
+[project.urls]
+Homepage = "http://marxs.readthedocs.io"
+Documentation = "http://marxs.readthedocs.io"
+Repository = "https://github.com/Chandra-MARX/marxs.git"
+Issues = "https://github.com/Chandra-MARX/marxs/issues"
+Changelog = "https://github.com/Chandra-MARX/marxs/blob/main/CHANGES.rst"
+
+[tool.setuptools.packages.find]
+where = ["marxs"]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = [
+    "docs",
+    "marxs",
+]
+norecursedirs = [
+    "docs[\\/]_build",
+    "docs[\\/]generated",
+]
+astropy_header = true
+doctest_plus = "enabled"
+text_file_format = "rst"
+remote_data_strict = true
+addopts = [
+    "--doctest-rst",
+    "--color=yes",
+    "--strict-config",
+    "--strict-markers",
+    "-ra",
+]
+log_cli_level = "INFO"
+xfail_strict = true
+filterwarnings= [
+]
+
+[tool.coverage]
+    [tool.coverage.run]
+    source = ["marxs"]
+    omit = [
+        "*/marxs/__init__*",
+        "*/marxs/*setup*",
+        "*/marxs/*/tests/*",
+        "*/marxs/tests/*",
+        "*/conftest.py",
+        "*/marxs/conftest.py"
+    ]
+
+    [tool.coverage.report]
+    exclude_lines = [
+        # Have to re-enable the standard pragma
+        "pragma: no cover",
+        # Don't complain about packages we have installed
+        "except ImportError",
+        # Don't complain if tests don't hit assertions
+        "raise AssertionError",
+        "raise NotImplementedError",
+        # Don't complain about script hooks
+        "def main\\(.*\\):",
+        # Ignore branches that don't pertain to this version of Python
+        "pragma: py{ignore_python_version}",
+    ]
