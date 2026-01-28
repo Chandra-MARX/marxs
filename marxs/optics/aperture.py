@@ -101,7 +101,7 @@ class RectangleAperture(FlatAperture):
 
 
 class CircleAperture(FlatAperture):
-    '''Select the position where a parallel ray from an astrophysical source starts the simulation.
+    r"""Select the position where a parallel ray from an astrophysical source starts the simulation.
 
     Photons are placed in a circle. The radius of the circle is the lengths of
     its ``v_y`` vector.  At this point, the aperture must have the same zoom in
@@ -122,7 +122,7 @@ class CircleAperture(FlatAperture):
         stacked into each other, ``self.display['inner_factor']`` can be used
         to restrict the radius range where the inner disk is displayed in a
         plot.
-    '''
+    """
 
     default_geometry = CircularHole
 

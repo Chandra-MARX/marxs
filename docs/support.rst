@@ -15,7 +15,6 @@ MARXS makes use of a number of Python packages and your work would not be possib
 
   - `Citations for numpy <https://www.scipy.org/citing.html>`_
   - `Astropy reference <http://www.astropy.org/acknowledging.html>`_
-  - `Mayavi reference <https://docs.enthought.com/mayavi/mayavi/misc.html#citing-mayavi>`_ (for 3D plotting).
 
 We thank the authors and contributors for those packages for their work!
 

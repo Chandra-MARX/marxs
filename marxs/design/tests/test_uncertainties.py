@@ -38,7 +38,7 @@ def test_uncertainty_generation():
 
     for a, b in zip(gas.elem_pos, gas.elements):
         # Check position record in GAS and in elements is still in snyc
-        assert ~np.allclose(a, b.pos4d)
+        assert not np.allclose(a, b.pos4d)
 
     # Check that the shifts are right
     shifts = np.array([e[2, 3] - f.pos4d[2, 3] for e, f in zip(oldgaspos, gas.elements)])
