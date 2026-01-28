@@ -100,6 +100,14 @@ class Scene(x3d.Scene):
     def embed_in_X3D(self) -> x3d.X3D:
         """Embed the scene in a full X3D element.
 
+        The root element in an X3D file is the ``X3D`` element, but in
+        marxs, we usually just manipulate the scene itself.
+        This method creates the full X3D element with the appropriate header
+        and embeds this scene into it using some sensible defaults. For example,
+        it adds metadata such as the creation date and MARXS version.
+        For more control, manually create that `x3d.head` and `x3d.X3D`
+        elements.
+
         Returns
         -------
         x3d_element : `x3d.X3D` object
@@ -107,7 +115,6 @@ class Scene(x3d.Scene):
         """
         my_head = x3d.head(
             children=[
-                # x3d.meta(name='title', content='My first X3D'),
                 x3d.meta(name="creator", content=f"MARXS {marxs.__version__}"),
                 x3d.meta(name="created", content=f"{datetime.now().isoformat()}"),
             ]
@@ -435,6 +442,8 @@ def plot_rays(
     scene : `marxs.visualization.x3d.Scene` object
         A scene that rays are added to.
         If `None`, a new scene will be created.
+    cmap : matplotlib colormap
+        Colormap to use for mapping the scalar quantity to colors.
     normalize_kwargs : dict
         Keyword arguments for the normalization of the scalar quantity
         see `matplotlib.colors.Normalize` for accepted keywords.

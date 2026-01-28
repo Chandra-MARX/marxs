@@ -2,6 +2,11 @@
 
 {% block extrahead %}
 {{ super() }}
-<script type='text/javascript' src='_static/x3dom.js'> </script> 
-<link rel='stylesheet' type='text/css' href='_static/x3dom.css'></link> 
+    <script defer src="https://cdn.jsdelivr.net/npm/x_ite@12.2.6/dist/x_ite.min.js"></script>
+    <style>
+        x3d-canvas {
+            width: 768px;
+            height: 432px;
+        }
+    </style>
 {% endblock %}
