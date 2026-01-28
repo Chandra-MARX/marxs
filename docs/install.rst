@@ -22,17 +22,11 @@ The following Python packages are strongly recommended, but most parts of MARXS 
 
 - `scipy <http://www.numpy.org/>`_
 - matplotlib
-- `mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (for 3 D output)
 - `x3d <https://pypi.org/project/x3d/>`_
 - jsonschema
 - pyyaml
 
-Again, all but mayavi are available through common package managers such as
-conda, ``apt-get`` etc. For `mayavi
-<https://docs.enthought.com/mayavi/mayavi/>`_ see `the mayavi installation
-instructions <https://docs.enthought.com/mayavi/mayavi/installation.html#installing-with-pip>`_.
-
-In addition MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
+In addition, MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
 
 Install the python code
 =======================
