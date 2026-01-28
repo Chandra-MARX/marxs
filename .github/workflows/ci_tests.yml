@@ -13,12 +13,23 @@ on:
     # branches: # only build on PRs against 'main' if you need to further limit when CI is run.
     #    - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+permissions:
+  contents: read
+
+
+
 jobs:
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
       matrix:
         include:
