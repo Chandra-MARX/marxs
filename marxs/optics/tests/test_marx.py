@@ -31,5 +31,5 @@ def test_noexplicettimedependence():
                                                    package='marxs.optics'),
                                          position=np.array([0., 0,0]))
     photons = marxm(photons)
-    ks, p_value = ks_2samp(photons['mirror_shell'][:400], photons['mirror_shell'][600:])
-    assert p_value > 1e-5
+    ks = ks_2samp(photons["mirror_shell"][:400], photons["mirror_shell"][600:])
+    assert ks.pvalue > 1e-5
