@@ -600,19 +600,19 @@ class Cylinder(Geometry):
         return np.einsum('...ij,...j', self.pos4d, coos)
 
     def get_local_euklid_bases(self, interpos_local):
-        '''Obtain a local eukledian base at a set of positions.
+        """Obtain a local euclidean base at a set of positions.
 
         Parameters
         ----------
         interpos_local : `numpy.ndarray` of shape (N, 2)
-            coordinates in the coordiante system of the geometry (e.g. (x, y),
+            coordinates in the coordinate system of the geometry (e.g. (x, y),
             or (r, phi)).
 
         Returns
         -------
         e_1, e_2, n : `numpy.ndarray` of shape (N, 4)
             Vectors pointing in direction 1, 2, and normal to the surface.
-        '''
+        """
 
         phi = interpos_local[:, 0]
         zeros = np.zeros_like(phi)

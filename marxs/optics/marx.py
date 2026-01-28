@@ -27,7 +27,7 @@ class MarxError(Exception):
 
 
 class MarxMirror(OpticalElement, BaseAperture):
-    '''Interface to MARX mirror module
+    r"""Interface to MARX mirror module
 
     This class provides an interface to the
     `MARX <http://space.mit.edu/ASC/marx/>`_  mirror module. It requires
@@ -58,7 +58,7 @@ class MarxMirror(OpticalElement, BaseAperture):
     parfile : string
         Path and filename of a MARX parameter file that sets all MARX
         parameters for the mirror model.
-    '''
+    """
 
     def __init__(self, parfile, **kwargs):
         # If the state shared between different object that use the s
