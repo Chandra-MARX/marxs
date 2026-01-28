@@ -1,26 +1,26 @@
 #-*-sh-*--------------------------------------------------------------------
-# MIT MARX Simulator Parameter file       Flight / Version 5.0 (Jan 2012)
+# MIT MARX Simulator Parameter file       Flight / Version 6.0 (Dec 2025)
 #----------------------------------------------------------------------------
 #
 # Simulation setup and control
 #
 #----------------------------------------------------------------------------
 NumRays,i,a,1000000,,,"TOTAL number of rays to generate (if negative, to num to detect)"
-dNumRays,i,a,100000,1,100000,"number of rays per iteration"
-TStart,r,a,2009.5,1999.56,,"year of observation"
+dNumRays,i,a,100000,1,1000000,"number of rays per iteration"
+TStart,r,a,2023.5,1999.56,,"year of observation"
 ExposureTime,r,a,10000,,,"exposure time (0.0 for none)"
 OutputDir,f,a,"point",,,"output directory name"
-DataDirectory,s,h,"/home/moritz/dev/marx/share/marx/data",,,"directory for input data"
+DataDirectory,s,h,"$MARX_DATA_DIR",,,"directory for input data"
 OutputVectors,s,h,"ETXYZ123DxyMPOabcdSrB",,,"output data columns (one or more of ETXYZ123DxyMPOabcd)"
 RandomSeed,i,h,-1,,,"random number seed (-1 means use current time)"
 DumpToRayFile,b,h,no,,,"Output in MARX rayfile format?"
-Verbose,b,a,yes,,,"Verbose mode"
+Verbose,i,a,1,,,"Verbose mode"
 #---------------------------------------------------------------------------
 #
 # Science Instrument set up and control
 #
 #---------------------------------------------------------------------------
-MirrorType,s,a,"HRMA","HRMA|EA-MIRROR|FLATFIELD",,"mirror type"
+MirrorType,s,a,"HRMA","HRMA|FLATFIELD",,"mirror type"
 GratingType,s,a,"HETG","HETG|LETG|NONE",,"grating type"
 DetectorType,s,a,"ACIS-S","HRC-S|ACIS-S|HRC-I|ACIS-I|NONE",,"detector type"
 DetIdeal,b,a,no,,,"Is Detector perfect (QE=1)?"
@@ -64,7 +64,7 @@ SourceDEC,r,a,-5.375129700E+01,-90,90,"source DEC (degrees)"
 #---------------------------------------------------------------------------
 # Source model to use
 #
-SourceType,s,a,"POINT","POINT|GAUSS|IMAGE|LINE|BETA|RAYFILE|DISK|USER|SAOSAC",,"source"
+SourceType,s,a,"POINT","POINT|GAUSS|IMAGE|LINE|BETA|RAYFILE|DISK|USER|SAOSAC|SIMPUT",,"source"
 #
 # Gaussian source parameters
 #
@@ -108,7 +108,11 @@ UserSourceArgs,s,a,"pnts.dat",,,"user source parameter"
 #      This option allows SAOSAC FITS raytrace files to be used.
 #
 SAOSACFile,s,a,"saosac.fits",,,"marx input source/output ray filename"
-SAOSAC_Color_Rays,b,a,no,,,"This option is no longer supported"
+#
+# SIMPUT Source parameters
+#
+S-SIMPUT-Source,f,a,"CDFS_cat_galaxies.fits",,,"Filename of SIMPUT Catalog"
+S-SIMPUT-Library,f,a,"/melkor/d1/guenther/soft/simput/lib/libsimput.so",,,"Path to dynamically linked file libsimput.so"
 #---------------------------------------------------------------------------
 #
 # Dither/Aspect Parameters
@@ -130,11 +134,11 @@ RA_Nom,r,a,250.2134679741175,,,"RA_NOM for dither (degrees)"
 Dec_Nom,r,a,-53.75743813458669,,,"DEC_NOM for dither (degrees)"
 Roll_Nom,r,a,237.36968458476,,,"ROLL_NOM for dither (degrees)"
 #
-DitherAmp_RA,r,a,8,0,,"Amplitude for RA dither (arcsec)"
-DitherAmp_Dec,r,a,8,0,,"Amplitude for Dec dither (arcsec)"
+DitherAmp_RA,r,a,16,0,,"Amplitude for RA dither (arcsec)"
+DitherAmp_Dec,r,a,16,0,,"Amplitude for Dec dither (arcsec)"
 DitherAmp_Roll,r,a,0,0,,"Amplitude for Roll dither (arcsec)"
-DitherPeriod_RA,r,a,1000,1,,"Period for RA dither (sec)"
-DitherPeriod_Dec,r,a,707,1,,"Period for Dec dither (sec)"
+DitherPeriod_RA,r,a,1414.2,1,,"Period for RA dither (sec)"
+DitherPeriod_Dec,r,a,2000,1,,"Period for Dec dither (sec)"
 DitherPeriod_Roll,r,a,1e5,1,,"Period for Roll dither (sec)"
 DitherPhase_RA,r,a,0,,,"Phase for RA dither (radians)"
 DitherPhase_Dec,r,a,0,,,"Phase for Dec dither (radians)"
@@ -218,22 +222,8 @@ HRMA_P6H6_XOffset,r,h,-0.541755,,,"HRMA P6H6 X offset (mm)"
 #
 #    adjusted to agree with flight data
 #
-PointingOffsetY,r,h,-21,,,"Optical-Axis/Pointing Y Misalignment (arcsec)"
-PointingOffsetZ,r,h,12,,,"Optical-Axis/Pointing Z Misalignment (arcsec)"
-#----------------------------------------------------------------------------
-#
-# EA Mirror Setup
-#
-#----------------------------------------------------------------------------
-MirrorRadius1,r,h,600,0.0,,"Mirror 1 radius (mm)"
-MirrorRadius3,r,h,480,0.0,,"Mirror 3 radius (mm)"
-MirrorRadius4,r,h,425,0.0,,"Mirror 4 radius (mm)"
-MirrorRadius6,r,h,310,0.0,,"Mirror 6 radius (mm)"
-MirrorVig,r,h,0.9,0.0,1.0,"HRMA Vignetting factor"
-MirrorUseEA,b,a,yes,,,"Use effective area for HRMA?"
-MirrorEAFile,f,h,"ea-mirror/Ae_s1346.dat",,,"mirror effective filename"
-MirrorBlur,b,a,yes,,,"Perform mirror blur?"
-MirrorBlurFile,f,h,"ea-mirror/mirr-ee.bin",,,"mirror blur filename"
+PointingOffsetY,r,h,0,,,"Optical-Axis/Pointing Y Misalignment (arcsec)"
+PointingOffsetZ,r,h,0,,,"Optical-Axis/Pointing Z Misalignment (arcsec)"
 #---------------------------------------------------------------------------
 #
 # Grating setup
@@ -433,6 +423,10 @@ ACIS-I3-FilterFile,f,h,"acis/acis_i_xray_trans_1198.dat",,,"ACIS Chip 3 OBF file
 #---------------------------------------------------------------------------
 # The blur parameters were extracted from
 #   <http://cxc.harvard.edu/twiki/bin/view/HrcCal/DetectorPSF>.
+# However, comparison to observations in Dec 2018 shows that the PSFs
+# with these characteristics are too wide in the wings. 
+# Thus, we return to a Gaussian distribution shown to fit better while
+# this issue is investigated in more detail.
 # The (Xctr,Yctr) are offset at runtime such that (G1Xctr,G1Yctr)=(0,0).
 #
 HRC-I-BlurG1FWHM,r,h,13.8994,0,,"HRC-I Gauss1 FWHM (1/4 pixels)"
@@ -442,11 +436,11 @@ HRC-I-BlurG1Amp,r,h,15.7528,0,,"HRC-I Gauss1 Amp"
 HRC-I-BlurG2FWHM,r,h,4.25636,0,,"HRC-I Gauss2 FWHM (1/4 pixels)"
 HRC-I-BlurG2Xctr,r,h,61.35,0,,"HRC-I Gauss2 Xctr (1/4 pixels)"
 HRC-I-BlurG2Yctr,r,h,64.178,0,,"HRC-I Gauss2 Yctr (1/4 pixels)"
-HRC-I-BlurG2Amp,r,h,5.19162,0,,"HRC-I Gauss2 Amp"
+HRC-I-BlurG2Amp,r,h,0.0,0,,"HRC-I Gauss2 Amp"
 HRC-I-BlurL1FWHM,r,h,10.8269,0,,"HRC-I Lorentz1 FWHM (1/4 pixels)"
 HRC-I-BlurL1Xctr,r,h,73.3361,0,,"HRC-I Lorentz1 Xctr (1/4 pixels)"
 HRC-I-BlurL1Yctr,r,h,63.9927,0,,"HRC-I Lorentz1 Yctr (1/4 pixels)"
-HRC-I-BlurL1Amp,r,h,0.978579,0,,"HRC-I Lorentz1 Amp"
+HRC-I-BlurL1Amp,r,h,0.0,0,,"HRC-I Lorentz1 Amp"
 HRC-I-BlurL1Rmax,r,h,256,0,,"HRC-I Lorentz1 Rmax (1/4 pixels)"
 #
 HRC-I-QEFile,f,h,"hrc/mcp_qe_i.v2.2.dat",,,"HRC-I QE File"
@@ -463,11 +457,11 @@ HRC-S-BlurG1Amp,r,h,15.750,0,,"HRC-S Gauss1 Amp"
 HRC-S-BlurG2FWHM,r,h,4.2560,0,,"HRC-S Gauss2 FWHM (1/4 pixels)"
 HRC-S-BlurG2Xctr,r,h,67.420,0,,"HRC-S Gauss2 Xctr (1/4 pixels)"
 HRC-S-BlurG2Yctr,r,h,64.110,0,,"HRC-S Gauss2 Yctr (1/4 pixels)"
-HRC-S-BlurG2Amp,r,h,5.1920,0,,"HRC-S Gauss2 Amp"
+HRC-S-BlurG2Amp,r,h,0.0,0,,"HRC-S Gauss2 Amp"
 HRC-S-BlurL1FWHM,r,h,10.820,0,,"HRC-S Lorentz1 FWHM (1/4 pixels)"
 HRC-S-BlurL1Xctr,r,h,53.030,0,,"HRC-S Lorentz1 Xctr (1/4 pixels)"
 HRC-S-BlurL1Yctr,r,h,63.880,0,,"HRC-S Lorentz1 Yctr (1/4 pixels)"
-HRC-S-BlurL1Amp,r,h,0.9790,0,,"HRC-S Lorentz1 Amp"
+HRC-S-BlurL1Amp,r,h,0.0,0,,"HRC-S Lorentz1 Amp"
 HRC-S-BlurL1Rmax,r,h,256.000,0,,"HRC-S Lorentz1 Rmax (1/4 pixels)"
 #
 HRC-S-QEFile0,f,h,"hrc/mcp_qe_s.v3.dat",,,"HRC QE File for MCP 0"

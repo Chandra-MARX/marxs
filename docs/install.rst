@@ -65,7 +65,8 @@ git or Astropy yet, please have a look at the
 `classic marx`_ C code
 ======================
 The `classic marx`_ code is an optional dependency. By default, it is not used and all
-modules build on `classic marx`_ will be unavailable.
+modules build on `classic marx`_ will be unavailable. This code is currently compatible with
+marx version >= 6.0.
 
 In order to build the interface to the `classic marx`_ C code, you need to set the path
 to the `classic marx`_ source code *and* an installed version of `classic marx`_ on your
