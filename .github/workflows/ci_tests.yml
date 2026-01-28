@@ -95,8 +95,13 @@ jobs:
         cd ..
     - name: configure setup.cfg
       run: |
-        sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-6.0.1/|g' setup.cfg
-        sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
+        echo "Configuring setup.cfg with marx paths"
+        echo "Current dir: $(echo $PWD)"
+        echo "Home dir: $(echo $HOME)"
+        # sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-6.0.1/|g' setup.cfg
+        # sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
+        #sed -i.bak 's|srcdir =|srcdir = ./marx-6.0.1/|g' setup.cfg
+        #sed -i.bak 's|libdir =|libdir = ../../../marx/lib/|g' setup.cfg
     - name: Install base dependencies
       run: |
         python -m pip install --upgrade pip
