@@ -56,10 +56,10 @@ jobs:
           #   python: 3.7
           #   tox_env: py37-test-oldestdeps
 
-          - name: Python 3.13 with latest dev versions of key dependencies
+          - name: Python 3.14 with latest dev versions of key dependencies
             os: ubuntu-latest
-            python: 3.13
-            tox_env: 'py313-test-devdeps'
+            python: 3.14
+            tox_env: 'py314-test-devdeps'
 
           # - name: Test building of Sphinx docs
           #   os: ubuntu-latest
@@ -93,12 +93,19 @@ jobs:
         echo "Home dir: $(echo $HOME)"
         # sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-6.0.1/|g' setup.cfg
         # sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
-        #sed -i.bak 's|srcdir =|srcdir = ./marx-6.0.1/|g' setup.cfg
-        #sed -i.bak 's|libdir =|libdir = ../../../marx/lib/|g' setup.cfg
+        sed -i.bak 's|srcdir =|srcdir = marx-6.0.1/|g' setup.cfg
+        sed -i.bak 's|libdir =|libdir = ../../../marx/lib/|g' setup.cfg
+        export C_INCLUDE_PATH=$(echo $PWD)/marx-6.0.1/pfile/src:$(echo $PWD)/marx-6.0.1/jdmath/src:$(echo $PWD)/marx-6.0.1/jdfits/src:$(echo $PWD)/marx-6.0.1/marx/src:$(echo $PWD)/marx-6.0.1/marx/libsrc:$(echo $PWD)/src:$(echo $PWD)/libsrc
+        echo "C_INCLUDE_PATH set to: $C_INCLUDE_PATH"
+        echo $SHELL
+        env
+
     - name: Install base dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox wheel
+        python -m pip install --upgrade pip setuptools tox
+    - name: Install marxs itself
+      run: |
+        python -m pip install ".[test]"
     - name: Install graphviz dependency
       if: "endsWith(matrix.tox_env, 'build_docs')"
       run: sudo apt-get -y install graphviz
@@ -108,5 +115,5 @@ jobs:
         python -m pip list
     - name: Run tests
       run: |
-        tox -e ${{ matrix.tox_env }} -- ${{ matrix.toxposargs }}
+        python -m tox -e ${{ matrix.tox_env }} -- ${{ matrix.toxposargs }}
 

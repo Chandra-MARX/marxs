@@ -41,9 +41,10 @@ import warnings
 import numpy as np
 from astropy.utils.decorators import format_doc
 
-from ..version import version
+
 from . import threejs
 from . import utils
+from marxs import __version__ as version
 
 try:
     import jsonschema

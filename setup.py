@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from setuptools import setup
 
@@ -7,7 +6,7 @@ from setuptools import setup
 from configparser import ConfigParser, NoOptionError
 
 
-# check is MARX C code is configured in setup.py and if it is, add to
+# check if MARX C code is configured in setup.py and if it is, add to
 # appropriate arguments to setup args
 conf = ConfigParser()
 conf.read(['setup.cfg'])

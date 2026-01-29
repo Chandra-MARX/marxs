@@ -73,8 +73,8 @@ Repository = "https://github.com/Chandra-MARX/marxs.git"
 Issues = "https://github.com/Chandra-MARX/marxs/issues"
 Changelog = "https://github.com/Chandra-MARX/marxs/blob/main/CHANGES.rst"
 
-[tool.setuptools.packages.find]
-where = ["marxs"]
+[tool.setuptools]
+zip-safe = false
 
 [tool.pytest]
 minversion = "9.0"
