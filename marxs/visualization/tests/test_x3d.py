@@ -100,7 +100,7 @@ def test_rays():
 """
     compare_trimmed(rays.XML(), out_expected)
 
-
+@pytest.mark.remote_data
 def test_zip_file(tmp_path):
     """Check that a zipfile is created and contains the right files."""
     zipfile = pytest.importorskip("zipfile", reason="Test writes zip file")
@@ -113,6 +113,8 @@ def test_zip_file(tmp_path):
     assert "x3dom.js" in zip.namelist()
     assert "x3dom.css" in zip.namelist()
 
+
+@pytest.mark.remote_data
 def test_zip_file_X_ITE(tmp_path):
     """Check that a zipfile is created and contains the right files."""
     zipfile = pytest.importorskip("zipfile", reason="Test writes zip file")
