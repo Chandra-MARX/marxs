@@ -75,31 +75,6 @@ jobs:
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # v6.0.0
       with:
         python-version: ${{ matrix.python }}
-    - name: Download and unpack marx C code
-      run: |
-        wget https://github.com/Chandra-MARX/marx/archive/v6.0.1.tar.gz
-        tar -xvf v6.0.1.tar.gz
-    - name: Install marx C code
-      run: |
-        cd marx-6.0.1
-        ./configure --prefix=$HOME/marx/ CFLAGS="-O2 -g -fPIC"
-        make
-        make install
-        cd ..
-    - name: configure setup.cfg
-      run: |
-        echo "Configuring setup.cfg with marx paths"
-        echo "Current dir: $(echo $PWD)"
-        echo "Home dir: $(echo $HOME)"
-        # sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-6.0.1/|g' setup.cfg
-        # sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
-        sed -i.bak 's|srcdir =|srcdir = marx-6.0.1/|g' setup.cfg
-        sed -i.bak 's|libdir =|libdir = ../../../marx/lib/|g' setup.cfg
-        export C_INCLUDE_PATH=$(echo $PWD)/marx-6.0.1/pfile/src:$(echo $PWD)/marx-6.0.1/jdmath/src:$(echo $PWD)/marx-6.0.1/jdfits/src:$(echo $PWD)/marx-6.0.1/marx/src:$(echo $PWD)/marx-6.0.1/marx/libsrc:$(echo $PWD)/src:$(echo $PWD)/libsrc
-        echo "C_INCLUDE_PATH set to: $C_INCLUDE_PATH"
-        echo $SHELL
-        env
-
     - name: Install base dependencies
       run: |
         python -m pip install --upgrade pip setuptools tox
