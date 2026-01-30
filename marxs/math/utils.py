@@ -59,22 +59,24 @@ def h2e(h):
     elif np.all(h[..., 3] != 0):
         return (h[..., :3] / h[..., 3][..., None])
     else:
-        raise ValueError('Input array must be either all euklidean points or all points at infinity.')
+        raise ValueError(
+            "Input array must be either all Euclidean points or all points at infinity."
+        )
 
 
 def distance_point_point(h_p1, h_p2):
-    '''Calculate the Eukledian distance between 2 points
+    """Calculate the Euclidean distance between 2 points
 
     Parameters
     ----------
     h_p1, h_p2 : np.ndarray of shape (4) or (N, 4)
-        homogeneous coordiantes of input points
+        homogeneous coordinates of input points
 
     Returns
     -------
     d : np.array of shape (1) or (N)
-        Eukledian distance between those points
-    '''
+        Euclidean distance between those points
+    """
     if max(h_p1.ndim, h_p2.ndim) == 1:
         axis = 0
     elif max(h_p1.ndim, h_p2.ndim) == 2:
