@@ -77,16 +77,11 @@ homogeneous coordinates.
 After passing through the aperture, the photon list will have at least
 the following columns:
 
-pos
-  Position where the photon last interacted with an optical element in homogeneous coordinates.
-dir
-  Direction of the phootn ray in homogeneous coordiantes.
-polarization
-  Polarization vector in homogeneous coordinates (can be complex for cicularly polarized light).
-energy
-  in keV
-probability
-  Probability that the photon is not absorbed anywhere until this point
+* ``pos``: Position where the photon last interacted with an optical element in homogeneous coordinates.
+* ``dir``: Direction of the photon ray in homogeneous coordinates.
+* ``polarization``: Polarization vector in homogeneous coordinates (can be complex for circularly polarized light).
+* ``energy``: photon energy in keV
+* ``probability``:Probability that the photon is not absorbed anywhere until this point
   
 Optical elements may add any number of diagnostic columns in their code. 
 
@@ -94,17 +89,17 @@ The values of these columns can change with every interaction. All other columns
 
 Most optical elements in MARXS support at least two ways to add columns:
 
-Which optical element did a photon pass?
-  Instruments often have several identical CCDs or several gratings. If an element has a property ``id_col``
-  set to a string and ``id_num`` set to a number, then all photons passing it will have ``id_num`` set in the
-  column ``id_col``.
-  Photons that do not pass through any element of this collection have ``photons[id_col]==-1``.
-  If a photon passes through multiple elements with the same ``id_col`` the ``id_num`` recorded is the last
-  element passed.
+1) **Which optical element did a photon pass?**
+   Instruments often have several identical CCDs or several gratings. If an element has a property ``id_col``
+   set to a string and ``id_num`` set to a number, then all photons passing it will have ``id_num`` set in the
+   column ``id_col``.
+   Photons that do not pass through any element of this collection have ``photons[id_col]==-1``.
+   If a photon passes through multiple elements with the same ``id_col`` the ``id_num`` recorded is the last
+   element passed.
 
-Where did a photon hit an element?
-  Flat optical elements (those inheriting from `marxs.optics.base.FlatOpticalElement`) have an attribute
-  called ``loc_coos_name``. Setting this to a list of two strings, will cause the element to add two columns with those names that hold the local coordiantes (normalized to the range -1 to 1 for both coordinates). If the column names already exisit, values will be overwritten. The default are the generic names "x" and "y".
+2) **Where did a photon hit an element?**
+   Flat optical elements (those inheriting from `marxs.optics.base.FlatOpticalElement`) have an attribute
+   called ``loc_coos_name``. Setting this to a list of two strings, will cause the element to add two columns with those names that hold the local coordiantes (normalized to the range -1 to 1 for both coordinates). If the column names already exisit, values will be overwritten. The default are the generic names "x" and "y".
 
 The following example demonstrates these two ways of adding columns with diangostic information where exactly the photon passed which element. First, we generate a bunch of photons all parallel to the x-axis.
 

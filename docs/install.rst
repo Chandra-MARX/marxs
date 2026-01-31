@@ -7,32 +7,26 @@ Requirements
 
 MARXS has few hard requirements:
 
-- MARXS requires Python version > 3.6.
+- MARXS requires Python. We test with Python 3.12 and 3.14, but other
+  versions of Python 3 may also work.
 - `numpy <http://www.numpy.org/>`_
 - `astropy`_
 - `transforms3d <https://matthew-brett.github.io/transforms3d/>`_
-
-Numpy and astropy are best installed with a package manager such as conda. See the `astropy installation instructions for a detailed discussion <https://astropy.readthedocs.io/en/stable/install.html>`_. ``transforms3d`` is easily installed with::
-
-.. code-block:: bash
-
-   $ pip install transforms3d
-
-The following Python packages are strongly recommended, but most parts of MARXS will work without them:
-
 - `scipy <http://www.numpy.org/>`_
 - matplotlib
 - `x3d <https://pypi.org/project/x3d/>`_
+- `cffi`
+
+The following Python packages are strongly recommended, but most parts of MARXS will work without them:
+
 - jsonschema
 - pyyaml
+- `sherpa <https://sherpa.readthedocs.io/en/latest/>`_ (for fitting support)
 
 In addition, MARXS has an interface to the `classic marx`_ C code used to simulate the Chandra mirrors (:ref:`sect-installmarxccode`).
 
 Install the python code
 =======================
-
-setup.py
---------
 
 To download the latest development version of MARXS:
 
@@ -45,9 +39,7 @@ Now you install, run tests or build the documentation:
 
 .. code-block:: bash
 
-   $ python setup.py install
-   $ python setup.py test
-   $ python setup.py build_docs
+   $ pip install "marxs[fit,all]"      # install with optional dependencies
 
 If you want to contribute to MARXS, but are not familiar with Python or
 git or Astropy yet, please have a look at the
@@ -75,7 +67,7 @@ module), the default installation settings are tuned for performance.
 On some architectures (tested on 32-bit Ubuntu GNU/Linux) linking the static
 libraries works, on others you might see an error like this: ``relocation R_X86_64_32 against `.text' can not be used when making a shared object; recompile with -fPIC``.
 In that case, simply recompile and install `classic marx`_ as position independent
-code (PIC). In the `classic marx`_ source code directory::
+code (PIC). In the `classic marx`_ source code directory:
 
 .. code-block:: bash
 
