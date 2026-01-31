@@ -22,6 +22,23 @@ __minimum_python_version__ = pyproject["project"]["requires-python"].replace(">=
 
 # -- General configuration ----------------------------------------------------
 
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.inheritance_diagram",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
+    "sphinx_automodapi.automodapi",
+    "matplotlib.sphinxext.plot_directive",
+    "sphinx.ext.intersphinx",
+    "sphinx_astropy.ext.intersphinx_toggle",
+    "pytest_doctestplus.sphinx.doctestplus",
+]
+
 # By default, highlight as Python 3.
 highlight_language = 'python3'
 

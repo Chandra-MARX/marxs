@@ -49,6 +49,7 @@ See the following sketch, where the "active surface" is shown in red:
    :scale: 50
    :align: center
    :include-source: False
+   :show-source-link: False
    :alt: Layout of the default size and position of an optical element. The "active surface" (e.g. the surface of a mirror) is shown in red.
 
    import matplotlib.pyplot as plt
@@ -57,16 +58,13 @@ See the following sketch, where the "active surface" is shown in red:
 
    fig = plt.figure()
    ax = fig.add_subplot(111, projection='3d')
-   ax.quiver([2,0,0],[0,2,0],[0,0, 2],[1,0,0],[0,1,0], [0,0,1], length=4, arrow_length_ratio=.05, color='k', lw=2)
+   ax.quiver([0,0,0],[0,0,0],[0,0, 0],[1,0,0],[0,1,0], [0,0,1], length=2., arrow_length_ratio=.05, color='k', lw=2)
    ax.bar3d(-1, -1, -1, 1, 2, 2, zsort='average', alpha=0.5, color=['b'] *5 + ['r'], zorder=1)
    ax.set_axis_off()
    ax.text(2.1, 0, 0, 'x', None, fontsize='x-large')
    ax.text(0, 2.1, 0, 'y', None, fontsize='x-large')
    ax.text(0, 0, 2.1, 'z', None, fontsize='x-large')
-   ax.set_xlim([-1.2,1.2])
-   ax.set_ylim([-1.2,1.2])
-   ax.set_zlim([-1.2,1.2])
-
+   ax.set_xlim([-1.2,1.5])
 
 In order to place elements in the experiment, the optical element needs to be
 scaled (zoomed), rotated and translated to the new position.

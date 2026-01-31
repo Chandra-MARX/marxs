@@ -198,17 +198,19 @@ def plot_rays(data, scalar=None, prop={}, name='Photon list', cmap=None):
 
 
 def write(fileobject, data, photons=None):
-    '''Add metadata and write json for three.js to disk
+    """Add metadata and write json for three.js to disk
 
     Parameters
     ----------
     fileobject : writeable file-like object
+        Open file object where the json data is written to.
     data : list of dict or single dict
         Output of ``xxx.plot(format='threejsjson')`` calls. This can either
         be a list of dictionaries or a single dictionary.
     photons : `astropy.table.Table` or None
         Some metadata is copied from a photon list, if available.
-    '''
+
+    """
     if not isinstance(data, list):
         data = [data]
     date = datetime.datetime.now()
