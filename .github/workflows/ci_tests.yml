@@ -13,89 +13,82 @@ on:
     # branches: # only build on PRs against 'main' if you need to further limit when CI is run.
     #    - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+permissions:
+  contents: read
+
+env:
+  SETUP_XVFB: True  # avoid issues if mpl tries to open a GUI window
+  TOXARGS: '-v'
+
+
 jobs:
   # Github Actions supports ubuntu, windows, and macos virtual environments:
   # https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
   ci_tests:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
       matrix:
         include:
           #- name: Code style checks
           #  os: ubuntu-latest
           #  python: 3.x
-          #  toxenv: codestyle
+          #  tox_env: codestyle
 
-          - name: Python 3.10 with sherpa fitting
+          - name: Python 3.12 with sherpa fitting
             os: ubuntu-latest
-            python: "3.10"
-            toxenv: py310-test-fit
+            python: "3.12"
+            tox_env: 'py312-test-fit'
 
           #- name: Python 3.8 with all optional dependencies and coverage checking
           #  os: ubuntu-latest
           #  python: 3.8
-          #  toxenv: py38-test-alldeps-cov
-
-          # - name: OS X - Python 3.8 with all optional dependencies
-          #   os: macos-latest
-          #   python: 3.8
-          #   toxenv: py38-test-alldeps
-
-          # - name: Windows - Python 3.8 with all optional dependencies
-          #   os: windows-latest
-          #   python: 3.8
-          #   toxenv: py38-test-alldeps
+          #  tox_env: py38-test-alldeps-cov
 
           # - name: Python 3.7 with oldest supported version of all dependencies
           #   os: ubuntu-16.04
           #   python: 3.7
-          #   toxenv: py37-test-oldestdeps
+          #   tox_env: py37-test-oldestdeps
 
-          # - name: Python 3.8 with latest dev versions of key dependencies
-          #   os: ubuntu-latest
-          #   python: 3.8
-          #   toxenv: py38-test-devdeps
+          - name: Python 3.14 with latest dev versions of key dependencies
+            os: ubuntu-latest
+            python: 3.14
+            tox_env: 'py314-test-devdeps'
 
           # - name: Test building of Sphinx docs
           #   os: ubuntu-latest
           #   python: 3.x
-          #   toxenv: build_docs
+          #   tox_env: build_docs
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Check out repository
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
       with:
         fetch-depth: 0
-    - name: Set up python ${{ matrix.python }} on ${{ matrix.os }}
-      uses: actions/setup-python@v3
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # v6.0.0
       with:
         python-version: ${{ matrix.python }}
-    - name: Download and unpack marx C code
-      run: |
-        wget https://github.com/Chandra-MARX/marx/archive/v5.4.0.tar.gz
-        tar -xvf v5.4.0.tar.gz
-    - name: Install marx C code
-      run: |
-        cd marx-5.4.0
-        ./configure --prefix=$HOME/marx/ CFLAGS="-O2 -g -fPIC"
-        make
-        make install
-        cd ..
-    - name: configure setup.cfg
-      run: |
-        sed -i.bak 's|srcdir =|srcdir = '"$(echo $PWD)"'/marx-5.4.0/|g' setup.cfg
-        sed -i.bak 's|libdir =|libdir = '"$(echo $HOME)"'/marx/lib/|g' setup.cfg
     - name: Install base dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox codecov
-    - name: Test with tox
+        python -m pip install --upgrade pip setuptools tox
+    - name: Install marxs itself
       run: |
-        tox -e ${{ matrix.toxenv }}
-    # This is an example of how to upload coverage to codecov
-    # - name: Upload coverage to codecov
-    #   if: "contains(matrix.toxenv, '-cov')"
-    #   uses: codecov/codecov-action@v1
-    #   with:
-    #     file: ./coverage.xml
+        python -m pip install ".[test]"
+    - name: Install graphviz dependency
+      if: "endsWith(matrix.tox_env, 'build_docs')"
+      run: sudo apt-get -y install graphviz
+    - name: Print Python env
+      run: |
+        python --version
+        python -m pip list
+    - name: Run tests
+      run: |
+        python -m tox -e ${{ matrix.tox_env }} -- ${{ matrix.toxposargs }}
+

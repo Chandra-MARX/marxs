@@ -19,11 +19,14 @@ from ...optics.base import FlatOpticalElement
 from ...source import PointSource, FixedPointing
 from ...optics import MarxMirror, OrderSelector, FlatGrating
 from ...math.utils import h2e, xyz2zxy
+from ...optics.marx import HAS_MARX
 
 class mock_facet(FlatOpticalElement):
     '''Lightweight class with no functionality for tests.'''
     pass
 
+
+@pytest.mark.skipif("not HAS_MARX", reason="MARX C code not available")
 def test_radius_of_photon_shell():
     mysource = PointSource(coords=SkyCoord(30., 30., unit="deg"))
     photons = mysource.generate_photons(1. * u.ks)
@@ -304,6 +307,8 @@ def test_persistent_facetargs():
                                   elem_args=facet_args)
     assert mygas.elem_args == facet_args
 
+
+@pytest.mark.skipif("not HAS_MARX", reason="MARX C code not available")
 def test_run_photons_through_gas():
     '''And check that they have the expected labels.
 

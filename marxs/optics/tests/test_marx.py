@@ -12,11 +12,16 @@ from scipy.stats import ks_2samp
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.utils.data import get_pkg_data_filename
+import pytest
 
 import marxs
 import marxs.source
 import marxs.optics.marx
 
+
+@pytest.mark.skipif(
+    "not marxs.optics.marx.HAS_MARX", reason="MARX C code not available"
+)
 def test_noexplicettimedependence():
     '''In an older implementation, the first half of all photons went of
     mirror shell 0, which turned out to be due to ``sorted_index`` being a int,
@@ -31,5 +36,5 @@ def test_noexplicettimedependence():
                                                    package='marxs.optics'),
                                          position=np.array([0., 0,0]))
     photons = marxm(photons)
-    ks, p_value = ks_2samp(photons['mirror_shell'][:400], photons['mirror_shell'][600:])
-    assert p_value > 1e-5
+    ks = ks_2samp(photons["mirror_shell"][:400], photons["mirror_shell"][600:])
+    assert ks.pvalue > 1e-5

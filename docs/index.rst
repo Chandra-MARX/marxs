@@ -61,7 +61,6 @@ an instrument team. The following section is aimed at instrument teams and propo
    support
    changelog
    credits
-   licenses
 
 
 Indices and tables

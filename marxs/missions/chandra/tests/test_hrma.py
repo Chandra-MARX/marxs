@@ -2,18 +2,23 @@ import os
 import numpy as np
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import pytest
+
 from .... import optics, source
 from ..hrma_py import Aperture, HRMA
 from .. import HETG
+from ....optics.marx import HAS_MARX
 
-parfile = os.path.join(os.path.dirname(optics.__file__), 'hrma.par')
-marx = optics.MarxMirror(parfile)
+parfile = os.path.join(os.path.dirname(optics.__file__), "hrma.par")
 aperpy = Aperture()
 mirrpy = HRMA()
 
 
+@pytest.mark.skipif("not HAS_MARX", reason="MARX C code not available")
 def test_FWHM():
     '''Compare properties of PSF to MARX C code'''
+    marx = optics.MarxMirror(parfile)
+
     coords = SkyCoord(25., 45., unit=u.deg)
     src = source.PointSource(coords=coords)
     pointing = source.FixedPointing(coords=coords)

@@ -18,6 +18,8 @@ from astropy.utils.data import get_pkg_data_filename
 
 import transforms3d.axangles
 
+from marxs.optics.marx import HAS_MARX
+
 from .. import (RectangleAperture, ThinLens, FlatDetector, CircularDetector,
                 FlatGrating, OrderSelector,
                 MarxMirror, CircleAperture, MultiAperture)
@@ -51,7 +53,6 @@ all_oe = [
     FlatDetector(pixsize=2.0, zoom=100.0),
     CircularDetector(),
     FlatGrating(d=0.001, order_selector=OrderSelector([0])),
-    MarxMirror(parfile=get_pkg_data_filename("hrma.par", package="marxs.optics")),
     GratingArrayStructure(
         rowland=mytorus,
         d_element=[0.1, 0.1],
@@ -106,6 +107,10 @@ all_oe = [
     NonParallelCATGrating(order_selector=OrderSelector([2]), d=0.0001),
 ]
 
+if HAS_MARX:
+    all_oe.append(
+        MarxMirror(parfile=get_pkg_data_filename("hrma.par", package="marxs.optics"))
+    )
 # Each elements will be used multiple times.
 # Can I add a test to check that using them does not leave any
 # extra attributes etc., but that they come out in a clean state?

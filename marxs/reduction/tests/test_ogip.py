@@ -18,6 +18,7 @@ def generate_RMF():
 
 def test_get_row_exact_energy():
     '''Make an RMF and check a row'''
+    sherpa = pytest.importorskip("sherpa")
     width = Table({'wave': [10, 13, 14, 15, 16] * u.Angstrom,
               'sigma_wave':  [0.1, 0.2, 0.2, .2, .2] * u.Angstrom})
     rmf = ogip.RMF.from_Gauss_sigma(np.arange(10, 15.5, 1) * u.Angstrom,
@@ -33,6 +34,7 @@ def test_get_row_exact_energy():
 
 
 def test_threshold():
+    sherpa = pytest.importorskip("sherpa")
     width = Table({'wave': [10, 13, 14, 15, 16] * u.Angstrom,
               'sigma_wave':  [0.1, 0.2, 0.2, .2, .2] * u.Angstrom})
     rmf = ogip.RMF.from_Gauss_sigma(np.arange(10, 15, 0.1) * u.Angstrom,
@@ -51,7 +53,9 @@ def test_threshold():
     assert np.min(row2['MATRIX']) > 1e-4
     assert np.sum(row['MATRIX']) > np.sum(row2['MATRIX'])
 
+
 def test_arr_to_rmf_matrix_row():
+    sherpa = pytest.importorskip("sherpa")
     rmf = generate_RMF()
 
     arr = np.array([0, 1, 2, 0, 3.])

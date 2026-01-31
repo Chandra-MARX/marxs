@@ -23,6 +23,8 @@ __all__ = [
     'fit_LSF', 'plot_LSFfit',
     ]
 
+__doctest_requires__ = {("compnames_from_model",): ["sherpa"]}
+
 from .ogip import RMF
 
 COPY_LSFPARM_KEYWORDS = [
