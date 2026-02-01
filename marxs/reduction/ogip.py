@@ -379,7 +379,7 @@ class RMF:
 
     @staticmethod
     def arr_to_rmf_matrix_row(arr, TLMIN_F_CHAN, threshold=1e-6):
-        '''Split an array into channel groups for an RMF
+        r"""Split an array into channel groups for an RMF
 
         The format of an RMF is set by the [OGIP cal/gen/92-002]_.
         For efficiency, not the entire RMF matrix is stored in the
@@ -417,7 +417,7 @@ class RMF:
             Number of channels in each subset
         MATRIX : list
             Matrix elements
-        '''
+        """
         ind = arr > threshold
         # Add False at beginning to end, so that np.diff can be
         # used to detect changes to and from True even if the first

@@ -20,10 +20,11 @@ Under the hood, the XML is constructed using the
 
 The default unit for length in X3D is meter. While MARXS is
 technically scale-free, in practice it is often used with
-lengths in mm. The plotting routines here convert from mm to m
-by dividing by 1000. This number could be made into a parameter
-in the future.
+lengths in mm. Thus, this module has a module-level variable
+``scale_factor``, which is set to 1e-3 to convert from mm to m
+and can be changed by the user if needed.
 """
+from datetime import datetime
 from functools import wraps
 from warnings import warn
 import os
@@ -31,7 +32,7 @@ import urllib.request
 import tempfile
 from shutil import make_archive
 import xml.etree.ElementTree as ET
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 from astropy.utils.decorators import format_doc
@@ -42,6 +43,7 @@ from x3d import x3d
 from . import utils
 from . import conf
 from marxs.math import utils as mutils
+import marxs
 
 __all__ = ['Scene',
            'empty_scene',
@@ -54,6 +56,13 @@ __all__ = ['Scene',
            'plot_rays',
            'plot_registry',
            ]
+
+scale_factor = 1e-3
+"""Conversion between MARXS default length unit and X3D unit (m).
+
+The default unit for length in X3D is meter. While MARXS is
+technically scale-free, in practice it is often used with
+lengths in mm."""
 
 
 doc_plot = '''
@@ -79,27 +88,56 @@ class Scene(x3d.Scene):
     """X3D Scene with added _repr_html_ for notebook output"""
 
     dimension_px = (600, 400)
+    """Dimension in pixels for default embedding in HTML."""
+
+    meta: dict[str, Any] = {}
+    """Dictionary of metadata to add to the X3D header."""
 
     def __init__(self, children=None, **kwargs):
         super().__init__(children=children, **kwargs)
         self.set_X3D_implementation("X3DOM")
 
-    def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> str:
+    def embed_in_X3D(self) -> x3d.X3D:
+        """Embed the scene in a full X3D element.
+
+        The root element in an X3D file is the ``X3D`` element, but in
+        marxs, we usually just manipulate the scene itself.
+        This method creates the full X3D element with the appropriate header
+        and embeds this scene into it using some sensible defaults. For example,
+        it adds metadata such as the creation date and MARXS version.
+        For more control, manually create that `x3d.head` and `x3d.X3D`
+        elements.
+
+        Returns
+        -------
+        x3d_element : `x3d.X3D` object
+            X3D element containing this scene.
+        """
+        my_head = x3d.head(
+            children=[
+                x3d.meta(name="creator", content=f"MARXS {marxs.__version__}"),
+                x3d.meta(name="created", content=f"{datetime.now().isoformat()}"),
+            ]
+        )
+        for k, v in self.meta.items():
+            my_head.children.append(x3d.meta(name=k, content=v))
+        return x3d.X3D(profile="Immersive", head=my_head, Scene=self)
+
+    def set_X3D_implementation(self, implementation: Literal["X3DOM", "X_ITE"]) -> None:
         match implementation:
             case "X3DOM":
                 self.js_source = "https://www.x3dom.org/download/x3dom.js"
                 self.css_source = "https://www.x3dom.org/download/x3dom.css"
-                self.x3d_implementation = implementation
             case "X_ITE":
                 self.js_source = (
-                    "https://cdn.jsdelivr.net/npm/x_ite@9.7.0/dist/x_ite.min.js"
+                    "https://cdn.jsdelivr.net/npm/x_ite@14.0.0/dist/x_ite.min.js"
                 )
                 self.css_source = ""
-                self.x3d_implementation = implementation
             case _:
                 raise ValueError(
                     f"Unknown X3D implementation {implementation}, pick one of X3DOM or X_ITE."
                 )
+        self.x3d_implementation = implementation
 
     # see https://doc.x3dom.org/tutorials/animationInteraction/viewpoint/index.html
     # for how to add buttons for viewpoints
@@ -111,11 +149,11 @@ class Scene(x3d.Scene):
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
      <script type='text/javascript' src='{self.js_source}'> </script>
-     <link rel='stylesheet' type='text/css' href='{self.css_source}'>`
+     <link rel='stylesheet' type='text/css' href='{self.css_source}'>
   </head>
   <body>
     <x3d width='{self.dimension_px[0]}px' height='{self.dimension_px[1]}px'>
-      {ET.tostring(root, encoding='unicode', method='html')}
+      {ET.tostring(root, encoding="unicode", method="html")}
     </x3d>
     """
         for vp in root.findall('Viewpoint'):
@@ -144,11 +182,7 @@ class Scene(x3d.Scene):
 
 <body>
     <x3d-canvas>
-
-        <X3D profile='Immersive' version='4.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance'
-            xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-4.0.xsd'>
-        {ET.tostring(ET.fromstring(self.XML()), encoding='unicode', method='html')}
-        </X3D>
+        {ET.tostring(ET.fromstring(self.embed_in_X3D().XML()), encoding="unicode", method="html")}
         </x3d-canvas>
 </body>
 </html>
@@ -174,10 +208,10 @@ class Scene(x3d.Scene):
         format : {"zip", "tar", "gztar", "bztar", "xztar"}
             The archive format, see `shutil.make_archive` for details.
 
-        *args : tuple
+        args : tuple
             Other arguments are passed to `shutil.make_archive`.
 
-        **kwargs : dict, optional
+        kwargs : dict, optional
             Other keyword arguments are passed to `shutil.make_archive`
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -218,7 +252,10 @@ def _diffuse_material(display):
 def _format_points(xyz):
     # Need to use float() to convert to Python float.
     # Otherwise numpy >= 2.0 will print as "np.float64(1.234)" in the XML
-    return [tuple(float(a) for a in np.round(p, conf.xyz_precision + 3)) for p in xyz / 1000]
+    return [
+        tuple(float(a) for a in np.round(p, conf.xyz_precision + 3))
+        for p in xyz * scale_factor
+    ]
 
 
 @empty_scene
@@ -401,9 +438,12 @@ def plot_rays(
         where n is the number of rays, N the number of positions per ray and
         the last dimension is the (x,y,z) of an Euclidean position vector.
     scalar : None or nd.array of shape (n,) or (n, N)
+        Scalar quantity that is used to color the rays.
     scene : `marxs.visualization.x3d.Scene` object
         A scene that rays are added to.
         If `None`, a new scene will be created.
+    cmap : matplotlib colormap
+        Colormap to use for mapping the scalar quantity to colors.
     normalize_kwargs : dict
         Keyword arguments for the normalization of the scalar quantity
         see `matplotlib.colors.Normalize` for accepted keywords.

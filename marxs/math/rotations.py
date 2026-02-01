@@ -6,7 +6,7 @@ __all__ = ['ex2vec_fix', 'axangle2mat']
 
 
 def ex2vec_fix(e1, efix):
-    '''Rotate x-axis to e1, use efix to break rotation ambiguity.
+    r"""Rotate x-axis to e1, use efix to break rotation ambiguity.
 
     This function calculates the rotation matrix that rotates the x-axis to
     ``e1``, i.e. it rotates the normal of the y,z-plane to a new plane where
@@ -35,7 +35,7 @@ def ex2vec_fix(e1, efix):
     -------
     rot : np.array of shape (3, 3)
         Rotation matrix
-    '''
+    """
     e1 = normalized_vector(e1)
     efix = normalized_vector(efix)
     if np.allclose(e1, efix) or np.allclose(e1, -efix):

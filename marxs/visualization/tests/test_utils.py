@@ -6,7 +6,7 @@ from ..utils import (plane_with_hole, combine_disjoint_triangulations,
                      get_color, color_tuple_to_hex,
                      MARXSVisualizationWarning,
                      DisplayDict)
-from ..mayavi import plot_object
+from ..x3d import plot_object
 
 def test_hole_round():
     '''Ensure that plane around the inner hole closes properly at the last point.'''

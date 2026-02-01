@@ -105,7 +105,7 @@ class RowlandTorus(MarxsElement, Geometry):
         MarxsElement.__init__(self, **kwargs)
 
     def quartic(self, xyz, transform=True):
-        '''Quartic torus equation.
+        """Quartic torus equation.
 
         Roots of this equation are points on the torus.
 
@@ -118,13 +118,13 @@ class RowlandTorus(MarxsElement, Geometry):
             If ``True`` transform ``xyz`` from the global coordinate system
             into the local coordinate system of the torus. If this
             transformation is done in the calling function already, set to
-        ``False``.
+            ``False``.
 
         Returns
         -------
         q : np.array of shape (N) or scalar
             Quartic at the input location
-        '''
+        """
         if xyz.shape[-1] != 3:
             raise ValueError('Input coordinates must be defined in Euclidean space.')
 
@@ -402,6 +402,8 @@ def design_tilted_torus(f, alpha, beta):
     r : float
         Radius of Rowland circle
     pos4d : np.array of shape (4, 4)
+        Position and orientation of the Rowland torus in homogeneous
+        coordinates.
 
     Notes
     -----
@@ -754,7 +756,7 @@ class CircularMeshGrid(ElementsOnTorus):
 
 
 class GratingArrayStructure(ElementsOnTorus):
-    '''Collection of diffraction gratings on the Rowland Torus
+    r"""Collection of diffraction gratings on the Rowland Torus
 
     When a ``GratingArrayStructure`` (GAS) is initialized, it places elements
     in the space available on the Rowland circle, most commonly, this class is
@@ -783,7 +785,7 @@ class GratingArrayStructure(ElementsOnTorus):
         Alternatively, ``phi`` can just be a single number. In that case, there
         will be exactly one element per radius.
 
-    '''
+    """
     def __init__(self, **kwargs):
         self.phi = kwargs.pop('phi', [0., 2*np.pi])
         self.radius = kwargs.pop('radius')

@@ -134,7 +134,7 @@ def moveelem(e, dx=0, dy=0, dz=0, rx=0., ry=0., rz=0.):
 
 @oneormoreelements
 def varyattribute(element, **kwargs):
-    '''Modify the attributes of an element.
+    """Modify the attributes of an element.
 
     This function modifies the attributes of an object. The keyword arguments
     are name and value of the attributes to be changed. This can be used for
@@ -145,7 +145,8 @@ def varyattribute(element, **kwargs):
     ----------
     element : object
         Some optical component.
-    keywords : it depends
+    kwargs : dict
+        Attributes to be changed and their new values.
 
     Examples
     --------
@@ -162,7 +163,7 @@ def varyattribute(element, **kwargs):
     `marxs.simulator.SimulationSequenceElement` are relevant to be changed in
     tolerancing simulations when looking at the attributes or the implementation
     of those elements.
-    '''
+    """
     for key, val in kwargs.items():
         # check is needed because key could be misspelled so that we set an attribute
         # that did not exist before and that is never used
@@ -703,6 +704,6 @@ class DispersedWigglePlotter(WigglePlotter):
 
     def plot_one_line(self, ax, axt, key, g, x,
                       R_col='Rgrat', Aeff_col='Aeffgrat'):
-        ax.plot(x, g[R_col], label='{:3.1f} $\AA$'.format(key[0]), lw=1.5)
-        axt.plot(x, g[Aeff_col], ':', label='{:2.0f} $\AA$'.format(key[0]), lw=2)
+        ax.plot(x, g[R_col], label="{:3.1f} $\\AA$".format(key[0]), lw=1.5)
+        axt.plot(x, g[Aeff_col], ":", label="{:2.0f} $\\AA$".format(key[0]), lw=2)
 
