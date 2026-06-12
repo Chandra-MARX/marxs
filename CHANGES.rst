@@ -9,6 +9,7 @@ New Features
   hole. [#258]
 - Add a ``scale_factor`` variable to the X3D visualization module
   to allow easy changing of the length unit conversion between MARXS and X3D. [#253]
+- Add an new class to X3D visualization to create x,y,z tripods. [#263]
 
 API Changes
 ^^^^^^^^^^^
@@ -18,6 +19,8 @@ API Changes
 
 - ``marxs.version`` has been removed. Use ``marxs.__version__`` instead which is
   default throughout the Python ecosystem. [#260]
+
+- Replace hrma.par with the marx 6.0 version. [#263]
 
 Bug fixes
 ^^^^^^^^^
