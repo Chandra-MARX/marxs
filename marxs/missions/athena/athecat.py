@@ -1,6 +1,5 @@
 # Licensed under GPL version 3 - see LICENSE.rst
 import copy
-import os
 
 import numpy as np
 import astropy.units as u
@@ -47,59 +46,64 @@ order_selector_Pt.coating = 'Pt'
 
 
 conf = {
-        'blazeang': np.deg2rad(1.6),
-        'focallength': 12000.,
-        'design_tilted_torus': 11.6e3,
-        'alphafac': 2.2,
-        'betafac': 4.4,
-        # SPO scatter
-        # factor 2.3545 converts from FWHM to sigma
-        'perpplanescatter':  1.5 / 2.3545 * u.arcsec,
-        # 2 * 0.68 converts HPD to sigma
-        'inplanescatter': 7. / (2 * 0.68) * u.arcsec,
-        'spo_pos4d': spo.spo_pos4d,
-        'spo_geom': spo.spogeom,
-        'reflectivity_interpolator': reflectivity_interpolator,
-
-        # Due to the implementation in Rowland circle array, this is reversed
-        # from what I would expect.
-        'grating_size': np.array([60., 60.]),
-        'grating_frame': 2.,
-        'det_kwargs': {'y_range': [300, 600],
-                       'd_element': [24.576 * 2 + 0.824 * 2 + 0.5,
-                                     24.576 + 0.824 * 2 + 0.5],
-                       'elem_class': optics.FlatDetector,
-                       'elem_args': {'zoom': [1, 24.576, 12.288],
-                                     'pixsize': 0.024,
-                                     # orientation flips around CCDs so that det_x increases
-                                     # with increasing x coordinate
-                                    'orientation': np.array([[-1, 0, 0],
-                                                             [0, -1, 0],
-                                                             [0, 0, +1]])
-                                     }},
-        'gas_kwargs': {'parallel_spec': np.array([1., 0., 0., 0.]),
-                       'normal_spec': np.array([0, 0, 0, 1]),
-                       'opt_range': [8e3, 1.2e4],
-                       'optimize_axis': 'z',
-                       'radius': (np.min(spo.spogeom['inner_radius']),
-                                  np.max(spo.spogeom['outer_radius'])),
-                       'elem_class': CATL1L2Stack,
-                       'elem_args': {'d': 2e-4,
-                                     'order_selector': order_selector_Si,
-                                     'l1_dims': {'bardepth': 5.7 * u.micrometer,
-                                                 'period': 0.005 * u.mm,
-                                                 'barwidth': 0.0005 * u.mm},
-                                     'l2_dims': {'bardepth': 0.5 * u.mm,
-                                                 'period': 0.966 * u.mm,
-                                                 'barwidth': 0.05 * u.mm},
-                                     # Set sigma to 0. Effectively disables this
-                                     # factor.
-                                     'qualityfactor': {'d': 200. * u.um,
-                                                       'sigma': 0 * u.um},
-                                     'l1_order_selector': l1_order_selector,
-                                     },
-                       },
-    }
+    "blazeang": np.deg2rad(1.6),
+    "focallength": 12000.0,
+    "design_tilted_torus": 11.6e3,
+    "alphafac": 2.2,
+    "betafac": 4.4,
+    # SPO scatter
+    # factor 2.3545 converts from FWHM to sigma
+    "perpplanescatter": 1.5 / 2.3545 * u.arcsec,
+    # 2 * 0.68 converts HPD to sigma
+    "inplanescatter": 7.0 / (2 * 0.68) * u.arcsec,
+    "spo_pos4d": spo.spo_pos4d,
+    "spo_geom": spo.spogeom,
+    "reflectivity_interpolator": reflectivity_interpolator,
+    # Due to the implementation in Rowland circle array, this is reversed
+    # from what I would expect.
+    "grating_size": np.array([60.0, 60.0]),
+    "grating_frame": 2.0,
+    "det_kwargs": {
+        "y_range": [-350, 150],
+        "d_element": [24.576 * 2 + 0.824 * 2 + 0.5, 24.576 + 0.824 * 2 + 0.5],
+        "elem_class": optics.FlatDetector,
+        "elem_args": {
+            "zoom": [1, 24.576, 12.288],
+            "pixsize": 0.024,
+            # orientation flips around CCDs so that det_x increases
+            # with increasing x coordinate
+            "orientation": np.array([[-1, 0, 0], [0, -1, 0], [0, 0, +1]]),
+        },
+    },
+    "gas_kwargs": {
+        "parallel_spec": np.array([1.0, 0.0, 0.0, 0.0]),
+        "normal_spec": np.array([0, 0, 0, 1]),
+        "optimize_axis": np.array([0, 0, 1, 0]),
+        "radius": (
+            np.min(spo.spogeom["inner_radius"]),
+            np.max(spo.spogeom["outer_radius"]),
+        ),
+        "elem_class": CATL1L2Stack,
+        "elem_args": {
+            "d": 2e-4,
+            "order_selector": order_selector_Si,
+            "l1_dims": {
+                "bardepth": 5.7 * u.micrometer,
+                "period": 0.005 * u.mm,
+                "barwidth": 0.0005 * u.mm,
+            },
+            "l2_dims": {
+                "bardepth": 0.5 * u.mm,
+                "period": 0.966 * u.mm,
+                "barwidth": 0.05 * u.mm,
+            },
+            # Set sigma to 0. Effectively disables this
+            # factor.
+            "qualityfactor": {"d": 200.0 * u.um, "sigma": 0 * u.um},
+            "l1_order_selector": l1_order_selector,
+        },
+    },
+}
 
 
 def add_rowland_to_conf(conf):
@@ -151,8 +155,9 @@ class GAS(design.rowland.CircularMeshGrid):
 
 class RowlandDetArray(design.rowland.RectangularGrid):
     def __init__(self, conf):
-        super().__init__(conf['rowland'], **conf['det_kwargs'],
-                         guess_distance=25.)
+        super().__init__(
+            rowland=conf["rowland"], **conf["det_kwargs"], guess_distance=-25
+        )
 
 
 # Place an additional detector on the Rowland circle.
