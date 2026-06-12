@@ -68,7 +68,7 @@ class FixedPointing(PointingModel):
         the correct direction of the photons.
         Also, sources that do not shine directly onto the telescope aperture but
         hit it at an angle, will see a smaller projected geometric area.
-        This is taken into account by reducing the probability of off-axies photons
+        This is taken into account by reducing the probability of off-axes photons
         accordingly, and thus this object needs to know the orientation (the
         direction f the optical axis and rotation) of the aperture.
 
